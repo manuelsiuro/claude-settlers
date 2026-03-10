@@ -88,6 +88,8 @@ menuBtn.addEventListener('click', () => {
 // Game init
 const container = document.getElementById('game-container')!;
 const game = new Game(container);
+// Expose game instance for debugging
+(window as unknown as Record<string, unknown>).__game = game;
 
 // Build panel elements
 const buildFab = document.getElementById('build-fab')!;

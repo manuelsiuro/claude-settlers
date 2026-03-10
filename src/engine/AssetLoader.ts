@@ -45,6 +45,32 @@ const BUILDING_MODELS = [
 
 export type BuildingModelName = (typeof BUILDING_MODELS)[number];
 
+/** All unit model names that must be loaded */
+const UNIT_MODELS = [
+  'serf_base',
+  'transporter',
+  'builder',
+  'woodcutter',
+  'forester',
+  'stonemason',
+  'fisherman',
+  'miner',
+  'farmer',
+  'geologist',
+  'sawmill_worker',
+  'miller',
+  'baker',
+  'pig_farmer',
+  'butcher',
+  'smelter_worker',
+  'goldsmith',
+  'toolmaker',
+  'blacksmith',
+  'knight',
+] as const;
+
+export type UnitModelName = (typeof UNIT_MODELS)[number];
+
 /**
  * Loads and caches GLTF models for reuse via cloning.
  * All models are loaded once at startup; instances are cloned per use.
@@ -83,6 +109,11 @@ export class AssetLoader {
     await this.loadModels(BUILDING_MODELS, 'buildings');
   }
 
+  /** Load all unit models. Call once before rendering. */
+  async loadUnitModels(): Promise<void> {
+    await this.loadModels(UNIT_MODELS, 'units');
+  }
+
   /** Get a clone of a loaded terrain model */
   getModel(name: TerrainModelName): THREE.Group {
     const original = this.models.get(name);
@@ -101,6 +132,15 @@ export class AssetLoader {
     return original.clone();
   }
 
+  /** Get a clone of a loaded unit model */
+  getUnitModel(name: UnitModelName): THREE.Group {
+    const original = this.models.get(name);
+    if (!original) {
+      throw new Error(`Unit model "${name}" not loaded. Call loadUnitModels() first.`);
+    }
+    return original.clone();
+  }
+
   /** Check if all terrain models are loaded */
   get loaded(): boolean {
     return TERRAIN_MODELS.every((name) => this.models.has(name));
@@ -109,6 +149,11 @@ export class AssetLoader {
   /** Check if all building models are loaded */
   get buildingsLoaded(): boolean {
     return BUILDING_MODELS.every((name) => this.models.has(name));
+  }
+
+  /** Check if all unit models are loaded */
+  get unitsLoaded(): boolean {
+    return UNIT_MODELS.every((name) => this.models.has(name));
   }
 }
 

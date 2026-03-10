@@ -1,6 +1,6 @@
 # Project Progress
 
-## Current Phase: Phase 3 COMPLETE — Ready for Phase 4
+## Current Phase: Phase 4 COMPLETE — Ready for Phase 5
 
 ## Task Board
 
@@ -29,11 +29,25 @@
 - [DONE] 3.7 BuildingRenderer — render placed buildings on the hex map — 2026-03-10
 - [DONE] 3.8 Building placement system — UI for selecting, previewing, validating, and placing buildings — 2026-03-10
 
-### Phase 4–8: Not yet broken into tasks
-> Note: Construction process (builder + resources → building over time) moved to Phase 5 — depends on serfs (Phase 4) and logistics (Phase 5).
+### Phase 4: Units & AI [COMPLETE]
+- [DONE] 4.1 Unit data model — UnitType (19 types: 18 professions + Knight), Unit instance (position, state, path, assignment), GameState extended with unit management — 2026-03-10
+- [DONE] 4.2 Base serf 3D model in Blender — body + head + arms + legs, 106 verts, exported as serf_base.glb — 2026-03-10
+- [DONE] 4.3 Profession variant models (batch 1) — Transporter, Builder, Woodcutter, Forester, Stonemason, Fisherman — 2026-03-10
+- [DONE] 4.4 Profession variant models (batch 2) — Miner, Farmer, Miller, Baker, Pig Farmer, Butcher, Sawmill Worker — 2026-03-10
+- [DONE] 4.5 Profession variant models (batch 3) — Smelter Worker, Goldsmith, Toolmaker, Blacksmith, Geologist, Knight — 2026-03-10
+- [DONE] 4.6 UnitRenderer — 20 unit GLTF models loaded via AssetLoader, UnitRenderer with world wrapping, integrated into Game loop — 2026-03-10
+- [DONE] 4.7 Hex pathfinding (A*) — A* on hex grid with world-wrapping heuristic, avoids water, 14 tests — 2026-03-10
+- [DONE] 4.8 Serf spawning & job assignment — UnitManager spawns serfs from Castle, auto-assigns to buildings, pathfinds to workplace, integrated into Game loop — 2026-03-10
+- [DONE] 4.9 Unit movement system — path-based movement with speed-scaled interpolation between hexes, arrival detection, state transitions — 2026-03-10
+- [DONE] 4.10 Work cycle system — procedural animations: work bob+sway, walk bob+facing direction — 2026-03-10
+
+### Phase 5–8: Not yet broken into tasks
+> Note: Construction process (builder + resources → building over time) depends on serfs (Phase 4) and logistics (Phase 5).
+> Road/flag logistics, resource transport, and production chains are Phase 5.
 > Tasks will be detailed when the phase becomes active. See `CLAUDE.md` for phase overview.
 
 ## Completed
+- **2026-03-10**: Phase 4 tasks 4.1–4.10 complete. UnitType (19 types: 18 professions + Knight), Unit instance model with state machine (idle → walking_to_work → working → walking_home), UnitDefinition with move speed and tool requirements. WORKER_TO_UNIT_TYPE mapping links buildings to professions. 20 Blender GLTF unit models (base serf + 19 profession variants with tools, hats, aprons per docs/units.md). UnitRenderer with world wrapping and per-frame sync. A* pathfinding on hex grid with world-wrapping heuristic, avoids water. UnitManager: auto-spawns serfs from Castle when buildings need workers, assigns, pathfinds, manages movement interpolation and arrival. Procedural animations: work bob+sway, walk bob+facing. Game loop integrated. 163 tests passing, 0 errors.
 - **2026-03-10**: Phase 3 tasks 3.1–3.8 complete. ResourceType (17 types), BuildingType (24 types with costs/production/terrain rules), Building instance state, GameState with placement validation, 21 Blender GLTF building models, BuildingRenderer with world wrapping, PlacementController with ghost preview + hex highlight + terrain validation, Material 3 build panel UI with tier-organized building list. Castle auto-placed at map center on start. 88 tests passing, 0 errors.
 - **2026-03-10**: Phase 2 atmosphere polish. Animated water shader (vertex wave displacement + color cycling + foam). Exponential fog for atmospheric depth. Hemisphere light (sky blue + ground green) + warm directional sunlight. 52 FPS, 27 tests passing.
 - **2026-03-10**: Phase 2 visual polish. Added elevation-based Y offsets (water depressed, mountains raised). Scaled up small decorations (cacti, rocks, bushes) for visibility. Tested shadows but dropped them (halved FPS with minimal visual gain — deferred to Phase 8). 64 FPS, 27 tests passing.
@@ -55,6 +69,12 @@
 - **Fog**: FogExp2 density 0.012, softens distant terrain and hides world-wrap seams
 - **Lighting**: HemisphereLight (sky 0x87ceeb / ground 0x4a7c3f, intensity 0.7) + DirectionalLight (warm 0xfff4e0, intensity 0.9)
 - **3D assets**: All created in Blender via MCP, exported as GLTF/GLB to `public/models/terrain/`, loaded via AssetLoader + GLTFLoader
+- **Unit data model**: Same const+type alias pattern as BuildingType. 19 UnitTypes (18 professions + Knight). UnitState: idle/walking_to_work/working/walking_home.
+- **Unit models**: 20 GLTF models in public/models/units/. All share base serf body (cylinder torso, sphere head, cylinder arms+legs). Professions distinguished by tools, hats, aprons, color accents per docs/units.md.
+- **Pathfinding**: A* on hex grid. World-wrapping heuristic checks 8 offset distances. Avoids water. Max 200 steps per search.
+- **Unit spawning**: UnitManager runs each frame. Spawns one serf at Castle per 2-second cooldown when active buildings need workers. Auto-assigns and pathfinds.
+- **Unit animations**: Procedural — no skeletal animation. Work state: bob + body sway. Walk state: step bob + face direction. Per-unit time offset prevents sync.
+- **Game debugging**: window.__game exposed for console access to GameState, UnitManager, renderers.
 - **Package manager**: npm
 - **Node**: v23.9.0
 

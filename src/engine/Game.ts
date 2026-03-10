@@ -3,8 +3,10 @@ import { HexGrid } from '../game/HexGrid';
 import { generateMap } from '../game/MapGenerator';
 import { BuildingType } from '../game/BuildingType';
 import { GameState } from '../game/GameState';
+import { UnitManager } from '../game/UnitManager';
 import { MapRenderer } from './MapRenderer';
 import { BuildingRenderer } from './BuildingRenderer';
+import { UnitRenderer } from './UnitRenderer';
 import { PlacementController } from './PlacementController';
 import { CameraController } from './CameraController';
 import { assetLoader } from './AssetLoader';
@@ -18,6 +20,8 @@ export class Game {
   private animationId: number | null = null;
   private mapRenderer: MapRenderer;
   private buildingRenderer: BuildingRenderer;
+  private unitRenderer: UnitRenderer;
+  private unitManager: UnitManager;
   private cameraController: CameraController | null = null;
   private placementController: PlacementController | null = null;
   private grid: HexGrid;
@@ -67,6 +71,8 @@ export class Game {
     this.gameState = new GameState(this.grid);
     this.mapRenderer = new MapRenderer();
     this.buildingRenderer = new BuildingRenderer();
+    this.unitRenderer = new UnitRenderer();
+    this.unitManager = new UnitManager(this.gameState);
 
     // Handle resize
     this.onResize = this.onResize.bind(this);
@@ -99,6 +105,7 @@ export class Game {
     await Promise.all([
       assetLoader.loadTerrainModels(),
       assetLoader.loadBuildingModels(),
+      assetLoader.loadUnitModels(),
     ]);
 
     // Build terrain
@@ -106,6 +113,9 @@ export class Game {
 
     // Set up building renderer with world wrapping
     this.buildingRenderer.addToScene(this.scene, this.grid);
+
+    // Set up unit renderer with world wrapping
+    this.unitRenderer.addToScene(this.scene, this.grid);
 
     // Place starting Castle at map center on a grassland tile
     this.placeStartingCastle();
@@ -125,8 +135,13 @@ export class Game {
     const clock = new THREE.Clock();
     const animate = (): void => {
       this.animationId = requestAnimationFrame(animate);
+      const deltaTime = Math.min(clock.getDelta(), 0.1); // Cap at 100ms to prevent teleporting
       this.cameraController?.update();
       updateWaterTime(clock.getElapsedTime());
+      this.unitManager.update(deltaTime);
+      const allUnits = this.gameState.getAllUnits();
+      this.unitRenderer.syncUnits(allUnits);
+      this.unitRenderer.updatePositions(allUnits, deltaTime);
       this.renderer.render(this.scene, this.camera);
     };
     animate();
@@ -166,6 +181,7 @@ export class Game {
     window.removeEventListener('resize', this.onResize);
     this.placementController?.dispose();
     this.cameraController?.dispose();
+    this.unitRenderer.dispose();
     this.buildingRenderer.dispose();
     this.mapRenderer.dispose();
     this.renderer.dispose();
@@ -193,6 +209,14 @@ export class Game {
 
   getBuildingRenderer(): BuildingRenderer {
     return this.buildingRenderer;
+  }
+
+  getUnitRenderer(): UnitRenderer {
+    return this.unitRenderer;
+  }
+
+  getUnitManager(): UnitManager {
+    return this.unitManager;
   }
 
   getGameState(): GameState {

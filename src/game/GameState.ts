@@ -3,6 +3,10 @@ import { createBuilding } from './Building';
 import { BuildingType, BUILDING_DEFINITIONS } from './BuildingType';
 import { HexGrid } from './HexGrid';
 import type { HexCoord } from './HexGrid';
+import type { Unit } from './Unit';
+import { createUnit, UnitState } from './Unit';
+import type { UnitType } from './UnitType';
+import { WORKER_TO_UNIT_TYPE } from './UnitType';
 
 export type PlacementError =
   | 'invalid_terrain'
@@ -15,12 +19,15 @@ export type PlacementResult =
   | { ok: false; error: PlacementError };
 
 /**
- * Central game state: manages all placed buildings and validates placement.
+ * Central game state: manages all placed buildings, units, and validates placement.
  */
 export class GameState {
   private buildings: Map<string, Building> = new Map();
   /** Quick lookup: hex coord key -> building id */
   private buildingsByCoord: Map<string, string> = new Map();
+  private units: Map<string, Unit> = new Map();
+  /** Reverse index: building ID → assigned unit ID (O(1) worker lookup) */
+  private workerByBuilding: Map<string, string> = new Map();
   private grid: HexGrid;
 
   constructor(grid: HexGrid) {
@@ -123,5 +130,113 @@ export class GameState {
     }
 
     return null;
+  }
+
+  // ===================================================================
+  // Unit management
+  // ===================================================================
+
+  /** Spawn a new unit at the given coordinate */
+  spawnUnit(type: UnitType, coord: HexCoord, playerId: number): Unit {
+    const unit = createUnit(type, coord, playerId);
+    this.units.set(unit.id, unit);
+    return unit;
+  }
+
+  /** Get a unit by its ID */
+  getUnit(id: string): Unit | undefined {
+    return this.units.get(id);
+  }
+
+  /** Get all units */
+  getAllUnits(): Unit[] {
+    return Array.from(this.units.values());
+  }
+
+  /** Get all units owned by a player */
+  getUnitsByPlayer(playerId: number): Unit[] {
+    return this.getAllUnits().filter((u) => u.playerId === playerId);
+  }
+
+  /** Get all units of a specific type */
+  getUnitsByType(type: UnitType): Unit[] {
+    return this.getAllUnits().filter((u) => u.type === type);
+  }
+
+  /** Get the unit assigned to a building, if any (O(1) via reverse index) */
+  getWorkerForBuilding(buildingId: string): Unit | undefined {
+    const unitId = this.workerByBuilding.get(buildingId);
+    if (!unitId) return undefined;
+    return this.units.get(unitId);
+  }
+
+  /** Assign a unit to a building and update the reverse index */
+  assignWorkerToBuilding(unitId: string, buildingId: string): void {
+    const unit = this.units.get(unitId);
+    if (!unit) return;
+    // Unassign from previous building if any
+    if (unit.assignedBuildingId) {
+      this.workerByBuilding.delete(unit.assignedBuildingId);
+    }
+    unit.assignedBuildingId = buildingId;
+    this.workerByBuilding.set(buildingId, unitId);
+  }
+
+  /** Unassign a unit from its building and update the reverse index */
+  unassignWorker(unitId: string): void {
+    const unit = this.units.get(unitId);
+    if (!unit) return;
+    if (unit.assignedBuildingId) {
+      this.workerByBuilding.delete(unit.assignedBuildingId);
+    }
+    unit.assignedBuildingId = null;
+  }
+
+  /** Remove a unit and clean up reverse index */
+  removeUnit(id: string): boolean {
+    const unit = this.units.get(id);
+    if (!unit) return false;
+    if (unit.assignedBuildingId) {
+      this.workerByBuilding.delete(unit.assignedBuildingId);
+    }
+    return this.units.delete(id);
+  }
+
+  /**
+   * Get all active buildings that need a worker but don't have one assigned.
+   * Returns buildings with a worker field defined and no unit currently assigned.
+   */
+  getBuildingsNeedingWorkers(playerId: number): Building[] {
+    return this.getBuildingsByPlayer(playerId).filter((building) => {
+      const def = BUILDING_DEFINITIONS[building.type];
+      if (!def.worker) return false;
+      if (building.state !== 'active') return false;
+      return !this.workerByBuilding.has(building.id);
+    });
+  }
+
+  /**
+   * Get idle units at the Castle that can be assigned to jobs.
+   */
+  getIdleUnitsAtCastle(playerId: number): Unit[] {
+    return this.getUnitsByPlayer(playerId).filter(
+      (u) => u.state === UnitState.Idle && u.assignedBuildingId === null,
+    );
+  }
+
+  /**
+   * Get the required UnitType for a building's worker, or null.
+   */
+  getRequiredWorkerType(buildingId: string): UnitType | null {
+    const building = this.buildings.get(buildingId);
+    if (!building) return null;
+    const def = BUILDING_DEFINITIONS[building.type];
+    if (!def.worker) return null;
+    return WORKER_TO_UNIT_TYPE[def.worker] ?? null;
+  }
+
+  /** Get the hex grid */
+  getGrid(): HexGrid {
+    return this.grid;
   }
 }
