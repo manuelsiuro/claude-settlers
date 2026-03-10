@@ -85,14 +85,18 @@ export class MapRenderer {
   /** Clean up all meshes */
   dispose(): void {
     const disposeGroup = (group: THREE.Group) => {
-      while (group.children.length > 0) {
-        const child = group.children[0];
-        group.remove(child);
+      group.traverse((child) => {
         if (child instanceof THREE.Mesh) {
           if (child.material instanceof THREE.Material) {
             child.material.dispose();
           }
+          if (child.geometry) {
+            child.geometry.dispose();
+          }
         }
+      });
+      while (group.children.length > 0) {
+        group.remove(group.children[0]);
       }
       group.removeFromParent();
     };

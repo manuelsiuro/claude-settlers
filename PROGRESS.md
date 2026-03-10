@@ -17,12 +17,14 @@
 - [DONE] 2.4 Terrain decorations — trees, mountains, rocks, water effects — 2026-03-10
 - [DONE] 2.5 World wrapping logic (8 ghost copies for seamless edges) — 2026-03-10
 - [DONE] 2.6 Camera controls — pan/zoom for desktop + touch — 2026-03-10
+- [DONE] 2.7 Blender GLTF asset pipeline — all terrain models created in Blender, loaded via GLTFLoader — 2026-03-10
 
 ### Phase 3–8: Not yet broken into tasks
 > Tasks will be detailed when the phase becomes active. See `CLAUDE.md` for phase overview.
 
 ## Completed
-- **2026-03-10**: Phase 2 complete. Hex grid (axial coords, flat-top), 5 terrain types with decorations per terrains.md. Seeded procedural map gen (dual-noise elevation+moisture, percentile terrain assignment). 32x32 default map. World wrapping via 8 ghost group clones. Camera: mouse drag pan, scroll zoom, WASD/arrow keys, touch drag + pinch zoom. 60 FPS verified. 24 tests passing.
+- **2026-03-10**: Phase 2 Blender retrofit. Replaced all primitive Three.js shapes with Blender-created GLTF models (10 models: hex_tile, tree_deciduous, tree_conifer, mountain_peak, snow_cap, boulder, cactus, dune, bush, rock_small). Added AssetLoader with async loading. 61 FPS, 27 tests passing.
+- **2026-03-10**: Phase 2 complete. Hex grid (axial coords, pointy-top), 5 terrain types with decorations per terrains.md. Seeded procedural map gen (dual-noise elevation+moisture, percentile terrain assignment). 32x32 default map. World wrapping via 8 ghost group clones. Camera: mouse drag pan, scroll zoom, WASD/arrow keys, touch drag + pinch zoom. 60 FPS verified. 27 tests passing.
 - **2026-03-10**: Phase 1 complete. Vite + TypeScript + Three.js + MDUI.
 
 ## Decisions & Notes
@@ -32,6 +34,7 @@
 - **Hex grid**: Axial coordinates (q, r), flat-top orientation, HEX_SIZE = 1.0
 - **Map generation**: Dual Perlin noise layers (elevation + moisture), percentile-based terrain assignment for consistent proportions
 - **World wrapping**: 8 cloned groups offset by map dimensions (simple, 60 FPS at 32x32)
+- **3D assets**: All created in Blender via MCP, exported as GLTF/GLB to `public/models/terrain/`, loaded via AssetLoader + GLTFLoader
 - **Package manager**: npm
 - **Node**: v23.9.0
 

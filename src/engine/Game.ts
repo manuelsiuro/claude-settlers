@@ -3,6 +3,7 @@ import { HexGrid } from '../game/HexGrid';
 import { generateMap } from '../game/MapGenerator';
 import { MapRenderer } from './MapRenderer';
 import { CameraController } from './CameraController';
+import { assetLoader } from './AssetLoader';
 
 export class Game {
   private renderer: THREE.WebGLRenderer;
@@ -46,19 +47,9 @@ export class Game {
     directionalLight.position.set(10, 20, 10);
     this.scene.add(directionalLight);
 
-    // Generate map
+    // Grid and renderer (map built after assets load)
     this.grid = generateMap({ width: 32, height: 32, seed: 42 });
     this.mapRenderer = new MapRenderer();
-    this.mapRenderer.render(this.grid, this.scene);
-
-    // Position camera to look at map center
-    const center = this.mapRenderer.getMapCenter(this.grid);
-    const camOffset = new THREE.Vector3(20, 20, 20);
-    this.camera.position.copy(center).add(camOffset);
-    this.camera.lookAt(center);
-
-    // Camera controls
-    this.cameraController = new CameraController(this);
 
     // Handle resize
     this.onResize = this.onResize.bind(this);
@@ -86,7 +77,22 @@ export class Game {
     this.renderer.setSize(this.width, this.height);
   }
 
-  start(): void {
+  async start(): Promise<void> {
+    // Load all GLTF assets before building the map
+    await assetLoader.loadTerrainModels();
+
+    // Now build the map with loaded models
+    this.mapRenderer.render(this.grid, this.scene);
+
+    // Position camera to look at map center
+    const center = this.mapRenderer.getMapCenter(this.grid);
+    const camOffset = new THREE.Vector3(20, 20, 20);
+    this.camera.position.copy(center).add(camOffset);
+    this.camera.lookAt(center);
+
+    // Camera controls
+    this.cameraController = new CameraController(this);
+
     const animate = (): void => {
       this.animationId = requestAnimationFrame(animate);
       this.cameraController?.update();
