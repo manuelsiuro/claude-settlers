@@ -7,7 +7,7 @@ const TERRAIN_MODELS = [
   'tree_deciduous',
   'tree_conifer',
   'mountain_peak',
-  'snow_cap',
+  'mountain_peak_snow',
   'boulder',
   'cactus',
   'dune',

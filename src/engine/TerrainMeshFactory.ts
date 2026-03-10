@@ -89,21 +89,13 @@ function createMountainDecorations(tile: HexTile): THREE.Group {
   const group = new THREE.Group();
   const rng = createRng(tile.coord.q * 2000 + tile.coord.r);
 
-  // Main peak
-  const peak = assetLoader.getModel('mountain_peak');
+  // Use snow variant for high-elevation mountains
+  const modelName = tile.elevation > 0.7 ? 'mountain_peak_snow' : 'mountain_peak';
+  const peak = assetLoader.getModel(modelName);
   const peakScale = 0.7 + tile.elevation * 0.6;
-  peak.scale.set(peakScale, peakScale, peakScale);
+  peak.scale.setScalar(peakScale);
   peak.rotation.y = rng() * Math.PI * 2;
   group.add(peak);
-
-  // Optional snow cap
-  if (tile.elevation > 0.7) {
-    const snowCap = assetLoader.getModel('snow_cap');
-    const peakHeight = 0.4 + tile.elevation * 0.4;
-    snowCap.position.y = peakHeight + 0.05;
-    snowCap.scale.setScalar(peakScale * 0.8);
-    group.add(snowCap);
-  }
 
   // Boulders
   const boulderCount = 1 + Math.floor(rng() * 2);
