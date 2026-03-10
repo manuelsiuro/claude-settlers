@@ -3,6 +3,7 @@ node_modules/
 
 # Build output
 dist/
+dist-ssr/
 build/
 
 # Environment & secrets
@@ -15,14 +16,24 @@ build/
 Thumbs.db
 
 # IDE
-.vscode/
+.vscode/*
+!.vscode/extensions.json
 .idea/
 *.swp
 *.swo
+*.sw?
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.local
 
 # Logs
 *.log
 npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+lerna-debug.log*
 
 # Cache
 .cache/

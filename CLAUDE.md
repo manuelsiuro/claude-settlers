@@ -162,6 +162,10 @@ Every task must be verified through a combination of these methods:
 
 **Rule: never skip `build` + `test` + `take_screenshot` before marking a visual task as done.**
 
+### Git Workflow
+
+After each phase is fully complete and verified (build + lint + test + visual), commit all changes and push to remote. Use a descriptive commit message summarizing the phase.
+
 ### Task Granularity Rules
 
 - Each task in `PROGRESS.md` should be completable in a single session

@@ -1,0 +1,52 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #1a1a2e;
+  font-family: system-ui, sans-serif;
+}
+
+#app {
+  width: 100%;
+  height: 100%;
+  display: flex;
+}
+
+#main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+#app-bar {
+  flex-shrink: 0;
+}
+
+.app-title {
+  margin-left: 8px;
+  font-size: 1.125rem;
+  font-weight: 500;
+}
+
+#side-panel mdui-list {
+  padding-top: 64px;
+}
+
+#game-container {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+#game-container canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
