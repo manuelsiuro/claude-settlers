@@ -5,6 +5,7 @@ import { HEX_SIZE } from '../game/HexGrid';
 import { getTerrainColor } from './TerrainColors';
 import { createRng } from '../game/noise';
 import { assetLoader } from './AssetLoader';
+import { createWaterMaterial, registerWaterMaterial } from './WaterShader';
 
 /**
  * Creates 3D meshes for terrain using Blender GLTF models.
@@ -21,12 +22,9 @@ export function createHexTileMesh(tile: HexTile): THREE.Group {
   group.traverse((child) => {
     if (child instanceof THREE.Mesh) {
       if (isWater) {
-        child.material = new THREE.MeshLambertMaterial({
-          color: 0x40e0d0,
-          transparent: true,
-          opacity: 0.8,
-          side: THREE.DoubleSide,
-        });
+        const waterMat = createWaterMaterial();
+        registerWaterMaterial(waterMat);
+        child.material = waterMat;
       } else {
         child.material = new THREE.MeshLambertMaterial({
           color,

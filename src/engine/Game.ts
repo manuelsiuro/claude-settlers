@@ -4,6 +4,7 @@ import { generateMap } from '../game/MapGenerator';
 import { MapRenderer } from './MapRenderer';
 import { CameraController } from './CameraController';
 import { assetLoader } from './AssetLoader';
+import { updateWaterTime } from './WaterShader';
 
 export class Game {
   private renderer: THREE.WebGLRenderer;
@@ -23,11 +24,13 @@ export class Game {
     // Renderer
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    this.renderer.setClearColor(0x87ceeb); // sky blue background
     container.appendChild(this.renderer.domElement);
 
-    // Scene
+    // Scene with fog for atmospheric depth
     this.scene = new THREE.Scene();
+    const fogColor = 0xc8dce8;
+    this.scene.fog = new THREE.FogExp2(fogColor, 0.012);
+    this.renderer.setClearColor(fogColor);
 
     // Isometric orthographic camera
     const aspect = this.width / this.height;
@@ -40,11 +43,15 @@ export class Game {
       1000
     );
 
-    // Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-    this.scene.add(ambientLight);
+    // Lighting — hemisphere for natural sky/ground color + directional for sun
+    const hemiLight = new THREE.HemisphereLight(
+      0x87ceeb, // sky color (light blue)
+      0x4a7c3f, // ground color (earthy green)
+      0.7
+    );
+    this.scene.add(hemiLight);
 
-    this.directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    this.directionalLight = new THREE.DirectionalLight(0xfff4e0, 0.9); // warm sunlight
     this.directionalLight.position.set(10, 20, 10);
     this.scene.add(this.directionalLight);
 
@@ -94,9 +101,11 @@ export class Game {
     // Camera controls
     this.cameraController = new CameraController(this);
 
+    const clock = new THREE.Clock();
     const animate = (): void => {
       this.animationId = requestAnimationFrame(animate);
       this.cameraController?.update();
+      updateWaterTime(clock.getElapsedTime());
       this.renderer.render(this.scene, this.camera);
     };
     animate();

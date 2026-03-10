@@ -23,6 +23,7 @@
 > Tasks will be detailed when the phase becomes active. See `CLAUDE.md` for phase overview.
 
 ## Completed
+- **2026-03-10**: Phase 2 atmosphere polish. Animated water shader (vertex wave displacement + color cycling + foam). Exponential fog for atmospheric depth. Hemisphere light (sky blue + ground green) + warm directional sunlight. 52 FPS, 27 tests passing.
 - **2026-03-10**: Phase 2 visual polish. Added elevation-based Y offsets (water depressed, mountains raised). Scaled up small decorations (cacti, rocks, bushes) for visibility. Tested shadows but dropped them (halved FPS with minimal visual gain — deferred to Phase 8). 64 FPS, 27 tests passing.
 - **2026-03-10**: Fixed broken 3D models. Rebuilt cactus with L-shaped arms at final vertex positions (rotation_euler broke during GLTF export). Created integrated mountain_peak_snow.glb replacing floating snow_cap. Added water_waves decoration. 11 models total, 54 FPS, 27 tests passing.
 - **2026-03-10**: Phase 2 Blender retrofit. Replaced all primitive Three.js shapes with Blender-created GLTF models (11 models: hex_tile, tree_deciduous, tree_conifer, mountain_peak, mountain_peak_snow, boulder, cactus, dune, bush, rock_small, water_waves). Added AssetLoader with async loading.
@@ -38,6 +39,9 @@
 - **World wrapping**: 8 cloned groups offset by map dimensions (simple, 60 FPS at 32x32)
 - **Elevation rendering**: Per-tile Y offset based on elevation value. Water=-0.1, others=elevation*0.2. Creates natural terrain stepping.
 - **Shadows**: Tested but deferred to Phase 8. Shadow mapping halved FPS (~30 vs 64) with minimal visual benefit at isometric zoom. Will revisit with instanced meshes.
+- **Water shader**: Custom ShaderMaterial with vertex wave displacement, shallow/deep color mixing, foam highlights, fog support
+- **Fog**: FogExp2 density 0.012, softens distant terrain and hides world-wrap seams
+- **Lighting**: HemisphereLight (sky 0x87ceeb / ground 0x4a7c3f, intensity 0.7) + DirectionalLight (warm 0xfff4e0, intensity 0.9)
 - **3D assets**: All created in Blender via MCP, exported as GLTF/GLB to `public/models/terrain/`, loaded via AssetLoader + GLTFLoader
 - **Package manager**: npm
 - **Node**: v23.9.0
