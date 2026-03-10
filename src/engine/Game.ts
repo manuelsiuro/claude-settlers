@@ -1,4 +1,8 @@
 import * as THREE from 'three';
+import { HexGrid } from '../game/HexGrid';
+import { generateMap } from '../game/MapGenerator';
+import { MapRenderer } from './MapRenderer';
+import { CameraController } from './CameraController';
 
 export class Game {
   private renderer: THREE.WebGLRenderer;
@@ -6,6 +10,10 @@ export class Game {
   private camera: THREE.OrthographicCamera;
   private container: HTMLElement;
   private animationId: number | null = null;
+  private mapRenderer: MapRenderer;
+  private cameraController: CameraController | null = null;
+  private grid: HexGrid;
+  private frustum = 10;
 
   constructor(container: HTMLElement) {
     this.container = container;
@@ -21,19 +29,14 @@ export class Game {
 
     // Isometric orthographic camera
     const aspect = this.width / this.height;
-    const frustum = 10;
     this.camera = new THREE.OrthographicCamera(
-      -frustum * aspect,
-      frustum * aspect,
-      frustum,
-      -frustum,
+      -this.frustum * aspect,
+      this.frustum * aspect,
+      this.frustum,
+      -this.frustum,
       0.1,
       1000
     );
-
-    // Classic isometric angle: rotate 45° around Y, then ~35.264° around X
-    this.camera.position.set(20, 20, 20);
-    this.camera.lookAt(0, 0, 0);
 
     // Lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
@@ -43,13 +46,19 @@ export class Game {
     directionalLight.position.set(10, 20, 10);
     this.scene.add(directionalLight);
 
-    // Placeholder ground plane
-    const groundGeometry = new THREE.PlaneGeometry(30, 30);
-    const groundMaterial = new THREE.MeshLambertMaterial({ color: 0x7cfc00 });
-    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-    ground.rotation.x = -Math.PI / 2;
-    ground.name = 'ground';
-    this.scene.add(ground);
+    // Generate map
+    this.grid = generateMap({ width: 32, height: 32, seed: 42 });
+    this.mapRenderer = new MapRenderer();
+    this.mapRenderer.render(this.grid, this.scene);
+
+    // Position camera to look at map center
+    const center = this.mapRenderer.getMapCenter(this.grid);
+    const camOffset = new THREE.Vector3(20, 20, 20);
+    this.camera.position.copy(center).add(camOffset);
+    this.camera.lookAt(center);
+
+    // Camera controls
+    this.cameraController = new CameraController(this);
 
     // Handle resize
     this.onResize = this.onResize.bind(this);
@@ -67,12 +76,11 @@ export class Game {
 
   private onResize(): void {
     const aspect = this.width / this.height;
-    const frustum = 10;
 
-    this.camera.left = -frustum * aspect;
-    this.camera.right = frustum * aspect;
-    this.camera.top = frustum;
-    this.camera.bottom = -frustum;
+    this.camera.left = -this.frustum * aspect;
+    this.camera.right = this.frustum * aspect;
+    this.camera.top = this.frustum;
+    this.camera.bottom = -this.frustum;
     this.camera.updateProjectionMatrix();
 
     this.renderer.setSize(this.width, this.height);
@@ -81,6 +89,7 @@ export class Game {
   start(): void {
     const animate = (): void => {
       this.animationId = requestAnimationFrame(animate);
+      this.cameraController?.update();
       this.renderer.render(this.scene, this.camera);
     };
     animate();
@@ -91,6 +100,8 @@ export class Game {
       cancelAnimationFrame(this.animationId);
     }
     window.removeEventListener('resize', this.onResize);
+    this.cameraController?.dispose();
+    this.mapRenderer.dispose();
     this.renderer.dispose();
   }
 
@@ -104,5 +115,23 @@ export class Game {
 
   getCamera(): THREE.OrthographicCamera {
     return this.camera;
+  }
+
+  getGrid(): HexGrid {
+    return this.grid;
+  }
+
+  getMapRenderer(): MapRenderer {
+    return this.mapRenderer;
+  }
+
+  /** Update camera frustum (for zoom) */
+  setFrustum(frustum: number): void {
+    this.frustum = frustum;
+    this.onResize();
+  }
+
+  getFrustum(): number {
+    return this.frustum;
   }
 }

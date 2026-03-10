@@ -1,6 +1,6 @@
 # Project Progress
 
-## Current Phase: Phase 1 COMPLETE — Ready for Phase 2
+## Current Phase: Phase 2 COMPLETE — Ready for Phase 3
 
 ## Task Board
 
@@ -10,16 +10,29 @@
 - [DONE] Dev server, build, and lint configuration — 2026-03-10
 - [DONE] Mobile-responsive canvas + Material 3 UI shell (app bar, side panel placeholder) — 2026-03-10
 
-### Phase 2–8: Not yet broken into tasks
+### Phase 2: Terrain & Map System [COMPLETE]
+- [DONE] 2.1 Hex tile data model + terrain types + map data structure — 2026-03-10
+- [DONE] 2.2 Seeded procedural map generation (noise-based terrain distribution) — 2026-03-10
+- [DONE] 2.3 Hex grid 3D rendering — ground tiles for all 5 terrain types — 2026-03-10
+- [DONE] 2.4 Terrain decorations — trees, mountains, rocks, water effects — 2026-03-10
+- [DONE] 2.5 World wrapping logic (8 ghost copies for seamless edges) — 2026-03-10
+- [DONE] 2.6 Camera controls — pan/zoom for desktop + touch — 2026-03-10
+
+### Phase 3–8: Not yet broken into tasks
 > Tasks will be detailed when the phase becomes active. See `CLAUDE.md` for phase overview.
 
 ## Completed
-- **2026-03-10**: Phase 1 complete. Vite + TypeScript + Three.js + MDUI. Isometric orthographic camera, resize handling, render loop, placeholder ground plane. Top app bar with hamburger menu, navigation drawer (Buildings, Statistics, Minimap, Settings) with SVG icons via @mdui/icons. Mobile-responsive (tested iPhone 14 Pro viewport 390x844). ESLint flat config, Vitest, build all passing. Dev server on localhost:5173.
+- **2026-03-10**: Phase 2 complete. Hex grid (axial coords, flat-top), 5 terrain types with decorations per terrains.md. Seeded procedural map gen (dual-noise elevation+moisture, percentile terrain assignment). 32x32 default map. World wrapping via 8 ghost group clones. Camera: mouse drag pan, scroll zoom, WASD/arrow keys, touch drag + pinch zoom. 60 FPS verified. 24 tests passing.
+- **2026-03-10**: Phase 1 complete. Vite + TypeScript + Three.js + MDUI.
 
 ## Decisions & Notes
-- **Material 3 library**: Chose MDUI over @material/web (Google's lib is in maintenance mode with no active development). MDUI is actively maintained, framework-agnostic web components, first-class TypeScript, 85KB gzipped.
-- **Icons**: Using @mdui/icons (tree-shakable SVG web components) instead of Material Icons font — avoids font loading issues, works reliably in shadow DOM.
-- **Package manager**: npm (bun not installed on device)
+- **Material 3 library**: MDUI (actively maintained, web components, TypeScript-first)
+- **Icons**: @mdui/icons (tree-shakable SVG, no font dependency)
+- **Terrain enum**: Using `const` object + type alias pattern instead of TS `enum` (required by `erasableSyntaxOnly`)
+- **Hex grid**: Axial coordinates (q, r), flat-top orientation, HEX_SIZE = 1.0
+- **Map generation**: Dual Perlin noise layers (elevation + moisture), percentile-based terrain assignment for consistent proportions
+- **World wrapping**: 8 cloned groups offset by map dimensions (simple, 60 FPS at 32x32)
+- **Package manager**: npm
 - **Node**: v23.9.0
 
 ## Blockers
