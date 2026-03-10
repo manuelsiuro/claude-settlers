@@ -4,7 +4,7 @@ import { createHexTileMesh, createDecorations } from './TerrainMeshFactory';
 
 /**
  * Renders a HexGrid as 3D terrain in a Three.js scene.
- * Supports world wrapping by rendering ghost copies at map edges.
+ * Supports world wrapping via ghost copies offset by hex grid wrapping vectors.
  */
 export class MapRenderer {
   private mapGroup: THREE.Group;
@@ -22,26 +22,27 @@ export class MapRenderer {
     this.buildTileGroup(grid, this.mapGroup);
     scene.add(this.mapGroup);
 
-    // World wrapping: create 8 ghost copies offset in each direction
-    const bounds = this.getMapBounds(grid);
-    const mapW = bounds.maxX - bounds.minX;
-    const mapH = bounds.maxZ - bounds.minZ;
+    // World wrapping: 8 ghost copies using hex grid wrapping vectors
+    const { wrapQ, wrapR } = grid.getWrapVectors();
 
-    const offsets = [
-      { x: -mapW, z: 0 },
-      { x: mapW, z: 0 },
-      { x: 0, z: -mapH },
-      { x: 0, z: mapH },
-      { x: -mapW, z: -mapH },
-      { x: mapW, z: -mapH },
-      { x: -mapW, z: mapH },
-      { x: mapW, z: mapH },
+    // All 8 neighbor offsets as combinations of wrapQ and wrapR
+    const multipliers = [
+      { mq: -1, mr: 0 },
+      { mq: 1, mr: 0 },
+      { mq: 0, mr: -1 },
+      { mq: 0, mr: 1 },
+      { mq: -1, mr: -1 },
+      { mq: 1, mr: -1 },
+      { mq: -1, mr: 1 },
+      { mq: 1, mr: 1 },
     ];
 
-    for (const offset of offsets) {
+    for (const { mq, mr } of multipliers) {
+      const offsetX = mq * wrapQ.x + mr * wrapR.x;
+      const offsetZ = mq * wrapQ.z + mr * wrapR.z;
       const ghost = this.mapGroup.clone();
-      ghost.position.set(offset.x, 0, offset.z);
-      ghost.name = `map_ghost_${offset.x}_${offset.z}`;
+      ghost.position.set(offsetX, 0, offsetZ);
+      ghost.name = `map_ghost_${mq}_${mr}`;
       scene.add(ghost);
       this.wrapGroups.push(ghost);
     }
@@ -81,19 +82,6 @@ export class MapRenderer {
     return new THREE.Vector3(x, 0, z);
   }
 
-  /** Compute approximate map bounds */
-  getMapBounds(grid: HexGrid): { minX: number; maxX: number; minZ: number; maxZ: number } {
-    const topLeft = HexGrid.hexToWorld(0, 0);
-    const bottomRight = HexGrid.hexToWorld(grid.width - 1, grid.height - 1);
-    const padding = 1.5;
-    return {
-      minX: Math.min(topLeft.x, HexGrid.hexToWorld(0, grid.height - 1).x) - padding,
-      maxX: Math.max(bottomRight.x, HexGrid.hexToWorld(grid.width - 1, 0).x) + padding,
-      minZ: topLeft.z - padding,
-      maxZ: bottomRight.z + padding,
-    };
-  }
-
   /** Clean up all meshes */
   dispose(): void {
     const disposeGroup = (group: THREE.Group) => {
@@ -101,7 +89,6 @@ export class MapRenderer {
         const child = group.children[0];
         group.remove(child);
         if (child instanceof THREE.Mesh) {
-          // Don't dispose shared geometries
           if (child.material instanceof THREE.Material) {
             child.material.dispose();
           }

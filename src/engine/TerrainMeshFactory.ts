@@ -38,8 +38,8 @@ const waterMaterial = new THREE.MeshLambertMaterial({
 function createHexShape(size: number): THREE.Shape {
   const shape = new THREE.Shape();
   for (let i = 0; i < 6; i++) {
-    // Flat-top hex: first vertex at 0°
-    const angle = (Math.PI / 3) * i;
+    // Pointy-top hex: first vertex at 30° (top-right)
+    const angle = (Math.PI / 3) * i + Math.PI / 6;
     const x = size * Math.cos(angle);
     const y = size * Math.sin(angle);
     if (i === 0) shape.moveTo(x, y);

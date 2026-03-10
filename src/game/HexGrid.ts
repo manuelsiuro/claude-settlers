@@ -1,8 +1,15 @@
 import { TerrainType } from './TerrainType';
 
 /**
- * Axial hex coordinates (q, r) using flat-top hex orientation.
- * See: https://www.redblobgames.com/grids/hexagons/
+ * Axial hex coordinates (q, r) using pointy-top hex orientation.
+ * Reference: https://www.redblobgames.com/grids/hexagons/
+ *
+ * Pointy-top: vertex at top/bottom, flat edges at left/right.
+ * Neighbors: 6 axial directions.
+ *
+ * Layout formula (pointy-top):
+ *   x = size * sqrt(3) * (q + r/2)
+ *   z = size * 3/2 * r
  */
 export interface HexCoord {
   q: number;
@@ -18,11 +25,11 @@ export interface HexTile {
 /** Hex size — distance from center to vertex */
 export const HEX_SIZE = 1.0;
 
-/** Width and height of a flat-top hex */
-export const HEX_WIDTH = Math.sqrt(3) * HEX_SIZE;
-export const HEX_HEIGHT = 2 * HEX_SIZE;
+/** Pointy-top hex dimensions */
+export const HEX_WIDTH = Math.sqrt(3) * HEX_SIZE;  // horizontal distance between parallel edges
+export const HEX_HEIGHT = 2 * HEX_SIZE;             // vertical distance between top and bottom vertices
 
-/** Flat-top hex: 6 axial neighbor directions */
+/** 6 axial neighbor directions */
 const AXIAL_DIRECTIONS: HexCoord[] = [
   { q: 1, r: 0 },
   { q: 1, r: -1 },
@@ -79,25 +86,26 @@ export class HexGrid {
 
   /** Wrap coordinates for world wrapping */
   wrap(q: number, r: number): HexCoord {
-    // Offset coordinates for wrapping
     const col = ((q % this.width) + this.width) % this.width;
     const row = ((r % this.height) + this.height) % this.height;
     return { q: col, r: row };
   }
 
-  /** Convert axial hex coord to world position (flat-top) */
+  /**
+   * Convert axial hex coord to world position (pointy-top).
+   *   x = sqrt(3) * (q + r/2) * size
+   *   z = 3/2 * r * size
+   */
   static hexToWorld(q: number, r: number): { x: number; z: number } {
-    const x = HEX_WIDTH * (q + r * 0.5);
-    const z = HEX_HEIGHT * 0.75 * r;
+    const x = HEX_SIZE * Math.sqrt(3) * (q + r / 2);
+    const z = HEX_SIZE * 1.5 * r;
     return { x, z };
   }
 
   /** Convert world position to nearest axial hex coord */
   static worldToHex(x: number, z: number): HexCoord {
-    const r = z / (HEX_HEIGHT * 0.75);
-    const q = x / HEX_WIDTH - r * 0.5;
-
-    // Round to nearest hex
+    const q = (x * Math.sqrt(3) / 3 - z / 3) / HEX_SIZE;
+    const r = (z * 2 / 3) / HEX_SIZE;
     return HexGrid.hexRound(q, r);
   }
 
@@ -119,6 +127,17 @@ export class HexGrid {
     }
 
     return { q: rq, r: rr };
+  }
+
+  /**
+   * Compute the world-space wrapping vectors for this grid.
+   * wrapQ = offset when shifting by grid.width in q direction
+   * wrapR = offset when shifting by grid.height in r direction
+   */
+  getWrapVectors(): { wrapQ: { x: number; z: number }; wrapR: { x: number; z: number } } {
+    const wrapQ = HexGrid.hexToWorld(this.width, 0);
+    const wrapR = HexGrid.hexToWorld(0, this.height);
+    return { wrapQ, wrapR };
   }
 
   /** Total number of tiles */

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { HexGrid, HEX_WIDTH, HEX_HEIGHT } from './HexGrid';
+import { HexGrid, HEX_SIZE, HEX_WIDTH, HEX_HEIGHT } from './HexGrid';
 import { TerrainType } from './TerrainType';
 
 describe('HexGrid', () => {
@@ -26,18 +26,14 @@ describe('HexGrid', () => {
 
   it('should wrap coordinates for world wrapping', () => {
     const grid = new HexGrid(10, 8);
-    // Positive overflow
     expect(grid.wrap(12, 3)).toEqual({ q: 2, r: 3 });
-    // Negative overflow
     expect(grid.wrap(-1, -1)).toEqual({ q: 9, r: 7 });
-    // No overflow
     expect(grid.wrap(5, 5)).toEqual({ q: 5, r: 5 });
   });
 
   it('should get tiles with world wrapping', () => {
     const grid = new HexGrid(10, 10);
     grid.setTile(0, 0, TerrainType.Water);
-    // Accessing (10, 10) should wrap to (0, 0)
     const tile = grid.getTile(10, 10);
     expect(tile).toBeDefined();
     expect(tile!.terrain).toBe(TerrainType.Water);
@@ -45,7 +41,6 @@ describe('HexGrid', () => {
 
   it('should return 6 neighbors', () => {
     const grid = new HexGrid(10, 10);
-    // Fill all tiles
     for (let q = 0; q < 10; q++) {
       for (let r = 0; r < 10; r++) {
         grid.setTile(q, r, TerrainType.Grassland);
@@ -62,6 +57,17 @@ describe('HexGrid', () => {
     grid.setTile(2, 2, TerrainType.Mountain);
     expect(grid.getAllTiles().length).toBe(3);
   });
+
+  it('should compute wrap vectors', () => {
+    const grid = new HexGrid(10, 8);
+    const { wrapQ, wrapR } = grid.getWrapVectors();
+    // wrapQ should be purely horizontal (q-direction offset)
+    expect(wrapQ.x).toBeCloseTo(Math.sqrt(3) * 10);
+    expect(wrapQ.z).toBeCloseTo(0);
+    // wrapR has both x and z components (r-direction is diagonal)
+    expect(wrapR.x).toBeCloseTo(Math.sqrt(3) / 2 * 8);
+    expect(wrapR.z).toBeCloseTo(1.5 * 8);
+  });
 });
 
 describe('HexGrid coordinate conversion', () => {
@@ -77,6 +83,8 @@ describe('HexGrid coordinate conversion', () => {
       { q: 3, r: 5 },
       { q: 7, r: 2 },
       { q: 1, r: 9 },
+      { q: 15, r: 0 },
+      { q: 0, r: 12 },
     ];
     for (const coord of testCoords) {
       const world = HexGrid.hexToWorld(coord.q, coord.r);
@@ -86,13 +94,30 @@ describe('HexGrid coordinate conversion', () => {
     }
   });
 
-  it('should have correct hex dimensions', () => {
-    expect(HEX_WIDTH).toBeCloseTo(Math.sqrt(3));
-    expect(HEX_HEIGHT).toBe(2);
+  it('should have correct hex dimensions for pointy-top', () => {
+    expect(HEX_WIDTH).toBeCloseTo(Math.sqrt(3) * HEX_SIZE);
+    expect(HEX_HEIGHT).toBe(2 * HEX_SIZE);
+  });
+
+  it('neighbor at (1,0) should be sqrt(3) units to the right', () => {
+    const origin = HexGrid.hexToWorld(0, 0);
+    const neighbor = HexGrid.hexToWorld(1, 0);
+    const dx = neighbor.x - origin.x;
+    const dz = neighbor.z - origin.z;
+    expect(dx).toBeCloseTo(Math.sqrt(3));
+    expect(dz).toBeCloseTo(0);
+  });
+
+  it('neighbor at (0,1) should be at correct diagonal offset', () => {
+    const origin = HexGrid.hexToWorld(0, 0);
+    const neighbor = HexGrid.hexToWorld(0, 1);
+    const dx = neighbor.x - origin.x;
+    const dz = neighbor.z - origin.z;
+    expect(dx).toBeCloseTo(Math.sqrt(3) / 2);
+    expect(dz).toBeCloseTo(1.5);
   });
 
   it('should round fractional hex coordinates correctly', () => {
-    // Point very close to (2, 3)
     const result = HexGrid.hexRound(2.1, 2.9);
     expect(result).toEqual({ q: 2, r: 3 });
   });
