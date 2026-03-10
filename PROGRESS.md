@@ -1,6 +1,6 @@
 # Project Progress
 
-## Current Phase: Phase 2 COMPLETE — Ready for Phase 3
+## Current Phase: Phase 3 COMPLETE — Ready for Phase 4
 
 ## Task Board
 
@@ -19,10 +19,22 @@
 - [DONE] 2.6 Camera controls — pan/zoom for desktop + touch — 2026-03-10
 - [DONE] 2.7 Blender GLTF asset pipeline — all terrain models created in Blender, loaded via GLTFLoader — 2026-03-10
 
-### Phase 3–8: Not yet broken into tasks
+### Phase 3: Buildings & Placement [COMPLETE]
+- [DONE] 3.1 Building type data model — all 24 types with costs, inputs, outputs, workers, terrain rules — 2026-03-10
+- [DONE] 3.2 Building instance state — placed buildings with position, construction progress, inventory, workers — 2026-03-10
+- [DONE] 3.3 Building 3D models — Core (Castle, Woodcutter, Forester, Quarry, Fisherman, Guard Hut) — 2026-03-10
+- [DONE] 3.4 Building 3D models — Tier 2 (Sawmill, Farm, Geologist, Mine, Watchtower) — 2026-03-10
+- [DONE] 3.5 Building 3D models — Tier 3 (Windmill, Bakery, Pig Farm, Slaughterhouse, Smelter, Toolmaker, Goldsmith, Blacksmith, Barracks) — 2026-03-10
+- [DONE] 3.6 Building 3D models — Logistics (Warehouse) — 2026-03-10
+- [DONE] 3.7 BuildingRenderer — render placed buildings on the hex map — 2026-03-10
+- [DONE] 3.8 Building placement system — UI for selecting, previewing, validating, and placing buildings — 2026-03-10
+
+### Phase 4–8: Not yet broken into tasks
+> Note: Construction process (builder + resources → building over time) moved to Phase 5 — depends on serfs (Phase 4) and logistics (Phase 5).
 > Tasks will be detailed when the phase becomes active. See `CLAUDE.md` for phase overview.
 
 ## Completed
+- **2026-03-10**: Phase 3 tasks 3.1–3.8 complete. ResourceType (17 types), BuildingType (24 types with costs/production/terrain rules), Building instance state, GameState with placement validation, 21 Blender GLTF building models, BuildingRenderer with world wrapping, PlacementController with ghost preview + hex highlight + terrain validation, Material 3 build panel UI with tier-organized building list. Castle auto-placed at map center on start. 88 tests passing, 0 errors.
 - **2026-03-10**: Phase 2 atmosphere polish. Animated water shader (vertex wave displacement + color cycling + foam). Exponential fog for atmospheric depth. Hemisphere light (sky blue + ground green) + warm directional sunlight. 52 FPS, 27 tests passing.
 - **2026-03-10**: Phase 2 visual polish. Added elevation-based Y offsets (water depressed, mountains raised). Scaled up small decorations (cacti, rocks, bushes) for visibility. Tested shadows but dropped them (halved FPS with minimal visual gain — deferred to Phase 8). 64 FPS, 27 tests passing.
 - **2026-03-10**: Fixed broken 3D models. Rebuilt cactus with L-shaped arms at final vertex positions (rotation_euler broke during GLTF export). Created integrated mountain_peak_snow.glb replacing floating snow_cap. Added water_waves decoration. 11 models total, 54 FPS, 27 tests passing.

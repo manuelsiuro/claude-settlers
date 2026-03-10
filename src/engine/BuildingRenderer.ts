@@ -1,0 +1,153 @@
+import * as THREE from 'three';
+import { HexGrid } from '../game/HexGrid';
+import type { Building } from '../game/Building';
+import { BuildingType } from '../game/BuildingType';
+import { assetLoader } from './AssetLoader';
+import { BUILDING_MODEL_MAP } from './BuildingModels';
+import { MapRenderer } from './MapRenderer';
+
+/** Scale factors for building models to fit hex tiles nicely */
+const BUILDING_SCALE: Partial<Record<string, number>> = {
+  [BuildingType.Castle]: 1.2,
+  [BuildingType.Barracks]: 0.9,
+  [BuildingType.Warehouse]: 0.9,
+};
+
+const DEFAULT_BUILDING_SCALE = 1.0;
+
+/**
+ * Renders placed buildings on the hex map.
+ * Manages 3D building meshes and keeps them in sync with game state.
+ */
+export class BuildingRenderer {
+  private buildingGroup: THREE.Group;
+  private wrapGroups: THREE.Group[] = [];
+  private buildingMeshes: Map<string, THREE.Group> = new Map();
+
+  constructor() {
+    this.buildingGroup = new THREE.Group();
+    this.buildingGroup.name = 'buildings';
+  }
+
+  /** Add to scene and set up world wrapping */
+  addToScene(scene: THREE.Scene, grid: HexGrid): void {
+    scene.add(this.buildingGroup);
+
+    // World wrapping: 8 ghost copies matching MapRenderer
+    const { wrapQ, wrapR } = grid.getWrapVectors();
+    const multipliers = [
+      { mq: -1, mr: 0 }, { mq: 1, mr: 0 },
+      { mq: 0, mr: -1 }, { mq: 0, mr: 1 },
+      { mq: -1, mr: -1 }, { mq: 1, mr: -1 },
+      { mq: -1, mr: 1 }, { mq: 1, mr: 1 },
+    ];
+
+    for (const { mq, mr } of multipliers) {
+      const ghost = new THREE.Group();
+      ghost.position.set(
+        mq * wrapQ.x + mr * wrapR.x,
+        0,
+        mq * wrapQ.z + mr * wrapR.z,
+      );
+      ghost.name = `buildings_ghost_${mq}_${mr}`;
+      scene.add(ghost);
+      this.wrapGroups.push(ghost);
+    }
+  }
+
+  /** Add a building mesh to the scene */
+  addBuilding(building: Building, grid: HexGrid): void {
+    const modelName = BUILDING_MODEL_MAP[building.type];
+    if (!modelName) return;
+
+    const mesh = assetLoader.getBuildingModel(modelName);
+    const scale = BUILDING_SCALE[building.type] ?? DEFAULT_BUILDING_SCALE;
+    mesh.scale.setScalar(scale);
+
+    // Position on hex tile
+    const { x, z } = HexGrid.hexToWorld(building.coord.q, building.coord.r);
+    const tile = grid.getTile(building.coord.q, building.coord.r);
+    const y = tile ? MapRenderer.getTileY(tile) : 0;
+
+    mesh.position.set(x, y, z);
+    mesh.name = `building_${building.id}`;
+    mesh.userData.buildingId = building.id;
+
+    this.buildingGroup.add(mesh);
+    this.buildingMeshes.set(building.id, mesh);
+
+    // Add clone to each ghost group for world wrapping
+    for (const ghost of this.wrapGroups) {
+      const clone = mesh.clone();
+      clone.position.copy(mesh.position);
+      clone.userData.buildingId = building.id;
+      ghost.add(clone);
+    }
+  }
+
+  /** Remove a building mesh from the scene */
+  removeBuilding(buildingId: string): void {
+    const mesh = this.buildingMeshes.get(buildingId);
+    if (!mesh) return;
+
+    this.buildingGroup.remove(mesh);
+    this.disposeMesh(mesh);
+    this.buildingMeshes.delete(buildingId);
+
+    // Remove from ghost groups
+    for (const ghost of this.wrapGroups) {
+      const ghostChild = ghost.children.find(
+        (c) => c.userData.buildingId === buildingId,
+      );
+      if (ghostChild) {
+        ghost.remove(ghostChild);
+        this.disposeMesh(ghostChild as THREE.Group);
+      }
+    }
+  }
+
+  /** Get the 3D mesh for a building (for selection highlighting etc.) */
+  getMesh(buildingId: string): THREE.Group | undefined {
+    return this.buildingMeshes.get(buildingId);
+  }
+
+  private disposeMesh(group: THREE.Group): void {
+    group.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        child.geometry?.dispose();
+        if (child.material instanceof THREE.Material) {
+          child.material.dispose();
+        }
+      }
+    });
+  }
+
+  /** Clean up everything */
+  dispose(): void {
+    for (const mesh of this.buildingMeshes.values()) {
+      this.disposeMesh(mesh);
+    }
+    this.buildingMeshes.clear();
+
+    const disposeGroup = (group: THREE.Group) => {
+      group.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          child.geometry?.dispose();
+          if (child.material instanceof THREE.Material) {
+            child.material.dispose();
+          }
+        }
+      });
+      while (group.children.length > 0) {
+        group.remove(group.children[0]);
+      }
+      group.removeFromParent();
+    };
+
+    disposeGroup(this.buildingGroup);
+    for (const ghost of this.wrapGroups) {
+      disposeGroup(ghost);
+    }
+    this.wrapGroups = [];
+  }
+}

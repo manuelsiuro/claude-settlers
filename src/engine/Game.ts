@@ -1,7 +1,11 @@
 import * as THREE from 'three';
 import { HexGrid } from '../game/HexGrid';
 import { generateMap } from '../game/MapGenerator';
+import { BuildingType } from '../game/BuildingType';
+import { GameState } from '../game/GameState';
 import { MapRenderer } from './MapRenderer';
+import { BuildingRenderer } from './BuildingRenderer';
+import { PlacementController } from './PlacementController';
 import { CameraController } from './CameraController';
 import { assetLoader } from './AssetLoader';
 import { updateWaterTime } from './WaterShader';
@@ -13,8 +17,11 @@ export class Game {
   private container: HTMLElement;
   private animationId: number | null = null;
   private mapRenderer: MapRenderer;
+  private buildingRenderer: BuildingRenderer;
   private cameraController: CameraController | null = null;
+  private placementController: PlacementController | null = null;
   private grid: HexGrid;
+  private gameState: GameState;
   private frustum = 10;
   private directionalLight: THREE.DirectionalLight;
 
@@ -55,9 +62,11 @@ export class Game {
     this.directionalLight.position.set(10, 20, 10);
     this.scene.add(this.directionalLight);
 
-    // Grid and renderer (map built after assets load)
+    // Grid, game state, and renderers (map built after assets load)
     this.grid = generateMap({ width: 32, height: 32, seed: 42 });
+    this.gameState = new GameState(this.grid);
     this.mapRenderer = new MapRenderer();
+    this.buildingRenderer = new BuildingRenderer();
 
     // Handle resize
     this.onResize = this.onResize.bind(this);
@@ -87,10 +96,19 @@ export class Game {
 
   async start(): Promise<void> {
     // Load all GLTF assets before building the map
-    await assetLoader.loadTerrainModels();
+    await Promise.all([
+      assetLoader.loadTerrainModels(),
+      assetLoader.loadBuildingModels(),
+    ]);
 
-    // Now build the map with loaded models
+    // Build terrain
     this.mapRenderer.render(this.grid, this.scene);
+
+    // Set up building renderer with world wrapping
+    this.buildingRenderer.addToScene(this.scene, this.grid);
+
+    // Place starting Castle at map center on a grassland tile
+    this.placeStartingCastle();
 
     // Position camera to look at map center
     const center = this.mapRenderer.getMapCenter(this.grid);
@@ -100,6 +118,9 @@ export class Game {
 
     // Camera controls
     this.cameraController = new CameraController(this);
+
+    // Placement controller
+    this.placementController = new PlacementController(this);
 
     const clock = new THREE.Clock();
     const animate = (): void => {
@@ -111,12 +132,41 @@ export class Game {
     animate();
   }
 
+  /** Find a grassland tile near map center and place the Castle */
+  private placeStartingCastle(): void {
+    const centerQ = Math.floor(this.grid.width / 2);
+    const centerR = Math.floor(this.grid.height / 2);
+
+    // Spiral outward from center to find first grassland tile
+    const maxRadius = 5;
+    for (let radius = 0; radius <= maxRadius; radius++) {
+      for (let dq = -radius; dq <= radius; dq++) {
+        for (let dr = -radius; dr <= radius; dr++) {
+          if (Math.abs(dq) + Math.abs(dr) + Math.abs(-dq - dr) > 2 * radius) continue;
+          const q = centerQ + dq;
+          const r = centerR + dr;
+          const result = this.gameState.placeBuilding(
+            BuildingType.Castle,
+            { q, r },
+            1,
+          );
+          if (result.ok) {
+            this.buildingRenderer.addBuilding(result.building, this.grid);
+            return;
+          }
+        }
+      }
+    }
+  }
+
   dispose(): void {
     if (this.animationId !== null) {
       cancelAnimationFrame(this.animationId);
     }
     window.removeEventListener('resize', this.onResize);
+    this.placementController?.dispose();
     this.cameraController?.dispose();
+    this.buildingRenderer.dispose();
     this.mapRenderer.dispose();
     this.renderer.dispose();
   }
@@ -139,6 +189,18 @@ export class Game {
 
   getMapRenderer(): MapRenderer {
     return this.mapRenderer;
+  }
+
+  getBuildingRenderer(): BuildingRenderer {
+    return this.buildingRenderer;
+  }
+
+  getGameState(): GameState {
+    return this.gameState;
+  }
+
+  getPlacementController(): PlacementController | null {
+    return this.placementController;
   }
 
   /** Update camera frustum (for zoom) */

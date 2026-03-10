@@ -51,7 +51,7 @@ export class MapRenderer {
   }
 
   /** Compute Y offset for a tile based on terrain type and elevation */
-  private static getTileY(tile: HexTile): number {
+  static getTileY(tile: HexTile): number {
     if (tile.terrain === TerrainType.Water) return -0.1;
     // Elevation naturally maps: desert~low, grassland~mid, forest~mid-high, mountain~high
     return tile.elevation * 0.2;

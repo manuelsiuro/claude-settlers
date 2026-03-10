@@ -110,7 +110,6 @@ Each phase must be fully working and tested before moving to the next. Within ea
 - Building data model (costs, inputs, outputs, worker types) from `docs/game.md`
 - Building 3D models per `docs/buildings.md`
 - Placement system with terrain validation
-- Construction process (builder + resources → building over time)
 
 #### Phase 4: Units & AI
 - Base serf model + profession variants per `docs/units.md`
@@ -123,6 +122,7 @@ Each phase must be fully working and tested before moving to the next. Within ea
 - Resource 3D models
 - Flag placement and road network
 - Transporter logic (pick up → carry → deliver between flags)
+- Construction process (builder + resources → building over time)
 - Production chains: building inputs/outputs, processing timers
 - Storage system (building inventory, warehouses)
 
