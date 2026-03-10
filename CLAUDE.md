@@ -4,24 +4,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Feudal Realm Manager** — a browser-based (including mobile) real-time strategy and city-building game inspired by The Settlers series. Built with **Three.js** for 3D rendering and **Material 3** for UI components and icons. The project is in its early/design phase with no code yet — only game design documents exist.
+**Feudal Realm Manager** — a browser-based (including mobile) real-time strategy and city-building game inspired by The Settlers series. Built with **Three.js** for 3D rendering and **Material 3** for UI components and icons.
 
 ## Game Design Documents
 
 All design specs live in `docs/`:
 
 - `docs/game.md` — Master game design document: core gameplay loop, mechanics (resource management, building system, transportation/logistics, territory expansion, combat, economic management), progression tree, UI layout, win conditions
-- `docs/buildings.md` — Visual designs for all 23 building types using simple 3D geometric shapes (cubes, cuboids, pyramids, cylinders) with specific colors
-- `docs/resources.md` — Visual designs for all 17 resource types (raw materials, processed goods, animals) using simple 3D shapes
+- `docs/buildings.md` — Visual designs for all 23 building types with specific colors and style references
+- `docs/resources.md` — Visual designs for all 17 resource types (raw materials, processed goods, animals)
 - `docs/units.md` — Visual designs for all serf professions (18 types) and knights, built on a shared base model with profession-specific additions
-- `docs/terrains.md` — Visual designs for 5 terrain types (grassland, forest, mountain, water, desert) with specific Three.js geometry types and hex colors
+- `docs/terrains.md` — Visual designs for 5 terrain types (grassland, forest, mountain, water, desert) with hex colors and decoration styles
 
 **Always read the relevant design doc before implementing a feature.** The docs specify exact shapes, colors, and behaviors.
 
 ## Key Design Constraints
 
 - **Browser + mobile**: must be playable on both desktop browsers and mobile phones
-- **Simple 3D shapes only**: all visuals use basic Three.js geometries (BoxGeometry, SphereGeometry, CylinderGeometry, ConeGeometry, PlaneGeometry) — no complex models or textures
+- **Blender 3D models**: all visual assets (buildings, units, resources, terrain decorations) are created in Blender via the Blender MCP, exported as GLTF/GLB, and loaded into Three.js. Use a stylized low-poly aesthetic with the colors and styles described in the design docs.
+- **Asset pipeline**: Blender → export GLTF/GLB to `public/models/` → load in Three.js via GLTFLoader. Keep models lightweight for mobile performance.
 - **Isometric perspective**: main game view is isometric, scrollable, and zoomable
 - **Material 3**: all UI components and icons must use the Material 3 design library
 - **World wrapping**: maps wrap around — units/expansion going off one edge appear on the opposite side
@@ -36,16 +37,28 @@ All design specs live in `docs/`:
 - **Territory system**: military buildings (Guard Hut, Watchtower, Barracks) project areas of influence that define borders.
 - **Knight recruitment**: a serf delivering a Sword+Shield set to a military building with an empty slot becomes a Knight. Knights gain ranks (1-5) through combat; Gold Bars provide a global combat bonus.
 
-### Blender MCP Integration
+### Blender MCP Integration — Primary 3D Asset Pipeline
 
-A Blender MCP server is configured (`.mcp.json`) providing direct access to Blender for creating and manipulating 3D models. Available capabilities:
+A Blender MCP server is configured (`.mcp.json`) providing direct access to Blender for creating **all** 3D models used in the game. This is the primary asset creation tool.
 
-- **Execute Blender code** (`mcp__blender__execute_blender_code`): run Python scripts in Blender to create/modify 3D models programmatically
+**Workflow for every 3D asset:**
+1. Read the relevant design doc (`docs/buildings.md`, `docs/units.md`, `docs/resources.md`, `docs/terrains.md`) for colors, style, and proportions
+2. Use `mcp__blender__execute_blender_code` to create the model in Blender via Python scripts
+3. Use `mcp__blender__get_viewport_screenshot` to visually verify the model
+4. Export as GLTF/GLB to `public/models/<category>/<name>.glb` (e.g., `public/models/terrain/tree_deciduous.glb`)
+5. Load in Three.js using GLTFLoader
+
+**Available capabilities:**
+- **Execute Blender code** (`mcp__blender__execute_blender_code`): run Python scripts to create/modify 3D models programmatically
 - **Scene inspection**: get scene info, object info, and viewport screenshots
 - **Asset sourcing**: search/download assets from Polyhaven and Sketchfab
-- **AI model generation**: generate 3D models via Hyper3D (text or image input) and Hunyuan3D, then import them into the scene
+- **AI model generation**: generate 3D models via Hyper3D (text or image input) and Hunyuan3D
 
-Use Blender MCP to prototype and create 3D assets for the game (buildings, units, resources, terrain elements).
+**Model guidelines:**
+- Use a stylized low-poly aesthetic — keep vertex counts low for mobile performance
+- Bake colors into vertex colors or use simple solid-color materials (no heavy textures)
+- Organize models: `public/models/terrain/`, `public/models/buildings/`, `public/models/units/`, `public/models/resources/`
+- Each model should be self-contained with materials embedded in the GLB file
 
 ### Chrome DevTools MCP Integration
 
