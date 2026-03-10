@@ -122,6 +122,22 @@ Each phase must be fully working and tested before moving to the next. Within ea
 - Save/load system
 - Win/defeat conditions
 
+### Verification & Testing Strategy
+
+Claude Code cannot see the browser. Every task must be verified through a combination of these methods:
+
+**Automated (Claude does these):**
+- `npm run build` — TypeScript compilation, no errors
+- `npm run lint` — no lint violations
+- `npm run test` — Vitest unit tests for all game logic (resource chains, combat math, pathfinding, territory, production timers, etc.)
+- `npm run dev` + `WebFetch http://localhost:5173` — dev server responds, HTML loads without errors
+
+**Visual verification (user does this):**
+- After any task that changes rendering (new 3D models, camera changes, UI components, terrain), ask the user to check the browser and share a screenshot if something looks wrong
+- Keep visual changes small and incremental so issues are easy to spot
+
+**Rule: never skip `build` + `test` before marking a task as done.**
+
 ### Task Granularity Rules
 
 - Each task in `PROGRESS.md` should be completable in a single session
