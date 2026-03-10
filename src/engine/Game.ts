@@ -15,6 +15,7 @@ export class Game {
   private cameraController: CameraController | null = null;
   private grid: HexGrid;
   private frustum = 10;
+  private directionalLight: THREE.DirectionalLight;
 
   constructor(container: HTMLElement) {
     this.container = container;
@@ -43,9 +44,9 @@ export class Game {
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     this.scene.add(ambientLight);
 
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(10, 20, 10);
-    this.scene.add(directionalLight);
+    this.directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    this.directionalLight.position.set(10, 20, 10);
+    this.scene.add(this.directionalLight);
 
     // Grid and renderer (map built after assets load)
     this.grid = generateMap({ width: 32, height: 32, seed: 42 });

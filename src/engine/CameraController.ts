@@ -214,6 +214,11 @@ export class CameraController {
     this.keys.delete(e.key);
   };
 
+  /** Get the camera look-at target position */
+  getTarget(): THREE.Vector3 {
+    return this.target;
+  }
+
   dispose(): void {
     this.canvas.removeEventListener('mousedown', this.onMouseDown);
     window.removeEventListener('mousemove', this.onMouseMove);

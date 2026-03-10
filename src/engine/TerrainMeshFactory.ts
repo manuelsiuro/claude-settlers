@@ -39,6 +39,7 @@ export function createHexTileMesh(tile: HexTile): THREE.Group {
   return group;
 }
 
+
 /** Create decoration group for a tile */
 export function createDecorations(tile: HexTile): THREE.Group | null {
   switch (tile.terrain) {
@@ -78,6 +79,7 @@ function createForestDecorations(tile: HexTile): THREE.Group {
     const dist = rng() * HEX_SIZE * 0.55;
     tree.position.x = Math.cos(angle) * dist;
     tree.position.z = Math.sin(angle) * dist;
+
 
     group.add(tree);
   }
@@ -134,7 +136,7 @@ function createDesertDecorations(tile: HexTile): THREE.Group {
     const dist = rng() * 0.4;
     cactus.position.set(Math.cos(angle) * dist, 0, Math.sin(angle) * dist);
     cactus.rotation.y = rng() * Math.PI * 2;
-    const cScale = 0.8 + rng() * 0.4;
+    const cScale = 1.5 + rng() * 0.7;
     cactus.scale.setScalar(cScale);
     group.add(cactus);
   }
@@ -155,14 +157,14 @@ function createGrasslandDecorations(tile: HexTile): THREE.Group | null {
     const rock = assetLoader.getModel('rock_small');
     rock.position.set((rng() - 0.5) * 0.5, 0, (rng() - 0.5) * 0.5);
     rock.rotation.y = rng() * Math.PI;
-    const rScale = 0.7 + rng() * 0.6;
+    const rScale = 1.2 + rng() * 0.8;
     rock.scale.setScalar(rScale);
     group.add(rock);
   } else {
     // Small bush
     const bush = assetLoader.getModel('bush');
     bush.position.set((rng() - 0.5) * 0.5, 0, (rng() - 0.5) * 0.5);
-    const bScale = 0.8 + rng() * 0.4;
+    const bScale = 1.4 + rng() * 0.6;
     bush.scale.setScalar(bScale);
     group.add(bush);
   }

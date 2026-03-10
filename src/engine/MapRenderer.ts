@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import { HexGrid } from '../game/HexGrid';
+import type { HexTile } from '../game/HexGrid';
+import { TerrainType } from '../game/TerrainType';
 import { createHexTileMesh, createDecorations } from './TerrainMeshFactory';
 
 /**
@@ -48,22 +50,30 @@ export class MapRenderer {
     }
   }
 
+  /** Compute Y offset for a tile based on terrain type and elevation */
+  private static getTileY(tile: HexTile): number {
+    if (tile.terrain === TerrainType.Water) return -0.1;
+    // Elevation naturally maps: desert~low, grassland~mid, forest~mid-high, mountain~high
+    return tile.elevation * 0.2;
+  }
+
   private buildTileGroup(grid: HexGrid, group: THREE.Group): void {
     const tiles = grid.getAllTiles();
 
     for (const tile of tiles) {
       const { x, z } = HexGrid.hexToWorld(tile.coord.q, tile.coord.r);
+      const y = MapRenderer.getTileY(tile);
 
       // Ground hex tile
       const hexMesh = createHexTileMesh(tile);
-      hexMesh.position.set(x, 0, z);
+      hexMesh.position.set(x, y, z);
       hexMesh.name = `tile_${tile.coord.q}_${tile.coord.r}`;
       group.add(hexMesh);
 
       // Decorations
       const decorations = createDecorations(tile);
       if (decorations) {
-        decorations.position.set(x, 0, z);
+        decorations.position.set(x, y, z);
         group.add(decorations);
       }
     }
