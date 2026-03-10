@@ -47,6 +47,21 @@ A Blender MCP server is configured (`.mcp.json`) providing direct access to Blen
 
 Use Blender MCP to prototype and create 3D assets for the game (buildings, units, resources, terrain elements).
 
+### Chrome DevTools MCP Integration
+
+A Chrome DevTools MCP server is configured (`.mcp.json`) providing direct browser access for testing and visual verification. Key capabilities:
+
+- **`take_screenshot`**: capture the rendered game — verify 3D scene, UI, and layout visually after every change
+- **`take_snapshot`**: accessibility tree snapshot — verify UI structure and element presence
+- **`navigate_page` / `new_page`**: open the dev server URL to test the running app
+- **`evaluate_script`**: execute JS in the page — assert game state (scene objects, renderer, FPS)
+- **`list_console_messages`**: catch runtime errors, Three.js warnings, failed resource loads
+- **`emulate`**: test mobile viewports, dark mode, CPU throttling, network conditions
+- **`performance_start_trace` / `lighthouse_audit`**: measure Core Web Vitals and run accessibility/SEO audits
+- **`take_memory_snapshot`**: detect memory leaks in the render loop
+
+This replaces manual browser checking — Claude can now fully self-verify both logic and visuals.
+
 ## Development Workflow
 
 ### Progress Tracking
@@ -124,19 +139,28 @@ Each phase must be fully working and tested before moving to the next. Within ea
 
 ### Verification & Testing Strategy
 
-Claude Code cannot see the browser. Every task must be verified through a combination of these methods:
+Every task must be verified through a combination of these methods:
 
-**Automated (Claude does these):**
+**Build & logic (run after every task):**
 - `npm run build` — TypeScript compilation, no errors
 - `npm run lint` — no lint violations
 - `npm run test` — Vitest unit tests for all game logic (resource chains, combat math, pathfinding, territory, production timers, etc.)
-- `npm run dev` + `WebFetch http://localhost:5173` — dev server responds, HTML loads without errors
 
-**Visual verification (user does this):**
-- After any task that changes rendering (new 3D models, camera changes, UI components, terrain), ask the user to check the browser and share a screenshot if something looks wrong
-- Keep visual changes small and incremental so issues are easy to spot
+**Visual verification via Chrome MCP (run after any rendering/UI change):**
+1. Start dev server: `npm run dev` (background)
+2. `navigate_page` to `http://localhost:5173`
+3. `take_screenshot` — verify the 3D scene renders correctly
+4. `take_snapshot` — check the accessibility tree for UI elements
+5. `list_console_messages` — ensure no runtime errors or warnings
+6. `evaluate_script` — run JS assertions in the page (e.g., check scene.children.length, renderer state)
+7. `emulate` — test mobile viewport sizes and touch responsiveness
 
-**Rule: never skip `build` + `test` before marking a task as done.**
+**Performance checks (run at phase milestones):**
+- `performance_start_trace` / `performance_stop_trace` — measure Core Web Vitals (LCP, INP, CLS)
+- `lighthouse_audit` — accessibility, SEO, best practices
+- `take_memory_snapshot` — check for memory leaks in the render loop
+
+**Rule: never skip `build` + `test` + `take_screenshot` before marking a visual task as done.**
 
 ### Task Granularity Rules
 
