@@ -11,32 +11,31 @@ import { assetLoader } from './AssetLoader';
  * Models are cloned from the AssetLoader cache per tile.
  */
 
-/** Water material (shared, transparent) */
-const waterMaterial = new THREE.MeshLambertMaterial({
-  color: 0x40e0d0,
-  transparent: true,
-  opacity: 0.8,
-});
-
 /** Create a hex ground tile mesh from the loaded GLTF model */
 export function createHexTileMesh(tile: HexTile): THREE.Group {
   const color = getTerrainColor(tile.terrain, tile.coord.q, tile.coord.r);
   const group = assetLoader.getModel('hex_tile');
+  const isWater = tile.terrain === TerrainType.Water;
 
-  // Apply terrain color to all meshes in the model
+  // Single-material hex tile — set color on all faces
   group.traverse((child) => {
     if (child instanceof THREE.Mesh) {
-      if (tile.terrain === TerrainType.Water) {
-        child.material = waterMaterial.clone();
-        child.material.side = THREE.DoubleSide;
+      if (isWater) {
+        child.material = new THREE.MeshLambertMaterial({
+          color: 0x40e0d0,
+          transparent: true,
+          opacity: 0.8,
+          side: THREE.DoubleSide,
+        });
       } else {
-        child.material = new THREE.MeshLambertMaterial({ color, side: THREE.DoubleSide });
+        child.material = new THREE.MeshLambertMaterial({
+          color,
+          side: THREE.DoubleSide,
+        });
       }
     }
   });
 
-  // GLTF export converts Blender Z-up → Y-up, so hex arrives in XZ plane already.
-  // No rotation needed.
   return group;
 }
 
@@ -51,6 +50,8 @@ export function createDecorations(tile: HexTile): THREE.Group | null {
       return createDesertDecorations(tile);
     case TerrainType.Grassland:
       return createGrasslandDecorations(tile);
+    case TerrainType.Water:
+      return createWaterDecorations(tile);
     default:
       return null;
   }
@@ -92,18 +93,7 @@ function createMountainDecorations(tile: HexTile): THREE.Group {
   const peak = assetLoader.getModel('mountain_peak');
   const peakScale = 0.7 + tile.elevation * 0.6;
   peak.scale.set(peakScale, peakScale, peakScale);
-  // Slight random tilt for variety
   peak.rotation.y = rng() * Math.PI * 2;
-
-  // Tint the peak (grey variation)
-  const greyVal = 0.4 + rng() * 0.3;
-  peak.traverse((child) => {
-    if (child instanceof THREE.Mesh) {
-      child.material = new THREE.MeshLambertMaterial({
-        color: new THREE.Color(greyVal, greyVal, greyVal),
-      });
-    }
-  });
   group.add(peak);
 
   // Optional snow cap
@@ -135,7 +125,7 @@ function createDesertDecorations(tile: HexTile): THREE.Group {
   const group = new THREE.Group();
   const rng = createRng(tile.coord.q * 3000 + tile.coord.r);
 
-  // Dune
+  // Dune (60% chance)
   if (rng() > 0.4) {
     const dune = assetLoader.getModel('dune');
     const dScale = 0.8 + rng() * 0.5;
@@ -145,7 +135,7 @@ function createDesertDecorations(tile: HexTile): THREE.Group {
     group.add(dune);
   }
 
-  // Occasional cactus
+  // Occasional cactus (35% chance)
   if (rng() > 0.65) {
     const cactus = assetLoader.getModel('cactus');
     const angle = rng() * Math.PI * 2;
@@ -186,4 +176,35 @@ function createGrasslandDecorations(tile: HexTile): THREE.Group | null {
   }
 
   return group;
+}
+
+function createWaterDecorations(tile: HexTile): THREE.Group | null {
+  const rng = createRng(tile.coord.q * 5000 + tile.coord.r);
+
+  // 40% of water tiles get wave decorations
+  if (rng() > 0.4) return null;
+
+  const waves = assetLoader.getModel('water_waves');
+  waves.rotation.y = rng() * Math.PI * 2;
+  const wScale = 0.7 + rng() * 0.4;
+  waves.scale.setScalar(wScale);
+  waves.position.y = 0.03; // slightly above tile surface
+
+  // Make wave materials transparent
+  waves.traverse((child) => {
+    if (child instanceof THREE.Mesh) {
+      const mat = child.material as THREE.MeshStandardMaterial;
+      if (mat.color) {
+        const isLight = mat.color.r > 0.7; // foam spots
+        child.material = new THREE.MeshLambertMaterial({
+          color: isLight ? 0xd8f0ff : 0x60c8d8,
+          transparent: true,
+          opacity: isLight ? 0.5 : 0.35,
+          side: THREE.DoubleSide,
+        });
+      }
+    }
+  });
+
+  return waves;
 }

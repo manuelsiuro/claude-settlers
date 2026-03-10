@@ -13,6 +13,7 @@ const TERRAIN_MODELS = [
   'dune',
   'bush',
   'rock_small',
+  'water_waves',
 ] as const;
 
 export type TerrainModelName = (typeof TERRAIN_MODELS)[number];
