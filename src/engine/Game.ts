@@ -14,6 +14,9 @@ import { TerritoryManager } from '../game/TerritoryManager';
 import { KnightManager } from '../game/KnightManager';
 import { CombatManager } from '../game/CombatManager';
 import { AttackManager } from '../game/AttackManager';
+import { VictoryManager } from '../game/VictoryManager';
+import type { GameConfig } from '../game/GameConfig';
+import { DEFAULT_CONFIG, SCENARIO_TERRAIN_BALANCE } from '../game/GameConfig';
 import { RoadRenderer } from './RoadRenderer';
 import { TerritoryRenderer } from './TerritoryRenderer';
 import { MapRenderer } from './MapRenderer';
@@ -33,7 +36,9 @@ export type GameNotificationType =
   | 'under_attack'
   | 'building_captured'
   | 'building_destroyed'
-  | 'combat_result';
+  | 'combat_result'
+  | 'victory'
+  | 'defeat';
 
 export interface GameNotification {
   type: GameNotificationType;
@@ -59,6 +64,7 @@ export class Game {
   private knightManager: KnightManager;
   private combatManager: CombatManager;
   private attackManager: AttackManager;
+  private victoryManager: VictoryManager;
   private roadRenderer: RoadRenderer;
   private territoryRenderer: TerritoryRenderer;
   private cameraController: CameraController | null = null;
@@ -69,12 +75,14 @@ export class Game {
   private gameState: GameState;
   private frustum = 10;
   private directionalLight: THREE.DirectionalLight;
+  private config: GameConfig;
 
   /** Notification callback — subscribe to receive game event alerts */
   onNotification: ((notification: GameNotification) => void) | null = null;
 
-  constructor(container: HTMLElement) {
+  constructor(container: HTMLElement, config?: Partial<GameConfig>) {
     this.container = container;
+    this.config = { ...DEFAULT_CONFIG, ...config };
 
     // Renderer
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -111,7 +119,13 @@ export class Game {
     this.scene.add(this.directionalLight);
 
     // Grid, game state, and renderers (map built after assets load)
-    this.grid = generateMap({ width: 32, height: 32, seed: 42 });
+    const terrainBalance = SCENARIO_TERRAIN_BALANCE[this.config.scenario];
+    this.grid = generateMap({
+      width: this.config.mapSize,
+      height: this.config.mapSize,
+      seed: this.config.seed,
+      terrainBalance: terrainBalance ?? undefined,
+    });
     this.gameState = new GameState(this.grid);
     this.mapRenderer = new MapRenderer();
     this.buildingRenderer = new BuildingRenderer();
@@ -126,6 +140,26 @@ export class Game {
     this.knightManager = new KnightManager(this.gameState);
     this.combatManager = new CombatManager(this.gameState, this.knightManager);
     this.attackManager = new AttackManager(this.gameState, this.combatManager, this.territoryManager);
+    const playerIds = Array.from({ length: this.config.numPlayers }, (_, i) => i + 1);
+    this.victoryManager = new VictoryManager(this.gameState, this.territoryManager, playerIds);
+    this.victoryManager.onVictory = (result) => {
+      const conditionLabels = {
+        elimination: 'All enemies defeated',
+        domination: 'Territorial domination',
+        economic: 'Economic supremacy',
+      };
+      const label = conditionLabels[result.condition] ?? result.condition;
+      if (result.winnerId === 1) {
+        this.onNotification?.({ type: 'victory', message: `Victory! ${label}!` });
+      } else {
+        this.onNotification?.({ type: 'defeat', message: `Defeat! Player ${result.winnerId} achieved ${label}` });
+      }
+    };
+    this.victoryManager.onDefeat = (result) => {
+      if (result.playerId === 1) {
+        this.onNotification?.({ type: 'defeat', message: 'Your Castle has been destroyed! Defeat!' });
+      }
+    };
     this.constructionManager.onBuildingActivated = (building) => {
       this.territoryManager.markDirty();
       const def = BUILDING_DEFINITIONS[building.type];
@@ -221,14 +255,21 @@ export class Game {
     // Set up territory renderer with world wrapping
     this.territoryRenderer.addToScene(this.scene, this.grid);
 
-    // Place starting Castle at map center on a grassland tile
-    this.placeStartingCastle();
+    // Place starting Castles for all players
+    this.placeStartingCastles();
 
-    // Position camera to look at map center
-    const center = this.mapRenderer.getMapCenter(this.grid);
+    // Position camera to look at player 1's Castle (or map center as fallback)
+    const castle1 = this.gameState.findCastle(1);
+    let lookAt: THREE.Vector3;
+    if (castle1) {
+      const { x, z } = HexGrid.hexToWorld(castle1.coord.q, castle1.coord.r);
+      lookAt = new THREE.Vector3(x, 0, z);
+    } else {
+      lookAt = this.mapRenderer.getMapCenter(this.grid);
+    }
     const camOffset = new THREE.Vector3(20, 20, 20);
-    this.camera.position.copy(center).add(camOffset);
-    this.camera.lookAt(center);
+    this.camera.position.copy(lookAt).add(camOffset);
+    this.camera.lookAt(lookAt);
 
     // Camera controls
     this.cameraController = new CameraController(this);
@@ -257,6 +298,7 @@ export class Game {
       this.knightManager.update(deltaTime);
       this.attackManager.update();
       this.combatManager.cleanupStaleData();
+      this.victoryManager.update(deltaTime);
       this.roadRenderer.sync(this.roadNetwork);
       this.territoryRenderer.sync(this.territoryManager);
       const allUnits = this.gameState.getAllUnits();
@@ -267,23 +309,68 @@ export class Game {
     animate();
   }
 
-  /** Find a grassland tile near map center and place the Castle */
-  private placeStartingCastle(): void {
-    const centerQ = Math.floor(this.grid.width / 2);
-    const centerR = Math.floor(this.grid.height / 2);
+  /** Place starting Castles for all players, spread across the map */
+  private placeStartingCastles(): void {
+    const w = this.grid.width;
+    const h = this.grid.height;
+    const n = this.config.numPlayers;
 
-    // Spiral outward from center to find first grassland tile
-    const maxRadius = 5;
+    // Compute starting positions: spread players across map quadrants
+    const positions = this.getStartingPositions(w, h, n);
+
+    for (let i = 0; i < n; i++) {
+      const playerId = i + 1;
+      const { q: targetQ, r: targetR } = positions[i];
+      this.placeCastleNear(targetQ, targetR, playerId);
+    }
+  }
+
+  /** Get starting positions spread across the map for N players */
+  private getStartingPositions(
+    w: number,
+    h: number,
+    n: number,
+  ): { q: number; r: number }[] {
+    const margin = Math.max(3, Math.floor(w * 0.15));
+    switch (n) {
+      case 1:
+        return [{ q: Math.floor(w / 2), r: Math.floor(h / 2) }];
+      case 2:
+        return [
+          { q: margin, r: margin },
+          { q: w - margin - 1, r: h - margin - 1 },
+        ];
+      case 3:
+        return [
+          { q: margin, r: margin },
+          { q: w - margin - 1, r: margin },
+          { q: Math.floor(w / 2), r: h - margin - 1 },
+        ];
+      case 4:
+      default:
+        return [
+          { q: margin, r: margin },
+          { q: w - margin - 1, r: margin },
+          { q: margin, r: h - margin - 1 },
+          { q: w - margin - 1, r: h - margin - 1 },
+        ];
+    }
+  }
+
+  /** Spiral outward from target to place a Castle on grassland */
+  private placeCastleNear(targetQ: number, targetR: number, playerId: number): void {
+    const maxRadius = 8;
     for (let radius = 0; radius <= maxRadius; radius++) {
       for (let dq = -radius; dq <= radius; dq++) {
         for (let dr = -radius; dr <= radius; dr++) {
           if (Math.abs(dq) + Math.abs(dr) + Math.abs(-dq - dr) > 2 * radius) continue;
-          const q = centerQ + dq;
-          const r = centerR + dr;
+          const q = targetQ + dq;
+          const r = targetR + dr;
+          if (q < 0 || q >= this.grid.width || r < 0 || r >= this.grid.height) continue;
           const result = this.gameState.placeBuilding(
             BuildingType.Castle,
             { q, r },
-            1,
+            playerId,
           );
           if (result.ok) {
             initializeCastleResources(result.building);
@@ -320,6 +407,8 @@ export class Game {
     this.attackManager.onBuildingUnderAttack = null;
     this.attackManager.onBuildingCaptured = null;
     this.attackManager.onTerritoryChanged = null;
+    this.victoryManager.onVictory = null;
+    this.victoryManager.onDefeat = null;
     this.onNotification = null;
   }
 
@@ -377,6 +466,14 @@ export class Game {
 
   getAttackManager(): AttackManager {
     return this.attackManager;
+  }
+
+  getConfig(): GameConfig {
+    return this.config;
+  }
+
+  getVictoryManager(): VictoryManager {
+    return this.victoryManager;
   }
 
   getRoadRenderer(): RoadRenderer {

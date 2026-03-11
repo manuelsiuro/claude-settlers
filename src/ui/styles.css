@@ -1,9 +1,13 @@
-/* Z-index layers */
+/* Z-index layers
+   MDUI component z-indices: top-app-bar=2000, snackbar=2400
+   Our overlays must exceed these to render on top. */
 :root {
   --z-minimap: 10;
   --z-placement-bar: 15;
   --z-panels: 20;
   --z-fab: 25;
+  --z-game-over: 2500;
+  --z-setup: 2600;
 }
 
 * {
@@ -416,6 +420,214 @@ html, body {
   box-shadow: 0 2px 12px rgba(0,0,0,0.3);
 }
 
+/* ============================================================
+   Game Over Overlay
+   ============================================================ */
+.game-over-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: var(--z-game-over);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.5s ease;
+}
+
+.game-over-overlay.hidden {
+  display: none;
+}
+
+.game-over-card {
+  background: #f5f5f5;
+  border-radius: 24px;
+  padding: 32px 40px;
+  min-width: 320px;
+  max-width: 400px;
+  text-align: center;
+  box-shadow: 0 8px 48px rgba(0, 0, 0, 0.3);
+  animation: scaleIn 0.4s ease;
+}
+
+.game-over-title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.game-over-condition {
+  font-size: 1rem;
+  color: #555;
+  margin-bottom: 20px;
+}
+
+.game-over-stats {
+  margin-bottom: 24px;
+}
+
+.game-over-stat-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px solid #e0e0e0;
+  font-size: 0.875rem;
+}
+
+.game-over-stat-row:last-child {
+  border-bottom: none;
+}
+
+.game-over-stat-row span:first-child {
+  color: #666;
+}
+
+.game-over-stat-row span:last-child {
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.game-over-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+/* ============================================================
+   Game Setup Screen
+   ============================================================ */
+.setup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  z-index: var(--z-setup);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.3s ease;
+}
+
+.setup-overlay.hidden {
+  display: none;
+}
+
+.setup-card {
+  background: #f5f5f5;
+  border-radius: 24px;
+  padding: 32px 40px;
+  width: 420px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  box-shadow: 0 8px 48px rgba(0, 0, 0, 0.4);
+  animation: scaleIn 0.4s ease;
+}
+
+.setup-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+.setup-subtitle {
+  font-size: 0.875rem;
+  color: #666;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.setup-field {
+  margin-bottom: 16px;
+}
+
+.setup-field-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #555;
+  margin-bottom: 6px;
+}
+
+.setup-field select,
+.setup-field input {
+  width: 100%;
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 0.9375rem;
+  font-family: inherit;
+  color: #1a1a1a;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.setup-field select:focus,
+.setup-field input:focus {
+  border-color: var(--mdui-color-primary, #1a73e8);
+  box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+}
+
+.setup-seed-row {
+  display: flex;
+  gap: 8px;
+}
+
+.setup-seed-row input {
+  flex: 1;
+}
+
+.setup-seed-row button {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 1.25rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+
+.setup-seed-row button:hover {
+  background: #e8e8e8;
+}
+
+.setup-options-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.setup-start-btn {
+  display: block;
+  width: 100%;
+  margin-top: 24px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
 /* Mobile: full-width panels */
 @media (max-width: 480px) {
   .build-panel {
@@ -446,5 +658,29 @@ html, body {
     width: 120px;
     top: 48px;
     right: 4px;
+  }
+
+  .game-over-card {
+    min-width: auto;
+    max-width: calc(100vw - 32px);
+    padding: 24px 20px;
+    margin: 16px;
+  }
+
+  .game-over-title {
+    font-size: 1.5rem;
+  }
+
+  .setup-card {
+    padding: 24px 20px;
+    margin: 16px;
+  }
+
+  .setup-title {
+    font-size: 1.375rem;
+  }
+
+  .setup-options-row {
+    grid-template-columns: 1fr;
   }
 }

@@ -21,6 +21,9 @@ import '@mdui/icons/add.js';
 import { Game } from './engine/Game';
 import type { GameNotification } from './engine/Game';
 import { Minimap } from './engine/Minimap';
+import type { VictoryResult } from './game/VictoryManager';
+import { VictoryCondition } from './game/VictoryManager';
+import type { GameConfig } from './game/GameConfig';
 import { BuildingType, BUILDING_DEFINITIONS, getBuildingsByTier } from './game/BuildingType';
 import type { BuildingDefinition } from './game/BuildingType';
 import { BuildingState } from './game/Building';
@@ -107,6 +110,82 @@ app.innerHTML = `
   </div>
 
   <mdui-snackbar id="snackbar" placement="bottom"></mdui-snackbar>
+
+  <!-- Game Over Overlay -->
+  <div id="game-over-overlay" class="game-over-overlay hidden">
+    <div class="game-over-card">
+      <h2 id="game-over-title" class="game-over-title"></h2>
+      <p id="game-over-condition" class="game-over-condition"></p>
+      <div id="game-over-stats" class="game-over-stats"></div>
+      <div class="game-over-actions">
+        <mdui-button id="game-over-new-game-btn" variant="outlined">New Game</mdui-button>
+        <mdui-button id="game-over-continue-btn" variant="filled">Continue Watching</mdui-button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Setup Screen -->
+  <div id="setup-overlay" class="setup-overlay">
+    <div class="setup-card">
+      <h1 class="setup-title">Feudal Realm Manager</h1>
+      <p class="setup-subtitle">Configure your world and begin your conquest</p>
+
+      <div class="setup-field">
+        <label class="setup-field-label" for="setup-seed">Map Seed</label>
+        <div class="setup-seed-row">
+          <input type="number" id="setup-seed" value="42" min="1" max="999999">
+          <button id="setup-random-seed" type="button" title="Random seed">&#x1f3b2;</button>
+        </div>
+      </div>
+
+      <div class="setup-options-row">
+        <div class="setup-field">
+          <label class="setup-field-label" for="setup-map-size">Map Size</label>
+          <select id="setup-map-size">
+            <option value="24">Small (24x24)</option>
+            <option value="32" selected>Medium (32x32)</option>
+            <option value="48">Large (48x48)</option>
+            <option value="64">Huge (64x64)</option>
+          </select>
+        </div>
+
+        <div class="setup-field">
+          <label class="setup-field-label" for="setup-players">Players</label>
+          <select id="setup-players">
+            <option value="1" selected>1 Player</option>
+            <option value="2">2 Players</option>
+            <option value="3">3 Players</option>
+            <option value="4">4 Players</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="setup-options-row">
+        <div class="setup-field">
+          <label class="setup-field-label" for="setup-scenario">Scenario</label>
+          <select id="setup-scenario">
+            <option value="default" selected title="Balanced terrain mix">Default</option>
+            <option value="island" title="More water, land masses surrounded by sea">Island</option>
+            <option value="continent" title="Mostly land, little water">Continent</option>
+            <option value="archipelago" title="Many small islands, lots of water">Archipelago</option>
+          </select>
+        </div>
+
+        <div class="setup-field">
+          <label class="setup-field-label" for="setup-difficulty">Difficulty</label>
+          <select id="setup-difficulty">
+            <option value="easy">Easy</option>
+            <option value="normal" selected>Normal</option>
+            <option value="hard">Hard</option>
+          </select>
+        </div>
+      </div>
+
+      <mdui-button id="setup-start-btn" class="setup-start-btn" variant="filled">
+        Start Game
+      </mdui-button>
+    </div>
+  </div>
 `;
 
 // Side panel toggle
@@ -132,11 +211,14 @@ navItems.forEach((item) => {
   });
 });
 
-// Game init
+// Game init — deferred until setup screen is submitted
 const container = document.getElementById('game-container')!;
-const game = new Game(container);
-// Expose game instance for debugging
-(window as unknown as Record<string, unknown>).__game = game;
+let game: Game | undefined;
+
+/** Get the active Game instance (only call from UI handlers after game starts) */
+function getGame(): Game {
+  return game!;
+}
 
 /** Show a snackbar message */
 function showSnackbar(message: string): void {
@@ -144,10 +226,84 @@ function showSnackbar(message: string): void {
   snackbar.open = true;
 }
 
-// Subscribe to game notifications — show as snackbar alerts
-game.onNotification = (notification: GameNotification) => {
-  showSnackbar(notification.message);
-};
+// Game over overlay elements
+const gameOverOverlay = document.getElementById('game-over-overlay')!;
+const gameOverTitle = document.getElementById('game-over-title')!;
+const gameOverCondition = document.getElementById('game-over-condition')!;
+const gameOverStats = document.getElementById('game-over-stats')!;
+const gameOverContinueBtn = document.getElementById('game-over-continue-btn')!;
+
+const gameOverNewGameBtn = document.getElementById('game-over-new-game-btn')!;
+
+gameOverContinueBtn.addEventListener('click', () => {
+  gameOverOverlay.classList.add('hidden');
+});
+
+gameOverNewGameBtn.addEventListener('click', () => {
+  gameOverOverlay.classList.add('hidden');
+  const overlay = document.getElementById('setup-overlay')!;
+  // Force animation replay by briefly removing the element from layout
+  overlay.classList.remove('hidden');
+  overlay.style.animation = 'none';
+  requestAnimationFrame(() => {
+    overlay.style.animation = '';
+  });
+});
+
+/** Show the game over screen */
+function showGameOver(result: VictoryResult): void {
+  const isWin = result.winnerId === 1;
+  gameOverTitle.textContent = isWin ? 'Victory!' : 'Defeat';
+  gameOverTitle.style.color = isWin ? '#4caf50' : '#f44336';
+
+  const conditionLabels: Record<string, string> = {
+    [VictoryCondition.Elimination]: 'All enemies have been defeated',
+    [VictoryCondition.Domination]: 'Territorial domination achieved',
+    [VictoryCondition.Economic]: 'Economic supremacy reached',
+  };
+  gameOverCondition.textContent = conditionLabels[result.condition] ?? result.condition;
+
+  // Gather end-game stats
+  const gameState = getGame().getGameState();
+  const buildings = gameState.getBuildingsByPlayer(1);
+  const units = gameState.getUnitsByPlayer(1);
+  const knights = units.filter(u => u.type === UnitType.Knight);
+  const victoryMgr = getGame().getVictoryManager();
+  const goldBars = victoryMgr.getPlayerGoldBars(1);
+  const territoryPct = Math.round(victoryMgr.getPlayerTerritoryFraction(1) * 100);
+
+  gameOverStats.innerHTML = `
+    <div class="game-over-stat-row"><span>Buildings</span><span>${buildings.length}</span></div>
+    <div class="game-over-stat-row"><span>Population</span><span>${units.length}</span></div>
+    <div class="game-over-stat-row"><span>Knights</span><span>${knights.length}</span></div>
+    <div class="game-over-stat-row"><span>Gold Bars</span><span>${goldBars}</span></div>
+    <div class="game-over-stat-row"><span>Territory</span><span>${territoryPct}%</span></div>
+  `;
+
+  // Stop live updates — panels are hidden behind the overlay
+  stopInfoPanelUpdates();
+  stopStatsPanelUpdates();
+
+  gameOverOverlay.classList.remove('hidden');
+}
+
+/** Wire up notification handler for the active game instance */
+function wireNotifications(g: Game): void {
+  g.onNotification = (notification: GameNotification) => {
+    showSnackbar(notification.message);
+
+    if (notification.type === 'victory' || notification.type === 'defeat') {
+      const victoryMgr = g.getVictoryManager();
+      const result = victoryMgr.getResult();
+
+      if (notification.type === 'defeat' && victoryMgr.isEliminated(1)) {
+        showGameOver(result ?? { winnerId: 0, condition: VictoryCondition.Elimination });
+      } else if (result) {
+        showGameOver(result);
+      }
+    }
+  };
+}
 
 // Build panel elements
 const buildFab = document.getElementById('build-fab')!;
@@ -178,7 +334,7 @@ let statsPanelUpdateInterval: ReturnType<typeof setInterval> | null = null;
 /** Get total available resources across Castle + Warehouses for player 1 */
 function getPlayerResources(): Partial<Record<ResourceType, number>> {
   const totals: Partial<Record<ResourceType, number>> = {};
-  const gameState = game.getGameState();
+  const gameState = getGame().getGameState();
   const buildings = gameState.getBuildingsByPlayer(1);
   for (const b of buildings) {
     if (b.type !== BuildingType.Castle && b.type !== BuildingType.Warehouse) continue;
@@ -307,8 +463,8 @@ function startPlacement(type: BuildingType): void {
   closeBuildPanel();
   closeInfoPanel();
   cancelRoadPlacement();
-  game.getSelectionController()?.deselect();
-  const placement = game.getPlacementController();
+  getGame().getSelectionController()?.deselect();
+  const placement = getGame().getPlacementController();
   if (!placement) return;
 
   const def = BUILDING_DEFINITIONS[type];
@@ -322,7 +478,7 @@ function startFlagMode(): void {
   closeBuildPanel();
   closeInfoPanel();
   cancelPlacement();
-  const roadCtrl = game.getRoadPlacementController();
+  const roadCtrl = getGame().getRoadPlacementController();
   if (!roadCtrl) return;
   roadCtrl.startFlagMode();
   placementLabel.textContent = 'Placing: Flag — click to place';
@@ -334,7 +490,7 @@ function startRoadMode(): void {
   closeBuildPanel();
   closeInfoPanel();
   cancelPlacement();
-  const roadCtrl = game.getRoadPlacementController();
+  const roadCtrl = getGame().getRoadPlacementController();
   if (!roadCtrl) return;
   roadCtrl.startRoadMode();
   placementLabel.textContent = 'Building Road — click a flag to start';
@@ -368,7 +524,7 @@ function startAttackTargeting(sourceBuildingId: string): void {
   placementLabel.textContent = 'Attack — click an enemy military building (Esc to cancel)';
   placementBar.classList.remove('hidden');
 
-  const selection = game.getSelectionController();
+  const selection = getGame().getSelectionController();
   if (!selection) return;
 
   const originalHandler = selection.onSelectionChanged;
@@ -410,7 +566,7 @@ function startAttackTargeting(sourceBuildingId: string): void {
 
 /** Execute attack: pick a knight from source building and send to target */
 function executeAttack(sourceBuildingId: string, targetBuildingId: string): void {
-  const gameState = game.getGameState();
+  const gameState = getGame().getGameState();
   const source = gameState.getBuilding(sourceBuildingId);
   if (!source || source.knightIds.length === 0) {
     showSnackbar('No knights available');
@@ -418,7 +574,7 @@ function executeAttack(sourceBuildingId: string, targetBuildingId: string): void
   }
 
   const knightId = source.knightIds[0];
-  const attackMgr = game.getAttackManager();
+  const attackMgr = getGame().getAttackManager();
   const success = attackMgr.orderAttack(knightId, targetBuildingId);
   if (success) {
     showSnackbar('Attack ordered!');
@@ -429,7 +585,7 @@ function executeAttack(sourceBuildingId: string, targetBuildingId: string): void
 
 /** Cancel road placement */
 function cancelRoadPlacement(): void {
-  const roadCtrl = game.getRoadPlacementController();
+  const roadCtrl = getGame().getRoadPlacementController();
   if (roadCtrl?.isActive) {
     roadCtrl.cancel();
   }
@@ -438,7 +594,7 @@ function cancelRoadPlacement(): void {
 /** Cancel placement */
 function cancelPlacement(): void {
   cancelAttackTargeting();
-  const placement = game.getPlacementController();
+  const placement = getGame().getPlacementController();
   if (placement?.isActive) {
     placement.cancel();
   }
@@ -534,7 +690,7 @@ function renderInfoPanel(building: Building): void {
 
   // Worker info
   if (def.worker) {
-    const gameState = game.getGameState();
+    const gameState = getGame().getGameState();
     const worker = gameState.getWorkerForBuilding(building.id);
     html += `<div class="info-section">
       <div class="info-section-label">Worker</div>
@@ -608,7 +764,7 @@ function renderInfoPanel(building: Building): void {
       </div>`;
 
     if (building.knightIds.length > 0) {
-      const gameState = game.getGameState();
+      const gameState = getGame().getGameState();
       for (const knightId of building.knightIds) {
         const knight = gameState.getUnit(knightId);
         if (knight) {
@@ -676,7 +832,7 @@ function showInfoPanel(building: Building): void {
   stopInfoPanelUpdates();
   infoPanelUpdateInterval = setInterval(() => {
     // Re-fetch building from game state in case it was updated
-    const current = game.getGameState().getBuilding(building.id);
+    const current = getGame().getGameState().getBuilding(building.id);
     if (current) {
       renderInfoPanel(current);
     } else {
@@ -691,7 +847,7 @@ function closeInfoPanel(): void {
   // Don't deselect during attack targeting — the attack handler
   // will manage selection state via its own cleanup
   if (!attackModeCleanup) {
-    const selection = game.getSelectionController();
+    const selection = getGame().getSelectionController();
     if (selection?.selected) {
       selection.deselect();
     }
@@ -712,7 +868,7 @@ function stopInfoPanelUpdates(): void {
 /** Gather total resources across ALL player buildings */
 function getAllPlayerResources(): Partial<Record<ResourceType, number>> {
   const totals: Partial<Record<ResourceType, number>> = {};
-  const gameState = game.getGameState();
+  const gameState = getGame().getGameState();
   const buildings = gameState.getBuildingsByPlayer(1);
   for (const b of buildings) {
     for (const inv of [b.inputInventory, b.outputInventory]) {
@@ -729,7 +885,7 @@ function getAllPlayerResources(): Partial<Record<ResourceType, number>> {
 
 /** Get unit counts by type for a player */
 function getPopulationBreakdown(): { type: string; label: string; count: number }[] {
-  const gameState = game.getGameState();
+  const gameState = getGame().getGameState();
   const units = gameState.getUnitsByPlayer(1);
   const counts = new Map<string, number>();
   for (const u of units) {
@@ -748,7 +904,7 @@ function getPopulationBreakdown(): { type: string; label: string; count: number 
 function renderStatsPanel(): void {
   const resources = getAllPlayerResources();
   const population = getPopulationBreakdown();
-  const gameState = game.getGameState();
+  const gameState = getGame().getGameState();
   const buildings = gameState.getBuildingsByPlayer(1);
   const totalUnits = gameState.getUnitsByPlayer(1).length;
 
@@ -914,8 +1070,39 @@ buildContent.addEventListener('click', (e) => {
   }
 });
 
-// Start the game and set up callbacks
-game.start().then(() => {
+let currentMinimap: Minimap | undefined;
+
+/** Initialize and start the game with the given config */
+async function startGame(config: Partial<GameConfig>): Promise<void> {
+  // Clean up any active UI state from the previous game
+  stopInfoPanelUpdates();
+  stopStatsPanelUpdates();
+  infoPanel.classList.add('hidden');
+  statsPanel.classList.add('hidden');
+  buildPanel.classList.add('hidden');
+  placementBar.classList.add('hidden');
+  // Cancel active placement / attack modes before disposing the game so
+  // cleanup closures don't fire against the disposed SelectionController
+  if (game) {
+    cancelAttackTargeting();
+    game.getPlacementController()?.cancel();
+    game.getRoadPlacementController()?.cancel();
+  }
+
+  // Dispose previous game + minimap if restarting
+  currentMinimap?.dispose();
+  currentMinimap = undefined;
+  if (game) {
+    game.dispose();
+  }
+
+  game = new Game(container, config);
+  (window as unknown as Record<string, unknown>).__game = game;
+
+  wireNotifications(game);
+
+  await game.start();
+
   const placement = game.getPlacementController();
   if (placement) {
     placement.onBuildingPlaced = (type) => {
@@ -932,7 +1119,6 @@ game.start().then(() => {
     };
   }
 
-  // Selection controller — show info panel on building click
   const selection = game.getSelectionController();
   if (selection) {
     selection.onSelectionChanged = (building) => {
@@ -945,7 +1131,6 @@ game.start().then(() => {
     };
   }
 
-  // Road placement controller callbacks
   const roadCtrl = game.getRoadPlacementController();
   if (roadCtrl) {
     roadCtrl.onModeChanged = (mode) => {
@@ -962,13 +1147,47 @@ game.start().then(() => {
     };
   }
 
-  // Initialize minimap
   const minimapContainer = document.getElementById('minimap-container')!;
-  new Minimap(game, minimapContainer);
+  currentMinimap = new Minimap(game, minimapContainer);
+
+  populateBuildPanel();
+}
+
+// ============================================================
+// Game Setup Screen
+// ============================================================
+
+const setupOverlay = document.getElementById('setup-overlay')!;
+const setupSeedInput = document.getElementById('setup-seed') as HTMLInputElement;
+const setupRandomSeedBtn = document.getElementById('setup-random-seed')!;
+const setupMapSizeSelect = document.getElementById('setup-map-size') as HTMLSelectElement;
+const setupPlayersSelect = document.getElementById('setup-players') as HTMLSelectElement;
+const setupScenarioSelect = document.getElementById('setup-scenario') as HTMLSelectElement;
+const setupDifficultySelect = document.getElementById('setup-difficulty') as HTMLSelectElement;
+const setupStartBtn = document.getElementById('setup-start-btn')!;
+
+setupRandomSeedBtn.addEventListener('click', () => {
+  setupSeedInput.value = String(Math.floor(Math.random() * 999999) + 1);
 });
 
-// Populate the build panel
-populateBuildPanel();
+setupStartBtn.addEventListener('click', () => {
+  const rawSeed = Number(setupSeedInput.value);
+  const config: Partial<GameConfig> = {
+    seed: rawSeed > 0 ? Math.floor(rawSeed) : 42,
+    mapSize: Number(setupMapSizeSelect.value) as GameConfig['mapSize'],
+    numPlayers: Number(setupPlayersSelect.value),
+    scenario: setupScenarioSelect.value as GameConfig['scenario'],
+    difficulty: setupDifficultySelect.value as GameConfig['difficulty'],
+  };
+
+  setupOverlay.classList.add('hidden');
+
+  startGame(config).catch((err) => {
+    console.error('Failed to start game:', err);
+    showSnackbar('Failed to load game assets. Please reload the page.');
+    setupOverlay.classList.remove('hidden');
+  });
+});
 
 // Prevent context menu on canvas for right-click cancel
 container.addEventListener('contextmenu', (e) => e.preventDefault());
