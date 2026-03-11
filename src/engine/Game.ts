@@ -15,6 +15,7 @@ import { KnightManager } from '../game/KnightManager';
 import { CombatManager } from '../game/CombatManager';
 import { AttackManager } from '../game/AttackManager';
 import { VictoryManager } from '../game/VictoryManager';
+import { AIPlayer } from '../game/AIPlayer';
 import type { GameConfig } from '../game/GameConfig';
 import { DEFAULT_CONFIG, SCENARIO_TERRAIN_BALANCE } from '../game/GameConfig';
 import { RoadRenderer } from './RoadRenderer';
@@ -65,6 +66,7 @@ export class Game {
   private combatManager: CombatManager;
   private attackManager: AttackManager;
   private victoryManager: VictoryManager;
+  private aiPlayers: AIPlayer[] = [];
   private roadRenderer: RoadRenderer;
   private territoryRenderer: TerritoryRenderer;
   private cameraController: CameraController | null = null;
@@ -258,6 +260,9 @@ export class Game {
     // Place starting Castles for all players
     this.placeStartingCastles();
 
+    // Create AI controllers for non-human players (players 2..N)
+    this.initAIPlayers();
+
     // Position camera to look at player 1's Castle (or map center as fallback)
     const castle1 = this.gameState.findCastle(1);
     let lookAt: THREE.Vector3;
@@ -299,6 +304,9 @@ export class Game {
       this.attackManager.update();
       this.combatManager.cleanupStaleData();
       this.victoryManager.update(deltaTime);
+      for (const ai of this.aiPlayers) {
+        ai.update(deltaTime);
+      }
       this.roadRenderer.sync(this.roadNetwork);
       this.territoryRenderer.sync(this.territoryManager);
       const allUnits = this.gameState.getAllUnits();
@@ -307,6 +315,24 @@ export class Game {
       this.renderer.render(this.scene, this.camera);
     };
     animate();
+  }
+
+  /** Create AI controllers for all non-human players (player IDs 2..N). */
+  private initAIPlayers(): void {
+    for (let i = 2; i <= this.config.numPlayers; i++) {
+      const ai = new AIPlayer(
+        i,
+        this.config.difficulty,
+        this.gameState,
+        this.territoryManager,
+        this.attackManager,
+        this.knightManager,
+        (building, grid) => {
+          this.buildingRenderer.addBuilding(building, grid);
+        },
+      );
+      this.aiPlayers.push(ai);
+    }
   }
 
   /** Place starting Castles for all players, spread across the map */
@@ -398,6 +424,8 @@ export class Game {
     this.buildingRenderer.dispose();
     this.mapRenderer.dispose();
     this.renderer.dispose();
+
+    this.aiPlayers = [];
 
     // Clean up manager callbacks to prevent memory leaks
     this.constructionManager.onBuildingActivated = null;
