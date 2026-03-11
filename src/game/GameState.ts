@@ -12,7 +12,8 @@ export type PlacementError =
   | 'invalid_terrain'
   | 'tile_occupied'
   | 'no_adjacent_terrain'
-  | 'tile_not_found';
+  | 'tile_not_found'
+  | 'outside_territory';
 
 export type PlacementResult =
   | { ok: true; building: Building }
@@ -29,6 +30,16 @@ export class GameState {
   /** Reverse index: building ID → assigned unit ID (O(1) worker lookup) */
   private workerByBuilding: Map<string, string> = new Map();
   private grid: HexGrid;
+
+  /**
+   * Optional territory check function.
+   * When set, building placement requires the hex to be in the player's territory.
+   * Castle placement is exempt.
+   */
+  territoryCheck: ((q: number, r: number, playerId: number) => boolean) | null = null;
+
+  /** Optional callback when a building is removed (for territory recalculation) */
+  onBuildingRemoved: ((building: Building) => void) | null = null;
 
   constructor(grid: HexGrid) {
     this.grid = grid;
@@ -65,6 +76,13 @@ export class GameState {
       const hasRequired = neighbors.some((n) => n.terrain === def.adjacentTerrain);
       if (!hasRequired) {
         return { ok: false, error: 'no_adjacent_terrain' };
+      }
+    }
+
+    // Check territory (Castle is exempt — it's the starting building)
+    if (this.territoryCheck && type !== BuildingType.Castle) {
+      if (!this.territoryCheck(coord.q, coord.r, playerId)) {
+        return { ok: false, error: 'outside_territory' };
       }
     }
 
@@ -116,6 +134,9 @@ export class GameState {
     const coordKey = HexGrid.key(building.coord.q, building.coord.r);
     this.buildingsByCoord.delete(coordKey);
     this.buildings.delete(id);
+
+    this.onBuildingRemoved?.(building);
+
     return true;
   }
 
@@ -125,7 +146,7 @@ export class GameState {
   }
 
   /** Check if a building type can be placed at a coordinate (without actually placing) */
-  canPlace(type: BuildingType, coord: HexCoord): PlacementError | null {
+  canPlace(type: BuildingType, coord: HexCoord, playerId?: number): PlacementError | null {
     const def = BUILDING_DEFINITIONS[type];
     const tile = this.grid.getTile(coord.q, coord.r);
 
@@ -137,6 +158,13 @@ export class GameState {
       const neighbors = this.grid.getNeighbors(coord.q, coord.r);
       if (!neighbors.some((n) => n.terrain === def.adjacentTerrain)) {
         return 'no_adjacent_terrain';
+      }
+    }
+
+    // Check territory (Castle is exempt)
+    if (this.territoryCheck && type !== BuildingType.Castle && playerId !== undefined) {
+      if (!this.territoryCheck(coord.q, coord.r, playerId)) {
+        return 'outside_territory';
       }
     }
 

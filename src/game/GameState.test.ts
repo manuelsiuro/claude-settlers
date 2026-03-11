@@ -155,6 +155,30 @@ describe('GameState', () => {
     it('should return error for invalid placement', () => {
       expect(state.canPlace(BuildingType.Castle, { q: 0, r: 0 })).toBe('invalid_terrain');
     });
+
+    it('should return outside_territory when territory check is set', () => {
+      // Set up territory check that only allows (4,4)
+      state.territoryCheck = (q, r) => q === 4 && r === 4;
+
+      // Castle is exempt from territory check
+      expect(state.canPlace(BuildingType.Castle, { q: 3, r: 3 }, 1)).toBeNull();
+
+      // Non-castle needs territory
+      expect(state.canPlace(BuildingType.WoodcutterHut, { q: 4, r: 4 }, 1)).toBeNull();
+      expect(state.canPlace(BuildingType.WoodcutterHut, { q: 5, r: 5 }, 1)).toBe('outside_territory');
+    });
+
+    it('should block placeBuilding when outside territory', () => {
+      state.territoryCheck = () => false;
+
+      const result = state.placeBuilding(BuildingType.WoodcutterHut, { q: 4, r: 4 }, 1);
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.error).toBe('outside_territory');
+
+      // Castle should still work
+      const castleResult = state.placeBuilding(BuildingType.Castle, { q: 4, r: 4 }, 1);
+      expect(castleResult.ok).toBe(true);
+    });
   });
 
   // ================================================================

@@ -170,7 +170,7 @@ export class PlacementController {
 
     // Check placement validity
     const gameState = this.game.getGameState();
-    const error = gameState.canPlace(this.selectedType, wrapped);
+    const error = gameState.canPlace(this.selectedType, wrapped, 1);
     this.canPlaceHere = error === null;
 
     // Update ghost building

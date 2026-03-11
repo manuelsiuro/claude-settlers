@@ -30,6 +30,9 @@ export class ConstructionManager {
   private static DELIVERY_INTERVAL = 1.0;
   private deliveryCooldown = 0;
 
+  /** Optional callback when a building transitions to Active */
+  onBuildingActivated: (() => void) | null = null;
+
   constructor(gameState: GameState) {
     this.gameState = gameState;
   }
@@ -145,6 +148,7 @@ export class ConstructionManager {
       if (building.constructionProgress >= 1.0) {
         building.constructionProgress = 1.0;
         building.state = BuildingState.Active;
+        this.onBuildingActivated?.();
         this.sendBuilderHome(builder, buildingId);
       }
     }

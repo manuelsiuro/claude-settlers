@@ -10,7 +10,12 @@ import { ConstructionManager } from '../game/ConstructionManager';
 import { RoadNetwork } from '../game/RoadNetwork';
 import { TransporterManager } from '../game/TransporterManager';
 import { LogisticsManager } from '../game/LogisticsManager';
+import { TerritoryManager } from '../game/TerritoryManager';
+import { KnightManager } from '../game/KnightManager';
+import { CombatManager } from '../game/CombatManager';
+import { AttackManager } from '../game/AttackManager';
 import { RoadRenderer } from './RoadRenderer';
+import { TerritoryRenderer } from './TerritoryRenderer';
 import { MapRenderer } from './MapRenderer';
 import { BuildingRenderer } from './BuildingRenderer';
 import { UnitRenderer } from './UnitRenderer';
@@ -34,7 +39,12 @@ export class Game {
   private roadNetwork: RoadNetwork;
   private transporterManager: TransporterManager;
   private logisticsManager: LogisticsManager;
+  private territoryManager: TerritoryManager;
+  private knightManager: KnightManager;
+  private combatManager: CombatManager;
+  private attackManager: AttackManager;
   private roadRenderer: RoadRenderer;
+  private territoryRenderer: TerritoryRenderer;
   private cameraController: CameraController | null = null;
   private placementController: PlacementController | null = null;
   private grid: HexGrid;
@@ -91,7 +101,16 @@ export class Game {
     this.roadNetwork = new RoadNetwork(this.grid);
     this.transporterManager = new TransporterManager(this.gameState, this.roadNetwork);
     this.logisticsManager = new LogisticsManager(this.gameState, this.roadNetwork);
+    this.territoryManager = new TerritoryManager(this.gameState);
+    this.knightManager = new KnightManager(this.gameState);
+    this.combatManager = new CombatManager(this.gameState, this.knightManager);
+    this.attackManager = new AttackManager(this.gameState, this.combatManager, this.territoryManager);
+    this.constructionManager.onBuildingActivated = () => this.territoryManager.markDirty();
+    this.gameState.territoryCheck = (q, r, playerId) => this.territoryManager.isOwnedBy(q, r, playerId);
+    this.gameState.onBuildingRemoved = () => this.territoryManager.markDirty();
+    this.knightManager.onKnightRecruited = () => this.territoryManager.markDirty();
     this.roadRenderer = new RoadRenderer();
+    this.territoryRenderer = new TerritoryRenderer();
 
     // Handle resize
     this.onResize = this.onResize.bind(this);
@@ -140,6 +159,9 @@ export class Game {
     // Set up road renderer with world wrapping
     this.roadRenderer.addToScene(this.scene, this.grid);
 
+    // Set up territory renderer with world wrapping
+    this.territoryRenderer.addToScene(this.scene, this.grid);
+
     // Place starting Castle at map center on a grassland tile
     this.placeStartingCastle();
 
@@ -161,12 +183,16 @@ export class Game {
       const deltaTime = Math.min(clock.getDelta(), 0.1); // Cap at 100ms to prevent teleporting
       this.cameraController?.update();
       updateWaterTime(clock.getElapsedTime());
+      this.territoryManager.update();
       this.unitManager.update(deltaTime);
       this.constructionManager.update(deltaTime);
       this.productionManager.update(deltaTime);
       this.logisticsManager.update(deltaTime);
       this.transporterManager.update(deltaTime);
+      this.knightManager.update(deltaTime);
+      this.attackManager.update();
       this.roadRenderer.sync(this.roadNetwork);
+      this.territoryRenderer.sync(this.territoryManager);
       const allUnits = this.gameState.getAllUnits();
       this.unitRenderer.syncUnits(allUnits);
       this.unitRenderer.updatePositions(allUnits, deltaTime);
@@ -196,6 +222,7 @@ export class Game {
           if (result.ok) {
             initializeCastleResources(result.building);
             this.buildingRenderer.addBuilding(result.building, this.grid);
+            this.territoryManager.markDirty();
             return;
           }
         }
@@ -210,6 +237,7 @@ export class Game {
     window.removeEventListener('resize', this.onResize);
     this.placementController?.dispose();
     this.cameraController?.dispose();
+    this.territoryRenderer.dispose();
     this.roadRenderer.dispose();
     this.unitRenderer.dispose();
     this.buildingRenderer.dispose();
@@ -255,6 +283,22 @@ export class Game {
 
   getRoadNetwork(): RoadNetwork {
     return this.roadNetwork;
+  }
+
+  getTerritoryManager(): TerritoryManager {
+    return this.territoryManager;
+  }
+
+  getKnightManager(): KnightManager {
+    return this.knightManager;
+  }
+
+  getCombatManager(): CombatManager {
+    return this.combatManager;
+  }
+
+  getAttackManager(): AttackManager {
+    return this.attackManager;
   }
 
   getRoadRenderer(): RoadRenderer {

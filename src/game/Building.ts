@@ -42,6 +42,8 @@ export interface Building {
   productionProgress: number;
   /** Player ID who owns this building */
   playerId: number;
+  /** Knight unit IDs stationed in this military building */
+  knightIds: string[];
 }
 
 let nextBuildingId = 1;
@@ -66,6 +68,7 @@ export function createBuilding(
     hasWorker: false,
     productionProgress: 0,
     playerId,
+    knightIds: [],
   };
 }
 

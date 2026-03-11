@@ -1,6 +1,6 @@
 # Project Progress
 
-## Current Phase: Phase 5 — Resources & Logistics
+## Current Phase: Phase 6 — Territory & Military [COMPLETE]
 
 ## Task Board
 
@@ -52,10 +52,20 @@
 - [DONE] 5.8 Resource 3D models — 17 Blender GLTF models (wood, stone, grain, fish, iron/coal/gold ore, planks, flour, bread, meat, iron/gold bars, tools, swords, shields, pigs). AssetLoader loads them; UnitRenderer shows carried resources above units. Visually verified — 2026-03-11
 - [DONE] 5.9 Integration test — Full chain verified: Wood production → logistics routing → transport → Sawmill input → Planks output. Construction lifecycle, transporter spawning. 4 tests — 2026-03-11
 
-### Phase 6–8: Not yet broken into tasks
+### Phase 6: Territory & Military [COMPLETE]
+- [DONE] 6.1 Territory influence system — TerritoryManager: BFS flood-fill from military buildings (Castle r=8, Guard Hut r=4, Watchtower r=6, Barracks r=8). Water blocks expansion. Dirty flag for lazy recalculation. Closest building wins overlaps. 13 tests — 2026-03-11
+- [DONE] 6.2 Territory rendering — TerritoryRenderer: blue border lines on territory edges, subtle fill overlay on owned hexes. Per-player colors. World wrapping ghosts. Lazy rebuild on territory change. Visually verified — 2026-03-11
+- [DONE] 6.3 Knight slot management — knightIds[] on Building, KnightManager: auto-recruits when Sword+Shield in military building with empty slot. Gold bonus (5%/bar, 50% cap). Knight strength = rank × goldBonus. Dead knight cleanup. 10 tests — 2026-03-11
+- [DONE] 6.4 Combat system — CombatManager: 1v1 duels, probability-based (strength ratio). Rank advancement (2 wins → rank up, cap 5). Gold bonus factored in. Loser removed, winner tracks wins. 8 tests — 2026-03-11
+- [DONE] 6.5 Attack orders & building capture — AttackManager: order knight to attack enemy military building, pathfind to target, fight defenders 1v1, capture on victory, flip territory, transfer civilian buildings. 7 tests — 2026-03-11
+- [DONE] 6.6 Territory-gated building placement — territoryCheck callback on GameState, 'outside_territory' error. Castle exempt. canPlace + placeBuilding both check. PlacementController passes playerId. 2 tests — 2026-03-11
+- [DONE] 6.7 Integration test — Full chain verified: knight recruitment, territory projection, building capture + territory flip, territory-gated placement. 4 tests — 2026-03-11
+
+### Phase 7–8: Not yet broken into tasks
 > See `CLAUDE.md` for phase overview.
 
 ## Completed
+- **2026-03-11**: Phase 6 tasks 6.1–6.7 complete. TerritoryManager (BFS flood-fill from military buildings, water blocks, dirty flag, closest-wins overlap). TerritoryRenderer (border lines + fill overlay per player, world wrapping). KnightManager (auto-recruit when Sword+Shield in military building, gold bonus 5%/bar capped at 50%). CombatManager (1v1 probability-based duels, rank advancement every 2 wins, cap at rank 5). AttackManager (order attacks, knight pathfinding, sequential combat, building capture, territory flip, civilian building transfer). Territory-gated building placement (Castle exempt). 4 military integration tests. 298 tests passing, 0 errors.
 - **2026-03-11**: Phase 5 tasks 5.1–5.9 complete. ProductionManager (input consumption, output production, timers). Castle starting resources + inventory helpers. ConstructionManager (Planned → deliver resources → UnderConstruction → builder → Active). Flag & road network (RoadNetwork with BFS routing, 25 tests). Flag & road 3D rendering (RoadRenderer). TransporterManager (auto-spawn per road, pick up/carry/deliver goods, relay through intermediate flags). LogisticsManager (auto-create building flags, route outputInventory → flags with destination routing). 17 resource GLTF models. UnitRenderer shows carried resources. Integration test: full Wood → Sawmill → Planks chain verified. 251 tests passing, 0 errors.
 - **2026-03-10**: Phase 4 tasks 4.1–4.10 complete. UnitType (19 types: 18 professions + Knight), Unit instance model with state machine (idle → walking_to_work → working → walking_home), UnitDefinition with move speed and tool requirements. WORKER_TO_UNIT_TYPE mapping links buildings to professions. 20 Blender GLTF unit models (base serf + 19 profession variants with tools, hats, aprons per docs/units.md). UnitRenderer with world wrapping and per-frame sync. A* pathfinding on hex grid with world-wrapping heuristic, avoids water. UnitManager: auto-spawns serfs from Castle when buildings need workers, assigns, pathfinds, manages movement interpolation and arrival. Procedural animations: work bob+sway, walk bob+facing. Game loop integrated. 163 tests passing, 0 errors.
 - **2026-03-10**: Phase 3 tasks 3.1–3.8 complete. ResourceType (17 types), BuildingType (24 types with costs/production/terrain rules), Building instance state, GameState with placement validation, 21 Blender GLTF building models, BuildingRenderer with world wrapping, PlacementController with ghost preview + hex highlight + terrain validation, Material 3 build panel UI with tier-organized building list. Castle auto-placed at map center on start. 88 tests passing, 0 errors.
