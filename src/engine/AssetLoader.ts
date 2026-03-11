@@ -71,6 +71,29 @@ const UNIT_MODELS = [
 
 export type UnitModelName = (typeof UNIT_MODELS)[number];
 
+/** All resource model names that must be loaded */
+const RESOURCE_MODELS = [
+  'wood',
+  'stone',
+  'grain',
+  'fish',
+  'iron_ore',
+  'coal_ore',
+  'gold_ore',
+  'planks',
+  'flour',
+  'bread',
+  'meat',
+  'iron_bars',
+  'gold_bars',
+  'tools',
+  'swords',
+  'shields',
+  'pigs',
+] as const;
+
+export type ResourceModelName = (typeof RESOURCE_MODELS)[number];
+
 /**
  * Loads and caches GLTF models for reuse via cloning.
  * All models are loaded once at startup; instances are cloned per use.
@@ -114,6 +137,11 @@ export class AssetLoader {
     await this.loadModels(UNIT_MODELS, 'units');
   }
 
+  /** Load all resource models. Call once before rendering. */
+  async loadResourceModels(): Promise<void> {
+    await this.loadModels(RESOURCE_MODELS, 'resources');
+  }
+
   /** Get a clone of a loaded terrain model */
   getModel(name: TerrainModelName): THREE.Group {
     const original = this.models.get(name);
@@ -138,6 +166,13 @@ export class AssetLoader {
     if (!original) {
       throw new Error(`Unit model "${name}" not loaded. Call loadUnitModels() first.`);
     }
+    return original.clone();
+  }
+
+  /** Get a clone of a loaded resource model */
+  getResourceModel(name: ResourceModelName): THREE.Group | null {
+    const original = this.models.get(name);
+    if (!original) return null;
     return original.clone();
   }
 

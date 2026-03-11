@@ -1,6 +1,6 @@
 # Project Progress
 
-## Current Phase: Phase 4 COMPLETE — Ready for Phase 5
+## Current Phase: Phase 5 — Resources & Logistics
 
 ## Task Board
 
@@ -41,12 +41,22 @@
 - [DONE] 4.9 Unit movement system — path-based movement with speed-scaled interpolation between hexes, arrival detection, state transitions — 2026-03-10
 - [DONE] 4.10 Work cycle system — procedural animations: work bob+sway, walk bob+facing direction — 2026-03-10
 
-### Phase 5–8: Not yet broken into tasks
-> Note: Construction process (builder + resources → building over time) depends on serfs (Phase 4) and logistics (Phase 5).
-> Road/flag logistics, resource transport, and production chains are Phase 5.
-> Tasks will be detailed when the phase becomes active. See `CLAUDE.md` for phase overview.
+### Phase 5: Resources & Logistics [COMPLETE]
+- [DONE] 5.1 Production system — ProductionManager: active buildings with workers consume inputs, advance productionProgress, produce outputs on timer. 16 tests — 2026-03-10
+- [DONE] 5.2 Castle starting resources & resource helpers — inventory helpers (add/remove/get), Castle starts with wood(12)/stone(8)/planks(6)/tools(4)/fish(4)/bread(4). 9 tests — 2026-03-10
+- [DONE] 5.3 Construction process — ConstructionManager: Planned → deliver resources from Castle → UnderConstruction → builder spawns/walks/builds → Active → builder goes home. Full lifecycle verified in-game. 9 tests — 2026-03-10
+- [DONE] 5.4 Flag & road data model — RoadNetwork: Flag placement, Road connections between adjacent flags, adjacency graph, BFS route finding, flag/road removal with cleanup. 25 tests — 2026-03-10
+- [DONE] 5.5 Flag & road rendering — RoadRenderer: 3D flag meshes (pole+banner), road tubes between flags, world wrapping, sync with RoadNetwork. Integrated into Game loop. Visually verified — 2026-03-10
+- [DONE] 5.6 Transporter system — TransporterManager: auto-spawns transporter per road segment, picks up goods at flags, carries toward destination via BFS routing, delivers to building input or leaves at intermediate flags. 10 tests — 2026-03-11
+- [DONE] 5.7 Resource delivery routing — LogisticsManager: auto-creates flags for buildings, moves outputInventory → flag goods with destination routing (nearest consumer first, Castle/Warehouse fallback), 8-good flag cap, over-supply prevention. 10 tests — 2026-03-11
+- [DONE] 5.8 Resource 3D models — 17 Blender GLTF models (wood, stone, grain, fish, iron/coal/gold ore, planks, flour, bread, meat, iron/gold bars, tools, swords, shields, pigs). AssetLoader loads them; UnitRenderer shows carried resources above units. Visually verified — 2026-03-11
+- [DONE] 5.9 Integration test — Full chain verified: Wood production → logistics routing → transport → Sawmill input → Planks output. Construction lifecycle, transporter spawning. 4 tests — 2026-03-11
+
+### Phase 6–8: Not yet broken into tasks
+> See `CLAUDE.md` for phase overview.
 
 ## Completed
+- **2026-03-11**: Phase 5 tasks 5.1–5.9 complete. ProductionManager (input consumption, output production, timers). Castle starting resources + inventory helpers. ConstructionManager (Planned → deliver resources → UnderConstruction → builder → Active). Flag & road network (RoadNetwork with BFS routing, 25 tests). Flag & road 3D rendering (RoadRenderer). TransporterManager (auto-spawn per road, pick up/carry/deliver goods, relay through intermediate flags). LogisticsManager (auto-create building flags, route outputInventory → flags with destination routing). 17 resource GLTF models. UnitRenderer shows carried resources. Integration test: full Wood → Sawmill → Planks chain verified. 251 tests passing, 0 errors.
 - **2026-03-10**: Phase 4 tasks 4.1–4.10 complete. UnitType (19 types: 18 professions + Knight), Unit instance model with state machine (idle → walking_to_work → working → walking_home), UnitDefinition with move speed and tool requirements. WORKER_TO_UNIT_TYPE mapping links buildings to professions. 20 Blender GLTF unit models (base serf + 19 profession variants with tools, hats, aprons per docs/units.md). UnitRenderer with world wrapping and per-frame sync. A* pathfinding on hex grid with world-wrapping heuristic, avoids water. UnitManager: auto-spawns serfs from Castle when buildings need workers, assigns, pathfinds, manages movement interpolation and arrival. Procedural animations: work bob+sway, walk bob+facing. Game loop integrated. 163 tests passing, 0 errors.
 - **2026-03-10**: Phase 3 tasks 3.1–3.8 complete. ResourceType (17 types), BuildingType (24 types with costs/production/terrain rules), Building instance state, GameState with placement validation, 21 Blender GLTF building models, BuildingRenderer with world wrapping, PlacementController with ghost preview + hex highlight + terrain validation, Material 3 build panel UI with tier-organized building list. Castle auto-placed at map center on start. 88 tests passing, 0 errors.
 - **2026-03-10**: Phase 2 atmosphere polish. Animated water shader (vertex wave displacement + color cycling + foam). Exponential fog for atmospheric depth. Hemisphere light (sky blue + ground green) + warm directional sunlight. 52 FPS, 27 tests passing.

@@ -1,10 +1,8 @@
-import type { Building } from './Building';
-import { BuildingState } from './Building';
-import { BUILDING_DEFINITIONS, BuildingType } from './BuildingType';
+import { BUILDING_DEFINITIONS } from './BuildingType';
 import { GameState } from './GameState';
 import type { Unit } from './Unit';
 import { UnitState, setUnitPath, clearUnitPath } from './Unit';
-import { UNIT_DEFINITIONS, WORKER_TO_UNIT_TYPE } from './UnitType';
+import { UNIT_DEFINITIONS, WORKER_TO_UNIT_TYPE, UnitType } from './UnitType';
 import { findPath } from './Pathfinding';
 
 /**
@@ -24,12 +22,38 @@ export class UnitManager {
 
   /**
    * Main update tick. Call each frame with delta time in seconds.
-   * Handles: spawning, assignment, movement progression.
+   * Handles: orphan checks, spawning, assignment, movement progression.
    */
   update(deltaTime: number): void {
+    this.updateOrphanedUnits();
     this.updateSpawning(deltaTime);
     this.updateMovement(deltaTime);
     this.updateArrival();
+  }
+
+  /**
+   * Detect units whose assigned building no longer exists (destroyed/removed)
+   * and send them home to the Castle.
+   * Catches two cases:
+   *   1. Unit still has assignedBuildingId but building is gone from GameState
+   *   2. Unit is in WalkingToWork/Working but assignedBuildingId was cleared (by removeBuilding)
+   */
+  private updateOrphanedUnits(): void {
+    const units = this.gameState.getAllUnits();
+
+    for (const unit of units) {
+      if (unit.state === UnitState.Idle || unit.state === UnitState.WalkingHome) continue;
+
+      // Transporters are managed by TransporterManager, not here
+      if (unit.type === UnitType.Transporter) continue;
+
+      const isOrphaned = !unit.assignedBuildingId
+        || !this.gameState.getBuilding(unit.assignedBuildingId);
+
+      if (isOrphaned) {
+        this.sendHome(unit);
+      }
+    }
   }
 
   /**
@@ -41,7 +65,7 @@ export class UnitManager {
     if (this.spawnCooldown > 0) return;
 
     const playerId = 1; // TODO: multi-player support
-    const castle = this.findCastle(playerId);
+    const castle = this.gameState.findCastle(playerId);
     if (!castle) return;
 
     // Find buildings that need workers
@@ -72,6 +96,9 @@ export class UnitManager {
       unit.state = UnitState.WalkingToWork;
     } else {
       // No path found — unit stays idle at castle
+      console.warn(
+        `[UnitManager] No path from Castle (${castle.coord.q},${castle.coord.r}) to ${def.label} (${building.coord.q},${building.coord.r}) — unit ${unit.id} stays idle`,
+      );
       unit.state = UnitState.Idle;
       this.gameState.unassignWorker(unit.id);
     }
@@ -141,19 +168,17 @@ export class UnitManager {
     }
   }
 
-  /** Find the Castle building for a player */
-  private findCastle(playerId: number): Building | undefined {
-    return this.gameState
-      .getBuildingsByPlayer(playerId)
-      .find((b) => b.type === BuildingType.Castle && b.state === BuildingState.Active);
-  }
-
   /**
    * Send a unit home to the Castle (e.g., when building is destroyed).
    */
   sendHome(unit: Unit): void {
-    const castle = this.findCastle(unit.playerId);
-    if (!castle) return;
+    const castle = this.gameState.findCastle(unit.playerId);
+    if (!castle) {
+      console.warn(`[UnitManager] No castle found for player ${unit.playerId} — unit ${unit.id} cannot go home`);
+      this.gameState.unassignWorker(unit.id);
+      unit.state = UnitState.Idle;
+      return;
+    }
 
     this.gameState.unassignWorker(unit.id);
     const path = findPath(
@@ -166,6 +191,9 @@ export class UnitManager {
       setUnitPath(unit, path);
       unit.state = UnitState.WalkingHome;
     } else {
+      console.warn(
+        `[UnitManager] No path from unit ${unit.id} (${unit.coord.q},${unit.coord.r}) to Castle — unit stays idle`,
+      );
       unit.state = UnitState.Idle;
     }
   }

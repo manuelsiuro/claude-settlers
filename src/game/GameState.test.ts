@@ -119,6 +119,24 @@ describe('GameState', () => {
     it('should return false for non-existent building', () => {
       expect(state.removeBuilding('nonexistent')).toBe(false);
     });
+
+    it('should unassign worker when building is removed', () => {
+      const castle = state.placeBuilding(BuildingType.Castle, { q: 4, r: 4 }, 1);
+      if (!castle.ok) throw new Error('Failed to place castle');
+      const woodcutter = state.placeBuilding(BuildingType.WoodcutterHut, { q: 5, r: 4 }, 1);
+      if (!woodcutter.ok) throw new Error('Failed to place woodcutter');
+
+      const unit = state.spawnUnit(UnitType.Woodcutter, { q: 4, r: 4 }, 1);
+      state.assignWorkerToBuilding(unit.id, woodcutter.building.id);
+
+      expect(state.getWorkerForBuilding(woodcutter.building.id)).toBe(unit);
+      expect(unit.assignedBuildingId).toBe(woodcutter.building.id);
+
+      state.removeBuilding(woodcutter.building.id);
+
+      expect(unit.assignedBuildingId).toBeNull();
+      expect(state.getWorkerForBuilding(woodcutter.building.id)).toBeUndefined();
+    });
   });
 
   describe('getAllBuildings', () => {

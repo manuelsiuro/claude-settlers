@@ -1,5 +1,5 @@
 import type { Building } from './Building';
-import { createBuilding } from './Building';
+import { createBuilding, BuildingState } from './Building';
 import { BuildingType, BUILDING_DEFINITIONS } from './BuildingType';
 import { HexGrid } from './HexGrid';
 import type { HexCoord } from './HexGrid';
@@ -98,10 +98,21 @@ export class GameState {
     return this.getAllBuildings().filter((b) => b.playerId === playerId);
   }
 
-  /** Remove a building */
+  /** Remove a building and send its worker home */
   removeBuilding(id: string): boolean {
     const building = this.buildings.get(id);
     if (!building) return false;
+
+    // Unassign the worker (if any) so it can be sent home
+    const workerId = this.workerByBuilding.get(id);
+    if (workerId) {
+      const worker = this.units.get(workerId);
+      if (worker) {
+        worker.assignedBuildingId = null;
+      }
+      this.workerByBuilding.delete(id);
+    }
+
     const coordKey = HexGrid.key(building.coord.q, building.coord.r);
     this.buildingsByCoord.delete(coordKey);
     this.buildings.delete(id);
@@ -233,6 +244,12 @@ export class GameState {
     const def = BUILDING_DEFINITIONS[building.type];
     if (!def.worker) return null;
     return WORKER_TO_UNIT_TYPE[def.worker] ?? null;
+  }
+
+  /** Find the active Castle building for a player */
+  findCastle(playerId: number): Building | undefined {
+    return this.getBuildingsByPlayer(playerId)
+      .find((b) => b.type === BuildingType.Castle && b.state === BuildingState.Active);
   }
 
   /** Get the hex grid */

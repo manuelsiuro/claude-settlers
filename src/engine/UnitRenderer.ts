@@ -2,7 +2,9 @@ import * as THREE from 'three';
 import { HexGrid } from '../game/HexGrid';
 import type { Unit } from '../game/Unit';
 import { getUnitWorldPosition, UnitState } from '../game/Unit';
+import type { ResourceType } from '../game/ResourceType';
 import { assetLoader } from './AssetLoader';
+import type { ResourceModelName } from './AssetLoader';
 import { UNIT_MODEL_MAP } from './UnitModels';
 import { MapRenderer } from './MapRenderer';
 
@@ -19,6 +21,10 @@ const WORK_ROTATE_SPEED = 3.0;
 const WALK_BOB_AMPLITUDE = 0.02;
 const WALK_BOB_SPEED = 8.0;
 
+/** Carried resource display height above unit base */
+const CARRY_HEIGHT = 0.35;
+const CARRY_SCALE = 1.8;
+
 /**
  * Renders units on the hex map.
  * Each frame, updates unit positions based on their movement state.
@@ -29,6 +35,8 @@ export class UnitRenderer {
   private wrapGroups: THREE.Group[] = [];
   private unitMeshes: Map<string, THREE.Group> = new Map();
   private wrapClones: Map<string, THREE.Group[]> = new Map();
+  /** Track carried resource meshes: unitId → { resource, mesh } */
+  private carriedMeshes: Map<string, { resource: ResourceType; mesh: THREE.Group }> = new Map();
   private grid: HexGrid;
   private elapsedTime = 0;
 
@@ -112,6 +120,7 @@ export class UnitRenderer {
     this.unitGroup.remove(mesh);
     this.disposeMesh(mesh);
     this.unitMeshes.delete(unitId);
+    this.carriedMeshes.delete(unitId);
 
     // Remove ghost clones
     const clones = this.wrapClones.get(unitId);
@@ -152,6 +161,7 @@ export class UnitRenderer {
    */
   updatePositions(units: Unit[], deltaTime: number): void {
     this.elapsedTime += deltaTime;
+    this.updateCarriedResources(units);
 
     for (const unit of units) {
       const mesh = this.unitMeshes.get(unit.id);
@@ -161,13 +171,20 @@ export class UnitRenderer {
       const interpCoord = getUnitWorldPosition(unit);
       const { x, z } = HexGrid.hexToWorld(interpCoord.q, interpCoord.r);
 
-      // Get Y from the nearest tile
-      const nearestCoord = this.grid.wrap(
-        Math.round(interpCoord.q),
-        Math.round(interpCoord.r),
-      );
-      const tile = this.grid.getTile(nearestCoord.q, nearestCoord.r);
-      const baseY = tile ? MapRenderer.getTileY(tile) : 0;
+      // Interpolate Y between path tiles for smooth elevation transitions
+      let baseY = 0;
+      if (unit.path.length > 0 && unit.pathIndex < unit.path.length - 1) {
+        const from = unit.path[unit.pathIndex];
+        const to = unit.path[unit.pathIndex + 1];
+        const fromTile = this.grid.getTile(from.q, from.r);
+        const toTile = this.grid.getTile(to.q, to.r);
+        const fromY = fromTile ? MapRenderer.getTileY(fromTile) : 0;
+        const toY = toTile ? MapRenderer.getTileY(toTile) : 0;
+        baseY = fromY + (toY - fromY) * unit.moveProgress;
+      } else {
+        const tile = this.grid.getTile(unit.coord.q, unit.coord.r);
+        baseY = tile ? MapRenderer.getTileY(tile) : 0;
+      }
 
       // Per-unit time offset to avoid synchronized animations (simple string hash)
       let hash = 0;
@@ -208,6 +225,70 @@ export class UnitRenderer {
         for (const clone of clones) {
           clone.position.copy(mesh.position);
           clone.rotation.copy(mesh.rotation);
+        }
+      }
+    }
+  }
+
+  /**
+   * Update carried resource display for units.
+   * Adds/removes a small resource model above the unit when carrying.
+   */
+  private updateCarriedResources(units: Unit[]): void {
+    for (const unit of units) {
+      const mesh = this.unitMeshes.get(unit.id);
+      if (!mesh) continue;
+
+      const current = this.carriedMeshes.get(unit.id);
+      const carrying = unit.carryingResource;
+
+      if (!carrying) {
+        // Not carrying — remove if shown
+        if (current) {
+          mesh.remove(current.mesh);
+          this.disposeMesh(current.mesh);
+          this.carriedMeshes.delete(unit.id);
+          // Update clones
+          const clones = this.wrapClones.get(unit.id);
+          if (clones) {
+            for (const clone of clones) {
+              const child = clone.getObjectByName('carried_resource');
+              if (child) {
+                clone.remove(child);
+              }
+            }
+          }
+        }
+        continue;
+      }
+
+      if (current && current.resource === carrying) continue; // Same resource, no change
+
+      // Remove old
+      if (current) {
+        mesh.remove(current.mesh);
+        this.disposeMesh(current.mesh);
+      }
+
+      // Add new resource model
+      const resourceMesh = assetLoader.getResourceModel(carrying as ResourceModelName);
+      if (!resourceMesh) continue;
+
+      resourceMesh.name = 'carried_resource';
+      resourceMesh.scale.setScalar(CARRY_SCALE);
+      resourceMesh.position.set(0, CARRY_HEIGHT, 0);
+      mesh.add(resourceMesh);
+      this.carriedMeshes.set(unit.id, { resource: carrying, mesh: resourceMesh });
+
+      // Update clones
+      const clones = this.wrapClones.get(unit.id);
+      if (clones) {
+        for (const clone of clones) {
+          const oldChild = clone.getObjectByName('carried_resource');
+          if (oldChild) clone.remove(oldChild);
+          const cloneResource = resourceMesh.clone();
+          cloneResource.name = 'carried_resource';
+          clone.add(cloneResource);
         }
       }
     }

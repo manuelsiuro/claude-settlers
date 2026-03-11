@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
+import type { ResourceInventory } from './Building';
 import {
   BuildingState,
   createBuilding,
@@ -8,6 +9,11 @@ import {
   getInventoryTotal,
   hasOutputSpace,
   hasRequiredInputs,
+  addToInventory,
+  removeFromInventory,
+  getInventoryAmount,
+  initializeCastleResources,
+  CASTLE_STARTING_RESOURCES,
   resetBuildingIdCounter,
 } from './Building';
 import { BuildingType, BUILDING_DEFINITIONS } from './BuildingType';
@@ -172,6 +178,73 @@ describe('Building', () => {
       expect(hasRequiredInputs(bakery)).toBe(false);
       bakery.inputInventory[ResourceType.CoalOre] = 1;
       expect(hasRequiredInputs(bakery)).toBe(true);
+    });
+  });
+
+  describe('addToInventory', () => {
+    it('should add resources to empty inventory', () => {
+      const inv: ResourceInventory = {};
+      addToInventory(inv, ResourceType.Wood, 5);
+      expect(inv[ResourceType.Wood]).toBe(5);
+    });
+
+    it('should accumulate resources', () => {
+      const inv = { [ResourceType.Wood]: 3 };
+      addToInventory(inv, ResourceType.Wood, 2);
+      expect(inv[ResourceType.Wood]).toBe(5);
+    });
+  });
+
+  describe('removeFromInventory', () => {
+    it('should remove resources and return amount removed', () => {
+      const inv = { [ResourceType.Wood]: 5 };
+      const removed = removeFromInventory(inv, ResourceType.Wood, 3);
+      expect(removed).toBe(3);
+      expect(inv[ResourceType.Wood]).toBe(2);
+    });
+
+    it('should not remove more than available', () => {
+      const inv = { [ResourceType.Wood]: 2 };
+      const removed = removeFromInventory(inv, ResourceType.Wood, 5);
+      expect(removed).toBe(2);
+      expect(inv[ResourceType.Wood]).toBeUndefined(); // cleaned up
+    });
+
+    it('should return 0 for missing resource', () => {
+      const inv: ResourceInventory = {};
+      const removed = removeFromInventory(inv, ResourceType.Wood, 1);
+      expect(removed).toBe(0);
+    });
+  });
+
+  describe('getInventoryAmount', () => {
+    it('should return amount for existing resource', () => {
+      const inv = { [ResourceType.Stone]: 7 };
+      expect(getInventoryAmount(inv, ResourceType.Stone)).toBe(7);
+    });
+
+    it('should return 0 for missing resource', () => {
+      expect(getInventoryAmount({} as ResourceInventory, ResourceType.Stone)).toBe(0);
+    });
+  });
+
+  describe('Castle starting resources', () => {
+    it('should have defined starting resources', () => {
+      expect(CASTLE_STARTING_RESOURCES.length).toBeGreaterThan(0);
+      for (const { amount } of CASTLE_STARTING_RESOURCES) {
+        expect(amount).toBeGreaterThan(0);
+      }
+    });
+
+    it('should initialize castle with resources', () => {
+      const castle = createBuilding(BuildingType.Castle, { q: 0, r: 0 }, 1);
+      initializeCastleResources(castle);
+
+      // Should have wood, stone, planks, tools
+      expect(getInventoryAmount(castle.outputInventory, ResourceType.Wood)).toBeGreaterThan(0);
+      expect(getInventoryAmount(castle.outputInventory, ResourceType.Stone)).toBeGreaterThan(0);
+      expect(getInventoryAmount(castle.outputInventory, ResourceType.Planks)).toBeGreaterThan(0);
+      expect(getInventoryAmount(castle.outputInventory, ResourceType.Tools)).toBeGreaterThan(0);
     });
   });
 });

@@ -2,8 +2,15 @@ import * as THREE from 'three';
 import { HexGrid } from '../game/HexGrid';
 import { generateMap } from '../game/MapGenerator';
 import { BuildingType } from '../game/BuildingType';
+import { initializeCastleResources } from '../game/Building';
 import { GameState } from '../game/GameState';
 import { UnitManager } from '../game/UnitManager';
+import { ProductionManager } from '../game/ProductionManager';
+import { ConstructionManager } from '../game/ConstructionManager';
+import { RoadNetwork } from '../game/RoadNetwork';
+import { TransporterManager } from '../game/TransporterManager';
+import { LogisticsManager } from '../game/LogisticsManager';
+import { RoadRenderer } from './RoadRenderer';
 import { MapRenderer } from './MapRenderer';
 import { BuildingRenderer } from './BuildingRenderer';
 import { UnitRenderer } from './UnitRenderer';
@@ -22,6 +29,12 @@ export class Game {
   private buildingRenderer: BuildingRenderer;
   private unitRenderer: UnitRenderer;
   private unitManager: UnitManager;
+  private productionManager: ProductionManager;
+  private constructionManager: ConstructionManager;
+  private roadNetwork: RoadNetwork;
+  private transporterManager: TransporterManager;
+  private logisticsManager: LogisticsManager;
+  private roadRenderer: RoadRenderer;
   private cameraController: CameraController | null = null;
   private placementController: PlacementController | null = null;
   private grid: HexGrid;
@@ -73,6 +86,12 @@ export class Game {
     this.buildingRenderer = new BuildingRenderer();
     this.unitRenderer = new UnitRenderer();
     this.unitManager = new UnitManager(this.gameState);
+    this.productionManager = new ProductionManager(this.gameState);
+    this.constructionManager = new ConstructionManager(this.gameState);
+    this.roadNetwork = new RoadNetwork(this.grid);
+    this.transporterManager = new TransporterManager(this.gameState, this.roadNetwork);
+    this.logisticsManager = new LogisticsManager(this.gameState, this.roadNetwork);
+    this.roadRenderer = new RoadRenderer();
 
     // Handle resize
     this.onResize = this.onResize.bind(this);
@@ -106,6 +125,7 @@ export class Game {
       assetLoader.loadTerrainModels(),
       assetLoader.loadBuildingModels(),
       assetLoader.loadUnitModels(),
+      assetLoader.loadResourceModels(),
     ]);
 
     // Build terrain
@@ -116,6 +136,9 @@ export class Game {
 
     // Set up unit renderer with world wrapping
     this.unitRenderer.addToScene(this.scene, this.grid);
+
+    // Set up road renderer with world wrapping
+    this.roadRenderer.addToScene(this.scene, this.grid);
 
     // Place starting Castle at map center on a grassland tile
     this.placeStartingCastle();
@@ -139,6 +162,11 @@ export class Game {
       this.cameraController?.update();
       updateWaterTime(clock.getElapsedTime());
       this.unitManager.update(deltaTime);
+      this.constructionManager.update(deltaTime);
+      this.productionManager.update(deltaTime);
+      this.logisticsManager.update(deltaTime);
+      this.transporterManager.update(deltaTime);
+      this.roadRenderer.sync(this.roadNetwork);
       const allUnits = this.gameState.getAllUnits();
       this.unitRenderer.syncUnits(allUnits);
       this.unitRenderer.updatePositions(allUnits, deltaTime);
@@ -166,6 +194,7 @@ export class Game {
             1,
           );
           if (result.ok) {
+            initializeCastleResources(result.building);
             this.buildingRenderer.addBuilding(result.building, this.grid);
             return;
           }
@@ -181,6 +210,7 @@ export class Game {
     window.removeEventListener('resize', this.onResize);
     this.placementController?.dispose();
     this.cameraController?.dispose();
+    this.roadRenderer.dispose();
     this.unitRenderer.dispose();
     this.buildingRenderer.dispose();
     this.mapRenderer.dispose();
@@ -221,6 +251,14 @@ export class Game {
 
   getGameState(): GameState {
     return this.gameState;
+  }
+
+  getRoadNetwork(): RoadNetwork {
+    return this.roadNetwork;
+  }
+
+  getRoadRenderer(): RoadRenderer {
+    return this.roadRenderer;
   }
 
   getPlacementController(): PlacementController | null {

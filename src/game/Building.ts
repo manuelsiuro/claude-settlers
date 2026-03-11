@@ -126,6 +126,60 @@ export function hasRequiredInputs(building: Building): boolean {
   return true;
 }
 
+/** Add resources to a building's input inventory */
+export function addToInventory(
+  inventory: ResourceInventory,
+  resource: ResourceType,
+  amount: number,
+): void {
+  inventory[resource] = (inventory[resource] ?? 0) + amount;
+}
+
+/** Remove resources from a building's inventory. Returns actual amount removed. */
+export function removeFromInventory(
+  inventory: ResourceInventory,
+  resource: ResourceType,
+  amount: number,
+): number {
+  const current = inventory[resource] ?? 0;
+  const removed = Math.min(current, amount);
+  const remaining = current - removed;
+  if (remaining <= 0) {
+    delete inventory[resource];
+  } else {
+    inventory[resource] = remaining;
+  }
+  return removed;
+}
+
+/** Get the amount of a resource in an inventory */
+export function getInventoryAmount(
+  inventory: ResourceInventory,
+  resource: ResourceType,
+): number {
+  return inventory[resource] ?? 0;
+}
+
+/**
+ * Starting resources for the Castle.
+ * Provides enough to build basic Tier 1 buildings and get the economy started.
+ */
+export const CASTLE_STARTING_RESOURCES: { resource: ResourceType; amount: number }[] = [
+  { resource: 'wood' as ResourceType, amount: 12 },
+  { resource: 'stone' as ResourceType, amount: 8 },
+  { resource: 'planks' as ResourceType, amount: 6 },
+  { resource: 'tools' as ResourceType, amount: 4 },
+  { resource: 'fish' as ResourceType, amount: 4 },
+  { resource: 'bread' as ResourceType, amount: 4 },
+];
+
+/** Initialize a Castle building with starting resources */
+export function initializeCastleResources(castle: Building): void {
+  for (const { resource, amount } of CASTLE_STARTING_RESOURCES) {
+    addToInventory(castle.outputInventory, resource, amount);
+  }
+}
+
 /** Reset the building ID counter (for testing) */
 export function resetBuildingIdCounter(): void {
   nextBuildingId = 1;

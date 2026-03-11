@@ -205,6 +205,49 @@ describe('UnitManager', () => {
     });
   });
 
+  describe('orphaned units', () => {
+    it('should send working unit home when building is removed', () => {
+      placeCastle();
+      const building = placeActiveBuilding(BuildingType.WoodcutterHut, 9, 8);
+
+      unitManager.update(3.0); // Spawn
+
+      // Move to working state
+      for (let i = 0; i < 10; i++) {
+        unitManager.update(0.5);
+      }
+
+      const unit = gameState.getAllUnits()[0];
+      expect(unit.state).toBe(UnitState.Working);
+
+      // Remove the building
+      gameState.removeBuilding(building.id);
+
+      // Next update should detect orphan and send home
+      unitManager.update(0.1);
+      expect(unit.state).toBe(UnitState.WalkingHome);
+      expect(unit.assignedBuildingId).toBeNull();
+      expect(unit.path.length).toBeGreaterThan(0);
+    });
+
+    it('should send walking-to-work unit home when building is removed', () => {
+      placeCastle();
+      const building = placeActiveBuilding(BuildingType.WoodcutterHut, 14, 8);
+
+      unitManager.update(3.0); // Spawn
+
+      const unit = gameState.getAllUnits()[0];
+      expect(unit.state).toBe(UnitState.WalkingToWork);
+
+      // Remove the building while unit is in transit
+      gameState.removeBuilding(building.id);
+
+      // Next update should detect orphan and send home
+      unitManager.update(0.1);
+      expect(unit.state).toBe(UnitState.WalkingHome);
+    });
+  });
+
   describe('sendHome', () => {
     it('should send unit back to castle', () => {
       placeCastle();
