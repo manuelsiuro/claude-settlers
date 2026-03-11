@@ -170,7 +170,7 @@ export class PlacementController {
 
     // Check placement validity
     const gameState = this.game.getGameState();
-    const error = gameState.canPlace(this.selectedType, wrapped, 1);
+    const error = gameState.canPlace(this.selectedType, wrapped, this.game.getHumanPlayerId());
     this.canPlaceHere = error === null;
 
     // Update ghost building
@@ -219,7 +219,7 @@ export class PlacementController {
     if (!this.selectedType || !this.currentHex) return;
 
     const gameState = this.game.getGameState();
-    const result = gameState.placeBuilding(this.selectedType, this.currentHex, 1);
+    const result = gameState.placeBuilding(this.selectedType, this.currentHex, this.game.getHumanPlayerId());
 
     if (result.ok) {
       const buildingRenderer = this.game.getBuildingRenderer();

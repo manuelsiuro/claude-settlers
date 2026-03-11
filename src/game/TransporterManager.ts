@@ -51,13 +51,13 @@ export class TransporterManager {
 
   /**
    * Spawn transporters for road segments that don't have one.
+   * Uses the flag's playerId so each player owns their own transporters.
    */
   private spawnTransporters(deltaTime: number): void {
     this.spawnCooldown -= deltaTime;
     if (this.spawnCooldown > 0) return;
     this.spawnCooldown = TransporterManager.SPAWN_INTERVAL;
 
-    const playerId = 1; // TODO: multiplayer
     const roads = this.roadNetwork.getAllRoads();
 
     for (const road of roads) {
@@ -66,11 +66,11 @@ export class TransporterManager {
       const flagA = this.roadNetwork.getFlag(road.flagA);
       if (!flagA) continue;
 
-      // Spawn transporter at flagA's position
+      // Spawn transporter at flagA's position, owned by the flag's player
       const unit = this.gameState.spawnUnit(
         UnitType.Transporter,
         { ...flagA.coord },
-        playerId,
+        flagA.playerId,
       );
 
       road.transporterId = unit.id;

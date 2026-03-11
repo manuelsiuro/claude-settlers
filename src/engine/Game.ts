@@ -79,6 +79,9 @@ export class Game {
   private directionalLight: THREE.DirectionalLight;
   private config: GameConfig;
 
+  /** The human player's ID (always 1 for now) */
+  private humanPlayerId = 1;
+
   /** Notification callback — subscribe to receive game event alerts */
   onNotification: ((notification: GameNotification) => void) | null = null;
 
@@ -151,56 +154,62 @@ export class Game {
         economic: 'Economic supremacy',
       };
       const label = conditionLabels[result.condition] ?? result.condition;
-      if (result.winnerId === 1) {
+      if (result.winnerId === this.humanPlayerId) {
         this.onNotification?.({ type: 'victory', message: `Victory! ${label}!` });
       } else {
         this.onNotification?.({ type: 'defeat', message: `Defeat! Player ${result.winnerId} achieved ${label}` });
       }
     };
     this.victoryManager.onDefeat = (result) => {
-      if (result.playerId === 1) {
+      if (result.playerId === this.humanPlayerId) {
         this.onNotification?.({ type: 'defeat', message: 'Your Castle has been destroyed! Defeat!' });
       }
     };
     this.constructionManager.onBuildingActivated = (building) => {
       this.territoryManager.markDirty();
-      const def = BUILDING_DEFINITIONS[building.type];
-      this.onNotification?.({ type: 'building_complete', message: `${def.label} construction complete` });
+      if (building.playerId === this.humanPlayerId) {
+        const def = BUILDING_DEFINITIONS[building.type];
+        this.onNotification?.({ type: 'building_complete', message: `${def.label} construction complete` });
+      }
     };
     this.gameState.territoryCheck = (q, r, playerId) => this.territoryManager.isOwnedBy(q, r, playerId);
     this.gameState.onBuildingRemoved = (building) => {
       this.territoryManager.markDirty();
-      const def = BUILDING_DEFINITIONS[building.type];
-      this.onNotification?.({ type: 'building_destroyed', message: `${def.label} destroyed` });
+      if (building.playerId === this.humanPlayerId) {
+        const def = BUILDING_DEFINITIONS[building.type];
+        this.onNotification?.({ type: 'building_destroyed', message: `${def.label} destroyed` });
+      }
     };
     this.knightManager.onKnightRecruited = (building) => {
       this.territoryManager.markDirty();
-      const def = BUILDING_DEFINITIONS[building.type];
-      this.onNotification?.({ type: 'knight_recruited', message: `Knight recruited at ${def.label}` });
+      if (building.playerId === this.humanPlayerId) {
+        const def = BUILDING_DEFINITIONS[building.type];
+        this.onNotification?.({ type: 'knight_recruited', message: `Knight recruited at ${def.label}` });
+      }
     };
     this.combatManager.onDuelResolved = (result) => {
-      if (result.winnerPlayerId === 1) {
+      if (result.winnerPlayerId === this.humanPlayerId) {
         const winner = this.gameState.getUnit(result.winnerId);
         const msg = result.rankUp && winner
           ? `Knight victorious — promoted to rank ${winner.knightRank}!`
           : 'Knight won the duel!';
         this.onNotification?.({ type: 'combat_result', message: msg });
-      } else if (result.loserPlayerId === 1) {
+      } else if (result.loserPlayerId === this.humanPlayerId) {
         this.onNotification?.({ type: 'combat_result', message: 'Your knight was defeated' });
       }
-      // NPC-vs-NPC duels: no notification for player 1
+      // NPC-vs-NPC duels: no notification for human player
     };
     this.attackManager.onBuildingUnderAttack = (building) => {
-      if (building.playerId === 1) {
+      if (building.playerId === this.humanPlayerId) {
         const def = BUILDING_DEFINITIONS[building.type];
         this.onNotification?.({ type: 'under_attack', message: `${def.label} is under attack!` });
       }
     };
-    this.attackManager.onBuildingCaptured = (building, byPlayerId) => {
+    this.attackManager.onBuildingCaptured = (building, byPlayerId, oldPlayerId) => {
       const def = BUILDING_DEFINITIONS[building.type];
-      if (byPlayerId === 1) {
+      if (byPlayerId === this.humanPlayerId) {
         this.onNotification?.({ type: 'building_captured', message: `${def.label} captured!` });
-      } else {
+      } else if (oldPlayerId === this.humanPlayerId) {
         this.onNotification?.({ type: 'building_captured', message: `Enemy captured your ${def.label}!` });
       }
     };
@@ -263,8 +272,8 @@ export class Game {
     // Create AI controllers for non-human players (players 2..N)
     this.initAIPlayers();
 
-    // Position camera to look at player 1's Castle (or map center as fallback)
-    const castle1 = this.gameState.findCastle(1);
+    // Position camera to look at human player's Castle (or map center as fallback)
+    const castle1 = this.gameState.findCastle(this.humanPlayerId);
     let lookAt: THREE.Vector3;
     if (castle1) {
       const { x, z } = HexGrid.hexToWorld(castle1.coord.q, castle1.coord.r);
@@ -498,6 +507,10 @@ export class Game {
 
   getConfig(): GameConfig {
     return this.config;
+  }
+
+  getHumanPlayerId(): number {
+    return this.humanPlayerId;
   }
 
   getVictoryManager(): VictoryManager {

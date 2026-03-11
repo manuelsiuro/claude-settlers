@@ -41,8 +41,8 @@ export class AttackManager {
   /** Callback for territory changes (e.g., to update renderer) */
   onTerritoryChanged: (() => void) | null = null;
 
-  /** Callback when a building is captured */
-  onBuildingCaptured: ((building: Building, byPlayerId: number) => void) | null = null;
+  /** Callback when a building is captured (oldPlayerId = previous owner, byPlayerId = captor) */
+  onBuildingCaptured: ((building: Building, byPlayerId: number, oldPlayerId: number) => void) | null = null;
 
   /** Callback when an attack begins against a building */
   onBuildingUnderAttack: ((building: Building) => void) | null = null;
@@ -208,7 +208,7 @@ export class AttackManager {
     // Capture or destroy civilian buildings now in new territory
     this.handleCivilianBuildings(oldPlayerId, newPlayerId);
 
-    this.onBuildingCaptured?.(building, newPlayerId);
+    this.onBuildingCaptured?.(building, newPlayerId, oldPlayerId);
     this.onTerritoryChanged?.();
   }
 

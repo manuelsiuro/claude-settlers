@@ -211,7 +211,7 @@ export class RoadPlacementController {
 
   private handleFlagClick(hex: HexCoord): void {
     const roadNet = this.game.getRoadNetwork();
-    const flag = roadNet.placeFlag(hex, 1);
+    const flag = roadNet.placeFlag(hex, this.game.getHumanPlayerId());
     if (flag) {
       this.onFlagPlaced?.(flag);
     }
@@ -254,7 +254,7 @@ export class RoadPlacementController {
     // Auto-place flag at target if needed
     let targetFlag: Flag | undefined = roadNet.getFlagAt(hex.q, hex.r);
     if (!targetFlag) {
-      const newFlag = roadNet.placeFlag(hex, 1);
+      const newFlag = roadNet.placeFlag(hex, this.game.getHumanPlayerId());
       if (!newFlag) return;
       this.onFlagPlaced?.(newFlag);
       targetFlag = newFlag;

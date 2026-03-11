@@ -14,9 +14,15 @@ const TERRAIN_MINIMAP_COLORS: Record<string, string> = {
 
 const BUILDING_COLOR = '#ffffff';
 const ENEMY_BUILDING_COLOR = '#ff6666';
-const TERRITORY_COLOR = 'rgba(60, 120, 255, 0.3)';
-const ENEMY_TERRITORY_COLOR = 'rgba(255, 80, 80, 0.25)';
 const CAMERA_RECT_COLOR = '#ffcc00';
+
+/** Per-player territory overlay colors (semi-transparent for minimap) */
+const PLAYER_TERRITORY_COLORS: Record<number, string> = {
+  1: 'rgba(60, 120, 255, 0.3)',   // blue
+  2: 'rgba(255, 80, 80, 0.25)',   // red
+  3: 'rgba(80, 200, 80, 0.25)',   // green
+  4: 'rgba(255, 200, 40, 0.25)',  // yellow
+};
 
 /** Throttle interval for minimap redraws (ms) */
 const REDRAW_INTERVAL = 200;
@@ -147,6 +153,7 @@ export class Minimap {
   private draw(): void {
     const { ctx, cellSize } = this;
     const gameState = this.game.getGameState();
+    const humanId = this.game.getHumanPlayerId();
 
     // Draw cached terrain (only compute once)
     if (!this.terrainCache) {
@@ -162,7 +169,7 @@ export class Minimap {
       for (let q = 0; q < this.mapWidth; q++) {
         const owner = territoryMgr.getOwner(q, r);
         if (owner === null) continue;
-        ctx.fillStyle = owner === 1 ? TERRITORY_COLOR : ENEMY_TERRITORY_COLOR;
+        ctx.fillStyle = PLAYER_TERRITORY_COLORS[owner] ?? 'rgba(170, 170, 170, 0.2)';
         ctx.fillRect(q * cellSize, r * cellSize, cellSize, cellSize);
       }
     }
@@ -171,7 +178,7 @@ export class Minimap {
     const allBuildings = gameState.getAllBuildings();
     for (const b of allBuildings) {
       if (b.state === BuildingState.Destroyed) continue;
-      ctx.fillStyle = b.playerId === 1 ? BUILDING_COLOR : ENEMY_BUILDING_COLOR;
+      ctx.fillStyle = b.playerId === humanId ? BUILDING_COLOR : ENEMY_BUILDING_COLOR;
       const px = b.coord.q * cellSize + cellSize / 2;
       const py = b.coord.r * cellSize + cellSize / 2;
       ctx.beginPath();

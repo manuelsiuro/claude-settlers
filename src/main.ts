@@ -252,7 +252,7 @@ gameOverNewGameBtn.addEventListener('click', () => {
 
 /** Show the game over screen */
 function showGameOver(result: VictoryResult): void {
-  const isWin = result.winnerId === 1;
+  const isWin = result.winnerId === getGame().getHumanPlayerId();
   gameOverTitle.textContent = isWin ? 'Victory!' : 'Defeat';
   gameOverTitle.style.color = isWin ? '#4caf50' : '#f44336';
 
@@ -264,13 +264,15 @@ function showGameOver(result: VictoryResult): void {
   gameOverCondition.textContent = conditionLabels[result.condition] ?? result.condition;
 
   // Gather end-game stats
-  const gameState = getGame().getGameState();
-  const buildings = gameState.getBuildingsByPlayer(1);
-  const units = gameState.getUnitsByPlayer(1);
+  const g = getGame();
+  const pid = g.getHumanPlayerId();
+  const gameState = g.getGameState();
+  const buildings = gameState.getBuildingsByPlayer(pid);
+  const units = gameState.getUnitsByPlayer(pid);
   const knights = units.filter(u => u.type === UnitType.Knight);
-  const victoryMgr = getGame().getVictoryManager();
-  const goldBars = victoryMgr.getPlayerGoldBars(1);
-  const territoryPct = Math.round(victoryMgr.getPlayerTerritoryFraction(1) * 100);
+  const victoryMgr = g.getVictoryManager();
+  const goldBars = victoryMgr.getPlayerGoldBars(pid);
+  const territoryPct = Math.round(victoryMgr.getPlayerTerritoryFraction(pid) * 100);
 
   gameOverStats.innerHTML = `
     <div class="game-over-stat-row"><span>Buildings</span><span>${buildings.length}</span></div>
@@ -296,7 +298,7 @@ function wireNotifications(g: Game): void {
       const victoryMgr = g.getVictoryManager();
       const result = victoryMgr.getResult();
 
-      if (notification.type === 'defeat' && victoryMgr.isEliminated(1)) {
+      if (notification.type === 'defeat' && victoryMgr.isEliminated(g.getHumanPlayerId())) {
         showGameOver(result ?? { winnerId: 0, condition: VictoryCondition.Elimination });
       } else if (result) {
         showGameOver(result);
@@ -331,11 +333,11 @@ const statsPanelContent = document.getElementById('stats-panel-content')!;
 const statsCloseBtn = document.getElementById('stats-close-btn')!;
 let statsPanelUpdateInterval: ReturnType<typeof setInterval> | null = null;
 
-/** Get total available resources across Castle + Warehouses for player 1 */
+/** Get total available resources across Castle + Warehouses for the human player */
 function getPlayerResources(): Partial<Record<ResourceType, number>> {
   const totals: Partial<Record<ResourceType, number>> = {};
   const gameState = getGame().getGameState();
-  const buildings = gameState.getBuildingsByPlayer(1);
+  const buildings = gameState.getBuildingsByPlayer(getGame().getHumanPlayerId());
   for (const b of buildings) {
     if (b.type !== BuildingType.Castle && b.type !== BuildingType.Warehouse) continue;
     if (b.state !== BuildingState.Active) continue;
@@ -549,14 +551,15 @@ function startAttackTargeting(sourceBuildingId: string): void {
   attackModeCleanup = cleanup;
 
   selection.onSelectionChanged = (building) => {
-    if (building && building.playerId !== 1) {
+    const humanId = getGame().getHumanPlayerId();
+    if (building && building.playerId !== humanId) {
       const def = BUILDING_DEFINITIONS[building.type];
       if (def.knightSlots > 0) {
         executeAttack(attackSourceBuildingId!, building.id);
       } else {
         showSnackbar('Can only attack military buildings');
       }
-    } else if (building && building.playerId === 1) {
+    } else if (building && building.playerId === humanId) {
       showSnackbar('Cannot attack your own buildings');
     }
 
@@ -865,11 +868,11 @@ function stopInfoPanelUpdates(): void {
 // Statistics Panel
 // ============================================================
 
-/** Gather total resources across ALL player buildings */
+/** Gather total resources across all human player's buildings */
 function getAllPlayerResources(): Partial<Record<ResourceType, number>> {
   const totals: Partial<Record<ResourceType, number>> = {};
   const gameState = getGame().getGameState();
-  const buildings = gameState.getBuildingsByPlayer(1);
+  const buildings = gameState.getBuildingsByPlayer(getGame().getHumanPlayerId());
   for (const b of buildings) {
     for (const inv of [b.inputInventory, b.outputInventory]) {
       for (const [res, amount] of Object.entries(inv)) {
@@ -886,7 +889,7 @@ function getAllPlayerResources(): Partial<Record<ResourceType, number>> {
 /** Get unit counts by type for a player */
 function getPopulationBreakdown(): { type: string; label: string; count: number }[] {
   const gameState = getGame().getGameState();
-  const units = gameState.getUnitsByPlayer(1);
+  const units = gameState.getUnitsByPlayer(getGame().getHumanPlayerId());
   const counts = new Map<string, number>();
   for (const u of units) {
     counts.set(u.type, (counts.get(u.type) ?? 0) + 1);
@@ -904,9 +907,10 @@ function getPopulationBreakdown(): { type: string; label: string; count: number 
 function renderStatsPanel(): void {
   const resources = getAllPlayerResources();
   const population = getPopulationBreakdown();
+  const pid = getGame().getHumanPlayerId();
   const gameState = getGame().getGameState();
-  const buildings = gameState.getBuildingsByPlayer(1);
-  const totalUnits = gameState.getUnitsByPlayer(1).length;
+  const buildings = gameState.getBuildingsByPlayer(pid);
+  const totalUnits = gameState.getUnitsByPlayer(pid).length;
 
   let html = '';
 
@@ -989,7 +993,7 @@ function renderStatsPanel(): void {
   html += '</div>';
 
   // Military section
-  const knights = gameState.getUnitsByPlayer(1).filter(u => u.type === UnitType.Knight);
+  const knights = gameState.getUnitsByPlayer(pid).filter(u => u.type === UnitType.Knight);
   const goldBars = resources[ResourceType.GoldBars] ?? 0;
   html += '<div class="info-section"><div class="info-section-label">Military</div>';
   html += `<div class="info-row">

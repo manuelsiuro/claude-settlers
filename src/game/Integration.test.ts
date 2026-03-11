@@ -804,3 +804,213 @@ describe('Integration: Phase 7 — Notifications & UI Workflow', () => {
     expect(combat.getCombatWins(k1.id)).toBe(0);
   });
 });
+
+// ============================================================
+// Phase 8.4: Multi-player state tests
+// ============================================================
+
+describe('Integration: Multi-player State', () => {
+  let grid: HexGrid;
+  let gameState: GameState;
+  let roadNetwork: RoadNetwork;
+  let unitManager: UnitManager;
+  let constructionManager: ConstructionManager;
+  let transporterManager: TransporterManager;
+  let logisticsManager: LogisticsManager;
+  let productionManager: ProductionManager;
+
+  function tick(dt: number): void {
+    unitManager.update(dt);
+    constructionManager.update(dt);
+    productionManager.update(dt);
+    logisticsManager.update(dt);
+    transporterManager.update(dt);
+  }
+
+  beforeEach(() => {
+    resetBuildingIdCounter();
+    resetUnitIdCounter();
+    resetRoadNetworkIdCounters();
+
+    grid = new HexGrid(24, 24);
+    for (let q = 0; q < 24; q++) {
+      for (let r = 0; r < 24; r++) {
+        grid.setTile(q, r, TerrainType.Grassland, 0.5);
+      }
+    }
+
+    gameState = new GameState(grid);
+    roadNetwork = new RoadNetwork(grid);
+    unitManager = new UnitManager(gameState);
+    constructionManager = new ConstructionManager(gameState);
+    transporterManager = new TransporterManager(gameState, roadNetwork);
+    logisticsManager = new LogisticsManager(gameState, roadNetwork);
+    productionManager = new ProductionManager(gameState);
+  });
+
+  it('ConstructionManager delivers resources from each player\'s own Castle', () => {
+    // Player 1 Castle at (4, 4)
+    const r1 = gameState.placeBuilding(BuildingType.Castle, { q: 4, r: 4 }, 1);
+    if (!r1.ok) throw new Error('Failed to place castle 1');
+    initializeCastleResources(r1.building);
+
+    // Player 2 Castle at (18, 18)
+    const r2 = gameState.placeBuilding(BuildingType.Castle, { q: 18, r: 18 }, 2);
+    if (!r2.ok) throw new Error('Failed to place castle 2');
+    initializeCastleResources(r2.building);
+
+    // Player 1 places a woodcutter hut
+    const b1 = gameState.placeBuilding(BuildingType.WoodcutterHut, { q: 6, r: 4 }, 1);
+    if (!b1.ok) throw new Error('Failed to place building for p1');
+
+    // Player 2 places a woodcutter hut
+    const b2 = gameState.placeBuilding(BuildingType.WoodcutterHut, { q: 20, r: 18 }, 2);
+    if (!b2.ok) throw new Error('Failed to place building for p2');
+
+    // Both should start as Planned
+    expect(b1.building.state).toBe(BuildingState.Planned);
+    expect(b2.building.state).toBe(BuildingState.Planned);
+
+    // Tick enough for delivery (WoodcutterHut costs 2 Wood)
+    constructionManager.update(1.1);
+    constructionManager.update(1.1);
+
+    // Both should transition to UnderConstruction
+    expect(b1.building.state).toBe(BuildingState.UnderConstruction);
+    expect(b2.building.state).toBe(BuildingState.UnderConstruction);
+
+    // Each Castle should have spent resources independently
+    const p1Castle = gameState.findCastle(1)!;
+    const p2Castle = gameState.findCastle(2)!;
+    expect(p1Castle.outputInventory[ResourceType.Wood]).toBe(10); // 12 - 2
+    expect(p2Castle.outputInventory[ResourceType.Wood]).toBe(10); // 12 - 2
+  });
+
+  it('UnitManager spawns workers for multiple players', () => {
+    // Player 1 Castle + building
+    const r1 = gameState.placeBuilding(BuildingType.Castle, { q: 4, r: 4 }, 1);
+    if (!r1.ok) throw new Error('Failed');
+    initializeCastleResources(r1.building);
+    const b1 = gameState.placeBuilding(BuildingType.WoodcutterHut, { q: 6, r: 4 }, 1);
+    if (!b1.ok) throw new Error('Failed');
+    b1.building.state = BuildingState.Active;
+
+    // Player 2 Castle + building
+    const r2 = gameState.placeBuilding(BuildingType.Castle, { q: 18, r: 18 }, 2);
+    if (!r2.ok) throw new Error('Failed');
+    initializeCastleResources(r2.building);
+    const b2 = gameState.placeBuilding(BuildingType.WoodcutterHut, { q: 20, r: 18 }, 2);
+    if (!b2.ok) throw new Error('Failed');
+    b2.building.state = BuildingState.Active;
+
+    // Tick to spawn workers
+    unitManager.update(2.1);
+
+    // Both players should have workers spawned
+    const p1Units = gameState.getUnitsByPlayer(1);
+    const p2Units = gameState.getUnitsByPlayer(2);
+    expect(p1Units.length).toBeGreaterThan(0);
+    expect(p2Units.length).toBeGreaterThan(0);
+
+    // Workers should belong to correct players
+    expect(p1Units[0].playerId).toBe(1);
+    expect(p2Units[0].playerId).toBe(2);
+  });
+
+  it('TransporterManager spawns transporters with flag owner\'s playerId', () => {
+    // Player 1 Castle
+    const r1 = gameState.placeBuilding(BuildingType.Castle, { q: 4, r: 4 }, 1);
+    if (!r1.ok) throw new Error('Failed');
+    initializeCastleResources(r1.building);
+
+    // Player 2 Castle
+    const r2 = gameState.placeBuilding(BuildingType.Castle, { q: 18, r: 18 }, 2);
+    if (!r2.ok) throw new Error('Failed');
+    initializeCastleResources(r2.building);
+
+    // Place flags and road for player 1 (adjacent hexes)
+    const f1a = roadNetwork.placeFlag({ q: 4, r: 4 }, 1)!;
+    const f1b = roadNetwork.placeFlag({ q: 5, r: 4 }, 1)!;
+    roadNetwork.connectFlags(f1a.id, f1b.id);
+
+    // Place flags and road for player 2 (adjacent hexes)
+    const f2a = roadNetwork.placeFlag({ q: 18, r: 18 }, 2)!;
+    const f2b = roadNetwork.placeFlag({ q: 19, r: 18 }, 2)!;
+    roadNetwork.connectFlags(f2a.id, f2b.id);
+
+    // Tick to spawn transporters
+    transporterManager.update(1.1);
+
+    // Check that transporters have correct player IDs
+    const p1Units = gameState.getUnitsByPlayer(1).filter(u => u.type === UnitType.Transporter);
+    const p2Units = gameState.getUnitsByPlayer(2).filter(u => u.type === UnitType.Transporter);
+    expect(p1Units.length).toBe(1);
+    expect(p2Units.length).toBe(1);
+  });
+
+  it('ConstructionManager spawns builders from each player\'s own Castle', () => {
+    // Player 1 Castle
+    const r1 = gameState.placeBuilding(BuildingType.Castle, { q: 4, r: 4 }, 1);
+    if (!r1.ok) throw new Error('Failed');
+    initializeCastleResources(r1.building);
+
+    // Player 2 Castle
+    const r2 = gameState.placeBuilding(BuildingType.Castle, { q: 18, r: 18 }, 2);
+    if (!r2.ok) throw new Error('Failed');
+    initializeCastleResources(r2.building);
+
+    // Both players place buildings
+    const b1 = gameState.placeBuilding(BuildingType.WoodcutterHut, { q: 6, r: 4 }, 1);
+    if (!b1.ok) throw new Error('Failed');
+    const b2 = gameState.placeBuilding(BuildingType.WoodcutterHut, { q: 20, r: 18 }, 2);
+    if (!b2.ok) throw new Error('Failed');
+
+    // Deliver resources (tick twice for 2 wood each)
+    constructionManager.update(1.1);
+    constructionManager.update(1.1);
+
+    // Both should be UnderConstruction
+    expect(b1.building.state).toBe(BuildingState.UnderConstruction);
+    expect(b2.building.state).toBe(BuildingState.UnderConstruction);
+
+    // Tick again to spawn builders
+    constructionManager.update(1.1);
+
+    // Find builders for each player
+    const p1Builders = gameState.getUnitsByPlayer(1).filter(u => u.type === UnitType.Builder);
+    const p2Builders = gameState.getUnitsByPlayer(2).filter(u => u.type === UnitType.Builder);
+    expect(p1Builders.length).toBe(1);
+    expect(p2Builders.length).toBe(1);
+
+    // Builders spawn at their own Castle
+    expect(p1Builders[0].coord).toEqual({ q: 4, r: 4 });
+    expect(p2Builders[0].coord).toEqual({ q: 18, r: 18 });
+  });
+
+  it('full construction lifecycle works independently for each player', () => {
+    // Player 1 at (4,4), Player 2 at (18,18)
+    const r1 = gameState.placeBuilding(BuildingType.Castle, { q: 4, r: 4 }, 1);
+    if (!r1.ok) throw new Error('Failed');
+    initializeCastleResources(r1.building);
+
+    const r2 = gameState.placeBuilding(BuildingType.Castle, { q: 18, r: 18 }, 2);
+    if (!r2.ok) throw new Error('Failed');
+    initializeCastleResources(r2.building);
+
+    // Both place WoodcutterHuts
+    const b1 = gameState.placeBuilding(BuildingType.WoodcutterHut, { q: 6, r: 4 }, 1);
+    if (!b1.ok) throw new Error('Failed');
+    const b2 = gameState.placeBuilding(BuildingType.WoodcutterHut, { q: 20, r: 18 }, 2);
+    if (!b2.ok) throw new Error('Failed');
+
+    // Run full construction cycle: deliver resources, spawn builders, walk, build
+    // WoodcutterHut: 2 Wood cost, 5s construction time + walk time
+    for (let i = 0; i < 200; i++) {
+      tick(0.2);
+    }
+
+    // Both buildings should be Active
+    expect(b1.building.state).toBe(BuildingState.Active);
+    expect(b2.building.state).toBe(BuildingState.Active);
+  });
+});

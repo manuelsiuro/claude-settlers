@@ -52,21 +52,17 @@ export class ConstructionManager {
   /**
    * Simplified resource delivery: pull resources from Castle to Planned buildings.
    * Delivers one resource at a time per building per tick.
+   * Handles all players — each player's Castle supplies their own buildings.
    */
   private deliverConstructionResources(deltaTime: number): void {
     this.deliveryCooldown -= deltaTime;
     if (this.deliveryCooldown > 0) return;
     this.deliveryCooldown = ConstructionManager.DELIVERY_INTERVAL;
 
-    const playerId = 1; // TODO: multiplayer
-    const castle = this.gameState.findCastle(playerId);
-    if (!castle) return;
-
     const buildings = this.gameState.getAllBuildings();
 
     for (const building of buildings) {
       if (building.state !== BuildingState.Planned) continue;
-      if (building.playerId !== playerId) continue;
 
       const remaining = getRemainingConstructionCost(building);
       if (remaining.length === 0) {
@@ -74,6 +70,10 @@ export class ConstructionManager {
         building.state = BuildingState.UnderConstruction;
         continue;
       }
+
+      // Find this player's Castle to pull resources from
+      const castle = this.gameState.findCastle(building.playerId);
+      if (!castle) continue;
 
       // Deliver one unit of the first needed resource from Castle
       const needed = remaining[0];
@@ -92,21 +92,21 @@ export class ConstructionManager {
 
   /**
    * Spawn builder units for buildings that are UnderConstruction but have no builder.
+   * Handles all players — each player's Castle spawns their own builders.
    */
   private spawnBuilders(): void {
-    const playerId = 1; // TODO: multiplayer
-    const castle = this.gameState.findCastle(playerId);
-    if (!castle) return;
-
     const buildings = this.gameState.getAllBuildings();
 
     for (const building of buildings) {
       if (building.state !== BuildingState.UnderConstruction) continue;
-      if (building.playerId !== playerId) continue;
       if (this.builderAssignments.has(building.id)) continue;
 
+      // Find this player's Castle to spawn from
+      const castle = this.gameState.findCastle(building.playerId);
+      if (!castle) continue;
+
       // Spawn a builder at the Castle
-      const builder = this.gameState.spawnUnit(UnitType.Builder, { ...castle.coord }, playerId);
+      const builder = this.gameState.spawnUnit(UnitType.Builder, { ...castle.coord }, building.playerId);
       this.gameState.assignWorkerToBuilding(builder.id, building.id);
       this.builderAssignments.set(building.id, builder.id);
 

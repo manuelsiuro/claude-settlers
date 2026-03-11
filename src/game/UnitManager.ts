@@ -58,52 +58,65 @@ export class UnitManager {
 
   /**
    * Spawn serfs at Castle when buildings need workers.
-   * Spawns one serf at a time with a cooldown between spawns.
+   * Spawns one serf per player per cooldown cycle.
+   * Handles all players — each player's Castle spawns their own workers.
    */
   private updateSpawning(deltaTime: number): void {
     this.spawnCooldown -= deltaTime;
     if (this.spawnCooldown > 0) return;
 
-    const playerId = 1; // TODO: multi-player support
-    const castle = this.gameState.findCastle(playerId);
-    if (!castle) return;
+    let spawned = false;
 
-    // Find buildings that need workers
-    const needingWorkers = this.gameState.getBuildingsNeedingWorkers(playerId);
-    if (needingWorkers.length === 0) return;
-
-    // Pick the first building that needs a worker
-    const building = needingWorkers[0];
-    const def = BUILDING_DEFINITIONS[building.type];
-    const unitType = WORKER_TO_UNIT_TYPE[def.worker];
-    if (!unitType) return;
-
-    // Spawn the serf at the Castle
-    const unit = this.gameState.spawnUnit(unitType, { ...castle.coord }, playerId);
-
-    // Assign to building via reverse index
-    this.gameState.assignWorkerToBuilding(unit.id, building.id);
-
-    // Pathfind to the building
-    const path = findPath(
-      this.gameState.getGrid(),
-      castle.coord,
-      building.coord,
-    );
-
-    if (path.length > 0) {
-      setUnitPath(unit, path);
-      unit.state = UnitState.WalkingToWork;
-    } else {
-      // No path found — unit stays idle at castle
-      console.warn(
-        `[UnitManager] No path from Castle (${castle.coord.q},${castle.coord.r}) to ${def.label} (${building.coord.q},${building.coord.r}) — unit ${unit.id} stays idle`,
-      );
-      unit.state = UnitState.Idle;
-      this.gameState.unassignWorker(unit.id);
+    // Get all unique player IDs from buildings
+    const playerIds = new Set<number>();
+    for (const b of this.gameState.getAllBuildings()) {
+      playerIds.add(b.playerId);
     }
 
-    this.spawnCooldown = UnitManager.SPAWN_INTERVAL;
+    for (const playerId of playerIds) {
+      const castle = this.gameState.findCastle(playerId);
+      if (!castle) continue;
+
+      // Find buildings that need workers
+      const needingWorkers = this.gameState.getBuildingsNeedingWorkers(playerId);
+      if (needingWorkers.length === 0) continue;
+
+      // Pick the first building that needs a worker
+      const building = needingWorkers[0];
+      const def = BUILDING_DEFINITIONS[building.type];
+      const unitType = WORKER_TO_UNIT_TYPE[def.worker];
+      if (!unitType) continue;
+
+      // Spawn the serf at the Castle
+      const unit = this.gameState.spawnUnit(unitType, { ...castle.coord }, playerId);
+
+      // Assign to building via reverse index
+      this.gameState.assignWorkerToBuilding(unit.id, building.id);
+
+      // Pathfind to the building
+      const path = findPath(
+        this.gameState.getGrid(),
+        castle.coord,
+        building.coord,
+      );
+
+      if (path.length > 0) {
+        setUnitPath(unit, path);
+        unit.state = UnitState.WalkingToWork;
+      } else {
+        console.warn(
+          `[UnitManager] No path from Castle (${castle.coord.q},${castle.coord.r}) to ${def.label} (${building.coord.q},${building.coord.r}) — unit ${unit.id} stays idle`,
+        );
+        unit.state = UnitState.Idle;
+        this.gameState.unassignWorker(unit.id);
+      }
+
+      spawned = true;
+    }
+
+    if (spawned) {
+      this.spawnCooldown = UnitManager.SPAWN_INTERVAL;
+    }
   }
 
   /**
