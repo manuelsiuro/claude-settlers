@@ -9,6 +9,10 @@ import { UnitType } from './UnitType';
 export interface DuelResult {
   winnerId: string;
   loserId: string;
+  /** Player ID of the winner */
+  winnerPlayerId: number;
+  /** Player ID of the loser (captured before removal) */
+  loserPlayerId: number;
   /** Whether the winner gained a rank from this duel */
   rankUp: boolean;
 }
@@ -33,6 +37,9 @@ export class CombatManager {
   /** Wins required per rank advancement */
   private static WINS_PER_RANK = 2;
 
+  /** Optional callback when a duel is resolved */
+  onDuelResolved: ((result: DuelResult) => void) | null = null;
+
   /** Random function (injectable for testing) */
   random: () => number = Math.random;
 
@@ -52,6 +59,7 @@ export class CombatManager {
     const defender = this.gameState.getUnit(defenderId);
 
     if (!attacker || !defender) return null;
+    if (attackerId === defenderId) return null;
     if (attacker.type !== UnitType.Knight || defender.type !== UnitType.Knight) return null;
 
     const attackerStrength = this.knightManager.getKnightStrength(attackerId);
@@ -67,6 +75,11 @@ export class CombatManager {
     const winnerId = attackerWins ? attackerId : defenderId;
     const loserId = attackerWins ? defenderId : attackerId;
     const winner = attackerWins ? attacker : defender;
+    const loser = attackerWins ? defender : attacker;
+
+    // Capture player IDs before removal
+    const winnerPlayerId = winner.playerId;
+    const loserPlayerId = loser.playerId;
 
     // Remove loser
     this.removeCombatant(loserId);
@@ -74,7 +87,9 @@ export class CombatManager {
     // Award win and check rank up
     const rankUp = this.awardWin(winner);
 
-    return { winnerId, loserId, rankUp };
+    const result: DuelResult = { winnerId, loserId, winnerPlayerId, loserPlayerId, rankUp };
+    this.onDuelResolved?.(result);
+    return result;
   }
 
   /**
@@ -121,5 +136,14 @@ export class CombatManager {
   /** Clean up combat tracking data for a removed knight */
   removeKnightData(knightId: string): void {
     this.combatWins.delete(knightId);
+  }
+
+  /** Prune combatWins entries for knights that no longer exist */
+  cleanupStaleData(): void {
+    for (const knightId of this.combatWins.keys()) {
+      if (!this.gameState.getUnit(knightId)) {
+        this.combatWins.delete(knightId);
+      }
+    }
   }
 }

@@ -20,9 +20,25 @@ import { MapRenderer } from './MapRenderer';
 import { BuildingRenderer } from './BuildingRenderer';
 import { UnitRenderer } from './UnitRenderer';
 import { PlacementController } from './PlacementController';
+import { SelectionController } from './SelectionController';
+import { RoadPlacementController } from './RoadPlacementController';
 import { CameraController } from './CameraController';
 import { assetLoader } from './AssetLoader';
 import { updateWaterTime } from './WaterShader';
+import { BUILDING_DEFINITIONS } from '../game/BuildingType';
+
+export type GameNotificationType =
+  | 'building_complete'
+  | 'knight_recruited'
+  | 'under_attack'
+  | 'building_captured'
+  | 'building_destroyed'
+  | 'combat_result';
+
+export interface GameNotification {
+  type: GameNotificationType;
+  message: string;
+}
 
 export class Game {
   private renderer: THREE.WebGLRenderer;
@@ -47,10 +63,15 @@ export class Game {
   private territoryRenderer: TerritoryRenderer;
   private cameraController: CameraController | null = null;
   private placementController: PlacementController | null = null;
+  private selectionController: SelectionController | null = null;
+  private roadPlacementController: RoadPlacementController | null = null;
   private grid: HexGrid;
   private gameState: GameState;
   private frustum = 10;
   private directionalLight: THREE.DirectionalLight;
+
+  /** Notification callback — subscribe to receive game event alerts */
+  onNotification: ((notification: GameNotification) => void) | null = null;
 
   constructor(container: HTMLElement) {
     this.container = container;
@@ -105,10 +126,48 @@ export class Game {
     this.knightManager = new KnightManager(this.gameState);
     this.combatManager = new CombatManager(this.gameState, this.knightManager);
     this.attackManager = new AttackManager(this.gameState, this.combatManager, this.territoryManager);
-    this.constructionManager.onBuildingActivated = () => this.territoryManager.markDirty();
+    this.constructionManager.onBuildingActivated = (building) => {
+      this.territoryManager.markDirty();
+      const def = BUILDING_DEFINITIONS[building.type];
+      this.onNotification?.({ type: 'building_complete', message: `${def.label} construction complete` });
+    };
     this.gameState.territoryCheck = (q, r, playerId) => this.territoryManager.isOwnedBy(q, r, playerId);
-    this.gameState.onBuildingRemoved = () => this.territoryManager.markDirty();
-    this.knightManager.onKnightRecruited = () => this.territoryManager.markDirty();
+    this.gameState.onBuildingRemoved = (building) => {
+      this.territoryManager.markDirty();
+      const def = BUILDING_DEFINITIONS[building.type];
+      this.onNotification?.({ type: 'building_destroyed', message: `${def.label} destroyed` });
+    };
+    this.knightManager.onKnightRecruited = (building) => {
+      this.territoryManager.markDirty();
+      const def = BUILDING_DEFINITIONS[building.type];
+      this.onNotification?.({ type: 'knight_recruited', message: `Knight recruited at ${def.label}` });
+    };
+    this.combatManager.onDuelResolved = (result) => {
+      if (result.winnerPlayerId === 1) {
+        const winner = this.gameState.getUnit(result.winnerId);
+        const msg = result.rankUp && winner
+          ? `Knight victorious — promoted to rank ${winner.knightRank}!`
+          : 'Knight won the duel!';
+        this.onNotification?.({ type: 'combat_result', message: msg });
+      } else if (result.loserPlayerId === 1) {
+        this.onNotification?.({ type: 'combat_result', message: 'Your knight was defeated' });
+      }
+      // NPC-vs-NPC duels: no notification for player 1
+    };
+    this.attackManager.onBuildingUnderAttack = (building) => {
+      if (building.playerId === 1) {
+        const def = BUILDING_DEFINITIONS[building.type];
+        this.onNotification?.({ type: 'under_attack', message: `${def.label} is under attack!` });
+      }
+    };
+    this.attackManager.onBuildingCaptured = (building, byPlayerId) => {
+      const def = BUILDING_DEFINITIONS[building.type];
+      if (byPlayerId === 1) {
+        this.onNotification?.({ type: 'building_captured', message: `${def.label} captured!` });
+      } else {
+        this.onNotification?.({ type: 'building_captured', message: `Enemy captured your ${def.label}!` });
+      }
+    };
     this.roadRenderer = new RoadRenderer();
     this.territoryRenderer = new TerritoryRenderer();
 
@@ -177,6 +236,12 @@ export class Game {
     // Placement controller
     this.placementController = new PlacementController(this);
 
+    // Selection controller (building click-to-select)
+    this.selectionController = new SelectionController(this);
+
+    // Road placement controller (flag & road building)
+    this.roadPlacementController = new RoadPlacementController(this);
+
     const clock = new THREE.Clock();
     const animate = (): void => {
       this.animationId = requestAnimationFrame(animate);
@@ -191,6 +256,7 @@ export class Game {
       this.transporterManager.update(deltaTime);
       this.knightManager.update(deltaTime);
       this.attackManager.update();
+      this.combatManager.cleanupStaleData();
       this.roadRenderer.sync(this.roadNetwork);
       this.territoryRenderer.sync(this.territoryManager);
       const allUnits = this.gameState.getAllUnits();
@@ -235,6 +301,8 @@ export class Game {
       cancelAnimationFrame(this.animationId);
     }
     window.removeEventListener('resize', this.onResize);
+    this.roadPlacementController?.dispose();
+    this.selectionController?.dispose();
     this.placementController?.dispose();
     this.cameraController?.dispose();
     this.territoryRenderer.dispose();
@@ -243,6 +311,16 @@ export class Game {
     this.buildingRenderer.dispose();
     this.mapRenderer.dispose();
     this.renderer.dispose();
+
+    // Clean up manager callbacks to prevent memory leaks
+    this.constructionManager.onBuildingActivated = null;
+    this.gameState.onBuildingRemoved = null;
+    this.knightManager.onKnightRecruited = null;
+    this.combatManager.onDuelResolved = null;
+    this.attackManager.onBuildingUnderAttack = null;
+    this.attackManager.onBuildingCaptured = null;
+    this.attackManager.onTerritoryChanged = null;
+    this.onNotification = null;
   }
 
   getScene(): THREE.Scene {
@@ -307,6 +385,14 @@ export class Game {
 
   getPlacementController(): PlacementController | null {
     return this.placementController;
+  }
+
+  getSelectionController(): SelectionController | null {
+    return this.selectionController;
+  }
+
+  getRoadPlacementController(): RoadPlacementController | null {
+    return this.roadPlacementController;
   }
 
   /** Update camera frustum (for zoom) */

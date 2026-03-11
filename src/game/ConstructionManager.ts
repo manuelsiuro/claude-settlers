@@ -1,3 +1,4 @@
+import type { Building } from './Building';
 import {
   BuildingState,
   hasAllConstructionResources,
@@ -31,7 +32,7 @@ export class ConstructionManager {
   private deliveryCooldown = 0;
 
   /** Optional callback when a building transitions to Active */
-  onBuildingActivated: (() => void) | null = null;
+  onBuildingActivated: ((building: Building) => void) | null = null;
 
   constructor(gameState: GameState) {
     this.gameState = gameState;
@@ -148,7 +149,7 @@ export class ConstructionManager {
       if (building.constructionProgress >= 1.0) {
         building.constructionProgress = 1.0;
         building.state = BuildingState.Active;
-        this.onBuildingActivated?.();
+        this.onBuildingActivated?.(building);
         this.sendBuilderHome(builder, buildingId);
       }
     }

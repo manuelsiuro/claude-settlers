@@ -41,6 +41,12 @@ export class AttackManager {
   /** Callback for territory changes (e.g., to update renderer) */
   onTerritoryChanged: (() => void) | null = null;
 
+  /** Callback when a building is captured */
+  onBuildingCaptured: ((building: Building, byPlayerId: number) => void) | null = null;
+
+  /** Callback when an attack begins against a building */
+  onBuildingUnderAttack: ((building: Building) => void) | null = null;
+
   constructor(
     gameState: GameState,
     combatManager: CombatManager,
@@ -91,6 +97,8 @@ export class AttackManager {
     setUnitPath(knight, path);
     knight.state = UnitState.WalkingToWork;
     knight.assignedBuildingId = targetBuildingId;
+
+    this.onBuildingUnderAttack?.(target);
 
     this.attacks.push({
       knightId,
@@ -200,6 +208,7 @@ export class AttackManager {
     // Capture or destroy civilian buildings now in new territory
     this.handleCivilianBuildings(oldPlayerId, newPlayerId);
 
+    this.onBuildingCaptured?.(building, newPlayerId);
     this.onTerritoryChanged?.();
   }
 

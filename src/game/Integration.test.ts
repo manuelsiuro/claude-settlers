@@ -335,3 +335,472 @@ describe('Integration: Territory & Military', () => {
     if (!result2.ok) expect(result2.error).toBe('outside_territory');
   });
 });
+
+describe('Integration: Phase 7 — Notifications & UI Workflow', () => {
+  let grid: HexGrid;
+  let gameState: GameState;
+  let constructionManager: ConstructionManager;
+  let knightManager: KnightManager;
+  let combatManager: CombatManager;
+  let attackManager: AttackManager;
+  let territoryManager: TerritoryManager;
+  let unitManager: UnitManager;
+
+  beforeEach(() => {
+    resetBuildingIdCounter();
+    resetUnitIdCounter();
+    resetRoadNetworkIdCounters();
+
+    grid = new HexGrid(20, 20);
+    for (let q = 0; q < 20; q++) {
+      for (let r = 0; r < 20; r++) {
+        grid.setTile(q, r, TerrainType.Grassland, 0.5);
+      }
+    }
+
+    gameState = new GameState(grid);
+    territoryManager = new TerritoryManager(gameState);
+    knightManager = new KnightManager(gameState);
+    combatManager = new CombatManager(gameState, knightManager);
+    attackManager = new AttackManager(gameState, combatManager, territoryManager);
+    constructionManager = new ConstructionManager(gameState);
+    unitManager = new UnitManager(gameState);
+  });
+
+  it('should fire onBuildingActivated with building when construction completes', () => {
+    const castle = gameState.placeBuilding(BuildingType.Castle, { q: 10, r: 10 }, 1);
+    expect(castle.ok).toBe(true);
+    if (!castle.ok) return;
+    initializeCastleResources(castle.building);
+
+    const wc = gameState.placeBuilding(BuildingType.WoodcutterHut, { q: 11, r: 10 }, 1);
+    expect(wc.ok).toBe(true);
+    if (!wc.ok) return;
+
+    let activatedBuilding: import('./Building').Building | null = null;
+    constructionManager.onBuildingActivated = (building) => {
+      activatedBuilding = building;
+    };
+
+    // Simulate construction (deliver resources + builder work)
+    for (let i = 0; i < 120; i++) {
+      unitManager.update(0.5);
+      constructionManager.update(0.5);
+    }
+
+    expect(activatedBuilding).not.toBeNull();
+    expect(activatedBuilding!.type).toBe(BuildingType.WoodcutterHut);
+    expect(activatedBuilding!.state).toBe(BuildingState.Active);
+  });
+
+  it('should fire onKnightRecruited with building when knight is recruited', () => {
+    gameState.placeBuilding(BuildingType.Castle, { q: 10, r: 10 }, 1);
+    const hut = gameState.placeBuilding(BuildingType.GuardHut, { q: 12, r: 10 }, 1);
+    expect(hut.ok).toBe(true);
+    if (!hut.ok) return;
+    hut.building.state = BuildingState.Active;
+
+    addToInventory(hut.building.inputInventory, ResourceType.Swords, 1);
+    addToInventory(hut.building.inputInventory, ResourceType.Shields, 1);
+
+    let recruitedAt: import('./Building').Building | null = null;
+    knightManager.onKnightRecruited = (building) => {
+      recruitedAt = building;
+    };
+
+    knightManager.update(2);
+
+    expect(recruitedAt).not.toBeNull();
+    expect(recruitedAt!.type).toBe(BuildingType.GuardHut);
+    expect(hut.building.knightIds).toHaveLength(1);
+  });
+
+  it('should fire onDuelResolved when combat occurs', () => {
+    gameState.placeBuilding(BuildingType.Castle, { q: 5, r: 10 }, 1);
+    gameState.placeBuilding(BuildingType.Castle, { q: 15, r: 10 }, 2);
+
+    const k1 = gameState.spawnUnit(UnitType.Knight, { q: 6, r: 10 }, 1);
+    k1.knightRank = 3;
+    const k2 = gameState.spawnUnit(UnitType.Knight, { q: 14, r: 10 }, 2);
+    k2.knightRank = 1;
+
+    let duelResult: import('./CombatManager').DuelResult | null = null;
+    combatManager.onDuelResolved = (result) => {
+      duelResult = result;
+    };
+    // Fix random for deterministic test
+    combatManager.random = () => 0.1; // attacker wins (high strength)
+
+    combatManager.resolveDuel(k1.id, k2.id);
+
+    expect(duelResult).not.toBeNull();
+    expect(duelResult!.winnerId).toBe(k1.id);
+    expect(duelResult!.loserId).toBe(k2.id);
+    expect(duelResult!.winnerPlayerId).toBe(1);
+    expect(duelResult!.loserPlayerId).toBe(2);
+  });
+
+  it('should include correct playerIds in DuelResult for NPC-vs-NPC combat', () => {
+    gameState.placeBuilding(BuildingType.Castle, { q: 5, r: 10 }, 2);
+    gameState.placeBuilding(BuildingType.Castle, { q: 15, r: 10 }, 3);
+
+    const k1 = gameState.spawnUnit(UnitType.Knight, { q: 6, r: 10 }, 2);
+    k1.knightRank = 2;
+    const k2 = gameState.spawnUnit(UnitType.Knight, { q: 14, r: 10 }, 3);
+    k2.knightRank = 1;
+
+    let duelResult: import('./CombatManager').DuelResult | null = null;
+    combatManager.onDuelResolved = (result) => {
+      duelResult = result;
+    };
+    combatManager.random = () => 0.1; // attacker wins
+
+    combatManager.resolveDuel(k1.id, k2.id);
+
+    expect(duelResult).not.toBeNull();
+    expect(duelResult!.winnerPlayerId).toBe(2);
+    expect(duelResult!.loserPlayerId).toBe(3);
+    // Neither player is player 1 — game notification should NOT fire
+  });
+
+  it('should fire onBuildingUnderAttack and onBuildingCaptured during attack', () => {
+    gameState.placeBuilding(BuildingType.Castle, { q: 5, r: 10 }, 1);
+    const hut1 = gameState.placeBuilding(BuildingType.GuardHut, { q: 8, r: 10 }, 1);
+    if (!hut1.ok) throw new Error('Placement failed');
+    hut1.building.state = BuildingState.Active;
+
+    addToInventory(hut1.building.inputInventory, ResourceType.Swords, 1);
+    addToInventory(hut1.building.inputInventory, ResourceType.Shields, 1);
+    knightManager.update(2);
+    const knightId = hut1.building.knightIds[0];
+
+    // Enemy undefended building
+    const hut2 = gameState.placeBuilding(BuildingType.GuardHut, { q: 12, r: 10 }, 2);
+    if (!hut2.ok) throw new Error('Placement failed');
+    hut2.building.state = BuildingState.Active;
+    territoryManager.update();
+
+    let attackedBuilding: import('./Building').Building | null = null;
+    let capturedBuilding: import('./Building').Building | null = null;
+    let capturedBy = 0;
+
+    attackManager.onBuildingUnderAttack = (building) => {
+      attackedBuilding = building;
+    };
+    attackManager.onBuildingCaptured = (building, byPlayerId) => {
+      capturedBuilding = building;
+      capturedBy = byPlayerId;
+    };
+
+    // Order attack — should fire onBuildingUnderAttack
+    attackManager.orderAttack(knightId, hut2.building.id);
+    expect(attackedBuilding).not.toBeNull();
+    expect(attackedBuilding!.id).toBe(hut2.building.id);
+
+    // Simulate arrival
+    const knight = gameState.getUnit(knightId)!;
+    knight.coord = { q: 12, r: 10 };
+    knight.pathIndex = knight.path.length - 1;
+
+    // Process — no defenders, capture immediately
+    attackManager.update();
+
+    expect(capturedBuilding).not.toBeNull();
+    expect(capturedBuilding!.id).toBe(hut2.building.id);
+    expect(capturedBy).toBe(1);
+  });
+
+  it('should fire onBuildingRemoved callback with building', () => {
+    const castle = gameState.placeBuilding(BuildingType.Castle, { q: 10, r: 10 }, 1);
+    expect(castle.ok).toBe(true);
+    const wc = gameState.placeBuilding(BuildingType.WoodcutterHut, { q: 11, r: 10 }, 1);
+    expect(wc.ok).toBe(true);
+    if (!wc.ok) return;
+
+    let removedBuilding: import('./Building').Building | null = null;
+    gameState.onBuildingRemoved = (building) => {
+      removedBuilding = building;
+    };
+
+    gameState.removeBuilding(wc.building.id);
+
+    expect(removedBuilding).not.toBeNull();
+    expect(removedBuilding!.type).toBe(BuildingType.WoodcutterHut);
+  });
+
+  it('should apply gold bonus to knight combat strength', () => {
+    const castle = gameState.placeBuilding(BuildingType.Castle, { q: 10, r: 10 }, 1);
+    expect(castle.ok).toBe(true);
+    if (!castle.ok) return;
+
+    // Add gold bars to Castle output inventory
+    addToInventory(castle.building.outputInventory, ResourceType.GoldBars, 4);
+
+    const hut = gameState.placeBuilding(BuildingType.GuardHut, { q: 12, r: 10 }, 1);
+    expect(hut.ok).toBe(true);
+    if (!hut.ok) return;
+    hut.building.state = BuildingState.Active;
+
+    addToInventory(hut.building.inputInventory, ResourceType.Swords, 1);
+    addToInventory(hut.building.inputInventory, ResourceType.Shields, 1);
+    const knightMgr = new KnightManager(gameState);
+    knightMgr.update(2);
+
+    const knightId = hut.building.knightIds[0];
+    // 4 gold bars × 5% = 20% bonus → 1.2 multiplier
+    expect(knightMgr.getGoldBonus(1)).toBeCloseTo(1.2);
+    // Rank 1 × 1.2 = 1.2
+    expect(knightMgr.getKnightStrength(knightId)).toBeCloseTo(1.2);
+  });
+
+  it('should cap knight rank at 5 after many wins', () => {
+    gameState.placeBuilding(BuildingType.Castle, { q: 10, r: 10 }, 1);
+    gameState.placeBuilding(BuildingType.Castle, { q: 0, r: 0 }, 2);
+
+    const winner = gameState.spawnUnit(UnitType.Knight, { q: 10, r: 10 }, 1);
+    winner.knightRank = 4;
+
+    const knightMgr = new KnightManager(gameState);
+    const combat = new CombatManager(gameState, knightMgr);
+    combat.random = () => 0.0; // attacker always wins
+
+    // Win twice to rank up from 4 → 5
+    const loser1 = gameState.spawnUnit(UnitType.Knight, { q: 1, r: 0 }, 2);
+    loser1.knightRank = 1;
+    combat.resolveDuel(winner.id, loser1.id);
+
+    const loser2 = gameState.spawnUnit(UnitType.Knight, { q: 2, r: 0 }, 2);
+    loser2.knightRank = 1;
+    combat.resolveDuel(winner.id, loser2.id);
+    expect(winner.knightRank).toBe(5);
+
+    // Win more — rank should stay at 5
+    const loser3 = gameState.spawnUnit(UnitType.Knight, { q: 3, r: 0 }, 2);
+    loser3.knightRank = 1;
+    combat.resolveDuel(winner.id, loser3.id);
+
+    const loser4 = gameState.spawnUnit(UnitType.Knight, { q: 4, r: 0 }, 2);
+    loser4.knightRank = 1;
+    combat.resolveDuel(winner.id, loser4.id);
+    expect(winner.knightRank).toBe(5);
+  });
+
+  it('should reject attack order on non-existent or non-military target', () => {
+    gameState.placeBuilding(BuildingType.Castle, { q: 5, r: 10 }, 1);
+    const hut = gameState.placeBuilding(BuildingType.GuardHut, { q: 8, r: 10 }, 1);
+    if (!hut.ok) throw new Error('Placement failed');
+    hut.building.state = BuildingState.Active;
+
+    addToInventory(hut.building.inputInventory, ResourceType.Swords, 1);
+    addToInventory(hut.building.inputInventory, ResourceType.Shields, 1);
+    const knightMgr = new KnightManager(gameState);
+    knightMgr.update(2);
+    const knightId = hut.building.knightIds[0];
+
+    const combat = new CombatManager(gameState, knightMgr);
+    const attack = new AttackManager(gameState, combat, territoryManager);
+
+    // Non-existent target
+    expect(attack.orderAttack(knightId, 'bogus-id')).toBe(false);
+
+    // Attack a civilian building (Woodcutter — 0 knight slots)
+    const wc = gameState.placeBuilding(BuildingType.WoodcutterHut, { q: 12, r: 10 }, 2);
+    if (!wc.ok) throw new Error('Placement failed');
+    wc.building.state = BuildingState.Active;
+    expect(attack.orderAttack(knightId, wc.building.id)).toBe(false);
+  });
+
+  it('should clean up dead knights from buildings during update', () => {
+    gameState.placeBuilding(BuildingType.Castle, { q: 10, r: 10 }, 1);
+    const hut = gameState.placeBuilding(BuildingType.GuardHut, { q: 12, r: 10 }, 1);
+    if (!hut.ok) throw new Error('Placement failed');
+    hut.building.state = BuildingState.Active;
+
+    addToInventory(hut.building.inputInventory, ResourceType.Swords, 1);
+    addToInventory(hut.building.inputInventory, ResourceType.Shields, 1);
+    const knightMgr = new KnightManager(gameState);
+    knightMgr.update(2);
+
+    const knightId = hut.building.knightIds[0];
+    expect(hut.building.knightIds).toHaveLength(1);
+
+    // Remove the knight directly (simulating combat death)
+    gameState.removeUnit(knightId);
+
+    // Knight manager cleanup should remove the dead reference
+    knightMgr.update(2);
+    expect(hut.building.knightIds).toHaveLength(0);
+  });
+
+  it('should calculate player resources across Castle and Warehouses', () => {
+    const castle = gameState.placeBuilding(BuildingType.Castle, { q: 10, r: 10 }, 1);
+    expect(castle.ok).toBe(true);
+    if (!castle.ok) return;
+    initializeCastleResources(castle.building);
+
+    // Castle has: wood(12), stone(8), planks(6), tools(4), fish(4), bread(4)
+    expect(castle.building.outputInventory[ResourceType.Wood]).toBe(12);
+    expect(castle.building.outputInventory[ResourceType.Stone]).toBe(8);
+
+    // Place Warehouse and add resources
+    const wh = gameState.placeBuilding(BuildingType.Warehouse, { q: 12, r: 10 }, 1);
+    expect(wh.ok).toBe(true);
+    if (!wh.ok) return;
+    wh.building.state = BuildingState.Active;
+    addToInventory(wh.building.outputInventory, ResourceType.Wood, 5);
+
+    // Sum resources across storage buildings
+    const buildings = gameState.getBuildingsByPlayer(1);
+    const totals: Partial<Record<ResourceType, number>> = {};
+    for (const b of buildings) {
+      if (b.type !== BuildingType.Castle && b.type !== BuildingType.Warehouse) continue;
+      for (const [res, amount] of Object.entries(b.outputInventory)) {
+        if (amount && amount > 0) {
+          const r = res as ResourceType;
+          totals[r] = (totals[r] ?? 0) + amount;
+        }
+      }
+    }
+
+    expect(totals[ResourceType.Wood]).toBe(17); // 12 + 5
+    expect(totals[ResourceType.Stone]).toBe(8);
+  });
+
+  it('should prevent a knight from dueling itself', () => {
+    gameState.placeBuilding(BuildingType.Castle, { q: 10, r: 10 }, 1);
+    const k = gameState.spawnUnit(UnitType.Knight, { q: 10, r: 10 }, 1);
+    k.knightRank = 2;
+
+    const knightMgr = new KnightManager(gameState);
+    const combat = new CombatManager(gameState, knightMgr);
+
+    const result = combat.resolveDuel(k.id, k.id);
+    expect(result).toBeNull();
+    // Knight should still exist with unchanged state
+    const knight = gameState.getUnit(k.id);
+    expect(knight).toBeDefined();
+    expect(knight!.knightRank).toBe(2);
+  });
+
+  it('should handle multi-defender sequential combat', () => {
+    gameState.placeBuilding(BuildingType.Castle, { q: 5, r: 10 }, 1);
+    const hut1 = gameState.placeBuilding(BuildingType.GuardHut, { q: 8, r: 10 }, 1);
+    if (!hut1.ok) throw new Error('Placement failed');
+    hut1.building.state = BuildingState.Active;
+
+    // Give attacker a high rank to ensure victories
+    addToInventory(hut1.building.inputInventory, ResourceType.Swords, 1);
+    addToInventory(hut1.building.inputInventory, ResourceType.Shields, 1);
+    knightManager.update(2);
+    const attackerId = hut1.building.knightIds[0];
+    const attacker = gameState.getUnit(attackerId)!;
+    attacker.knightRank = 5;
+
+    // Enemy Barracks with 3 defenders (recruit one at a time)
+    const barracks = gameState.placeBuilding(BuildingType.Barracks, { q: 12, r: 10 }, 2);
+    if (!barracks.ok) throw new Error('Placement failed');
+    barracks.building.state = BuildingState.Active;
+    for (let i = 0; i < 3; i++) {
+      addToInventory(barracks.building.inputInventory, ResourceType.Swords, 1);
+      addToInventory(barracks.building.inputInventory, ResourceType.Shields, 1);
+      knightManager.update(2);
+    }
+    expect(barracks.building.knightIds).toHaveLength(3);
+
+    combatManager.random = () => 0.0; // attacker always wins
+
+    // Order attack
+    territoryManager.update();
+    const ordered = attackManager.orderAttack(attackerId, barracks.building.id);
+    expect(ordered).toBe(true);
+
+    // Simulate arrival
+    attacker.coord = { q: 12, r: 10 };
+    attacker.pathIndex = attacker.path.length - 1;
+
+    // Each update fights one defender; capture happens on the tick after last defender falls
+    attackManager.update(); // Fight defender 1
+    expect(barracks.building.knightIds).toHaveLength(2);
+
+    attackManager.update(); // Fight defender 2
+    expect(barracks.building.knightIds).toHaveLength(1);
+
+    attackManager.update(); // Fight defender 3
+    expect(barracks.building.knightIds).toHaveLength(0);
+
+    attackManager.update(); // No defenders left → capture
+    expect(barracks.building.knightIds).toHaveLength(1); // attacker stationed
+    expect(barracks.building.playerId).toBe(1);
+  });
+
+  it('should not transfer non-Active buildings during territory capture', () => {
+    gameState.placeBuilding(BuildingType.Castle, { q: 5, r: 10 }, 1);
+    const hut1 = gameState.placeBuilding(BuildingType.GuardHut, { q: 8, r: 10 }, 1);
+    if (!hut1.ok) throw new Error('Placement failed');
+    hut1.building.state = BuildingState.Active;
+    addToInventory(hut1.building.inputInventory, ResourceType.Swords, 1);
+    addToInventory(hut1.building.inputInventory, ResourceType.Shields, 1);
+    knightManager.update(2);
+    const attackerId = hut1.building.knightIds[0];
+    const attacker = gameState.getUnit(attackerId)!;
+    attacker.knightRank = 5;
+
+    // Enemy Guard Hut (undefended)
+    const hut2 = gameState.placeBuilding(BuildingType.GuardHut, { q: 12, r: 10 }, 2);
+    if (!hut2.ok) throw new Error('Placement failed');
+    hut2.building.state = BuildingState.Active;
+
+    // Enemy Planned building in same area
+    const planned = gameState.placeBuilding(BuildingType.WoodcutterHut, { q: 13, r: 10 }, 2);
+    if (!planned.ok) throw new Error('Placement failed');
+    expect(planned.building.state).toBe(BuildingState.Planned);
+
+    territoryManager.update();
+    combatManager.random = () => 0.0;
+
+    attackManager.orderAttack(attackerId, hut2.building.id);
+    attacker.coord = { q: 12, r: 10 };
+    attacker.pathIndex = attacker.path.length - 1;
+    attackManager.update();
+
+    // Guard Hut captured
+    expect(hut2.building.playerId).toBe(1);
+    // Planned building should NOT have been transferred
+    expect(planned.building.playerId).toBe(2);
+  });
+
+  it('should cap gold bonus at 50% with more than 10 gold bars', () => {
+    const castle = gameState.placeBuilding(BuildingType.Castle, { q: 10, r: 10 }, 1);
+    if (!castle.ok) throw new Error('Castle placement failed');
+    addToInventory(castle.building.outputInventory, ResourceType.GoldBars, 20);
+
+    const knightMgr = new KnightManager(gameState);
+    // 20 gold bars × 5% = 100%, but capped at 50%
+    expect(knightMgr.getGoldBonus(1)).toBeCloseTo(1.5);
+  });
+
+  it('should clean up combatWins for removed knights', () => {
+    gameState.placeBuilding(BuildingType.Castle, { q: 10, r: 10 }, 1);
+    gameState.placeBuilding(BuildingType.Castle, { q: 0, r: 0 }, 2);
+
+    const k1 = gameState.spawnUnit(UnitType.Knight, { q: 10, r: 10 }, 1);
+    k1.knightRank = 3;
+
+    const knightMgr = new KnightManager(gameState);
+    const combat = new CombatManager(gameState, knightMgr);
+    combat.random = () => 0.0; // attacker always wins
+
+    // Win a duel to accumulate combatWins
+    const enemy = gameState.spawnUnit(UnitType.Knight, { q: 1, r: 0 }, 2);
+    enemy.knightRank = 1;
+    combat.resolveDuel(k1.id, enemy.id);
+    expect(combat.getCombatWins(k1.id)).toBe(1);
+
+    // Remove the knight externally (e.g., building destroyed)
+    gameState.removeUnit(k1.id);
+
+    // Cleanup should prune the stale entry
+    combat.cleanupStaleData();
+    expect(combat.getCombatWins(k1.id)).toBe(0);
+  });
+});

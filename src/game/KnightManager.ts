@@ -1,3 +1,4 @@
+import type { Building } from './Building';
 import { BuildingState, getInventoryAmount, removeFromInventory } from './Building';
 import { BUILDING_DEFINITIONS } from './BuildingType';
 import { ResourceType } from './ResourceType';
@@ -25,7 +26,7 @@ export class KnightManager {
   private recruitCooldown = 0;
 
   /** Optional callback when a knight is recruited (for territory recalculation) */
-  onKnightRecruited: (() => void) | null = null;
+  onKnightRecruited: ((building: Building) => void) | null = null;
 
   constructor(gameState: GameState) {
     this.gameState = gameState;
@@ -77,7 +78,7 @@ export class KnightManager {
 
       building.knightIds.push(knight.id);
 
-      this.onKnightRecruited?.();
+      this.onKnightRecruited?.(building);
     }
   }
 
