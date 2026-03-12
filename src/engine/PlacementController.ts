@@ -32,6 +32,7 @@ export class PlacementController {
   private highlightMesh: THREE.Mesh | null = null;
   private currentHex: HexCoord | null = null;
   private canPlaceHere = false;
+  private currentPlacementError: string | null = null;
 
   // Distance-based placement info
   private _placementDistance: number | null = null;
@@ -47,6 +48,8 @@ export class PlacementController {
   onModeChanged: ((active: boolean) => void) | null = null;
   // Callback when preview position updates (for UI distance display)
   onPreviewUpdated: (() => void) | null = null;
+  // Callback when placement fails
+  onPlacementError: ((error: string, type: BuildingType) => void) | null = null;
 
   constructor(game: Game) {
     this.game = game;
@@ -70,6 +73,7 @@ export class PlacementController {
     this.removeHighlight();
     this.currentHex = null;
     this.canPlaceHere = false;
+    this.currentPlacementError = null;
     this._placementDistance = null;
     this._placementRating = null;
     this.canvas.style.cursor = '';
@@ -131,8 +135,12 @@ export class PlacementController {
       return;
     }
 
-    if (e.button === 0 && this.selectedType && this.canPlaceHere && this.currentHex) {
-      this.confirmPlacement();
+    if (e.button === 0 && this.selectedType && this.currentHex) {
+      if (this.canPlaceHere) {
+        this.confirmPlacement();
+      } else if (this.currentPlacementError) {
+        this.onPlacementError?.(this.currentPlacementError, this.selectedType);
+      }
     }
   };
 
@@ -153,8 +161,12 @@ export class PlacementController {
     const dy = touch.clientY - this.mouseDownPos.y;
     if (Math.hypot(dx, dy) > CLICK_THRESHOLD) return;
 
-    if (this.canPlaceHere && this.currentHex) {
-      this.confirmPlacement();
+    if (this.currentHex) {
+      if (this.canPlaceHere) {
+        this.confirmPlacement();
+      } else if (this.currentPlacementError && this.selectedType) {
+        this.onPlacementError?.(this.currentPlacementError, this.selectedType);
+      }
     }
   };
 
@@ -190,6 +202,7 @@ export class PlacementController {
     const gameState = this.game.getGameState();
     const error = gameState.canPlace(this.selectedType, wrapped, this.game.getHumanPlayerId());
     this.canPlaceHere = error === null;
+    this.currentPlacementError = error;
 
     // Compute distance rating for gathering buildings
     const def = BUILDING_DEFINITIONS[this.selectedType];
@@ -259,6 +272,8 @@ export class PlacementController {
       const buildingRenderer = this.game.getBuildingRenderer();
       buildingRenderer.addBuilding(result.building, this.game.getGrid());
       this.onBuildingPlaced?.(this.selectedType, this.currentHex);
+    } else {
+      this.onPlacementError?.(result.error, this.selectedType);
     }
 
     // Stay in placement mode for quick multi-placement

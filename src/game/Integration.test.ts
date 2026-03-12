@@ -21,6 +21,7 @@ import { ResourceType } from './ResourceType';
 import { UnitType } from './UnitType';
 import { UnitState, resetUnitIdCounter } from './Unit';
 import { Difficulty } from './GameConfig';
+import { GeologistManager } from './GeologistManager';
 import { serializeGame, deserializeGame } from './SaveLoad';
 import type { SaveData } from './SaveLoad';
 
@@ -1231,6 +1232,7 @@ describe('Integration: Save/Load Round-Trip', () => {
   let combatManager: CombatManager;
   let attackManager: AttackManager;
   let victoryManager: VictoryManager;
+  let geologistManager: GeologistManager;
   let aiPlayer: AIPlayer;
 
   function createManagers() {
@@ -1244,6 +1246,7 @@ describe('Integration: Save/Load Round-Trip', () => {
       logisticsManager,
       knightManager,
       victoryManager,
+      geologistManager,
     };
   }
 
@@ -1285,6 +1288,7 @@ describe('Integration: Save/Load Round-Trip', () => {
     combatManager = new CombatManager(gameState, knightManager);
     attackManager = new AttackManager(gameState, combatManager, territoryManager);
     victoryManager = new VictoryManager(gameState, territoryManager, [1, 2]);
+    geologistManager = new GeologistManager(gameState);
 
     gameState.territoryCheck = (q, r, pid) => territoryManager.isOwnedBy(q, r, pid);
 
@@ -1374,6 +1378,7 @@ describe('Integration: Save/Load Round-Trip', () => {
     const cb2 = new CombatManager(gs2, km2);
     const am2 = new AttackManager(gs2, cb2, terr2);
     const vm2 = new VictoryManager(gs2, terr2, [1, 2]);
+    const gm2 = new GeologistManager(gs2);
 
     const ai2 = new AIPlayer(2, Difficulty.Normal, gs2, terr2, am2, km2, () => {});
 
@@ -1389,6 +1394,7 @@ describe('Integration: Save/Load Round-Trip', () => {
         logisticsManager: lm2,
         knightManager: km2,
         victoryManager: vm2,
+        geologistManager: gm2,
       },
       [ai2],
     );
@@ -1459,6 +1465,7 @@ describe('Integration: Save/Load Round-Trip', () => {
     const cm2 = new ConstructionManager(gs2);
     const tm2 = new TransporterManager(gs2, rn2);
     const lm2 = new LogisticsManager(gs2, rn2);
+    const gm2 = new GeologistManager(gs2);
 
     const ai2 = new AIPlayer(2, Difficulty.Normal, gs2, terr2, am2, km2, () => {});
 
@@ -1474,6 +1481,7 @@ describe('Integration: Save/Load Round-Trip', () => {
         logisticsManager: lm2,
         knightManager: km2,
         victoryManager: vm2,
+        geologistManager: gm2,
       },
       [ai2],
     );
@@ -1528,6 +1536,7 @@ describe('Integration: Save/Load Round-Trip', () => {
     const cm2 = new ConstructionManager(gs2);
     const tm2 = new TransporterManager(gs2, rn2);
     const lm2 = new LogisticsManager(gs2, rn2);
+    const gm2 = new GeologistManager(gs2);
 
     const ai2 = new AIPlayer(2, Difficulty.Normal, gs2, terr2, am2, km2, () => {});
 
@@ -1543,6 +1552,7 @@ describe('Integration: Save/Load Round-Trip', () => {
         logisticsManager: lm2,
         knightManager: km2,
         victoryManager: vm2,
+        geologistManager: gm2,
       },
       [ai2],
     );

@@ -1,4 +1,5 @@
 import { TerrainType } from './TerrainType';
+import type { ResourceType } from './ResourceType';
 
 /**
  * Axial hex coordinates (q, r) using pointy-top hex orientation.
@@ -16,10 +17,18 @@ export interface HexCoord {
   r: number;
 }
 
+/** Hidden ore deposit on a mountain tile, revealed by geologist prospecting */
+export interface ResourceDeposit {
+  resource: ResourceType; // 'iron_ore' | 'coal_ore' | 'gold_ore'
+  revealed: boolean;      // hidden until geologist prospects
+  claimed: boolean;       // true once mine is built
+}
+
 export interface HexTile {
   coord: HexCoord;
   terrain: TerrainType;
   elevation: number;
+  deposit?: ResourceDeposit;
 }
 
 /** Hex size — distance from center to vertex */
@@ -56,9 +65,33 @@ export class HexGrid {
   }
 
   /** Set a tile at the given coordinate */
-  setTile(q: number, r: number, terrain: TerrainType, elevation = 0): void {
+  setTile(q: number, r: number, terrain: TerrainType, elevation = 0, deposit?: ResourceDeposit): void {
     const key = HexGrid.key(q, r);
-    this.tiles.set(key, { coord: { q, r }, terrain, elevation });
+    const tile: HexTile = { coord: { q, r }, terrain, elevation };
+    if (deposit) tile.deposit = deposit;
+    this.tiles.set(key, tile);
+  }
+
+  /** Get the resource deposit on a tile, if any */
+  getDeposit(q: number, r: number): ResourceDeposit | undefined {
+    const tile = this.getTile(q, r);
+    return tile?.deposit;
+  }
+
+  /** Reveal a hidden deposit. Returns true if a deposit was revealed. */
+  revealDeposit(q: number, r: number): boolean {
+    const tile = this.getTile(q, r);
+    if (!tile?.deposit || tile.deposit.revealed) return false;
+    tile.deposit.revealed = true;
+    return true;
+  }
+
+  /** Claim a deposit (when mine is built). Returns true if successful. */
+  claimDeposit(q: number, r: number): boolean {
+    const tile = this.getTile(q, r);
+    if (!tile?.deposit || !tile.deposit.revealed || tile.deposit.claimed) return false;
+    tile.deposit.claimed = true;
+    return true;
   }
 
   /** Get a tile, applying world wrapping */

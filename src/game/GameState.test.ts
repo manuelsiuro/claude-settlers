@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { GameState } from './GameState';
 import { HexGrid } from './HexGrid';
 import { TerrainType } from './TerrainType';
+import { ResourceType } from './ResourceType';
 import { BuildingType } from './BuildingType';
 import { BuildingState, resetBuildingIdCounter } from './Building';
 import { UnitType } from './UnitType';
@@ -24,7 +25,11 @@ describe('GameState', () => {
     }
     // Add some special terrain
     grid.setTile(0, 0, TerrainType.Water, 0.1);
-    grid.setTile(1, 0, TerrainType.Mountain, 0.8);
+    grid.setTile(1, 0, TerrainType.Mountain, 0.8, {
+      resource: ResourceType.IronOre,
+      revealed: true,
+      claimed: false,
+    });
     grid.setTile(7, 7, TerrainType.Desert, 0.3);
     state = new GameState(grid);
   });

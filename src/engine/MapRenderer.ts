@@ -52,9 +52,14 @@ export class MapRenderer {
     // no-op
   }
 
+  private scene: THREE.Scene | null = null;
+  private grid: HexGrid | null = null;
+
   /** Build all instanced meshes for the grid and add to scene */
   render(grid: HexGrid, scene: THREE.Scene): void {
     this.dispose();
+    this.scene = scene;
+    this.grid = grid;
 
     const tiles = grid.getAllTiles();
     const wrapOffsets = this.getWrapOffsets(grid);
@@ -64,6 +69,13 @@ export class MapRenderer {
 
     // Build decoration instances
     this.buildDecorationInstances(tiles, wrapOffsets, scene);
+  }
+
+  /** Rebuild all terrain meshes (e.g., after terrain type changes) */
+  rebuild(): void {
+    if (this.scene && this.grid) {
+      this.render(this.grid, this.scene);
+    }
   }
 
   /** Compute Y offset for a tile based on terrain type and elevation */

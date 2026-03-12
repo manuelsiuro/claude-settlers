@@ -10,7 +10,23 @@ import { MapRenderer } from './MapRenderer';
 const BUILDING_SCALE: Partial<Record<string, number>> = {
   [BuildingType.Castle]: 1.2,
   [BuildingType.Barracks]: 0.9,
-  [BuildingType.Warehouse]: 0.9,
+  [BuildingType.IronMine]: 2.5,
+  [BuildingType.CoalMine]: 2.5,
+  [BuildingType.GoldMine]: 2.5,
+  [BuildingType.StoneMine]: 2.5,
+  // Undersized models (raw footprint < 0.35)
+  [BuildingType.GoldsmithMint]: 2.0,
+  [BuildingType.GuardHut]: 1.8,
+  [BuildingType.IronSmelter]: 1.7,
+  [BuildingType.Bakery]: 1.7,
+  [BuildingType.GeologistHut]: 1.5,
+  [BuildingType.BlacksmithArmory]: 1.6,
+  [BuildingType.Watchtower]: 1.7,
+  // Mid-tier buildings slightly undersized (raw footprint 0.42–0.50)
+  [BuildingType.WoodcutterHut]: 1.15,
+  [BuildingType.ForesterHut]: 1.15,
+  [BuildingType.ToolmakerWorkshop]: 1.2,
+  [BuildingType.Slaughterhouse]: 1.2,
 };
 
 const DEFAULT_BUILDING_SCALE = 1.0;

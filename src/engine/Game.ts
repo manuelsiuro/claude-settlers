@@ -17,6 +17,8 @@ import { CombatManager } from '../game/CombatManager';
 import { AttackManager } from '../game/AttackManager';
 import { VictoryManager } from '../game/VictoryManager';
 import { AIPlayer } from '../game/AIPlayer';
+import { GeologistManager } from '../game/GeologistManager';
+import { DepositRenderer } from './DepositRenderer';
 import type { GameConfig } from '../game/GameConfig';
 import { DEFAULT_CONFIG, SCENARIO_TERRAIN_BALANCE } from '../game/GameConfig';
 import { RoadRenderer } from './RoadRenderer';
@@ -69,6 +71,8 @@ export class Game {
   private combatManager: CombatManager;
   private attackManager: AttackManager;
   private victoryManager: VictoryManager;
+  private geologistManager: GeologistManager;
+  private depositRenderer: DepositRenderer;
   private aiPlayers: AIPlayer[] = [];
   private roadRenderer: RoadRenderer;
   private territoryRenderer: TerritoryRenderer;
@@ -159,6 +163,8 @@ export class Game {
     this.attackManager = new AttackManager(this.gameState, this.combatManager, this.territoryManager);
     const playerIds = Array.from({ length: this.config.numPlayers }, (_, i) => i + 1);
     this.victoryManager = new VictoryManager(this.gameState, this.territoryManager, playerIds);
+    this.geologistManager = new GeologistManager(this.gameState);
+    this.depositRenderer = new DepositRenderer();
     this.victoryManager.onVictory = (result) => {
       const conditionLabels = {
         elimination: 'All enemies defeated',
@@ -225,6 +231,24 @@ export class Game {
         this.onNotification?.({ type: 'building_captured', message: `Enemy captured your ${def.label}!` });
       }
     };
+    // Wire geologist deposit reveal → deposit renderer
+    this.geologistManager.onDepositRevealed = (coord, deposit) => {
+      this.depositRenderer.addMarker(coord, deposit.resource, this.grid);
+      const resourceLabels: Record<string, string> = {
+        iron_ore: 'Iron',
+        coal_ore: 'Coal',
+        gold_ore: 'Gold',
+      };
+      const label = resourceLabels[deposit.resource] ?? deposit.resource;
+      this.onNotification?.({ type: 'building_complete', message: `${label} deposit discovered!` });
+    };
+
+    // Wire mine placement → remove deposit marker + rebuild map
+    this.gameState.onMinePlaced = (coord) => {
+      this.depositRenderer.removeMarker(coord);
+      this.mapRenderer.rebuild();
+    };
+
     this.roadRenderer = new RoadRenderer();
     this.territoryRenderer = new TerritoryRenderer();
 
@@ -278,6 +302,9 @@ export class Game {
     // Set up territory renderer with world wrapping
     this.territoryRenderer.addToScene(this.scene, this.grid);
 
+    // Set up deposit renderer with world wrapping
+    this.depositRenderer.addToScene(this.scene, this.grid);
+
     if (savedData) {
       // Restore saved state
       this.initAIPlayers();
@@ -295,6 +322,7 @@ export class Game {
           logisticsManager: this.logisticsManager,
           knightManager: this.knightManager,
           victoryManager: this.victoryManager,
+          geologistManager: this.geologistManager,
         },
         this.aiPlayers,
       );
@@ -305,6 +333,13 @@ export class Game {
       }
       this.roadRenderer.sync(this.roadNetwork);
       this.territoryRenderer.sync(this.territoryManager);
+
+      // Rebuild deposit markers from revealed deposits
+      for (const tile of this.grid.getAllTiles()) {
+        if (tile.deposit?.revealed && !tile.deposit.claimed) {
+          this.depositRenderer.addMarker(tile.coord, tile.deposit.resource, this.grid);
+        }
+      }
 
       // Restore camera
       this.frustum = savedData.frustum;
@@ -375,6 +410,7 @@ export class Game {
       this.unitManager.update(deltaTime);
       this.constructionManager.update(deltaTime);
       this.productionManager.update(deltaTime);
+      this.geologistManager.update(deltaTime);
       this.logisticsManager.update(deltaTime);
       this.transporterManager.update(deltaTime);
       this.knightManager.update(deltaTime);
@@ -536,6 +572,7 @@ export class Game {
     this.selectionController?.dispose();
     this.placementController?.dispose();
     this.cameraController?.dispose();
+    this.depositRenderer.dispose();
     this.territoryRenderer.dispose();
     this.roadRenderer.dispose();
     this.unitRenderer.dispose();
@@ -548,6 +585,8 @@ export class Game {
     // Clean up manager callbacks to prevent memory leaks
     this.constructionManager.onBuildingActivated = null;
     this.gameState.onBuildingRemoved = null;
+    this.gameState.onMinePlaced = null;
+    this.geologistManager.onDepositRevealed = null;
     this.knightManager.onKnightRecruited = null;
     this.combatManager.onDuelResolved = null;
     this.attackManager.onBuildingUnderAttack = null;
@@ -643,6 +682,14 @@ export class Game {
     return this.roadPlacementController;
   }
 
+  getGeologistManager(): GeologistManager {
+    return this.geologistManager;
+  }
+
+  getDepositRenderer(): DepositRenderer {
+    return this.depositRenderer;
+  }
+
   /** Serialize the full game state for save/load */
   serialize(): SaveData {
     // Compute camera target (point the camera is looking at)
@@ -664,6 +711,7 @@ export class Game {
         logisticsManager: this.logisticsManager,
         knightManager: this.knightManager,
         victoryManager: this.victoryManager,
+        geologistManager: this.geologistManager,
       },
       this.aiPlayers,
       {

@@ -13,6 +13,7 @@ import { KnightManager } from './KnightManager';
 import { CombatManager } from './CombatManager';
 import { AttackManager } from './AttackManager';
 import { VictoryManager } from './VictoryManager';
+import { GeologistManager } from './GeologistManager';
 import { AIPlayer } from './AIPlayer';
 import { BuildingType } from './BuildingType';
 import {
@@ -57,6 +58,7 @@ function createManagers(gameState: GameState, roadNetwork: RoadNetwork, territor
   const attackManager = new AttackManager(gameState, combatManager, territoryManager);
   const playerIds = [1, 2];
   const victoryManager = new VictoryManager(gameState, territoryManager, playerIds);
+  const geologistManager = new GeologistManager(gameState);
 
   return {
     unitManager,
@@ -69,6 +71,7 @@ function createManagers(gameState: GameState, roadNetwork: RoadNetwork, territor
     combatManager,
     attackManager,
     victoryManager,
+    geologistManager,
   };
 }
 
@@ -105,7 +108,7 @@ describe('SaveLoad: round-trip serialization', () => {
       { frustum: 10, position: { x: 0, y: 20, z: 0 }, target: { x: 0, y: 0, z: 0 } },
     );
 
-    expect(data.version).toBe(1);
+    expect(data.version).toBe(2);
     expect(data.config).toEqual(testConfig);
     expect(data.buildings).toEqual([]);
     expect(data.units).toEqual([]);
@@ -522,7 +525,7 @@ describe('SaveLoad: round-trip serialization', () => {
     const json = JSON.stringify(data);
     const parsed = JSON.parse(json) as SaveData;
 
-    expect(parsed.version).toBe(1);
+    expect(parsed.version).toBe(2);
     expect(parsed.config.seed).toBe(42);
     expect(parsed.buildings.length).toBe(2);
     expect(parsed.units.length).toBe(1);

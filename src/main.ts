@@ -1018,6 +1018,45 @@ function renderInfoPanel(building: Building): void {
     html += '</div>';
   }
 
+  // Geologist info (no production recipe, but has special behavior)
+  if (building.type === BuildingType.GeologistHut && building.state === BuildingState.Active) {
+    const geoMgr = getGame().getGeologistManager();
+    const ws = geoMgr.getWorkState(building.id);
+    const phaseLabels: Record<string, string> = {
+      idle_at_hut: 'Idle',
+      walking_to_prospect: 'Walking to site',
+      prospecting: 'Prospecting',
+      walking_to_hut: 'Returning',
+    };
+    const phaseLabel = ws ? phaseLabels[ws.phase] ?? ws.phase : 'Idle';
+    const prospectedCount = ws ? ws.prospectedCount : 0;
+
+    html += `<div class="info-section">
+      <div class="info-section-label">${icon('hammer')} Prospecting</div>
+      <div class="info-row">
+        <span class="info-label">Status</span>
+        <span class="info-value">${phaseLabel}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Tiles prospected</span>
+        <span class="info-value">${prospectedCount}</span>
+      </div>`;
+
+    if (ws && ws.phase === 'prospecting') {
+      const pct = Math.min(Math.round(ws.prospectProgress * 100), 100);
+      html += `<div class="info-row">
+        <span class="info-label">Progress</span>
+        <span class="info-value">
+          <div style="display:inline-block;width:60px;height:8px;background:#444;border-radius:4px;vertical-align:middle;overflow:hidden">
+            <div style="width:${pct}%;height:100%;background:#4caf50;border-radius:4px"></div>
+          </div> ${pct}%
+        </span>
+      </div>`;
+    }
+
+    html += '</div>';
+  }
+
   // Knight slots (military buildings)
   if (def.knightSlots > 0) {
     html += `<div class="info-section">
@@ -1375,6 +1414,17 @@ async function startGame(config: Partial<GameConfig>, savedData?: SaveData): Pro
       const def = BUILDING_DEFINITIONS[type];
       showSnackbar(`${def.label} placed!`, 'success');
       audioManager.play('building_placed');
+    };
+    placement.onPlacementError = (error) => {
+      const messages: Record<string, string> = {
+        no_matching_deposit: 'Requires a prospected deposit — use a Geologist\'s Hut first',
+        outside_territory: 'Outside your territory',
+        invalid_terrain: 'Can\'t build here — invalid terrain',
+        tile_occupied: 'Tile is already occupied',
+        no_adjacent_terrain: 'No suitable terrain nearby',
+        tile_not_found: 'Invalid tile',
+      };
+      showSnackbar(messages[error] ?? `Can't place here: ${error}`, 'error');
     };
     placement.onModeChanged = (active) => {
       if (!active) {

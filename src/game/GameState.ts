@@ -7,13 +7,23 @@ import type { Unit } from './Unit';
 import { createUnit, UnitState } from './Unit';
 import type { UnitType } from './UnitType';
 import { WORKER_TO_UNIT_TYPE } from './UnitType';
+import { ResourceType } from './ResourceType';
+import { TerrainType } from './TerrainType';
+
+/** Maps mine building types to the required deposit resource */
+const MINE_DEPOSIT_REQUIREMENTS: Partial<Record<BuildingType, ResourceType>> = {
+  [BuildingType.IronMine]: ResourceType.IronOre,
+  [BuildingType.CoalMine]: ResourceType.CoalOre,
+  [BuildingType.GoldMine]: ResourceType.GoldOre,
+};
 
 export type PlacementError =
   | 'invalid_terrain'
   | 'tile_occupied'
   | 'no_adjacent_terrain'
   | 'tile_not_found'
-  | 'outside_territory';
+  | 'outside_territory'
+  | 'no_matching_deposit';
 
 export type PlacementResult =
   | { ok: true; building: Building }
@@ -40,6 +50,9 @@ export class GameState {
 
   /** Optional callback when a building is removed (for territory recalculation) */
   onBuildingRemoved: ((building: Building) => void) | null = null;
+
+  /** Optional callback when a mine is placed (for terrain change + map rebuild) */
+  onMinePlaced: ((coord: HexCoord) => void) | null = null;
 
   constructor(grid: HexGrid) {
     this.grid = grid;
@@ -86,6 +99,15 @@ export class GameState {
       }
     }
 
+    // Check deposit requirement for ore mines (StoneMine exempt)
+    const requiredDeposit = MINE_DEPOSIT_REQUIREMENTS[type];
+    if (requiredDeposit) {
+      const deposit = this.grid.getDeposit(coord.q, coord.r);
+      if (!deposit || !deposit.revealed || deposit.claimed || deposit.resource !== requiredDeposit) {
+        return { ok: false, error: 'no_matching_deposit' };
+      }
+    }
+
     const building = createBuilding(type, coord, playerId);
 
     // Compute resource distance for gathering buildings
@@ -95,6 +117,16 @@ export class GameState {
 
     this.buildings.set(building.id, building);
     this.buildingsByCoord.set(coordKey, building.id);
+
+    // Claim deposit and change mountain → grassland when mine is placed
+    if (requiredDeposit) {
+      this.grid.claimDeposit(coord.q, coord.r);
+      const tile = this.grid.getTile(coord.q, coord.r);
+      if (tile) {
+        this.grid.setTile(coord.q, coord.r, TerrainType.Grassland, tile.elevation, tile.deposit);
+      }
+      this.onMinePlaced?.(coord);
+    }
 
     return { ok: true, building };
   }
@@ -171,6 +203,15 @@ export class GameState {
     if (this.territoryCheck && type !== BuildingType.Castle && playerId !== undefined) {
       if (!this.territoryCheck(coord.q, coord.r, playerId)) {
         return 'outside_territory';
+      }
+    }
+
+    // Check deposit requirement for ore mines (StoneMine exempt)
+    const requiredDeposit = MINE_DEPOSIT_REQUIREMENTS[type];
+    if (requiredDeposit) {
+      const deposit = this.grid.getDeposit(coord.q, coord.r);
+      if (!deposit || !deposit.revealed || deposit.claimed || deposit.resource !== requiredDeposit) {
+        return 'no_matching_deposit';
       }
     }
 

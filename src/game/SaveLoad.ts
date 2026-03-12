@@ -17,10 +17,12 @@ import type { TerritoryManager } from './TerritoryManager';
 import type { LogisticsManager } from './LogisticsManager';
 import type { KnightManager } from './KnightManager';
 import type { VictoryManager } from './VictoryManager';
+import type { GeologistManager, GeologistPhase } from './GeologistManager';
 import type { AIPlayer } from './AIPlayer';
+import { TerrainType } from './TerrainType';
 
 /** Current save format version */
-const SAVE_VERSION = 1;
+const SAVE_VERSION = 2;
 
 /** localStorage key for auto-save */
 const STORAGE_KEY = 'feudal_realm_save';
@@ -77,6 +79,20 @@ export interface SaveData {
   knightManager: {
     recruitCooldown: number;
   };
+  geologistManager: {
+    workStates: [string, {
+      phase: GeologistPhase;
+      targetCoord: { q: number; r: number } | null;
+      prospectProgress: number;
+      prospectedTiles: string[];
+      idleCooldown: number;
+    }][];
+  };
+  /** Revealed/claimed deposit coordinates for persistence across map regeneration */
+  deposits: {
+    revealed: { q: number; r: number; resource: string }[];
+    claimed: { q: number; r: number }[];
+  };
   victoryManager: {
     eliminatedPlayers: number[];
     gameOver: boolean;
@@ -116,6 +132,7 @@ export function serializeGame(
     logisticsManager: LogisticsManager;
     knightManager: KnightManager;
     victoryManager: VictoryManager;
+    geologistManager: GeologistManager;
   },
   aiPlayers: AIPlayer[],
   camera: { frustum: number; position: { x: number; y: number; z: number }; target: { x: number; y: number; z: number } },
@@ -123,6 +140,19 @@ export function serializeGame(
   const gsState = gameState._getState();
   const rnState = roadNetwork._getState();
   const rnCounters = getRoadNetworkIdCounters();
+
+  // Collect deposit state from the grid
+  const grid = gameState.getGrid();
+  const revealed: { q: number; r: number; resource: string }[] = [];
+  const claimed: { q: number; r: number }[] = [];
+  for (const tile of grid.getAllTiles()) {
+    if (tile.deposit?.revealed) {
+      revealed.push({ q: tile.coord.q, r: tile.coord.r, resource: tile.deposit.resource });
+    }
+    if (tile.deposit?.claimed) {
+      claimed.push({ q: tile.coord.q, r: tile.coord.r });
+    }
+  }
 
   return {
     version: SAVE_VERSION,
@@ -149,6 +179,8 @@ export function serializeGame(
     territoryManager: managers.territoryManager._getState(),
     logisticsManager: managers.logisticsManager._getState(),
     knightManager: managers.knightManager._getState(),
+    geologistManager: managers.geologistManager._getState(),
+    deposits: { revealed, claimed },
     victoryManager: managers.victoryManager._getState(),
 
     aiPlayers: aiPlayers.map((ai) => ai._getState()),
@@ -178,6 +210,7 @@ export function deserializeGame(
     logisticsManager: LogisticsManager;
     knightManager: KnightManager;
     victoryManager: VictoryManager;
+    geologistManager: GeologistManager;
   },
   aiPlayers: AIPlayer[],
 ): void {
@@ -208,6 +241,26 @@ export function deserializeGame(
   managers.territoryManager._loadState(data.territoryManager);
   managers.logisticsManager._loadState(data.logisticsManager);
   managers.knightManager._loadState(data.knightManager);
+  if (data.geologistManager) {
+    managers.geologistManager._loadState(data.geologistManager);
+  }
+
+  // Restore deposit revealed/claimed state onto the regenerated map
+  if (data.deposits) {
+    const grid = gameState.getGrid();
+    for (const r of data.deposits.revealed) {
+      grid.revealDeposit(r.q, r.r);
+    }
+    for (const c of data.deposits.claimed) {
+      grid.claimDeposit(c.q, c.r);
+      // Re-apply terrain change: mountain → grassland for mined tiles
+      const tile = grid.getTile(c.q, c.r);
+      if (tile && tile.terrain === TerrainType.Mountain) {
+        grid.setTile(c.q, c.r, TerrainType.Grassland, tile.elevation, tile.deposit);
+      }
+    }
+  }
+
   managers.victoryManager._loadState(data.victoryManager);
 
   // Restore AI player states

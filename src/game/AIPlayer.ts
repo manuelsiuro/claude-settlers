@@ -34,8 +34,9 @@ const ECONOMY_BUILD_ORDER: BuildingType[] = [
   BuildingType.Farm,
   BuildingType.GuardHut,           // border expansion
   BuildingType.Warehouse,          // overflow storage before mining chain saturates Castle
-  BuildingType.IronMine,           // skipped if no mountain in territory
-  BuildingType.CoalMine,           // skipped if no mountain in territory
+  BuildingType.GeologistHut,       // prospect mountains for ore deposits
+  BuildingType.IronMine,           // requires prospected iron deposit
+  BuildingType.CoalMine,           // requires prospected coal deposit
 
   // ── Tier 3: processing & military arms ─────────────────────────────────
   BuildingType.Windmill,
@@ -48,7 +49,7 @@ const ECONOMY_BUILD_ORDER: BuildingType[] = [
   BuildingType.Watchtower,         // border
 
   // ── Late game: gold economy + extra military ────────────────────────────
-  BuildingType.GoldMine,           // skipped if no mountain in territory
+  BuildingType.GoldMine,           // requires prospected gold deposit
   BuildingType.GoldsmithMint,
   BuildingType.Barracks,
   BuildingType.Barracks,

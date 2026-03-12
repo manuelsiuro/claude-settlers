@@ -1,5 +1,7 @@
 import { HexGrid } from './HexGrid';
+import type { ResourceDeposit } from './HexGrid';
 import { TerrainType } from './TerrainType';
+import { ResourceType } from './ResourceType';
 import { SeededNoise } from './noise';
 
 export interface MapConfig {
@@ -32,6 +34,7 @@ export function generateMap(config: MapConfig): HexGrid {
   const grid = new HexGrid(width, height);
   const elevationNoise = new SeededNoise(seed);
   const moistureNoise = new SeededNoise(seed + 12345);
+  const depositNoise = new SeededNoise(seed + 54321);
 
   // Compute raw values for all tiles
   const rawData: { q: number; r: number; elevation: number; moisture: number }[] = [];
@@ -93,8 +96,34 @@ export function generateMap(config: MapConfig): HexGrid {
     const range = maxE - minE || 1;
     const normalizedElevation = (data.elevation - minE) / range;
 
-    grid.setTile(data.q, data.r, terrain, normalizedElevation);
+    // Assign resource deposits to mountain tiles
+    let deposit: ResourceDeposit | undefined;
+    if (terrain === TerrainType.Mountain) {
+      deposit = assignDeposit(data.q, data.r, depositNoise);
+    }
+
+    grid.setTile(data.q, data.r, terrain, normalizedElevation, deposit);
   }
 
   return grid;
+}
+
+/**
+ * Assign a resource deposit to a mountain tile based on noise.
+ * ~30% IronOre, ~30% CoalOre, ~25% GoldOre, ~15% no deposit.
+ * All deposits start hidden and unclaimed.
+ */
+function assignDeposit(q: number, r: number, noise: SeededNoise): ResourceDeposit | undefined {
+  // Use noise at a high frequency to get pseudo-random per-tile values
+  const v = (noise.noise2D(q * 0.73 + 50, r * 0.73 + 50) + 1) / 2; // normalize to [0, 1]
+
+  if (v < 0.30) {
+    return { resource: ResourceType.IronOre, revealed: false, claimed: false };
+  } else if (v < 0.60) {
+    return { resource: ResourceType.CoalOre, revealed: false, claimed: false };
+  } else if (v < 0.85) {
+    return { resource: ResourceType.GoldOre, revealed: false, claimed: false };
+  }
+  // 15% chance: no deposit
+  return undefined;
 }
