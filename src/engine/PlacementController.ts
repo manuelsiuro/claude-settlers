@@ -4,6 +4,8 @@ import { HexPicker } from './HexPicker';
 import { HexGrid } from '../game/HexGrid';
 import type { HexCoord } from '../game/HexGrid';
 import type { BuildingType } from '../game/BuildingType';
+import { BUILDING_DEFINITIONS } from '../game/BuildingType';
+import { getDistanceMultiplier, getDistanceRating } from '../game/ProductionManager';
 import { assetLoader } from './AssetLoader';
 import { BUILDING_MODEL_MAP } from './BuildingModels';
 import { MapRenderer } from './MapRenderer';
@@ -31,6 +33,10 @@ export class PlacementController {
   private currentHex: HexCoord | null = null;
   private canPlaceHere = false;
 
+  // Distance-based placement info
+  private _placementDistance: number | null = null;
+  private _placementRating: { label: string; color: string } | null = null;
+
   // Track mouse for click vs drag detection
   private mouseDownPos = { x: 0, y: 0 };
   private mouseIsDown = false;
@@ -39,6 +45,8 @@ export class PlacementController {
   onBuildingPlaced: ((type: BuildingType, coord: HexCoord) => void) | null = null;
   // Callback when placement mode changes
   onModeChanged: ((active: boolean) => void) | null = null;
+  // Callback when preview position updates (for UI distance display)
+  onPreviewUpdated: (() => void) | null = null;
 
   constructor(game: Game) {
     this.game = game;
@@ -62,6 +70,8 @@ export class PlacementController {
     this.removeHighlight();
     this.currentHex = null;
     this.canPlaceHere = false;
+    this._placementDistance = null;
+    this._placementRating = null;
     this.canvas.style.cursor = '';
     this.onModeChanged?.(false);
   }
@@ -73,6 +83,14 @@ export class PlacementController {
 
   get selectedBuildingType(): BuildingType | null {
     return this.selectedType;
+  }
+
+  get placementDistance(): number | null {
+    return this._placementDistance;
+  }
+
+  get placementRating(): { label: string; color: string } | null {
+    return this._placementRating;
   }
 
   private bindEvents(): void {
@@ -173,6 +191,22 @@ export class PlacementController {
     const error = gameState.canPlace(this.selectedType, wrapped, this.game.getHumanPlayerId());
     this.canPlaceHere = error === null;
 
+    // Compute distance rating for gathering buildings
+    const def = BUILDING_DEFINITIONS[this.selectedType];
+    this._placementDistance = null;
+    this._placementRating = null;
+    let ghostColor = this.canPlaceHere ? VALID_COLOR : INVALID_COLOR;
+
+    if (def.harvestTerrain && this.canPlaceHere) {
+      const dist = grid.findNearestTerrain(wrapped, def.harvestTerrain);
+      const multiplier = getDistanceMultiplier(dist);
+      const rating = getDistanceRating(multiplier);
+      this._placementDistance = dist;
+      this._placementRating = rating;
+      // Override ghost color based on distance rating
+      ghostColor = parseInt(rating.color.slice(1), 16);
+    }
+
     // Update ghost building
     this.removeGhost();
     this.removeHighlight();
@@ -192,9 +226,7 @@ export class PlacementController {
           child.material = mat.clone();
           (child.material as THREE.MeshStandardMaterial).transparent = true;
           (child.material as THREE.MeshStandardMaterial).opacity = GHOST_OPACITY;
-          (child.material as THREE.MeshStandardMaterial).color.set(
-            this.canPlaceHere ? VALID_COLOR : INVALID_COLOR,
-          );
+          (child.material as THREE.MeshStandardMaterial).color.set(ghostColor);
         }
       });
       this.game.getScene().add(this.ghostMesh);
@@ -205,7 +237,7 @@ export class PlacementController {
     ringGeometry.rotateX(-Math.PI / 2);
     ringGeometry.rotateY(Math.PI / 6); // Align with pointy-top hex
     const ringMaterial = new THREE.MeshBasicMaterial({
-      color: this.canPlaceHere ? VALID_COLOR : INVALID_COLOR,
+      color: ghostColor,
       transparent: true,
       opacity: 0.6,
       side: THREE.DoubleSide,
@@ -213,6 +245,8 @@ export class PlacementController {
     this.highlightMesh = new THREE.Mesh(ringGeometry, ringMaterial);
     this.highlightMesh.position.set(x, y + 0.02, z);
     this.game.getScene().add(this.highlightMesh);
+
+    this.onPreviewUpdated?.();
   }
 
   private confirmPlacement(): void {

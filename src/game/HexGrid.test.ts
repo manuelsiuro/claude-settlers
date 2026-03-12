@@ -70,6 +70,72 @@ describe('HexGrid', () => {
   });
 });
 
+describe('HexGrid.hexDistance', () => {
+  it('should return 0 for same coordinate', () => {
+    expect(HexGrid.hexDistance({ q: 3, r: 4 }, { q: 3, r: 4 })).toBe(0);
+  });
+
+  it('should return 1 for adjacent hexes', () => {
+    expect(HexGrid.hexDistance({ q: 0, r: 0 }, { q: 1, r: 0 })).toBe(1);
+    expect(HexGrid.hexDistance({ q: 0, r: 0 }, { q: 0, r: 1 })).toBe(1);
+    expect(HexGrid.hexDistance({ q: 0, r: 0 }, { q: -1, r: 1 })).toBe(1);
+  });
+
+  it('should compute correct distance for distant hexes', () => {
+    expect(HexGrid.hexDistance({ q: 0, r: 0 }, { q: 3, r: 0 })).toBe(3);
+    expect(HexGrid.hexDistance({ q: 0, r: 0 }, { q: 0, r: 5 })).toBe(5);
+    expect(HexGrid.hexDistance({ q: 1, r: 2 }, { q: 4, r: 5 })).toBe(6);
+  });
+});
+
+describe('HexGrid.findNearestTerrain', () => {
+  it('should return 0 if the building tile matches', () => {
+    const grid = new HexGrid(10, 10);
+    for (let q = 0; q < 10; q++)
+      for (let r = 0; r < 10; r++)
+        grid.setTile(q, r, TerrainType.Mountain);
+    expect(grid.findNearestTerrain({ q: 5, r: 5 }, TerrainType.Mountain)).toBe(0);
+  });
+
+  it('should return 1 for adjacent matching terrain', () => {
+    const grid = new HexGrid(10, 10);
+    for (let q = 0; q < 10; q++)
+      for (let r = 0; r < 10; r++)
+        grid.setTile(q, r, TerrainType.Grassland);
+    grid.setTile(4, 5, TerrainType.Forest);
+    expect(grid.findNearestTerrain({ q: 5, r: 5 }, TerrainType.Forest)).toBe(1);
+  });
+
+  it('should find terrain at greater distances', () => {
+    const grid = new HexGrid(20, 20);
+    for (let q = 0; q < 20; q++)
+      for (let r = 0; r < 20; r++)
+        grid.setTile(q, r, TerrainType.Grassland);
+    grid.setTile(10, 5, TerrainType.Water);
+    const dist = grid.findNearestTerrain({ q: 5, r: 5 }, TerrainType.Water);
+    expect(dist).toBe(5);
+  });
+
+  it('should return maxRadius when no matching terrain exists', () => {
+    const grid = new HexGrid(10, 10);
+    for (let q = 0; q < 10; q++)
+      for (let r = 0; r < 10; r++)
+        grid.setTile(q, r, TerrainType.Grassland);
+    expect(grid.findNearestTerrain({ q: 5, r: 5 }, TerrainType.Water, 10)).toBe(10);
+  });
+
+  it('should find terrain with world wrapping', () => {
+    const grid = new HexGrid(10, 10);
+    for (let q = 0; q < 10; q++)
+      for (let r = 0; r < 10; r++)
+        grid.setTile(q, r, TerrainType.Grassland);
+    grid.setTile(9, 0, TerrainType.Forest);
+    // Coord (0, 0) wraps around — q=9 is neighbor via wrapping
+    const dist = grid.findNearestTerrain({ q: 0, r: 0 }, TerrainType.Forest);
+    expect(dist).toBe(1);
+  });
+});
+
 describe('HexGrid coordinate conversion', () => {
   it('should convert hex (0,0) to world origin', () => {
     const pos = HexGrid.hexToWorld(0, 0);

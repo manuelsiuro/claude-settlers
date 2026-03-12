@@ -639,6 +639,11 @@ html[data-theme="night"] .cost-short {
   display: none;
 }
 
+.placement-distance {
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
 /* ============================================================
    Building Info Panel
    ============================================================ */
@@ -853,6 +858,18 @@ html[data-theme="night"] .state-destroyed {
 
 .info-progress-production {
   background: linear-gradient(90deg, #2e7d32, #66bb6a);
+}
+
+.info-progress-perfect {
+  background: linear-gradient(90deg, #16a34a, #22c55e);
+}
+
+.info-progress-medium {
+  background: linear-gradient(90deg, #d97706, #f59e0b);
+}
+
+.info-progress-poor {
+  background: linear-gradient(90deg, #dc2626, #ef4444);
 }
 
 .info-progress-text {

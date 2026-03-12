@@ -11,6 +11,7 @@ import type { BuildingDefinition } from './game/BuildingType';
 import { BuildingState } from './game/Building';
 import type { Building, ResourceInventory } from './game/Building';
 import { RESOURCE_PROPERTIES, ResourceType } from './game/ResourceType';
+import { getDistanceMultiplier, getDistanceRating } from './game/ProductionManager';
 import { UNIT_DEFINITIONS, UnitType } from './game/UnitType';
 import {
   type SaveData,
@@ -141,6 +142,7 @@ app.innerHTML = `
   <!-- Placement Info Bar -->
   <div id="placement-bar" class="placement-bar hidden">
     <span id="placement-label"></span>
+    <span id="placement-distance" class="placement-distance" style="display:none"></span>
     <button id="placement-cancel-btn" class="btn-text">Cancel (Esc)</button>
   </div>
 
@@ -543,6 +545,7 @@ const buildCloseBtn = document.getElementById('build-close-btn')!;
 const buildContent = document.getElementById('build-panel-content')!;
 const placementBar = document.getElementById('placement-bar')!;
 const placementLabel = document.getElementById('placement-label')!;
+const placementDistanceEl = document.getElementById('placement-distance')!;
 const placementCancelBtn = document.getElementById('placement-cancel-btn')!;
 const snackbar = document.getElementById('snackbar')!;
 
@@ -977,6 +980,14 @@ function renderInfoPanel(building: Building): void {
       </div>`;
     }
 
+    // Distance and efficiency info for gathering buildings
+    const multiplier = def.harvestTerrain ? getDistanceMultiplier(building.resourceDistance) : 1;
+    const effectiveTime = def.production.productionTime * multiplier;
+    const rating = def.harvestTerrain ? getDistanceRating(multiplier) : null;
+    const progressColor = rating
+      ? (multiplier <= 1.5 ? 'info-progress-perfect' : multiplier <= 2.0 ? 'info-progress-medium' : 'info-progress-poor')
+      : 'info-progress-production';
+
     // Production progress
     if (building.hasWorker && building.productionProgress > 0) {
       const pct = Math.round(building.productionProgress * 100);
@@ -985,14 +996,25 @@ function renderInfoPanel(building: Building): void {
         <span class="info-value">${pct}%</span>
       </div>
       <div class="info-progress-bar">
-        <div class="info-progress-fill info-progress-production" style="width:${pct}%"></div>
+        <div class="info-progress-fill ${progressColor}" style="width:${pct}%"></div>
       </div>`;
     }
 
     html += `<div class="info-row">
       <span class="info-label">Cycle Time</span>
-      <span class="info-value">${def.production.productionTime}s</span>
+      <span class="info-value"${rating ? ` style="color:${rating.color}"` : ''}>${effectiveTime.toFixed(1)}s</span>
     </div>`;
+    if (rating) {
+      const efficiency = Math.round((1 / multiplier) * 100);
+      html += `<div class="info-row">
+        <span class="info-label">Efficiency</span>
+        <span class="info-value" style="color:${rating.color}">${efficiency}%</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Resource Distance</span>
+        <span class="info-value" style="color:${rating.color}">${building.resourceDistance} tile${building.resourceDistance !== 1 ? 's' : ''}</span>
+      </div>`;
+    }
     html += '</div>';
   }
 
@@ -1357,9 +1379,23 @@ async function startGame(config: Partial<GameConfig>, savedData?: SaveData): Pro
     placement.onModeChanged = (active) => {
       if (!active) {
         placementBar.classList.add('hidden');
+        placementDistanceEl.style.display = 'none';
       }
       if (active) {
         closeInfoPanel();
+      }
+    };
+    placement.onPreviewUpdated = () => {
+      const dist = placement.placementDistance;
+      const rating = placement.placementRating;
+      if (dist !== null && rating) {
+        placementDistanceEl.style.display = '';
+        placementDistanceEl.style.color = rating.color;
+        placementDistanceEl.innerHTML =
+          `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${rating.color};margin-right:4px;vertical-align:middle"></span>` +
+          `Distance: ${dist} tile${dist !== 1 ? 's' : ''} — ${rating.label}`;
+      } else {
+        placementDistanceEl.style.display = 'none';
       }
     };
   }

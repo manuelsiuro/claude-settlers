@@ -62,6 +62,9 @@ describe('Integration: Full Production Chain', () => {
         grid.setTile(q, r, TerrainType.Grassland, 0.5);
       }
     }
+    // Add Forest/Mountain tiles near common placement coords for distance-based production
+    grid.setTile(3, 4, TerrainType.Forest, 0.5);
+    grid.setTile(5, 4, TerrainType.Mountain, 0.5);
 
     gameState = new GameState(grid);
     roadNetwork = new RoadNetwork(grid);

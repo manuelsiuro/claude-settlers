@@ -5,6 +5,19 @@ import type { GameState } from './GameState';
 import type { ResourceType } from './ResourceType';
 import { UnitState } from './Unit';
 
+/** Compute the distance multiplier for gathering buildings */
+export function getDistanceMultiplier(distance: number): number {
+  return Math.min(3.0, 1.0 + Math.max(0, distance - 1) * 0.25);
+}
+
+/** Get a human-readable rating + color for a distance multiplier */
+export function getDistanceRating(multiplier: number): { label: string; color: string } {
+  if (multiplier <= 1.0) return { label: 'Perfect', color: '#22c55e' };
+  if (multiplier <= 1.5) return { label: 'Good', color: '#22c55e' };
+  if (multiplier <= 2.0) return { label: 'Medium', color: '#f59e0b' };
+  return { label: 'Poor', color: '#ef4444' };
+}
+
 /**
  * Manages production cycles for all active buildings.
  * Each frame, advances productionProgress for buildings that have:
@@ -48,8 +61,9 @@ export class ProductionManager {
       // Need output space
       if (!hasOutputSpace(building)) continue;
 
-      // Advance production
-      const rate = 1 / def.production.productionTime;
+      // Advance production (gathering buildings scale by distance)
+      const multiplier = def.harvestTerrain ? getDistanceMultiplier(building.resourceDistance) : 1;
+      const rate = 1 / (def.production.productionTime * multiplier);
       building.productionProgress += rate * deltaTime;
 
       // Production cycle complete

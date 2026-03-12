@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { ProductionManager } from './ProductionManager';
+import { ProductionManager, getDistanceMultiplier, getDistanceRating } from './ProductionManager';
 import { GameState } from './GameState';
 import { HexGrid } from './HexGrid';
 import { TerrainType } from './TerrainType';
@@ -25,6 +25,8 @@ describe('ProductionManager', () => {
       }
     }
     grid.setTile(6, 8, TerrainType.Water, 0.1); // For fisherman
+    grid.setTile(3, 4, TerrainType.Forest, 0.5); // Near woodcutter at (4,4)
+    grid.setTile(5, 4, TerrainType.Mountain, 0.5); // Near quarry at (4,4)
 
     gameState = new GameState(grid);
     production = new ProductionManager(gameState);
@@ -226,6 +228,77 @@ describe('ProductionManager', () => {
       production.update(prodTime);
 
       expect(result.building.outputInventory[ResourceType.Wood]).toBeUndefined();
+    });
+  });
+
+  describe('distance-scaled production', () => {
+    it('should produce at base rate with distance 0', () => {
+      const building = placeActiveBuilding(BuildingType.WoodcutterHut, 4, 4);
+      building.resourceDistance = 0;
+      assignWorkingUnit(building.id, UnitType.Woodcutter);
+
+      const prodTime = BUILDING_DEFINITIONS[BuildingType.WoodcutterHut].production!.productionTime;
+      production.update(prodTime);
+
+      expect(building.outputInventory[ResourceType.Wood]).toBe(1);
+    });
+
+    it('should produce slower with distance 5 (2.0x)', () => {
+      const building = placeActiveBuilding(BuildingType.WoodcutterHut, 4, 4);
+      building.resourceDistance = 5;
+      assignWorkingUnit(building.id, UnitType.Woodcutter);
+
+      const prodTime = BUILDING_DEFINITIONS[BuildingType.WoodcutterHut].production!.productionTime;
+      // At distance 5, multiplier = 1.0 + (5-1)*0.25 = 2.0
+      // So base production time (15s) should not complete in 15s
+      production.update(prodTime);
+      expect(building.outputInventory[ResourceType.Wood]).toBeUndefined();
+
+      // Should complete in 2.0x the base time
+      production.update(prodTime);
+      expect(building.outputInventory[ResourceType.Wood]).toBe(1);
+    });
+
+    it('should cap multiplier at 3.0x for distance 10+', () => {
+      expect(getDistanceMultiplier(10)).toBe(3.0);
+      expect(getDistanceMultiplier(15)).toBe(3.0);
+      expect(getDistanceMultiplier(20)).toBe(3.0);
+    });
+
+    it('processing buildings should ignore distance', () => {
+      const building = placeActiveBuilding(BuildingType.Sawmill, 4, 4);
+      building.resourceDistance = 10; // should be ignored
+      assignWorkingUnit(building.id, UnitType.SawmillWorker);
+      building.inputInventory[ResourceType.Wood] = 1;
+
+      const prodTime = BUILDING_DEFINITIONS[BuildingType.Sawmill].production!.productionTime;
+      production.update(prodTime);
+
+      // Should produce at base rate, ignoring resourceDistance
+      expect(building.outputInventory[ResourceType.Planks]).toBe(1);
+    });
+  });
+
+  describe('getDistanceMultiplier', () => {
+    it('should return 1.0 for distance 0-1', () => {
+      expect(getDistanceMultiplier(0)).toBe(1.0);
+      expect(getDistanceMultiplier(1)).toBe(1.0);
+    });
+
+    it('should return correct values for intermediate distances', () => {
+      expect(getDistanceMultiplier(2)).toBeCloseTo(1.25);
+      expect(getDistanceMultiplier(3)).toBeCloseTo(1.5);
+      expect(getDistanceMultiplier(5)).toBeCloseTo(2.0);
+      expect(getDistanceMultiplier(9)).toBeCloseTo(3.0);
+    });
+  });
+
+  describe('getDistanceRating', () => {
+    it('should return correct ratings for multiplier thresholds', () => {
+      expect(getDistanceRating(1.0).label).toBe('Perfect');
+      expect(getDistanceRating(1.5).label).toBe('Good');
+      expect(getDistanceRating(1.75).label).toBe('Medium');
+      expect(getDistanceRating(2.5).label).toBe('Poor');
     });
   });
 

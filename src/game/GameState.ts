@@ -87,6 +87,12 @@ export class GameState {
     }
 
     const building = createBuilding(type, coord, playerId);
+
+    // Compute resource distance for gathering buildings
+    if (def.harvestTerrain) {
+      building.resourceDistance = this.grid.findNearestTerrain(coord, def.harvestTerrain);
+    }
+
     this.buildings.set(building.id, building);
     this.buildingsByCoord.set(coordKey, building.id);
 

@@ -140,6 +140,53 @@ export class HexGrid {
     return { wrapQ, wrapR };
   }
 
+  /**
+   * Standard axial hex distance between two coordinates.
+   * Uses the cube-coordinate max formula.
+   */
+  static hexDistance(a: HexCoord, b: HexCoord): number {
+    const dq = a.q - b.q;
+    const dr = a.r - b.r;
+    return Math.max(Math.abs(dq), Math.abs(dr), Math.abs(dq + dr));
+  }
+
+  /**
+   * BFS from `coord` outward through hex neighbors (with world wrapping),
+   * returning the distance to the nearest tile matching `terrain`.
+   * If the building's own tile matches, distance is 0.
+   * Max search radius defaults to 20.
+   */
+  findNearestTerrain(coord: HexCoord, terrain: TerrainType, maxRadius = 20): number {
+    const wrapped = this.wrap(coord.q, coord.r);
+    const startTile = this.getTile(wrapped.q, wrapped.r);
+    if (startTile && startTile.terrain === terrain) return 0;
+
+    const visited = new Set<string>();
+    visited.add(HexGrid.key(wrapped.q, wrapped.r));
+
+    let frontier: HexCoord[] = [wrapped];
+
+    for (let dist = 1; dist <= maxRadius; dist++) {
+      const nextFrontier: HexCoord[] = [];
+      for (const pos of frontier) {
+        for (const dir of AXIAL_DIRECTIONS) {
+          const nw = this.wrap(pos.q + dir.q, pos.r + dir.r);
+          const key = HexGrid.key(nw.q, nw.r);
+          if (visited.has(key)) continue;
+          visited.add(key);
+
+          const tile = this.tiles.get(key);
+          if (tile && tile.terrain === terrain) return dist;
+          nextFrontier.push(nw);
+        }
+      }
+      frontier = nextFrontier;
+      if (frontier.length === 0) break;
+    }
+
+    return maxRadius;
+  }
+
   /** Total number of tiles */
   get size(): number {
     return this.tiles.size;

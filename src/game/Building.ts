@@ -44,6 +44,8 @@ export interface Building {
   playerId: number;
   /** Knight unit IDs stationed in this military building */
   knightIds: string[];
+  /** Distance to nearest harvest terrain (for gathering buildings) */
+  resourceDistance: number;
 }
 
 let nextBuildingId = 1;
@@ -69,6 +71,7 @@ export function createBuilding(
     productionProgress: 0,
     playerId,
     knightIds: [],
+    resourceDistance: 0,
   };
 }
 
