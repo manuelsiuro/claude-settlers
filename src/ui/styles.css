@@ -685,6 +685,58 @@ html, body {
   }
 }
 
+/* ============================================================
+   Game Speed Label (app bar)
+   ============================================================ */
+.speed-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  min-width: 24px;
+  text-align: center;
+  color: var(--mdui-color-on-surface, #1a1a1a);
+  user-select: none;
+  margin-right: 4px;
+}
+
+/* ============================================================
+   Pause Overlay
+   ============================================================ */
+.pause-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: var(--z-game-over);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+
+.pause-overlay.hidden {
+  display: none;
+}
+
+.pause-card {
+  text-align: center;
+}
+
+.pause-title {
+  font-size: 3rem;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.5);
+  margin-bottom: 8px;
+}
+
+.pause-hint {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 24px;
+}
+
 /* Audio settings in nav drawer */
 .audio-settings {
   border-top: 1px solid var(--mdui-color-outline-variant, #e0e0e0);

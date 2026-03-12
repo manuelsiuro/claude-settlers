@@ -84,8 +84,17 @@ export class Game {
   /** The human player's ID (always 1 for now) */
   private humanPlayerId = 1;
 
+  /** Game speed multiplier (1 = normal, 2 = fast, 3 = fastest) */
+  private _gameSpeed = 1;
+
+  /** Whether the game is paused */
+  private _paused = false;
+
   /** Notification callback — subscribe to receive game event alerts */
   onNotification: ((notification: GameNotification) => void) | null = null;
+
+  /** Callback fired when pause or speed changes */
+  onSpeedChange: ((paused: boolean, speed: number) => void) | null = null;
 
   constructor(container: HTMLElement, config?: Partial<GameConfig>) {
     this.container = container;
@@ -344,9 +353,15 @@ export class Game {
     const clock = new THREE.Clock();
     const animate = (): void => {
       this.animationId = requestAnimationFrame(animate);
-      const deltaTime = Math.min(clock.getDelta(), 0.1); // Cap at 100ms to prevent teleporting
+      const rawDelta = Math.min(clock.getDelta(), 0.1); // Cap at 100ms to prevent teleporting
+
+      // Camera and water always update (even when paused)
       this.cameraController?.update();
       updateWaterTime(clock.getElapsedTime());
+
+      // Scale delta by game speed; zero when paused
+      const deltaTime = this._paused ? 0 : rawDelta * this._gameSpeed;
+
       this.territoryManager.update();
       this.unitManager.update(deltaTime);
       this.constructionManager.update(deltaTime);
@@ -462,6 +477,47 @@ export class Game {
     }
   }
 
+  /** Whether the game is currently paused */
+  get paused(): boolean {
+    return this._paused;
+  }
+
+  /** Toggle pause on/off. Returns new paused state. */
+  togglePause(): boolean {
+    this._paused = !this._paused;
+    this.onSpeedChange?.(this._paused, this._gameSpeed);
+    return this._paused;
+  }
+
+  /** Set paused state explicitly */
+  setPaused(paused: boolean): void {
+    if (this._paused !== paused) {
+      this._paused = paused;
+      this.onSpeedChange?.(this._paused, this._gameSpeed);
+    }
+  }
+
+  /** Current game speed multiplier (1, 2, or 3) */
+  get gameSpeed(): number {
+    return this._gameSpeed;
+  }
+
+  /** Cycle game speed: 1 → 2 → 3 → 1 */
+  cycleSpeed(): number {
+    this._gameSpeed = this._gameSpeed >= 3 ? 1 : this._gameSpeed + 1;
+    this.onSpeedChange?.(this._paused, this._gameSpeed);
+    return this._gameSpeed;
+  }
+
+  /** Set game speed directly (clamped to 1-3) */
+  setGameSpeed(speed: number): void {
+    const clamped = Math.max(1, Math.min(3, Math.round(speed)));
+    if (this._gameSpeed !== clamped) {
+      this._gameSpeed = clamped;
+      this.onSpeedChange?.(this._paused, this._gameSpeed);
+    }
+  }
+
   dispose(): void {
     if (this.animationId !== null) {
       cancelAnimationFrame(this.animationId);
@@ -491,6 +547,7 @@ export class Game {
     this.victoryManager.onVictory = null;
     this.victoryManager.onDefeat = null;
     this.onNotification = null;
+    this.onSpeedChange = null;
   }
 
   getScene(): THREE.Scene {

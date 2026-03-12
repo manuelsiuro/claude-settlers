@@ -24,6 +24,9 @@ import '@mdui/icons/download.js';
 import '@mdui/icons/volume-up.js';
 import '@mdui/icons/volume-off.js';
 import '@mdui/icons/music-note.js';
+import '@mdui/icons/pause.js';
+import '@mdui/icons/play-arrow.js';
+import '@mdui/icons/fast-forward.js';
 import { Game } from './engine/Game';
 import { audioManager } from './engine/AudioManager';
 import type { GameNotification } from './engine/Game';
@@ -91,6 +94,14 @@ app.innerHTML = `
       </mdui-button-icon>
       <span class="app-title">Feudal Realm Manager</span>
       <div style="flex:1"></div>
+      <mdui-button-icon id="pause-btn" title="Pause / Resume (Space)">
+        <mdui-icon-pause id="pause-icon"></mdui-icon-pause>
+        <mdui-icon-play-arrow id="play-icon" style="display:none"></mdui-icon-play-arrow>
+      </mdui-button-icon>
+      <mdui-button-icon id="speed-btn" title="Game speed">
+        <mdui-icon-fast-forward></mdui-icon-fast-forward>
+      </mdui-button-icon>
+      <span id="speed-label" class="speed-label">1x</span>
       <mdui-button-icon id="mute-btn" title="Toggle sound">
         <mdui-icon-volume-up id="mute-icon-on"></mdui-icon-volume-up>
         <mdui-icon-volume-off id="mute-icon-off" style="display:none"></mdui-icon-volume-off>
@@ -150,6 +161,15 @@ app.innerHTML = `
   </div>
 
   <mdui-snackbar id="snackbar" placement="bottom"></mdui-snackbar>
+
+  <!-- Pause Overlay -->
+  <div id="pause-overlay" class="pause-overlay hidden">
+    <div class="pause-card">
+      <h2 class="pause-title">Paused</h2>
+      <p class="pause-hint">Press Space or click Resume to continue</p>
+      <mdui-button id="pause-resume-btn" variant="filled">Resume</mdui-button>
+    </div>
+  </div>
 
   <!-- Game Over Overlay -->
   <div id="game-over-overlay" class="game-over-overlay hidden">
@@ -307,6 +327,56 @@ volMusic.addEventListener('input', () => {
   audioManager.musicVolume = Number(volMusic.value) / 100;
 });
 
+// ============================================================
+// Pause & speed controls
+// ============================================================
+
+const pauseBtn = document.getElementById('pause-btn')!;
+const pauseIcon = document.getElementById('pause-icon')!;
+const playIcon = document.getElementById('play-icon')!;
+const speedBtn = document.getElementById('speed-btn')!;
+const speedLabel = document.getElementById('speed-label')!;
+const pauseOverlay = document.getElementById('pause-overlay')!;
+const pauseResumeBtn = document.getElementById('pause-resume-btn')!;
+
+function updatePauseSpeedUI(paused: boolean, speed: number): void {
+  pauseIcon.style.display = paused ? 'none' : '';
+  playIcon.style.display = paused ? '' : 'none';
+  speedLabel.textContent = `${speed}x`;
+  pauseOverlay.classList.toggle('hidden', !paused);
+}
+
+pauseBtn.addEventListener('click', () => {
+  if (!game) return;
+  game.togglePause();
+  audioManager.play('ui_click');
+});
+
+pauseResumeBtn.addEventListener('click', () => {
+  if (!game) return;
+  game.setPaused(false);
+  audioManager.play('ui_click');
+});
+
+speedBtn.addEventListener('click', () => {
+  if (!game) return;
+  game.cycleSpeed();
+  audioManager.play('ui_click');
+});
+
+// Spacebar to toggle pause (only when game is active and no overlay is blocking)
+window.addEventListener('keydown', (e) => {
+  if (!game) return;
+  if (e.code !== 'Space') return;
+  // Don't hijack space when typing in inputs or when setup/game-over overlay is visible
+  const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+  if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+  const setupOverlay = document.getElementById('setup-overlay')!;
+  if (!setupOverlay.classList.contains('hidden')) return;
+  e.preventDefault();
+  game.togglePause();
+});
+
 // Game init — deferred until setup screen is submitted
 const container = document.getElementById('game-container')!;
 let game: Game | undefined;
@@ -416,6 +486,10 @@ function wireNotifications(g: Game): void {
         showGameOver(result);
       }
     }
+  };
+
+  g.onSpeedChange = (paused: boolean, speed: number) => {
+    updatePauseSpeedUI(paused, speed);
   };
 }
 
@@ -1217,6 +1291,7 @@ async function startGame(config: Partial<GameConfig>, savedData?: SaveData): Pro
   (window as unknown as Record<string, unknown>).__game = game;
 
   wireNotifications(game);
+  updatePauseSpeedUI(false, 1); // Reset pause/speed UI for new game
 
   await game.start(savedData);
 
