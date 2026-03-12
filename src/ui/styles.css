@@ -1,6 +1,19 @@
-/* Z-index layers
-   MDUI component z-indices: top-app-bar=2000, snackbar=2400
-   Our overlays must exceed these to render on top. */
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #1a73e8;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #d0e8ff;
+  --color-on-primary-container: #003366;
+  --color-surface: #f5f5f5;
+  --color-on-surface: #1a1a1a;
+  --color-on-surface-variant: #666666;
+  --color-outline-variant: #e0e0e0;
+  --color-surface-container-highest: #f0f0f0;
+  --color-secondary-container: #e0e0e0;
+}
+
+/* Z-index layers */
 :root {
   --z-minimap: 10;
   --z-placement-bar: 15;
@@ -8,12 +21,6 @@
   --z-fab: 25;
   --z-game-over: 2500;
   --z-setup: 2600;
-}
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
 }
 
 html, body {
@@ -37,20 +44,6 @@ html, body {
   min-width: 0;
 }
 
-#app-bar {
-  flex-shrink: 0;
-}
-
-.app-title {
-  margin-left: 8px;
-  font-size: 1.125rem;
-  font-weight: 500;
-}
-
-#side-panel mdui-list {
-  padding-top: 64px;
-}
-
 #game-container {
   flex: 1;
   position: relative;
@@ -63,7 +56,200 @@ html, body {
   height: 100%;
 }
 
-/* Build Panel */
+/* ============================================================
+   Reusable button component classes
+   ============================================================ */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: currentColor;
+  transition: background 0.15s;
+}
+.icon-btn:hover {
+  background: rgba(0,0,0,0.08);
+}
+.icon-btn:active {
+  background: rgba(0,0,0,0.12);
+}
+
+.btn-filled {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0 24px;
+  border-radius: 9999px;
+  font-weight: 500;
+  font-size: 0.875rem;
+  border: none;
+  cursor: pointer;
+  transition: filter 0.15s;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+.btn-filled:hover {
+  filter: brightness(1.08);
+}
+.btn-filled:active {
+  filter: brightness(0.95);
+}
+
+.btn-outlined {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0 24px;
+  border-radius: 9999px;
+  font-weight: 500;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background 0.15s;
+  background: transparent;
+  color: var(--color-primary);
+  border: 1px solid var(--color-outline-variant);
+}
+.btn-outlined:hover {
+  background: rgba(26, 115, 232, 0.08);
+}
+
+.btn-text {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0 24px;
+  border-radius: 9999px;
+  font-weight: 500;
+  font-size: 0.875rem;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s;
+  background: transparent;
+  color: var(--color-primary);
+}
+.btn-text:hover {
+  background: rgba(26, 115, 232, 0.08);
+}
+
+/* ============================================================
+   Navigation Drawer
+   ============================================================ */
+.nav-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 1999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+.nav-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.nav-drawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 280px;
+  background: var(--color-surface);
+  z-index: 2000;
+  transform: translateX(-100%);
+  transition: transform 0.25s ease;
+  overflow-y: auto;
+  box-shadow: 4px 0 24px rgba(0,0,0,0.15);
+}
+.nav-drawer.open {
+  transform: translateX(0);
+}
+
+.nav-drawer ul {
+  list-style: none;
+  padding: 64px 0 0;
+  margin: 0;
+}
+
+.nav-drawer li {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 24px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-on-surface);
+  transition: background 0.15s;
+}
+.nav-drawer li:hover {
+  background: rgba(0,0,0,0.06);
+}
+
+.nav-drawer li[data-nonclickable] {
+  cursor: default;
+}
+.nav-drawer li[data-nonclickable]:hover {
+  background: transparent;
+}
+
+/* ============================================================
+   Top App Bar
+   ============================================================ */
+.app-bar {
+  display: flex;
+  align-items: center;
+  height: 48px;
+  padding: 0 4px;
+  background: var(--color-surface);
+  color: var(--color-on-surface);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.app-title {
+  margin-left: 8px;
+  font-size: 1.125rem;
+  font-weight: 500;
+}
+
+/* ============================================================
+   Snackbar
+   ============================================================ */
+.snackbar {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100%);
+  background: #333;
+  color: #fff;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  z-index: 3000;
+  opacity: 0;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.snackbar.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+
+/* ============================================================
+   Build Panel
+   ============================================================ */
 .build-panel {
   position: fixed;
   bottom: 88px;
@@ -88,13 +274,13 @@ html, body {
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px 8px;
-  border-bottom: 1px solid var(--mdui-color-outline-variant, #e0e0e0);
+  border-bottom: 1px solid #e0e0e0;
 }
 
 .build-panel-title {
   font-size: 1.125rem;
   font-weight: 600;
-  color: var(--mdui-color-on-surface, #1a1a1a);
+  color: #1a1a1a;
 }
 
 .build-panel-content {
@@ -112,7 +298,7 @@ html, body {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--mdui-color-on-surface-variant, #666);
+  color: #666;
   padding: 8px 8px 4px;
 }
 
@@ -134,33 +320,33 @@ html, body {
 }
 
 .build-item:hover {
-  background: var(--mdui-color-surface-container-highest, #f0f0f0);
+  background: #f0f0f0;
 }
 
 .build-item:active {
-  background: var(--mdui-color-secondary-container, #e0e0e0);
+  background: #e0e0e0;
 }
 
 .build-item:focus-visible {
-  outline: 2px solid var(--mdui-color-primary, #1a73e8);
+  outline: 2px solid #1a73e8;
   outline-offset: -2px;
 }
 
 .build-item-name {
   font-size: 0.875rem;
   font-weight: 500;
-  color: var(--mdui-color-on-surface, #1a1a1a);
+  color: #1a1a1a;
 }
 
 .build-item-cost {
   font-size: 0.75rem;
-  color: var(--mdui-color-on-surface-variant, #666);
+  color: #666;
   margin-top: 2px;
 }
 
 .build-item-production {
   font-size: 0.75rem;
-  color: var(--mdui-color-on-surface-variant, #888);
+  color: #888;
   margin-top: 1px;
   font-style: italic;
 }
@@ -184,7 +370,7 @@ html, body {
   left: 0;
   right: 0;
   height: 48px;
-  background: var(--mdui-color-primary-container, #d0e8ff);
+  background: #d0e8ff;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -192,7 +378,7 @@ html, body {
   z-index: var(--z-placement-bar);
   font-size: 0.875rem;
   font-weight: 500;
-  color: var(--mdui-color-on-primary-container, #003366);
+  color: #003366;
 }
 
 .placement-bar.hidden {
@@ -226,13 +412,13 @@ html, body {
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px 8px;
-  border-bottom: 1px solid var(--mdui-color-outline-variant, #e0e0e0);
+  border-bottom: 1px solid #e0e0e0;
 }
 
 .info-panel-title {
   font-size: 1.125rem;
   font-weight: 600;
-  color: var(--mdui-color-on-surface, #1a1a1a);
+  color: #1a1a1a;
 }
 
 .info-panel-content {
@@ -244,7 +430,7 @@ html, body {
 .info-section {
   margin-bottom: 12px;
   padding-bottom: 10px;
-  border-bottom: 1px solid var(--mdui-color-outline-variant, #e8e8e8);
+  border-bottom: 1px solid #e8e8e8;
 }
 
 .info-section:last-child {
@@ -258,14 +444,14 @@ html, body {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--mdui-color-primary, #1a73e8);
+  color: #1a73e8;
   margin-bottom: 6px;
 }
 
 .info-subsection-label {
   font-size: 0.75rem;
   font-weight: 500;
-  color: var(--mdui-color-on-surface-variant, #666);
+  color: #666;
   margin-top: 6px;
   margin-bottom: 3px;
 }
@@ -279,13 +465,13 @@ html, body {
 
 .info-label {
   font-size: 0.8125rem;
-  color: var(--mdui-color-on-surface-variant, #555);
+  color: #555;
 }
 
 .info-value {
   font-size: 0.8125rem;
   font-weight: 500;
-  color: var(--mdui-color-on-surface, #1a1a1a);
+  color: #1a1a1a;
 }
 
 .info-resource-row {
@@ -297,19 +483,19 @@ html, body {
 
 .info-resource-name {
   font-size: 0.8125rem;
-  color: var(--mdui-color-on-surface, #333);
+  color: #333;
 }
 
 .info-resource-amount {
   font-size: 0.8125rem;
   font-weight: 500;
-  color: var(--mdui-color-on-surface, #1a1a1a);
+  color: #1a1a1a;
   font-variant-numeric: tabular-nums;
 }
 
 .info-empty {
   font-size: 0.8125rem;
-  color: var(--mdui-color-on-surface-variant, #777);
+  color: #777;
   font-style: italic;
 }
 
@@ -333,7 +519,7 @@ html, body {
 /* Progress bar */
 .info-progress-bar {
   height: 6px;
-  background: var(--mdui-color-surface-container-highest, #e0e0e0);
+  background: #e0e0e0;
   border-radius: 3px;
   margin: 4px 0 6px;
   overflow: hidden;
@@ -574,7 +760,7 @@ html, body {
 
 .setup-field select:focus,
 .setup-field input:focus {
-  border-color: var(--mdui-color-primary, #1a73e8);
+  border-color: #1a73e8;
   box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
 }
 
@@ -693,7 +879,7 @@ html, body {
   font-weight: 600;
   min-width: 24px;
   text-align: center;
-  color: var(--mdui-color-on-surface, #1a1a1a);
+  color: #1a1a1a;
   user-select: none;
   margin-right: 4px;
 }
@@ -739,7 +925,7 @@ html, body {
 
 /* Audio settings in nav drawer */
 .audio-settings {
-  border-top: 1px solid var(--mdui-color-outline-variant, #e0e0e0);
+  border-top: 1px solid #e0e0e0;
 }
 
 .audio-slider-label {
@@ -755,5 +941,5 @@ html, body {
   width: 100%;
   height: 4px;
   cursor: pointer;
-  accent-color: var(--mdui-color-primary, #1a73e8);
+  accent-color: #1a73e8;
 }

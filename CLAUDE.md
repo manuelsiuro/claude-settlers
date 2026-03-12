@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Feudal Realm Manager** — a browser-based (including mobile) real-time strategy and city-building game inspired by The Settlers series. Built with **Three.js** for 3D rendering and **Material 3** for UI components and icons.
+**Feudal Realm Manager** — a browser-based (including mobile) real-time strategy and city-building game inspired by The Settlers series. Built with **Three.js** for 3D rendering and **Tailwind CSS v4** for UI styling.
 
 ## Game Design Documents
 
@@ -24,7 +24,7 @@ All design specs live in `docs/`:
 - **Blender 3D models**: all visual assets (buildings, units, resources, terrain decorations) are created in Blender via the Blender MCP, exported as GLTF/GLB, and loaded into Three.js. Use a stylized low-poly aesthetic with the colors and styles described in the design docs.
 - **Asset pipeline**: Blender → export GLTF/GLB to `public/models/` → load in Three.js via GLTFLoader. Keep models lightweight for mobile performance.
 - **Isometric perspective**: main game view is isometric, scrollable, and zoomable
-- **Material 3**: all UI components and icons must use the Material 3 design library
+- **Tailwind CSS v4**: utility-first CSS via `@tailwindcss/vite` plugin. UI uses plain HTML elements with custom component classes (`.icon-btn`, `.btn-filled`, `.btn-outlined`, `.btn-text`, `.nav-drawer`) defined in `src/ui/styles.css`. Icons are inline SVGs from `src/ui/icons.ts`.
 - **World wrapping**: maps wrap around — units/expansion going off one edge appear on the opposite side
 
 ## Architecture Notes
@@ -95,7 +95,7 @@ This project uses `PROGRESS.md` at the repo root as the single source of truth f
 Each phase must be fully working and tested before moving to the next. Within each phase, work task-by-task — complete one before starting another.
 
 #### Phase 1: Project Scaffolding
-- Initialize project (Vite + TypeScript + Three.js + Material 3)
+- Initialize project (Vite + TypeScript + Three.js + Tailwind CSS v4)
 - Basic renderer setup (isometric camera, resize handling, render loop)
 - Mobile-responsive canvas and UI shell
 - Dev server, build, and lint configuration
@@ -135,7 +135,7 @@ Each phase must be fully working and tested before moving to the next. Within ea
 - Building capture logic
 
 #### Phase 7: Economy & UI
-- Construction menu (Material 3)
+- Construction menu (Tailwind CSS)
 - Building info panels (status, inventory, workers)
 - Global statistics panel (resources, population, military)
 - Goods distribution/priority settings

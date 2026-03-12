@@ -1,32 +1,4 @@
-import 'mdui/mdui.css';
-import 'mdui/components/top-app-bar.js';
-import 'mdui/components/button-icon.js';
-import 'mdui/components/button.js';
-import 'mdui/components/fab.js';
-import 'mdui/components/navigation-drawer.js';
-import 'mdui/components/list.js';
-import 'mdui/components/list-item.js';
-import 'mdui/components/card.js';
-import 'mdui/components/chip.js';
-import 'mdui/components/tooltip.js';
-import 'mdui/components/snackbar.js';
-import 'mdui/components/linear-progress.js';
-import '@mdui/icons/menu.js';
-import '@mdui/icons/construction.js';
-import '@mdui/icons/bar-chart.js';
-import '@mdui/icons/map.js';
-import '@mdui/icons/settings.js';
-import '@mdui/icons/close.js';
-import '@mdui/icons/add.js';
-import '@mdui/icons/save.js';
-import '@mdui/icons/folder-open.js';
-import '@mdui/icons/download.js';
-import '@mdui/icons/volume-up.js';
-import '@mdui/icons/volume-off.js';
-import '@mdui/icons/music-note.js';
-import '@mdui/icons/pause.js';
-import '@mdui/icons/play-arrow.js';
-import '@mdui/icons/fast-forward.js';
+import { icon } from './ui/icons';
 import { Game } from './engine/Game';
 import { audioManager } from './engine/AudioManager';
 import type { GameNotification } from './engine/Game';
@@ -53,29 +25,19 @@ import './ui/styles.css';
 const app = document.getElementById('app')!;
 
 app.innerHTML = `
-  <mdui-navigation-drawer id="side-panel" close-on-overlay-click>
-    <mdui-list>
-      <mdui-list-item headline="Buildings">
-        <mdui-icon-construction slot="icon"></mdui-icon-construction>
-      </mdui-list-item>
-      <mdui-list-item headline="Statistics">
-        <mdui-icon-bar-chart slot="icon"></mdui-icon-bar-chart>
-      </mdui-list-item>
-      <mdui-list-item headline="Minimap">
-        <mdui-icon-map slot="icon"></mdui-icon-map>
-      </mdui-list-item>
-      <mdui-list-item headline="Save Game">
-        <mdui-icon-save slot="icon"></mdui-icon-save>
-      </mdui-list-item>
-      <mdui-list-item headline="Load Game">
-        <mdui-icon-folder-open slot="icon"></mdui-icon-folder-open>
-      </mdui-list-item>
-      <mdui-list-item headline="Download Save">
-        <mdui-icon-download slot="icon"></mdui-icon-download>
-      </mdui-list-item>
-      <mdui-list-item headline="Settings" nonclickable>
-        <mdui-icon-settings slot="icon"></mdui-icon-settings>
-      </mdui-list-item>
+  <!-- Navigation drawer overlay -->
+  <div id="nav-overlay" class="nav-overlay"></div>
+
+  <!-- Navigation drawer -->
+  <nav id="side-panel" class="nav-drawer">
+    <ul>
+      <li data-headline="Buildings">${icon('construction')} Buildings</li>
+      <li data-headline="Statistics">${icon('bar_chart')} Statistics</li>
+      <li data-headline="Minimap">${icon('map')} Minimap</li>
+      <li data-headline="Save Game">${icon('save')} Save Game</li>
+      <li data-headline="Load Game">${icon('folder_open')} Load Game</li>
+      <li data-headline="Download Save">${icon('download')} Download Save</li>
+      <li data-headline="Settings" data-nonclickable>${icon('settings')} Settings</li>
       <div class="audio-settings" style="padding:4px 24px 12px;">
         <label class="audio-slider-label">Master Volume</label>
         <input type="range" id="vol-master" min="0" max="100" value="50" class="audio-slider">
@@ -84,32 +46,26 @@ app.innerHTML = `
         <label class="audio-slider-label">Music Volume</label>
         <input type="range" id="vol-music" min="0" max="100" value="30" class="audio-slider">
       </div>
-    </mdui-list>
-  </mdui-navigation-drawer>
+    </ul>
+  </nav>
 
   <div id="main-content">
-    <mdui-top-app-bar variant="small" id="app-bar">
-      <mdui-button-icon id="menu-btn">
-        <mdui-icon-menu></mdui-icon-menu>
-      </mdui-button-icon>
+    <header class="app-bar" id="app-bar">
+      <button class="icon-btn" id="menu-btn" title="Menu">${icon('menu')}</button>
       <span class="app-title">Feudal Realm Manager</span>
       <div style="flex:1"></div>
-      <mdui-button-icon id="pause-btn" title="Pause / Resume (Space)">
-        <mdui-icon-pause id="pause-icon"></mdui-icon-pause>
-        <mdui-icon-play-arrow id="play-icon" style="display:none"></mdui-icon-play-arrow>
-      </mdui-button-icon>
-      <mdui-button-icon id="speed-btn" title="Game speed">
-        <mdui-icon-fast-forward></mdui-icon-fast-forward>
-      </mdui-button-icon>
+      <button class="icon-btn" id="pause-btn" title="Pause / Resume (Space)">
+        <span id="pause-icon">${icon('pause')}</span>
+        <span id="play-icon" class="hidden">${icon('play_arrow')}</span>
+      </button>
+      <button class="icon-btn" id="speed-btn" title="Game speed">${icon('fast_forward')}</button>
       <span id="speed-label" class="speed-label">1x</span>
-      <mdui-button-icon id="mute-btn" title="Toggle sound">
-        <mdui-icon-volume-up id="mute-icon-on"></mdui-icon-volume-up>
-        <mdui-icon-volume-off id="mute-icon-off" style="display:none"></mdui-icon-volume-off>
-      </mdui-button-icon>
-      <mdui-button-icon id="music-btn" title="Toggle music" style="opacity:0.5">
-        <mdui-icon-music-note></mdui-icon-music-note>
-      </mdui-button-icon>
-    </mdui-top-app-bar>
+      <button class="icon-btn" id="mute-btn" title="Toggle sound">
+        <span id="mute-icon-on">${icon('volume_up')}</span>
+        <span id="mute-icon-off" class="hidden">${icon('volume_off')}</span>
+      </button>
+      <button class="icon-btn" id="music-btn" title="Toggle music" style="opacity:0.5">${icon('music_note')}</button>
+    </header>
     <div id="game-container"></div>
   </div>
 
@@ -117,17 +73,15 @@ app.innerHTML = `
   <div id="minimap-container" class="minimap-container"></div>
 
   <!-- Build FAB -->
-  <mdui-fab id="build-fab" icon="construction" variant="primary"
-    style="position:fixed;bottom:24px;right:24px;z-index:var(--z-fab);">
-  </mdui-fab>
+  <button id="build-fab" class="btn-filled" style="position:fixed;bottom:24px;right:24px;z-index:var(--z-fab);width:56px;height:56px;border-radius:16px;box-shadow:0 3px 12px rgba(0,0,0,0.25);">
+    ${icon('construction')}
+  </button>
 
   <!-- Building Menu Panel -->
   <div id="build-panel" class="build-panel hidden">
     <div class="build-panel-header">
       <span class="build-panel-title">Build</span>
-      <mdui-button-icon id="build-close-btn">
-        <mdui-icon-close></mdui-icon-close>
-      </mdui-button-icon>
+      <button class="icon-btn" id="build-close-btn">${icon('close')}</button>
     </div>
     <div id="build-panel-content" class="build-panel-content"></div>
   </div>
@@ -136,9 +90,7 @@ app.innerHTML = `
   <div id="info-panel" class="info-panel hidden">
     <div class="info-panel-header">
       <span id="info-panel-title" class="info-panel-title"></span>
-      <mdui-button-icon id="info-close-btn">
-        <mdui-icon-close></mdui-icon-close>
-      </mdui-button-icon>
+      <button class="icon-btn" id="info-close-btn">${icon('close')}</button>
     </div>
     <div id="info-panel-content" class="info-panel-content"></div>
   </div>
@@ -147,9 +99,7 @@ app.innerHTML = `
   <div id="stats-panel" class="stats-panel hidden">
     <div class="info-panel-header">
       <span class="info-panel-title">Statistics</span>
-      <mdui-button-icon id="stats-close-btn">
-        <mdui-icon-close></mdui-icon-close>
-      </mdui-button-icon>
+      <button class="icon-btn" id="stats-close-btn">${icon('close')}</button>
     </div>
     <div id="stats-panel-content" class="info-panel-content"></div>
   </div>
@@ -157,17 +107,18 @@ app.innerHTML = `
   <!-- Placement Info Bar -->
   <div id="placement-bar" class="placement-bar hidden">
     <span id="placement-label"></span>
-    <mdui-button id="placement-cancel-btn" variant="text">Cancel (Esc)</mdui-button>
+    <button id="placement-cancel-btn" class="btn-text">Cancel (Esc)</button>
   </div>
 
-  <mdui-snackbar id="snackbar" placement="bottom"></mdui-snackbar>
+  <!-- Snackbar -->
+  <div id="snackbar" class="snackbar"></div>
 
   <!-- Pause Overlay -->
   <div id="pause-overlay" class="pause-overlay hidden">
     <div class="pause-card">
       <h2 class="pause-title">Paused</h2>
       <p class="pause-hint">Press Space or click Resume to continue</p>
-      <mdui-button id="pause-resume-btn" variant="filled">Resume</mdui-button>
+      <button id="pause-resume-btn" class="btn-filled">Resume</button>
     </div>
   </div>
 
@@ -178,8 +129,8 @@ app.innerHTML = `
       <p id="game-over-condition" class="game-over-condition"></p>
       <div id="game-over-stats" class="game-over-stats"></div>
       <div class="game-over-actions">
-        <mdui-button id="game-over-new-game-btn" variant="outlined">New Game</mdui-button>
-        <mdui-button id="game-over-continue-btn" variant="filled">Continue Watching</mdui-button>
+        <button id="game-over-new-game-btn" class="btn-outlined">New Game</button>
+        <button id="game-over-continue-btn" class="btn-filled">Continue Watching</button>
       </div>
     </div>
   </div>
@@ -241,29 +192,42 @@ app.innerHTML = `
         </div>
       </div>
 
-      <mdui-button id="setup-start-btn" class="setup-start-btn" variant="filled">
+      <button id="setup-start-btn" class="btn-filled setup-start-btn">
         Start Game
-      </mdui-button>
-      <mdui-button id="setup-continue-btn" class="setup-start-btn" variant="outlined" style="display:none;margin-top:8px;">
+      </button>
+      <button id="setup-continue-btn" class="btn-outlined setup-start-btn hidden" style="margin-top:8px;">
         Continue Saved Game
-      </mdui-button>
+      </button>
     </div>
   </div>
 `;
 
 // Side panel toggle
 const menuBtn = document.getElementById('menu-btn')!;
-const sidePanel = document.getElementById('side-panel') as HTMLElement & { open: boolean };
+const sidePanel = document.getElementById('side-panel')!;
+const navOverlay = document.getElementById('nav-overlay')!;
+
+function openDrawer(): void {
+  sidePanel.classList.add('open');
+  navOverlay.classList.add('open');
+}
+function closeDrawer(): void {
+  sidePanel.classList.remove('open');
+  navOverlay.classList.remove('open');
+}
+
 menuBtn.addEventListener('click', () => {
-  sidePanel.open = !sidePanel.open;
+  if (sidePanel.classList.contains('open')) closeDrawer();
+  else openDrawer();
 });
+navOverlay.addEventListener('click', closeDrawer);
 
 // Navigation drawer item clicks
-const navItems = sidePanel.querySelectorAll('mdui-list-item');
+const navItems = sidePanel.querySelectorAll('[data-headline]');
 navItems.forEach((item) => {
   item.addEventListener('click', () => {
-    const headline = item.getAttribute('headline');
-    sidePanel.open = false;
+    const headline = item.getAttribute('data-headline');
+    closeDrawer();
     if (headline === 'Statistics') {
       showStatsPanel();
     } else if (headline === 'Buildings') {
@@ -293,8 +257,8 @@ const volSfx = document.getElementById('vol-sfx') as HTMLInputElement;
 const volMusic = document.getElementById('vol-music') as HTMLInputElement;
 
 function updateMuteUI(): void {
-  muteIconOn.style.display = audioManager.muted ? 'none' : '';
-  muteIconOff.style.display = audioManager.muted ? '' : 'none';
+  muteIconOn.classList.toggle('hidden', audioManager.muted);
+  muteIconOff.classList.toggle('hidden', !audioManager.muted);
 }
 
 function updateMusicUI(): void {
@@ -340,8 +304,8 @@ const pauseOverlay = document.getElementById('pause-overlay')!;
 const pauseResumeBtn = document.getElementById('pause-resume-btn')!;
 
 function updatePauseSpeedUI(paused: boolean, speed: number): void {
-  pauseIcon.style.display = paused ? 'none' : '';
-  playIcon.style.display = paused ? '' : 'none';
+  pauseIcon.classList.toggle('hidden', paused);
+  playIcon.classList.toggle('hidden', !paused);
   speedLabel.textContent = `${speed}x`;
   pauseOverlay.classList.toggle('hidden', !paused);
 }
@@ -387,9 +351,15 @@ function getGame(): Game {
 }
 
 /** Show a snackbar message */
+let snackbarTimeout: ReturnType<typeof setTimeout> | null = null;
 function showSnackbar(message: string): void {
   snackbar.textContent = message;
-  snackbar.open = true;
+  snackbar.classList.add('show');
+  if (snackbarTimeout) clearTimeout(snackbarTimeout);
+  snackbarTimeout = setTimeout(() => {
+    snackbar.classList.remove('show');
+    snackbarTimeout = null;
+  }, 3000);
 }
 
 // Game over overlay elements
@@ -501,10 +471,7 @@ const buildContent = document.getElementById('build-panel-content')!;
 const placementBar = document.getElementById('placement-bar')!;
 const placementLabel = document.getElementById('placement-label')!;
 const placementCancelBtn = document.getElementById('placement-cancel-btn')!;
-const snackbar = document.getElementById('snackbar') as HTMLElement & {
-  open: boolean;
-  textContent: string;
-};
+const snackbar = document.getElementById('snackbar')!;
 
 // Info panel elements
 const infoPanel = document.getElementById('info-panel')!;
@@ -1438,7 +1405,7 @@ const setupContinueBtn = document.getElementById('setup-continue-btn')!;
 
 // Show "Continue Saved Game" button if a save exists in localStorage
 if (hasSave()) {
-  setupContinueBtn.style.display = '';
+  setupContinueBtn.classList.remove('hidden');
 }
 
 setupContinueBtn.addEventListener('click', () => {
