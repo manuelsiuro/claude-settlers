@@ -684,3 +684,24 @@ html, body {
     grid-template-columns: 1fr;
   }
 }
+
+/* Audio settings in nav drawer */
+.audio-settings {
+  border-top: 1px solid var(--mdui-color-outline-variant, #e0e0e0);
+}
+
+.audio-slider-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #666;
+  margin-top: 8px;
+  margin-bottom: 2px;
+}
+
+.audio-slider {
+  width: 100%;
+  height: 4px;
+  cursor: pointer;
+  accent-color: var(--mdui-color-primary, #1a73e8);
+}

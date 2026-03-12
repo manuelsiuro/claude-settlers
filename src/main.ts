@@ -21,7 +21,11 @@ import '@mdui/icons/add.js';
 import '@mdui/icons/save.js';
 import '@mdui/icons/folder-open.js';
 import '@mdui/icons/download.js';
+import '@mdui/icons/volume-up.js';
+import '@mdui/icons/volume-off.js';
+import '@mdui/icons/music-note.js';
 import { Game } from './engine/Game';
+import { audioManager } from './engine/AudioManager';
 import type { GameNotification } from './engine/Game';
 import { Minimap } from './engine/Minimap';
 import type { VictoryResult } from './game/VictoryManager';
@@ -66,9 +70,17 @@ app.innerHTML = `
       <mdui-list-item headline="Download Save">
         <mdui-icon-download slot="icon"></mdui-icon-download>
       </mdui-list-item>
-      <mdui-list-item headline="Settings">
+      <mdui-list-item headline="Settings" nonclickable>
         <mdui-icon-settings slot="icon"></mdui-icon-settings>
       </mdui-list-item>
+      <div class="audio-settings" style="padding:4px 24px 12px;">
+        <label class="audio-slider-label">Master Volume</label>
+        <input type="range" id="vol-master" min="0" max="100" value="50" class="audio-slider">
+        <label class="audio-slider-label">SFX Volume</label>
+        <input type="range" id="vol-sfx" min="0" max="100" value="80" class="audio-slider">
+        <label class="audio-slider-label">Music Volume</label>
+        <input type="range" id="vol-music" min="0" max="100" value="30" class="audio-slider">
+      </div>
     </mdui-list>
   </mdui-navigation-drawer>
 
@@ -78,6 +90,14 @@ app.innerHTML = `
         <mdui-icon-menu></mdui-icon-menu>
       </mdui-button-icon>
       <span class="app-title">Feudal Realm Manager</span>
+      <div style="flex:1"></div>
+      <mdui-button-icon id="mute-btn" title="Toggle sound">
+        <mdui-icon-volume-up id="mute-icon-on"></mdui-icon-volume-up>
+        <mdui-icon-volume-off id="mute-icon-off" style="display:none"></mdui-icon-volume-off>
+      </mdui-button-icon>
+      <mdui-button-icon id="music-btn" title="Toggle music" style="opacity:0.5">
+        <mdui-icon-music-note></mdui-icon-music-note>
+      </mdui-button-icon>
     </mdui-top-app-bar>
     <div id="game-container"></div>
   </div>
@@ -240,6 +260,53 @@ navItems.forEach((item) => {
   });
 });
 
+// ============================================================
+// Audio controls
+// ============================================================
+
+const muteBtn = document.getElementById('mute-btn')!;
+const muteIconOn = document.getElementById('mute-icon-on')!;
+const muteIconOff = document.getElementById('mute-icon-off')!;
+const musicBtn = document.getElementById('music-btn')!;
+const volMaster = document.getElementById('vol-master') as HTMLInputElement;
+const volSfx = document.getElementById('vol-sfx') as HTMLInputElement;
+const volMusic = document.getElementById('vol-music') as HTMLInputElement;
+
+function updateMuteUI(): void {
+  muteIconOn.style.display = audioManager.muted ? 'none' : '';
+  muteIconOff.style.display = audioManager.muted ? '' : 'none';
+}
+
+function updateMusicUI(): void {
+  musicBtn.style.opacity = audioManager.isMusicPlaying ? '1' : '0.5';
+}
+
+muteBtn.addEventListener('click', () => {
+  audioManager.muted = !audioManager.muted;
+  updateMuteUI();
+  updateMusicUI();
+});
+
+musicBtn.addEventListener('click', () => {
+  if (audioManager.muted) return;
+  if (audioManager.isMusicPlaying) {
+    audioManager.stopMusic();
+  } else {
+    audioManager.startMusic();
+  }
+  updateMusicUI();
+});
+
+volMaster.addEventListener('input', () => {
+  audioManager.masterVolume = Number(volMaster.value) / 100;
+});
+volSfx.addEventListener('input', () => {
+  audioManager.sfxVolume = Number(volSfx.value) / 100;
+});
+volMusic.addEventListener('input', () => {
+  audioManager.musicVolume = Number(volMusic.value) / 100;
+});
+
 // Game init — deferred until setup screen is submitted
 const container = document.getElementById('game-container')!;
 let game: Game | undefined;
@@ -318,10 +385,26 @@ function showGameOver(result: VictoryResult): void {
   gameOverOverlay.classList.remove('hidden');
 }
 
+/** Map notification types to SFX */
+function notificationToSfx(type: string): import('./engine/AudioManager').SfxType {
+  switch (type) {
+    case 'building_complete': return 'building_complete';
+    case 'knight_recruited': return 'knight_recruited';
+    case 'under_attack': return 'under_attack';
+    case 'building_captured': return 'building_captured';
+    case 'building_destroyed': return 'building_destroyed';
+    case 'combat_result': return 'combat_clash';
+    case 'victory': return 'victory';
+    case 'defeat': return 'defeat';
+    default: return 'notification';
+  }
+}
+
 /** Wire up notification handler for the active game instance */
 function wireNotifications(g: Game): void {
   g.onNotification = (notification: GameNotification) => {
     showSnackbar(notification.message);
+    audioManager.play(notificationToSfx(notification.type));
 
     if (notification.type === 'victory' || notification.type === 'defeat') {
       const victoryMgr = g.getVictoryManager();
@@ -1089,6 +1172,7 @@ buildContent.addEventListener('click', (e) => {
   if (!btn) return;
   if (btn.classList.contains('build-item-disabled')) return;
   const action = btn.dataset.action;
+  audioManager.play('ui_click');
   if (action === 'place-flag') {
     startFlagMode();
     return;
@@ -1141,6 +1225,7 @@ async function startGame(config: Partial<GameConfig>, savedData?: SaveData): Pro
     placement.onBuildingPlaced = (type) => {
       const def = BUILDING_DEFINITIONS[type];
       showSnackbar(`${def.label} placed!`);
+      audioManager.play('building_placed');
     };
     placement.onModeChanged = (active) => {
       if (!active) {
@@ -1173,9 +1258,11 @@ async function startGame(config: Partial<GameConfig>, savedData?: SaveData): Pro
     };
     roadCtrl.onFlagPlaced = () => {
       showSnackbar('Flag placed!');
+      audioManager.play('flag_placed');
     };
     roadCtrl.onRoadBuilt = () => {
       showSnackbar('Road built!');
+      audioManager.play('road_built');
       placementLabel.textContent = 'Building Road — click next hex to continue';
     };
   }
