@@ -18,7 +18,11 @@ import { AttackManager } from '../game/AttackManager';
 import { VictoryManager } from '../game/VictoryManager';
 import { AIPlayer } from '../game/AIPlayer';
 import { GeologistManager } from '../game/GeologistManager';
+import { TreeManager } from '../game/TreeManager';
+import { WoodcutterManager } from '../game/WoodcutterManager';
+import { ForesterManager } from '../game/ForesterManager';
 import { DepositRenderer } from './DepositRenderer';
+import { TreeRenderer } from './TreeRenderer';
 import type { GameConfig } from '../game/GameConfig';
 import { DEFAULT_CONFIG, SCENARIO_TERRAIN_BALANCE } from '../game/GameConfig';
 import { RoadRenderer } from './RoadRenderer';
@@ -72,6 +76,10 @@ export class Game {
   private attackManager: AttackManager;
   private victoryManager: VictoryManager;
   private geologistManager: GeologistManager;
+  private treeManager: TreeManager;
+  private treeRenderer: TreeRenderer;
+  private woodcutterManager: WoodcutterManager;
+  private foresterManager: ForesterManager;
   private depositRenderer: DepositRenderer;
   private aiPlayers: AIPlayer[] = [];
   private roadRenderer: RoadRenderer;
@@ -164,6 +172,10 @@ export class Game {
     const playerIds = Array.from({ length: this.config.numPlayers }, (_, i) => i + 1);
     this.victoryManager = new VictoryManager(this.gameState, this.territoryManager, playerIds);
     this.geologistManager = new GeologistManager(this.gameState);
+    this.treeManager = new TreeManager();
+    this.treeRenderer = new TreeRenderer();
+    this.woodcutterManager = new WoodcutterManager(this.gameState, this.treeManager);
+    this.foresterManager = new ForesterManager(this.gameState, this.treeManager);
     this.depositRenderer = new DepositRenderer();
     this.victoryManager.onVictory = (result) => {
       const conditionLabels = {
@@ -305,6 +317,9 @@ export class Game {
     // Set up deposit renderer with world wrapping
     this.depositRenderer.addToScene(this.scene, this.grid);
 
+    // Set up tree renderer
+    this.treeRenderer.addToScene(this.scene);
+
     if (savedData) {
       // Restore saved state
       this.initAIPlayers();
@@ -323,6 +338,9 @@ export class Game {
           knightManager: this.knightManager,
           victoryManager: this.victoryManager,
           geologistManager: this.geologistManager,
+          treeManager: this.treeManager,
+          woodcutterManager: this.woodcutterManager,
+          foresterManager: this.foresterManager,
         },
         this.aiPlayers,
       );
@@ -355,6 +373,9 @@ export class Game {
         savedData.cameraTarget.z,
       );
     } else {
+      // New game: initialize tree entities from forest tiles
+      this.treeManager.initializeFromMap(this.grid);
+
       // New game: place starting Castles and create AI controllers
       this.placeStartingCastles();
       this.initAIPlayers();
@@ -372,6 +393,15 @@ export class Game {
       this.camera.position.copy(lookAt).add(camOffset);
       this.camera.lookAt(lookAt);
     }
+
+    // Wire tree/forestry callbacks
+    this.treeManager.onTreeChanged = () => this.treeRenderer.markDirty();
+    this.woodcutterManager.onTerrainChanged = () => this.mapRenderer.rebuild();
+    this.foresterManager.onTerrainChanged = () => this.mapRenderer.rebuild();
+
+    // Initial tree render
+    this.treeRenderer.markDirty();
+    this.treeRenderer.sync(this.treeManager, this.grid);
 
     // Camera controls (must be created AFTER camera is positioned so
     // CameraController computes the correct initial target)
@@ -411,6 +441,10 @@ export class Game {
       this.constructionManager.update(deltaTime);
       this.productionManager.update(deltaTime);
       this.geologistManager.update(deltaTime);
+      this.treeManager.update(deltaTime);
+      this.woodcutterManager.update(deltaTime);
+      this.foresterManager.update(deltaTime);
+      this.treeRenderer.sync(this.treeManager, this.grid);
       this.logisticsManager.update(deltaTime);
       this.transporterManager.update(deltaTime);
       this.knightManager.update(deltaTime);
@@ -572,6 +606,7 @@ export class Game {
     this.selectionController?.dispose();
     this.placementController?.dispose();
     this.cameraController?.dispose();
+    this.treeRenderer.dispose();
     this.depositRenderer.dispose();
     this.territoryRenderer.dispose();
     this.roadRenderer.dispose();
@@ -587,6 +622,9 @@ export class Game {
     this.gameState.onBuildingRemoved = null;
     this.gameState.onMinePlaced = null;
     this.geologistManager.onDepositRevealed = null;
+    this.treeManager.onTreeChanged = null;
+    this.woodcutterManager.onTerrainChanged = null;
+    this.foresterManager.onTerrainChanged = null;
     this.knightManager.onKnightRecruited = null;
     this.combatManager.onDuelResolved = null;
     this.attackManager.onBuildingUnderAttack = null;
@@ -686,6 +724,18 @@ export class Game {
     return this.geologistManager;
   }
 
+  getTreeManager(): TreeManager {
+    return this.treeManager;
+  }
+
+  getWoodcutterManager(): WoodcutterManager {
+    return this.woodcutterManager;
+  }
+
+  getForesterManager(): ForesterManager {
+    return this.foresterManager;
+  }
+
   getDepositRenderer(): DepositRenderer {
     return this.depositRenderer;
   }
@@ -712,6 +762,9 @@ export class Game {
         knightManager: this.knightManager,
         victoryManager: this.victoryManager,
         geologistManager: this.geologistManager,
+        treeManager: this.treeManager,
+        woodcutterManager: this.woodcutterManager,
+        foresterManager: this.foresterManager,
       },
       this.aiPlayers,
       {

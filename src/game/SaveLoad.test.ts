@@ -14,6 +14,9 @@ import { CombatManager } from './CombatManager';
 import { AttackManager } from './AttackManager';
 import { VictoryManager } from './VictoryManager';
 import { GeologistManager } from './GeologistManager';
+import { TreeManager } from './TreeManager';
+import { WoodcutterManager } from './WoodcutterManager';
+import { ForesterManager } from './ForesterManager';
 import { AIPlayer } from './AIPlayer';
 import { BuildingType } from './BuildingType';
 import {
@@ -59,6 +62,9 @@ function createManagers(gameState: GameState, roadNetwork: RoadNetwork, territor
   const playerIds = [1, 2];
   const victoryManager = new VictoryManager(gameState, territoryManager, playerIds);
   const geologistManager = new GeologistManager(gameState);
+  const treeManager = new TreeManager();
+  const woodcutterManager = new WoodcutterManager(gameState, treeManager);
+  const foresterManager = new ForesterManager(gameState, treeManager);
 
   return {
     unitManager,
@@ -72,6 +78,9 @@ function createManagers(gameState: GameState, roadNetwork: RoadNetwork, territor
     attackManager,
     victoryManager,
     geologistManager,
+    treeManager,
+    woodcutterManager,
+    foresterManager,
   };
 }
 
@@ -108,7 +117,7 @@ describe('SaveLoad: round-trip serialization', () => {
       { frustum: 10, position: { x: 0, y: 20, z: 0 }, target: { x: 0, y: 0, z: 0 } },
     );
 
-    expect(data.version).toBe(2);
+    expect(data.version).toBe(3);
     expect(data.config).toEqual(testConfig);
     expect(data.buildings).toEqual([]);
     expect(data.units).toEqual([]);
@@ -525,7 +534,7 @@ describe('SaveLoad: round-trip serialization', () => {
     const json = JSON.stringify(data);
     const parsed = JSON.parse(json) as SaveData;
 
-    expect(parsed.version).toBe(2);
+    expect(parsed.version).toBe(3);
     expect(parsed.config.seed).toBe(42);
     expect(parsed.buildings.length).toBe(2);
     expect(parsed.units.length).toBe(1);

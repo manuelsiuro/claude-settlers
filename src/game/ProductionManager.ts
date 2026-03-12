@@ -1,6 +1,6 @@
 import type { Building } from './Building';
 import { BuildingState, hasRequiredInputs, hasOutputSpace } from './Building';
-import { BUILDING_DEFINITIONS } from './BuildingType';
+import { BuildingType, BUILDING_DEFINITIONS } from './BuildingType';
 import type { GameState } from './GameState';
 import type { ResourceType } from './ResourceType';
 import { UnitState } from './Unit';
@@ -48,6 +48,9 @@ export class ProductionManager {
 
       const def = BUILDING_DEFINITIONS[building.type];
       if (!def.production) continue;
+
+      // WoodcutterHut production is handled by WoodcutterManager
+      if (building.type === BuildingType.WoodcutterHut) continue;
 
       // Check worker is present and working
       if (!this.hasActiveWorker(building)) continue;

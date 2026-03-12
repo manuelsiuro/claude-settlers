@@ -18,11 +18,14 @@ import type { LogisticsManager } from './LogisticsManager';
 import type { KnightManager } from './KnightManager';
 import type { VictoryManager } from './VictoryManager';
 import type { GeologistManager, GeologistPhase } from './GeologistManager';
+import type { TreeManager, TreeEntity } from './TreeManager';
+import type { WoodcutterManager, WoodcutterPhase } from './WoodcutterManager';
+import type { ForesterManager, ForesterPhase } from './ForesterManager';
 import type { AIPlayer } from './AIPlayer';
 import { TerrainType } from './TerrainType';
 
 /** Current save format version */
-const SAVE_VERSION = 2;
+const SAVE_VERSION = 3;
 
 /** localStorage key for auto-save */
 const STORAGE_KEY = 'feudal_realm_save';
@@ -88,6 +91,29 @@ export interface SaveData {
       idleCooldown: number;
     }][];
   };
+  treeManager: {
+    trees: TreeEntity[];
+    nextTreeId: number;
+  };
+  woodcutterManager: {
+    workStates: [string, {
+      phase: WoodcutterPhase;
+      targetTreeId: string | null;
+      chopProgress: number;
+      idleCooldown: number;
+    }][];
+  };
+  foresterManager: {
+    workStates: [string, {
+      phase: ForesterPhase;
+      targetCoord: { q: number; r: number } | null;
+      plantProgress: number;
+      idleCooldown: number;
+      plantedTiles: string[];
+    }][];
+  };
+  /** Terrain overrides from original map generation (e.g., Forest↔Grassland from forestry) */
+  terrainOverrides: { q: number; r: number; terrain: string }[];
   /** Revealed/claimed deposit coordinates for persistence across map regeneration */
   deposits: {
     revealed: { q: number; r: number; resource: string }[];
@@ -133,6 +159,9 @@ export function serializeGame(
     knightManager: KnightManager;
     victoryManager: VictoryManager;
     geologistManager: GeologistManager;
+    treeManager: TreeManager;
+    woodcutterManager: WoodcutterManager;
+    foresterManager: ForesterManager;
   },
   aiPlayers: AIPlayer[],
   camera: { frustum: number; position: { x: number; y: number; z: number }; target: { x: number; y: number; z: number } },
@@ -151,6 +180,16 @@ export function serializeGame(
     }
     if (tile.deposit?.claimed) {
       claimed.push({ q: tile.coord.q, r: tile.coord.r });
+    }
+  }
+
+  // Collect terrain overrides: save all Forest/Grassland terrain state
+  // (these can change during gameplay from woodcutting/planting)
+  const terrainOverrides: { q: number; r: number; terrain: string }[] = [];
+  for (const tile of grid.getAllTiles()) {
+    // Only save Forest and Grassland tiles since those are the only ones that change
+    if (tile.terrain === TerrainType.Forest || tile.terrain === TerrainType.Grassland) {
+      terrainOverrides.push({ q: tile.coord.q, r: tile.coord.r, terrain: tile.terrain });
     }
   }
 
@@ -180,6 +219,10 @@ export function serializeGame(
     logisticsManager: managers.logisticsManager._getState(),
     knightManager: managers.knightManager._getState(),
     geologistManager: managers.geologistManager._getState(),
+    treeManager: managers.treeManager._getState(),
+    woodcutterManager: managers.woodcutterManager._getState(),
+    foresterManager: managers.foresterManager._getState(),
+    terrainOverrides,
     deposits: { revealed, claimed },
     victoryManager: managers.victoryManager._getState(),
 
@@ -211,6 +254,9 @@ export function deserializeGame(
     knightManager: KnightManager;
     victoryManager: VictoryManager;
     geologistManager: GeologistManager;
+    treeManager: TreeManager;
+    woodcutterManager: WoodcutterManager;
+    foresterManager: ForesterManager;
   },
   aiPlayers: AIPlayer[],
 ): void {
@@ -243,6 +289,29 @@ export function deserializeGame(
   managers.knightManager._loadState(data.knightManager);
   if (data.geologistManager) {
     managers.geologistManager._loadState(data.geologistManager);
+  }
+  if (data.treeManager) {
+    managers.treeManager._loadState(data.treeManager);
+  } else {
+    // Legacy save: initialize trees from map
+    managers.treeManager.initializeFromMap(gameState.getGrid());
+  }
+  if (data.woodcutterManager) {
+    managers.woodcutterManager._loadState(data.woodcutterManager);
+  }
+  if (data.foresterManager) {
+    managers.foresterManager._loadState(data.foresterManager);
+  }
+
+  // Restore terrain overrides (from forestry: Forest↔Grassland changes)
+  if (data.terrainOverrides) {
+    const grid = gameState.getGrid();
+    for (const override of data.terrainOverrides) {
+      const tile = grid.getTile(override.q, override.r);
+      if (tile && tile.terrain !== override.terrain) {
+        grid.setTile(override.q, override.r, override.terrain as TerrainType, tile.elevation, tile.deposit);
+      }
+    }
   }
 
   // Restore deposit revealed/claimed state onto the regenerated map

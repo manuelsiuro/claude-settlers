@@ -144,7 +144,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     production: null,
     allowedTerrain: [TerrainType.Grassland],
     adjacentTerrain: null,
-    harvestTerrain: null,
+    harvestTerrain: TerrainType.Forest,
     knightSlots: 0,
     influenceRadius: 0,
     storageCapacity: 0,

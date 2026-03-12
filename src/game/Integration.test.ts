@@ -22,6 +22,9 @@ import { UnitType } from './UnitType';
 import { UnitState, resetUnitIdCounter } from './Unit';
 import { Difficulty } from './GameConfig';
 import { GeologistManager } from './GeologistManager';
+import { TreeManager } from './TreeManager';
+import { WoodcutterManager } from './WoodcutterManager';
+import { ForesterManager } from './ForesterManager';
 import { serializeGame, deserializeGame } from './SaveLoad';
 import type { SaveData } from './SaveLoad';
 
@@ -34,12 +37,16 @@ describe('Integration: Full Production Chain', () => {
   let constructionManager: ConstructionManager;
   let transporterManager: TransporterManager;
   let logisticsManager: LogisticsManager;
+  let treeManager: TreeManager;
+  let woodcutterManager: WoodcutterManager;
 
   /** Run one full game tick through all managers */
   function tick(dt: number) {
     unitManager.update(dt);
     constructionManager.update(dt);
     productionManager.update(dt);
+    treeManager.update(dt);
+    woodcutterManager.update(dt);
     logisticsManager.update(dt);
     transporterManager.update(dt);
   }
@@ -74,6 +81,11 @@ describe('Integration: Full Production Chain', () => {
     constructionManager = new ConstructionManager(gameState);
     transporterManager = new TransporterManager(gameState, roadNetwork);
     logisticsManager = new LogisticsManager(gameState, roadNetwork);
+    treeManager = new TreeManager();
+    woodcutterManager = new WoodcutterManager(gameState, treeManager);
+
+    // Initialize trees on forest tiles so woodcutter can harvest
+    treeManager.initializeFromMap(grid);
   });
 
   it('should transport Wood from Woodcutter to Sawmill', () => {
@@ -1233,6 +1245,9 @@ describe('Integration: Save/Load Round-Trip', () => {
   let attackManager: AttackManager;
   let victoryManager: VictoryManager;
   let geologistManager: GeologistManager;
+  let treeManager: TreeManager;
+  let woodcutterManager: WoodcutterManager;
+  let foresterManager: ForesterManager;
   let aiPlayer: AIPlayer;
 
   function createManagers() {
@@ -1247,6 +1262,9 @@ describe('Integration: Save/Load Round-Trip', () => {
       knightManager,
       victoryManager,
       geologistManager,
+      treeManager,
+      woodcutterManager,
+      foresterManager,
     };
   }
 
@@ -1289,6 +1307,9 @@ describe('Integration: Save/Load Round-Trip', () => {
     attackManager = new AttackManager(gameState, combatManager, territoryManager);
     victoryManager = new VictoryManager(gameState, territoryManager, [1, 2]);
     geologistManager = new GeologistManager(gameState);
+    treeManager = new TreeManager();
+    woodcutterManager = new WoodcutterManager(gameState, treeManager);
+    foresterManager = new ForesterManager(gameState, treeManager);
 
     gameState.territoryCheck = (q, r, pid) => territoryManager.isOwnedBy(q, r, pid);
 
@@ -1395,6 +1416,9 @@ describe('Integration: Save/Load Round-Trip', () => {
         knightManager: km2,
         victoryManager: vm2,
         geologistManager: gm2,
+        treeManager: new TreeManager(),
+        woodcutterManager: new WoodcutterManager(gs2, new TreeManager()),
+        foresterManager: new ForesterManager(gs2, new TreeManager()),
       },
       [ai2],
     );
@@ -1482,6 +1506,9 @@ describe('Integration: Save/Load Round-Trip', () => {
         knightManager: km2,
         victoryManager: vm2,
         geologistManager: gm2,
+        treeManager: new TreeManager(),
+        woodcutterManager: new WoodcutterManager(gs2, new TreeManager()),
+        foresterManager: new ForesterManager(gs2, new TreeManager()),
       },
       [ai2],
     );
@@ -1553,6 +1580,9 @@ describe('Integration: Save/Load Round-Trip', () => {
         knightManager: km2,
         victoryManager: vm2,
         geologistManager: gm2,
+        treeManager: new TreeManager(),
+        woodcutterManager: new WoodcutterManager(gs2, new TreeManager()),
+        foresterManager: new ForesterManager(gs2, new TreeManager()),
       },
       [ai2],
     );

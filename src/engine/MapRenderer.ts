@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import { HexGrid } from '../game/HexGrid';
 import type { HexTile } from '../game/HexGrid';
-import { HEX_SIZE } from '../game/HexGrid';
 import { TerrainType } from '../game/TerrainType';
 import { getTerrainColor } from './TerrainColors';
 import { createRng } from '../game/noise';
@@ -361,37 +360,13 @@ export class MapRenderer {
 
 function getDecorationPlacements(tile: HexTile): DecorationPlacement[] {
   switch (tile.terrain) {
-    case TerrainType.Forest: return getForestPlacements(tile);
+    case TerrainType.Forest: return []; // Trees rendered by TreeRenderer
     case TerrainType.Mountain: return getMountainPlacements(tile);
     case TerrainType.Desert: return getDesertPlacements(tile);
     case TerrainType.Grassland: return getGrasslandPlacements(tile);
     case TerrainType.Water: return getWaterPlacements(tile);
     default: return [];
   }
-}
-
-function getForestPlacements(tile: HexTile): DecorationPlacement[] {
-  const placements: DecorationPlacement[] = [];
-  const rng = createRng(tile.coord.q * 1000 + tile.coord.r);
-  const treeCount = 2 + Math.floor(rng() * 3);
-
-  for (let i = 0; i < treeCount; i++) {
-    const isConifer = rng() > 0.5;
-    const scale = 0.8 + rng() * 0.4;
-    const rotationY = rng() * Math.PI * 2;
-    const angle = rng() * Math.PI * 2;
-    const dist = rng() * HEX_SIZE * 0.55;
-
-    placements.push({
-      modelName: isConifer ? 'tree_conifer' : 'tree_deciduous',
-      localX: Math.cos(angle) * dist,
-      localZ: Math.sin(angle) * dist,
-      localY: 0,
-      rotationY,
-      scaleX: scale, scaleY: scale, scaleZ: scale,
-    });
-  }
-  return placements;
 }
 
 function getMountainPlacements(tile: HexTile): DecorationPlacement[] {

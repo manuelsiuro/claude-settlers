@@ -48,17 +48,17 @@ describe('ProductionManager', () => {
   }
 
   describe('gathering buildings (no inputs)', () => {
-    it('should produce output over time for woodcutter', () => {
-      const building = placeActiveBuilding(BuildingType.WoodcutterHut, 4, 4);
-      assignWorkingUnit(building.id, UnitType.Woodcutter);
+    it('should produce output over time for quarry', () => {
+      const building = placeActiveBuilding(BuildingType.Quarry, 4, 4);
+      assignWorkingUnit(building.id, UnitType.Stonemason);
 
-      const def = BUILDING_DEFINITIONS[BuildingType.WoodcutterHut];
-      const prodTime = def.production!.productionTime; // 15 seconds
+      const def = BUILDING_DEFINITIONS[BuildingType.Quarry];
+      const prodTime = def.production!.productionTime;
 
       // Run for full production cycle
       production.update(prodTime);
 
-      expect(building.outputInventory[ResourceType.Wood]).toBe(1);
+      expect(building.outputInventory[ResourceType.Stone]).toBe(1);
       expect(building.productionProgress).toBe(0);
     });
 
@@ -83,44 +83,44 @@ describe('ProductionManager', () => {
     });
 
     it('should accumulate output over multiple cycles', () => {
-      const building = placeActiveBuilding(BuildingType.WoodcutterHut, 4, 4);
-      assignWorkingUnit(building.id, UnitType.Woodcutter);
+      const building = placeActiveBuilding(BuildingType.Quarry, 4, 4);
+      assignWorkingUnit(building.id, UnitType.Stonemason);
 
-      const prodTime = BUILDING_DEFINITIONS[BuildingType.WoodcutterHut].production!.productionTime;
+      const prodTime = BUILDING_DEFINITIONS[BuildingType.Quarry].production!.productionTime;
 
       production.update(prodTime);
       production.update(prodTime);
       production.update(prodTime);
 
-      expect(building.outputInventory[ResourceType.Wood]).toBe(3);
+      expect(building.outputInventory[ResourceType.Stone]).toBe(3);
     });
 
     it('should not produce beyond storage capacity', () => {
-      const building = placeActiveBuilding(BuildingType.WoodcutterHut, 4, 4);
-      assignWorkingUnit(building.id, UnitType.Woodcutter);
+      const building = placeActiveBuilding(BuildingType.Quarry, 4, 4);
+      assignWorkingUnit(building.id, UnitType.Stonemason);
 
-      const def = BUILDING_DEFINITIONS[BuildingType.WoodcutterHut];
+      const def = BUILDING_DEFINITIONS[BuildingType.Quarry];
       const prodTime = def.production!.productionTime;
 
       // Fill to capacity
-      building.outputInventory[ResourceType.Wood] = def.storageCapacity;
+      building.outputInventory[ResourceType.Stone] = def.storageCapacity;
 
       production.update(prodTime);
 
       // Should not exceed capacity
-      expect(building.outputInventory[ResourceType.Wood]).toBe(def.storageCapacity);
+      expect(building.outputInventory[ResourceType.Stone]).toBe(def.storageCapacity);
     });
 
     it('should advance production progress incrementally', () => {
-      const building = placeActiveBuilding(BuildingType.WoodcutterHut, 4, 4);
-      assignWorkingUnit(building.id, UnitType.Woodcutter);
+      const building = placeActiveBuilding(BuildingType.Quarry, 4, 4);
+      assignWorkingUnit(building.id, UnitType.Stonemason);
 
       // Run for half the production time
-      const prodTime = BUILDING_DEFINITIONS[BuildingType.WoodcutterHut].production!.productionTime;
+      const prodTime = BUILDING_DEFINITIONS[BuildingType.Quarry].production!.productionTime;
       production.update(prodTime / 2);
 
       expect(building.productionProgress).toBeCloseTo(0.5, 5);
-      expect(building.outputInventory[ResourceType.Wood]).toBeUndefined();
+      expect(building.outputInventory[ResourceType.Stone]).toBeUndefined();
     });
   });
 
@@ -197,66 +197,66 @@ describe('ProductionManager', () => {
 
   describe('worker requirements', () => {
     it('should not produce without a worker', () => {
-      const building = placeActiveBuilding(BuildingType.WoodcutterHut, 4, 4);
+      const building = placeActiveBuilding(BuildingType.Quarry, 4, 4);
       // No worker assigned
 
-      const prodTime = BUILDING_DEFINITIONS[BuildingType.WoodcutterHut].production!.productionTime;
+      const prodTime = BUILDING_DEFINITIONS[BuildingType.Quarry].production!.productionTime;
       production.update(prodTime);
 
-      expect(building.outputInventory[ResourceType.Wood]).toBeUndefined();
+      expect(building.outputInventory[ResourceType.Stone]).toBeUndefined();
       expect(building.productionProgress).toBe(0);
     });
 
     it('should not produce if worker is not in Working state', () => {
-      const building = placeActiveBuilding(BuildingType.WoodcutterHut, 4, 4);
-      const unit = gameState.spawnUnit(UnitType.Woodcutter, building.coord, 1);
+      const building = placeActiveBuilding(BuildingType.Quarry, 4, 4);
+      const unit = gameState.spawnUnit(UnitType.Stonemason, building.coord, 1);
       gameState.assignWorkerToBuilding(unit.id, building.id);
       unit.state = UnitState.WalkingToWork; // Not yet working
 
-      const prodTime = BUILDING_DEFINITIONS[BuildingType.WoodcutterHut].production!.productionTime;
+      const prodTime = BUILDING_DEFINITIONS[BuildingType.Quarry].production!.productionTime;
       production.update(prodTime);
 
-      expect(building.outputInventory[ResourceType.Wood]).toBeUndefined();
+      expect(building.outputInventory[ResourceType.Stone]).toBeUndefined();
     });
 
     it('should not produce for Planned buildings', () => {
-      const result = gameState.placeBuilding(BuildingType.WoodcutterHut, { q: 4, r: 4 }, 1);
+      const result = gameState.placeBuilding(BuildingType.Quarry, { q: 4, r: 4 }, 1);
       if (!result.ok) throw new Error('Failed');
       // Building stays Planned (default)
 
-      const prodTime = BUILDING_DEFINITIONS[BuildingType.WoodcutterHut].production!.productionTime;
+      const prodTime = BUILDING_DEFINITIONS[BuildingType.Quarry].production!.productionTime;
       production.update(prodTime);
 
-      expect(result.building.outputInventory[ResourceType.Wood]).toBeUndefined();
+      expect(result.building.outputInventory[ResourceType.Stone]).toBeUndefined();
     });
   });
 
   describe('distance-scaled production', () => {
     it('should produce at base rate with distance 0', () => {
-      const building = placeActiveBuilding(BuildingType.WoodcutterHut, 4, 4);
+      const building = placeActiveBuilding(BuildingType.Quarry, 4, 4);
       building.resourceDistance = 0;
-      assignWorkingUnit(building.id, UnitType.Woodcutter);
+      assignWorkingUnit(building.id, UnitType.Stonemason);
 
-      const prodTime = BUILDING_DEFINITIONS[BuildingType.WoodcutterHut].production!.productionTime;
+      const prodTime = BUILDING_DEFINITIONS[BuildingType.Quarry].production!.productionTime;
       production.update(prodTime);
 
-      expect(building.outputInventory[ResourceType.Wood]).toBe(1);
+      expect(building.outputInventory[ResourceType.Stone]).toBe(1);
     });
 
     it('should produce slower with distance 5 (2.0x)', () => {
-      const building = placeActiveBuilding(BuildingType.WoodcutterHut, 4, 4);
+      const building = placeActiveBuilding(BuildingType.Quarry, 4, 4);
       building.resourceDistance = 5;
-      assignWorkingUnit(building.id, UnitType.Woodcutter);
+      assignWorkingUnit(building.id, UnitType.Stonemason);
 
-      const prodTime = BUILDING_DEFINITIONS[BuildingType.WoodcutterHut].production!.productionTime;
+      const prodTime = BUILDING_DEFINITIONS[BuildingType.Quarry].production!.productionTime;
       // At distance 5, multiplier = 1.0 + (5-1)*0.25 = 2.0
-      // So base production time (15s) should not complete in 15s
+      // So base production time should not complete in prodTime
       production.update(prodTime);
-      expect(building.outputInventory[ResourceType.Wood]).toBeUndefined();
+      expect(building.outputInventory[ResourceType.Stone]).toBeUndefined();
 
       // Should complete in 2.0x the base time
       production.update(prodTime);
-      expect(building.outputInventory[ResourceType.Wood]).toBe(1);
+      expect(building.outputInventory[ResourceType.Stone]).toBe(1);
     });
 
     it('should cap multiplier at 3.0x for distance 10+', () => {
