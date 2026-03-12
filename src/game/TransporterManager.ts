@@ -16,6 +16,8 @@ interface TransporterState {
   targetFlagId: string;
   /** Whether the transporter is currently carrying a good */
   carrying: FlagGood | null;
+  /** When set, the transporter is idle at this flag waiting for goods */
+  waitingAtFlagId: string | null;
 }
 
 /**
@@ -25,7 +27,7 @@ interface TransporterState {
  * between its two flags. At each flag, the transporter:
  *   1. Drops off any carried good
  *   2. Picks up a good that needs to go toward the other flag
- *   3. Walks to the other flag
+ *   3. If no goods, idles at the current flag until goods appear
  */
 export class TransporterManager {
   private gameState: GameState;
@@ -56,16 +58,21 @@ export class TransporterManager {
 
   /** Serialization: restore internal state from save */
   _loadState(state: {
-    transporterStates: [string, TransporterState][];
+    transporterStates: [string, { roadId: string; targetFlagId: string; carrying: FlagGood | null; waitingAtFlagId?: string | null }][];
     spawnCooldown: number;
   }): void {
-    this.transporterStates = new Map(state.transporterStates);
+    // Backward compatibility: default waitingAtFlagId to null for v1 saves
+    const entries: [string, TransporterState][] = state.transporterStates.map(
+      ([id, s]) => [id, { ...s, waitingAtFlagId: s.waitingAtFlagId ?? null }],
+    );
+    this.transporterStates = new Map(entries);
     this.spawnCooldown = state.spawnCooldown;
   }
 
   update(deltaTime: number): void {
     this.spawnTransporters(deltaTime);
     this.handleArrivals();
+    this.handleIdleTransporters();
     this.cleanupOrphans();
   }
 
@@ -99,11 +106,12 @@ export class TransporterManager {
         roadId: road.id,
         targetFlagId: road.flagB,
         carrying: null,
+        waitingAtFlagId: null,
       };
       this.transporterStates.set(unit.id, state);
 
-      // Pick up goods at the starting flag and walk to other flag
-      this.pickUpAndMove(unit, state, road.flagA);
+      // Try to pick up goods and walk; if nothing to carry, idle at flagA
+      this.tryPickUpOrIdle(unit, state, road.flagA, road.flagB);
     }
   }
 
@@ -119,6 +127,9 @@ export class TransporterManager {
         this.transporterStates.delete(unitId);
         continue;
       }
+
+      // Skip idle transporters — they're handled by handleIdleTransporters
+      if (state.waitingAtFlagId) continue;
 
       // UnitManager already transitioned to Working when the unit arrived
       if (unit.state !== UnitState.Working) continue;
@@ -137,62 +148,120 @@ export class TransporterManager {
             // Reached final destination — deliver to building
             this.deliverToBuilding(flag, state.carrying);
           } else {
-            // Intermediate flag, or destination has no building — leave here
             // Intermediate flag — leave the good here for the next transporter
             flag.goods.push(state.carrying);
           }
         }
         state.carrying = null;
+        unit.carryingResource = null;
       }
 
-      // Pick up a good going toward the other flag and walk there
+      // Try to pick up goods or idle
       state.targetFlagId = otherFlagId;
-      this.pickUpAndMove(unit, state, currentFlagId);
+      this.tryPickUpOrIdle(unit, state, currentFlagId, otherFlagId);
     }
   }
 
   /**
-   * Try to pick up a good at the current flag that needs to go
-   * toward the target flag, then walk to target.
+   * Check idle transporters for goods that appeared at their flags.
    */
-  private pickUpAndMove(unit: Unit, state: TransporterState, currentFlagId: string): void {
-    const flag = this.roadNetwork.getFlag(currentFlagId);
-    if (!flag) return;
+  private handleIdleTransporters(): void {
+    for (const [unitId, state] of this.transporterStates) {
+      if (!state.waitingAtFlagId) continue;
 
-    // Find a good that should go toward the target flag
-    const targetFlagId = state.targetFlagId;
-    const goodIndex = this.findGoodForDirection(flag, currentFlagId, targetFlagId);
+      const unit = this.gameState.getUnit(unitId);
+      if (!unit) continue;
 
-    if (goodIndex >= 0) {
-      state.carrying = flag.goods.splice(goodIndex, 1)[0];
-      unit.carryingResource = state.carrying.resource;
-    } else {
-      unit.carryingResource = null;
-    }
+      const road = this.roadNetwork.getRoad(state.roadId);
+      if (!road) continue;
 
-    // Walk to target flag
-    const targetFlag = this.roadNetwork.getFlag(targetFlagId);
-    if (!targetFlag) {
-      // Target flag gone — put good back
-      if (state.carrying) {
-        flag.goods.push(state.carrying);
-        state.carrying = null;
-        unit.carryingResource = null;
+      const currentFlagId = state.waitingAtFlagId;
+      const otherFlagId = currentFlagId === road.flagA ? road.flagB : road.flagA;
+
+      // Check current flag for goods going toward other flag
+      const currentFlag = this.roadNetwork.getFlag(currentFlagId);
+      if (currentFlag) {
+        const goodIndex = this.findGoodForDirection(currentFlag, currentFlagId, otherFlagId);
+        if (goodIndex >= 0) {
+          // Pick up and walk to other flag
+          state.waitingAtFlagId = null;
+          state.targetFlagId = otherFlagId;
+          state.carrying = currentFlag.goods.splice(goodIndex, 1)[0];
+          unit.carryingResource = state.carrying.resource;
+          this.walkTo(unit, otherFlagId);
+          continue;
+        }
       }
+
+      // Check other flag for goods going toward current flag
+      const otherFlag = this.roadNetwork.getFlag(otherFlagId);
+      if (otherFlag) {
+        const goodIndex = this.findGoodForDirection(otherFlag, otherFlagId, currentFlagId);
+        if (goodIndex >= 0) {
+          // Walk empty to other flag to pick up
+          state.waitingAtFlagId = null;
+          state.targetFlagId = otherFlagId;
+          this.walkTo(unit, otherFlagId);
+          continue;
+        }
+      }
+
+      // Still idle — remain at flag
+    }
+  }
+
+  /**
+   * Try to pick up a good at currentFlag going toward otherFlag.
+   * If found, pick up and walk. If not, check the other flag for goods
+   * going back toward current. If found, walk empty. Otherwise idle.
+   */
+  private tryPickUpOrIdle(
+    unit: Unit,
+    state: TransporterState,
+    currentFlagId: string,
+    otherFlagId: string,
+  ): void {
+    const currentFlag = this.roadNetwork.getFlag(currentFlagId);
+    if (!currentFlag) return;
+
+    // Check current flag for goods going toward other flag
+    const goodIndex = this.findGoodForDirection(currentFlag, currentFlagId, otherFlagId);
+    if (goodIndex >= 0) {
+      state.carrying = currentFlag.goods.splice(goodIndex, 1)[0];
+      unit.carryingResource = state.carrying.resource;
+      state.targetFlagId = otherFlagId;
+      this.walkTo(unit, otherFlagId);
       return;
     }
+
+    // Check other flag for goods going toward current flag
+    const otherFlag = this.roadNetwork.getFlag(otherFlagId);
+    if (otherFlag) {
+      const reverseGoodIndex = this.findGoodForDirection(otherFlag, otherFlagId, currentFlagId);
+      if (reverseGoodIndex >= 0) {
+        // Walk empty to other flag to pick up
+        state.targetFlagId = otherFlagId;
+        this.walkTo(unit, otherFlagId);
+        return;
+      }
+    }
+
+    // No goods anywhere — idle at current flag
+    state.waitingAtFlagId = currentFlagId;
+    unit.state = UnitState.Working;
+  }
+
+  /**
+   * Walk the unit to a target flag (without picking up goods).
+   */
+  private walkTo(unit: Unit, targetFlagId: string): void {
+    const targetFlag = this.roadNetwork.getFlag(targetFlagId);
+    if (!targetFlag) return;
 
     const path = findPath(this.gameState.getGrid(), unit.coord, targetFlag.coord);
     if (path.length > 0) {
       setUnitPath(unit, path);
       unit.state = UnitState.WalkingToWork;
-    } else {
-      // Can't reach target — put good back at flag
-      if (state.carrying) {
-        flag.goods.push(state.carrying);
-        state.carrying = null;
-        unit.carryingResource = null;
-      }
     }
   }
 

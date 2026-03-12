@@ -3,6 +3,8 @@ import { HexGrid } from '../game/HexGrid';
 import type { Flag, Road } from '../game/RoadNetwork';
 import type { RoadNetwork } from '../game/RoadNetwork';
 import { MapRenderer } from './MapRenderer';
+import { assetLoader } from './AssetLoader';
+import type { ResourceModelName } from './AssetLoader';
 
 /** Flag pole height */
 const FLAG_HEIGHT = 0.6;
@@ -14,6 +16,12 @@ const POLE_COLOR = 0x8b4513;
 const ROAD_COLOR = 0xc4a060;
 /** Road line width - used for tube radius */
 const ROAD_RADIUS = 0.04;
+/** Scale for resource models at flags */
+const FLAG_RESOURCE_SCALE = 0.9;
+/** Y offset for resource models at flags */
+const FLAG_RESOURCE_Y = 0.02;
+/** Radius of the circle resources are arranged in around flag pole */
+const FLAG_RESOURCE_RADIUS = 0.18;
 
 /**
  * Renders flags and roads on the hex map.
@@ -26,6 +34,8 @@ export class RoadRenderer {
   private wrapGroups: { flags: THREE.Group; roads: THREE.Group }[] = [];
   private flagMeshes: Map<string, THREE.Group> = new Map();
   private roadMeshes: Map<string, THREE.Mesh> = new Map();
+  private flagResourceMeshes: Map<string, THREE.Group> = new Map();
+  private flagResourceFingerprints: Map<string, string> = new Map();
   private grid: HexGrid;
 
   constructor() {
@@ -73,8 +83,10 @@ export class RoadRenderer {
    * Call each frame or when the network changes.
    */
   sync(network: RoadNetwork): void {
-    this.syncFlags(network.getAllFlags());
+    const flags = network.getAllFlags();
+    this.syncFlags(flags);
     this.syncRoads(network.getAllRoads(), network);
+    this.syncFlagResources(flags);
   }
 
   private syncFlags(flags: Flag[]): void {
@@ -226,6 +238,98 @@ export class RoadRenderer {
     }
   }
 
+  private syncFlagResources(flags: Flag[]): void {
+    const currentIds = new Set<string>();
+
+    for (const flag of flags) {
+      currentIds.add(flag.id);
+
+      // Build fingerprint from sorted resource types
+      const fingerprint = flag.goods.length > 0
+        ? flag.goods.map((g) => g.resource).sort().join(',')
+        : '';
+
+      const cached = this.flagResourceFingerprints.get(flag.id);
+      if (cached === fingerprint) continue; // No change
+
+      // Remove old resource meshes
+      this.removeFlagResources(flag.id);
+
+      if (fingerprint) {
+        this.addFlagResources(flag);
+        this.flagResourceFingerprints.set(flag.id, fingerprint);
+      } else {
+        this.flagResourceFingerprints.delete(flag.id);
+      }
+    }
+
+    // Remove resources for deleted flags
+    for (const id of this.flagResourceFingerprints.keys()) {
+      if (!currentIds.has(id)) {
+        this.removeFlagResources(id);
+        this.flagResourceFingerprints.delete(id);
+      }
+    }
+  }
+
+  private addFlagResources(flag: Flag): void {
+    const container = new THREE.Group();
+    container.name = `flag_resources_${flag.id}`;
+
+    const { x, z } = HexGrid.hexToWorld(flag.coord.q, flag.coord.r);
+    const tile = this.grid.getTile(flag.coord.q, flag.coord.r);
+    const y = tile ? MapRenderer.getTileY(tile) : 0;
+    container.position.set(x, y, z);
+
+    const count = flag.goods.length;
+    for (let i = 0; i < count; i++) {
+      const good = flag.goods[i];
+      const mesh = assetLoader.getResourceModel(good.resource as ResourceModelName);
+      if (!mesh) continue;
+
+      mesh.scale.setScalar(FLAG_RESOURCE_SCALE);
+
+      // Arrange in a circle around the flag pole
+      const angle = (i / count) * Math.PI * 2;
+      mesh.position.set(
+        Math.cos(angle) * FLAG_RESOURCE_RADIUS,
+        FLAG_RESOURCE_Y,
+        Math.sin(angle) * FLAG_RESOURCE_RADIUS,
+      );
+
+      container.add(mesh);
+    }
+
+    this.flagGroup.add(container);
+    this.flagResourceMeshes.set(flag.id, container);
+
+    // Ghost clones
+    for (const { flags: ghost } of this.wrapGroups) {
+      const clone = container.clone();
+      clone.position.copy(container.position);
+      ghost.add(clone);
+    }
+  }
+
+  private removeFlagResources(flagId: string): void {
+    const container = this.flagResourceMeshes.get(flagId);
+    if (container) {
+      this.flagGroup.remove(container);
+      this.disposeMesh(container);
+      this.flagResourceMeshes.delete(flagId);
+    }
+
+    // Remove from ghosts
+    const name = `flag_resources_${flagId}`;
+    for (const { flags: ghost } of this.wrapGroups) {
+      const child = ghost.children.find((c) => c.name === name);
+      if (child) {
+        ghost.remove(child);
+        if (child instanceof THREE.Group) this.disposeMesh(child);
+      }
+    }
+  }
+
   private disposeMesh(group: THREE.Group): void {
     group.traverse((child) => {
       if (child instanceof THREE.Mesh) {
@@ -250,6 +354,12 @@ export class RoadRenderer {
       }
     }
     this.roadMeshes.clear();
+
+    for (const mesh of this.flagResourceMeshes.values()) {
+      this.disposeMesh(mesh);
+    }
+    this.flagResourceMeshes.clear();
+    this.flagResourceFingerprints.clear();
 
     this.flagGroup.removeFromParent();
     this.roadGroup.removeFromParent();

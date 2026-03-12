@@ -55,7 +55,7 @@ export interface SaveData {
     deliveryCooldown: number;
   };
   transporterManager: {
-    transporterStates: [string, { roadId: string; targetFlagId: string; carrying: FlagGood | null }][];
+    transporterStates: [string, { roadId: string; targetFlagId: string; carrying: FlagGood | null; waitingAtFlagId: string | null }][];
     spawnCooldown: number;
   };
   unitManager: {

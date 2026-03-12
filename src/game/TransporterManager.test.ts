@@ -93,34 +93,74 @@ describe('TransporterManager', () => {
     });
   });
 
-  describe('transporter movement', () => {
-    it('should walk to the other flag', () => {
+  describe('transporter idle behavior', () => {
+    it('should idle at flag when no goods to carry', () => {
       const f1 = roadNetwork.placeFlag({ q: 4, r: 4 }, 1)!;
       const f2 = roadNetwork.placeFlag({ q: 5, r: 4 }, 1)!;
       roadNetwork.connectFlags(f1.id, f2.id);
+
+      tick(1.1); // Spawn
+
+      const transporter = gameState.getAllUnits().find((u) => u.type === UnitType.Transporter);
+      // No goods at either flag — transporter should idle (Working state at flag)
+      expect(transporter?.state).toBe(UnitState.Working);
+    });
+
+    it('should resume walking when goods appear at current flag', () => {
+      const f1 = roadNetwork.placeFlag({ q: 4, r: 4 }, 1)!;
+      const f2 = roadNetwork.placeFlag({ q: 5, r: 4 }, 1)!;
+      roadNetwork.connectFlags(f1.id, f2.id);
+
+      tick(1.1); // Spawn — idles (no goods)
+
+      const transporter = gameState.getAllUnits().find((u) => u.type === UnitType.Transporter)!;
+      expect(transporter.state).toBe(UnitState.Working);
+
+      // Add goods at f1 going to f2
+      f1.goods.push({ resource: ResourceType.Wood, destinationFlagId: f2.id });
+
+      tick(0.1); // handleIdleTransporters picks up and walks
+
+      expect(transporter.state).toBe(UnitState.WalkingToWork);
+      expect(transporter.carryingResource).toBe(ResourceType.Wood);
+      expect(f1.goods).toHaveLength(0);
+    });
+
+    it('should walk empty to other flag when goods appear there', () => {
+      const f1 = roadNetwork.placeFlag({ q: 4, r: 4 }, 1)!;
+      const f2 = roadNetwork.placeFlag({ q: 5, r: 4 }, 1)!;
+      roadNetwork.connectFlags(f1.id, f2.id);
+
+      tick(1.1); // Spawn — idles at f1
+
+      const transporter = gameState.getAllUnits().find((u) => u.type === UnitType.Transporter)!;
+      expect(transporter.state).toBe(UnitState.Working);
+
+      // Add goods at f2 going to f1
+      f2.goods.push({ resource: ResourceType.Stone, destinationFlagId: f1.id });
+
+      tick(0.1); // handleIdleTransporters walks empty to f2
+
+      expect(transporter.state).toBe(UnitState.WalkingToWork);
+      expect(transporter.carryingResource).toBeNull(); // Walking empty
+      expect(f2.goods).toHaveLength(1); // Goods still at f2 — not picked up yet
+    });
+  });
+
+  describe('transporter movement', () => {
+    it('should walk to the other flag when carrying goods', () => {
+      const f1 = roadNetwork.placeFlag({ q: 4, r: 4 }, 1)!;
+      const f2 = roadNetwork.placeFlag({ q: 5, r: 4 }, 1)!;
+      roadNetwork.connectFlags(f1.id, f2.id);
+
+      // Place a good so transporter has a reason to walk
+      f1.goods.push({ resource: ResourceType.Wood, destinationFlagId: f2.id });
 
       tick(1.1); // Spawn
 
       const transporter = gameState.getAllUnits().find((u) => u.type === UnitType.Transporter);
       expect(transporter?.state).toBe(UnitState.WalkingToWork);
       expect(transporter?.path.length).toBeGreaterThan(0);
-    });
-
-    it('should arrive at target flag and turn around', () => {
-      const f1 = roadNetwork.placeFlag({ q: 4, r: 4 }, 1)!;
-      const f2 = roadNetwork.placeFlag({ q: 5, r: 4 }, 1)!;
-      roadNetwork.connectFlags(f1.id, f2.id);
-
-      tick(1.1); // Spawn
-
-      // Walk to other flag
-      for (let i = 0; i < 10; i++) {
-        tick(0.5);
-      }
-
-      const transporter = gameState.getAllUnits().find((u) => u.type === UnitType.Transporter);
-      // Should have arrived, dropped off, and be walking back
-      expect(transporter?.state).toBe(UnitState.WalkingToWork);
     });
   });
 
@@ -156,8 +196,8 @@ describe('TransporterManager', () => {
 
       tick(1.1); // Spawn and pick up
 
-      // Walk to f2
-      for (let i = 0; i < 10; i++) {
+      // Walk to f2 — slower speed (0.55) needs more ticks
+      for (let i = 0; i < 30; i++) {
         tick(0.5);
       }
 
@@ -181,8 +221,8 @@ describe('TransporterManager', () => {
       tick(1.1);
       tick(1.1);
 
-      // Move transporters
-      for (let i = 0; i < 10; i++) {
+      // Move transporters — need more ticks for slower speed
+      for (let i = 0; i < 30; i++) {
         tick(0.5);
       }
 
@@ -202,6 +242,9 @@ describe('TransporterManager', () => {
       const f1 = roadNetwork.placeFlag({ q: 4, r: 4 }, 1)!;
       const f2 = roadNetwork.placeFlag({ q: 5, r: 4 }, 1)!;
       const road = roadNetwork.connectFlags(f1.id, f2.id)!;
+
+      // Add goods so transporter starts walking (not idle)
+      f1.goods.push({ resource: ResourceType.Wood, destinationFlagId: f2.id });
 
       tick(1.1); // Spawn
 
@@ -251,7 +294,7 @@ describe('TransporterManager', () => {
       tick(1.1); // Spawn — picks up good, walks to f2
 
       // Walk to f2
-      for (let i = 0; i < 10; i++) tick(0.5);
+      for (let i = 0; i < 30; i++) tick(0.5);
 
       // Now at f2, good delivered. Put another good at f2 going to a non-existent flag
       f2.goods.push({ resource: ResourceType.Stone, destinationFlagId: 'flag_999' });
