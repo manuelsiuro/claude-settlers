@@ -493,6 +493,7 @@ function showGameOver(result: VictoryResult): void {
   // Stop live updates — panels are hidden behind the overlay
   stopInfoPanelUpdates();
   stopStatsPanelUpdates();
+  stopBuildPanelUpdates();
 
   gameOverOverlay.classList.remove('hidden');
 }
@@ -557,6 +558,9 @@ const statsPanel = document.getElementById('stats-panel')!;
 const statsPanelContent = document.getElementById('stats-panel-content')!;
 const statsCloseBtn = document.getElementById('stats-close-btn')!;
 let statsPanelUpdateInterval: ReturnType<typeof setInterval> | null = null;
+
+// Build panel periodic update
+let buildPanelUpdateInterval: ReturnType<typeof setInterval> | null = null;
 
 /** Get total available resources across Castle + Warehouses for the human player */
 function getPlayerResources(): Partial<Record<ResourceType, number>> {
@@ -678,11 +682,21 @@ function toggleBuildPanel(): void {
     populateBuildPanel();
     closeInfoPanel();
     closeStatsPanel();
+    stopBuildPanelUpdates();
+    buildPanelUpdateInterval = setInterval(populateBuildPanel, 1000);
   }
 }
 
 function closeBuildPanel(): void {
   buildPanel.classList.add('hidden');
+  stopBuildPanelUpdates();
+}
+
+function stopBuildPanelUpdates(): void {
+  if (buildPanelUpdateInterval !== null) {
+    clearInterval(buildPanelUpdateInterval);
+    buildPanelUpdateInterval = null;
+  }
 }
 
 /** Enter building placement mode */
@@ -1305,6 +1319,7 @@ async function startGame(config: Partial<GameConfig>, savedData?: SaveData): Pro
   // Clean up any active UI state from the previous game
   stopInfoPanelUpdates();
   stopStatsPanelUpdates();
+  stopBuildPanelUpdates();
   infoPanel.classList.add('hidden');
   statsPanel.classList.add('hidden');
   buildPanel.classList.add('hidden');

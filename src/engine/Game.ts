@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import { HexGrid } from '../game/HexGrid';
 import { generateMap } from '../game/MapGenerator';
 import { BuildingType } from '../game/BuildingType';
-import { initializeCastleResources } from '../game/Building';
+import { initializeCastleResources, transferStorageInputs } from '../game/Building';
+import { BuildingState } from '../game/Building';
 import { GameState } from '../game/GameState';
 import { UnitManager } from '../game/UnitManager';
 import { ProductionManager } from '../game/ProductionManager';
@@ -361,6 +362,14 @@ export class Game {
 
       // Scale delta by game speed; zero when paused
       const deltaTime = this._paused ? 0 : rawDelta * this._gameSpeed;
+
+      // Transfer storage building inputs → outputs (Castle/Warehouse accept delivered goods)
+      const allBuildings = this.gameState.getAllBuildings();
+      for (const b of allBuildings) {
+        if (b.type !== BuildingType.Castle && b.type !== BuildingType.Warehouse) continue;
+        if (b.state !== BuildingState.Active) continue;
+        transferStorageInputs(b);
+      }
 
       this.territoryManager.update();
       this.unitManager.update(deltaTime);

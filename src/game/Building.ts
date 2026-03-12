@@ -183,6 +183,16 @@ export function initializeCastleResources(castle: Building): void {
   }
 }
 
+/** Transfer all resources from inputInventory to outputInventory for storage buildings (Castle/Warehouse) */
+export function transferStorageInputs(building: Building): void {
+  for (const [res, amount] of Object.entries(building.inputInventory)) {
+    if (!amount || amount <= 0) continue;
+    const r = res as ResourceType;
+    building.outputInventory[r] = (building.outputInventory[r] ?? 0) + amount;
+    delete building.inputInventory[r];
+  }
+}
+
 /** Reset the building ID counter (for testing) */
 export function resetBuildingIdCounter(): void {
   nextBuildingId = 1;
