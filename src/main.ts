@@ -18,6 +18,9 @@ import '@mdui/icons/map.js';
 import '@mdui/icons/settings.js';
 import '@mdui/icons/close.js';
 import '@mdui/icons/add.js';
+import '@mdui/icons/save.js';
+import '@mdui/icons/folder-open.js';
+import '@mdui/icons/download.js';
 import { Game } from './engine/Game';
 import type { GameNotification } from './engine/Game';
 import { Minimap } from './engine/Minimap';
@@ -30,6 +33,14 @@ import { BuildingState } from './game/Building';
 import type { Building, ResourceInventory } from './game/Building';
 import { RESOURCE_PROPERTIES, ResourceType } from './game/ResourceType';
 import { UNIT_DEFINITIONS, UnitType } from './game/UnitType';
+import {
+  type SaveData,
+  saveToLocalStorage,
+  loadFromLocalStorage,
+  downloadSave,
+  loadFromFile,
+  hasSave,
+} from './game/SaveLoad';
 import './ui/styles.css';
 
 const app = document.getElementById('app')!;
@@ -45,6 +56,15 @@ app.innerHTML = `
       </mdui-list-item>
       <mdui-list-item headline="Minimap">
         <mdui-icon-map slot="icon"></mdui-icon-map>
+      </mdui-list-item>
+      <mdui-list-item headline="Save Game">
+        <mdui-icon-save slot="icon"></mdui-icon-save>
+      </mdui-list-item>
+      <mdui-list-item headline="Load Game">
+        <mdui-icon-folder-open slot="icon"></mdui-icon-folder-open>
+      </mdui-list-item>
+      <mdui-list-item headline="Download Save">
+        <mdui-icon-download slot="icon"></mdui-icon-download>
       </mdui-list-item>
       <mdui-list-item headline="Settings">
         <mdui-icon-settings slot="icon"></mdui-icon-settings>
@@ -184,6 +204,9 @@ app.innerHTML = `
       <mdui-button id="setup-start-btn" class="setup-start-btn" variant="filled">
         Start Game
       </mdui-button>
+      <mdui-button id="setup-continue-btn" class="setup-start-btn" variant="outlined" style="display:none;margin-top:8px;">
+        Continue Saved Game
+      </mdui-button>
     </div>
   </div>
 `;
@@ -205,6 +228,12 @@ navItems.forEach((item) => {
       showStatsPanel();
     } else if (headline === 'Buildings') {
       toggleBuildPanel();
+    } else if (headline === 'Save Game') {
+      handleSaveGame();
+    } else if (headline === 'Load Game') {
+      handleLoadFromFile();
+    } else if (headline === 'Download Save') {
+      handleDownloadSave();
     } else {
       showSnackbar(`${headline} — coming soon`);
     }
@@ -1076,8 +1105,8 @@ buildContent.addEventListener('click', (e) => {
 
 let currentMinimap: Minimap | undefined;
 
-/** Initialize and start the game with the given config */
-async function startGame(config: Partial<GameConfig>): Promise<void> {
+/** Initialize and start the game with the given config, optionally restoring saved state */
+async function startGame(config: Partial<GameConfig>, savedData?: SaveData): Promise<void> {
   // Clean up any active UI state from the previous game
   stopInfoPanelUpdates();
   stopStatsPanelUpdates();
@@ -1105,7 +1134,7 @@ async function startGame(config: Partial<GameConfig>): Promise<void> {
 
   wireNotifications(game);
 
-  await game.start();
+  await game.start(savedData);
 
   const placement = game.getPlacementController();
   if (placement) {
@@ -1158,6 +1187,79 @@ async function startGame(config: Partial<GameConfig>): Promise<void> {
 }
 
 // ============================================================
+// Save / Load
+// ============================================================
+
+/** Save the current game to localStorage */
+function handleSaveGame(): void {
+  if (!game) {
+    showSnackbar('No game in progress');
+    return;
+  }
+  try {
+    const data = game.serialize();
+    saveToLocalStorage(data);
+    showSnackbar('Game saved');
+  } catch (err) {
+    console.error('Save failed:', err);
+    showSnackbar('Save failed — storage may be full');
+  }
+}
+
+/** Download the current save as a JSON file */
+function handleDownloadSave(): void {
+  if (!game) {
+    showSnackbar('No game in progress');
+    return;
+  }
+  try {
+    const data = game.serialize();
+    downloadSave(data);
+    showSnackbar('Save file downloaded');
+  } catch (err) {
+    console.error('Download save failed:', err);
+    showSnackbar('Failed to download save');
+  }
+}
+
+/** Load a game from a JSON file */
+async function handleLoadFromFile(): Promise<void> {
+  try {
+    const data = await loadFromFile();
+    if (!data) {
+      showSnackbar('No valid save file selected');
+      return;
+    }
+    setupOverlay.classList.add('hidden');
+    gameOverOverlay.classList.add('hidden');
+    await startGame(data.config, data);
+    showSnackbar('Game loaded from file');
+  } catch (err) {
+    console.error('Load failed:', err);
+    showSnackbar('Failed to load save file');
+  }
+}
+
+/** Load game from localStorage (called from setup screen) */
+async function handleLoadFromStorage(): Promise<void> {
+  const data = loadFromLocalStorage();
+  if (!data) {
+    showSnackbar('No save found');
+    return;
+  }
+  try {
+    setupOverlay.classList.add('hidden');
+    gameOverOverlay.classList.add('hidden');
+    await startGame(data.config, data);
+    showSnackbar('Game loaded');
+  } catch (err) {
+    console.error('Load failed:', err);
+    showSnackbar('Failed to load saved game');
+    setupOverlay.classList.remove('hidden');
+  }
+}
+
+// ============================================================
 // Game Setup Screen
 // ============================================================
 
@@ -1169,6 +1271,17 @@ const setupPlayersSelect = document.getElementById('setup-players') as HTMLSelec
 const setupScenarioSelect = document.getElementById('setup-scenario') as HTMLSelectElement;
 const setupDifficultySelect = document.getElementById('setup-difficulty') as HTMLSelectElement;
 const setupStartBtn = document.getElementById('setup-start-btn')!;
+
+const setupContinueBtn = document.getElementById('setup-continue-btn')!;
+
+// Show "Continue Saved Game" button if a save exists in localStorage
+if (hasSave()) {
+  setupContinueBtn.style.display = '';
+}
+
+setupContinueBtn.addEventListener('click', () => {
+  handleLoadFromStorage();
+});
 
 setupRandomSeedBtn.addEventListener('click', () => {
   setupSeedInput.value = String(Math.floor(Math.random() * 999999) + 1);

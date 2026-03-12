@@ -12,7 +12,9 @@
       "command": "npx",
       "args": [
         "-y",
-        "chrome-devtools-mcp@latest"
+        "chrome-devtools-mcp@latest",
+        "--chrome-arg=--use-gl=angle",
+        "--chrome-arg=--use-angle=swiftshader"
       ]
     }
   }

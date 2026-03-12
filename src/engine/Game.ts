@@ -30,6 +30,8 @@ import { CameraController } from './CameraController';
 import { assetLoader } from './AssetLoader';
 import { updateWaterTime } from './WaterShader';
 import { BUILDING_DEFINITIONS } from '../game/BuildingType';
+import type { SaveData } from '../game/SaveLoad';
+import { serializeGame, deserializeGame } from '../game/SaveLoad';
 
 export type GameNotificationType =
   | 'building_complete'
@@ -242,7 +244,7 @@ export class Game {
     this.renderer.setSize(this.width, this.height);
   }
 
-  async start(): Promise<void> {
+  async start(savedData?: SaveData): Promise<void> {
     // Load all GLTF assets before building the map
     await Promise.all([
       assetLoader.loadTerrainModels(),
@@ -266,26 +268,68 @@ export class Game {
     // Set up territory renderer with world wrapping
     this.territoryRenderer.addToScene(this.scene, this.grid);
 
-    // Place starting Castles for all players
-    this.placeStartingCastles();
+    if (savedData) {
+      // Restore saved state
+      this.initAIPlayers();
+      deserializeGame(
+        savedData,
+        this.gameState,
+        this.roadNetwork,
+        {
+          constructionManager: this.constructionManager,
+          transporterManager: this.transporterManager,
+          unitManager: this.unitManager,
+          combatManager: this.combatManager,
+          attackManager: this.attackManager,
+          territoryManager: this.territoryManager,
+          logisticsManager: this.logisticsManager,
+          knightManager: this.knightManager,
+          victoryManager: this.victoryManager,
+        },
+        this.aiPlayers,
+      );
 
-    // Create AI controllers for non-human players (players 2..N)
-    this.initAIPlayers();
+      // Rebuild renderers from restored state
+      for (const building of this.gameState.getAllBuildings()) {
+        this.buildingRenderer.addBuilding(building, this.grid);
+      }
+      this.roadRenderer.sync(this.roadNetwork);
+      this.territoryRenderer.sync(this.territoryManager);
 
-    // Position camera to look at human player's Castle (or map center as fallback)
-    const castle1 = this.gameState.findCastle(this.humanPlayerId);
-    let lookAt: THREE.Vector3;
-    if (castle1) {
-      const { x, z } = HexGrid.hexToWorld(castle1.coord.q, castle1.coord.r);
-      lookAt = new THREE.Vector3(x, 0, z);
+      // Restore camera
+      this.frustum = savedData.frustum;
+      this.onResize();
+      this.camera.position.set(
+        savedData.cameraPosition.x,
+        savedData.cameraPosition.y,
+        savedData.cameraPosition.z,
+      );
+      this.camera.lookAt(
+        savedData.cameraTarget.x,
+        savedData.cameraTarget.y,
+        savedData.cameraTarget.z,
+      );
     } else {
-      lookAt = this.mapRenderer.getMapCenter(this.grid);
-    }
-    const camOffset = new THREE.Vector3(20, 20, 20);
-    this.camera.position.copy(lookAt).add(camOffset);
-    this.camera.lookAt(lookAt);
+      // New game: place starting Castles and create AI controllers
+      this.placeStartingCastles();
+      this.initAIPlayers();
 
-    // Camera controls
+      // Position camera at human player's Castle (or map center as fallback)
+      const castle1 = this.gameState.findCastle(this.humanPlayerId);
+      let lookAt: THREE.Vector3;
+      if (castle1) {
+        const { x, z } = HexGrid.hexToWorld(castle1.coord.q, castle1.coord.r);
+        lookAt = new THREE.Vector3(x, 0, z);
+      } else {
+        lookAt = this.mapRenderer.getMapCenter(this.grid);
+      }
+      const camOffset = new THREE.Vector3(20, 20, 20);
+      this.camera.position.copy(lookAt).add(camOffset);
+      this.camera.lookAt(lookAt);
+    }
+
+    // Camera controls (must be created AFTER camera is positioned so
+    // CameraController computes the correct initial target)
     this.cameraController = new CameraController(this);
 
     // Placement controller
@@ -531,6 +575,50 @@ export class Game {
 
   getRoadPlacementController(): RoadPlacementController | null {
     return this.roadPlacementController;
+  }
+
+  /** Serialize the full game state for save/load */
+  serialize(): SaveData {
+    // Compute camera target (point the camera is looking at)
+    const target = new THREE.Vector3();
+    this.camera.getWorldDirection(target);
+    target.multiplyScalar(50).add(this.camera.position);
+
+    return serializeGame(
+      this.config,
+      this.gameState,
+      this.roadNetwork,
+      {
+        constructionManager: this.constructionManager,
+        transporterManager: this.transporterManager,
+        unitManager: this.unitManager,
+        combatManager: this.combatManager,
+        attackManager: this.attackManager,
+        territoryManager: this.territoryManager,
+        logisticsManager: this.logisticsManager,
+        knightManager: this.knightManager,
+        victoryManager: this.victoryManager,
+      },
+      this.aiPlayers,
+      {
+        frustum: this.frustum,
+        position: {
+          x: this.camera.position.x,
+          y: this.camera.position.y,
+          z: this.camera.position.z,
+        },
+        target: {
+          x: target.x,
+          y: target.y,
+          z: target.z,
+        },
+      },
+    );
+  }
+
+  /** Get AI players (for serialization) */
+  getAIPlayers(): AIPlayer[] {
+    return this.aiPlayers;
   }
 
   /** Update camera frustum (for zoom) */

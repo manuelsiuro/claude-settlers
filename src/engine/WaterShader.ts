@@ -24,7 +24,11 @@ const waterVertexShader = /* glsl */ `
 
     vWave = wave1 + wave2;
 
-    vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+    #ifdef USE_INSTANCING
+      vec4 mvPosition = modelViewMatrix * instanceMatrix * vec4(pos, 1.0);
+    #else
+      vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+    #endif
     gl_Position = projectionMatrix * mvPosition;
 
     #include <fog_vertex>
@@ -83,6 +87,12 @@ const waterMaterials: THREE.ShaderMaterial[] = [];
 /** Register a water material for time updates */
 export function registerWaterMaterial(mat: THREE.ShaderMaterial): void {
   waterMaterials.push(mat);
+}
+
+/** Unregister a water material (call on dispose to prevent leaks) */
+export function unregisterWaterMaterial(mat: THREE.ShaderMaterial): void {
+  const idx = waterMaterials.indexOf(mat);
+  if (idx !== -1) waterMaterials.splice(idx, 1);
 }
 
 /** Call each frame to animate all water materials */

@@ -284,4 +284,38 @@ export class GameState {
   getGrid(): HexGrid {
     return this.grid;
   }
+
+  /** Serialization: get all internal state for save */
+  _getState(): {
+    buildings: Building[];
+    units: Unit[];
+    workerByBuilding: [string, string][];
+  } {
+    return {
+      buildings: Array.from(this.buildings.values()),
+      units: Array.from(this.units.values()),
+      workerByBuilding: Array.from(this.workerByBuilding.entries()),
+    };
+  }
+
+  /** Serialization: restore all internal state from save */
+  _loadState(state: {
+    buildings: Building[];
+    units: Unit[];
+    workerByBuilding: [string, string][];
+  }): void {
+    this.buildings.clear();
+    this.buildingsByCoord.clear();
+    this.units.clear();
+    this.workerByBuilding.clear();
+
+    for (const building of state.buildings) {
+      this.buildings.set(building.id, building);
+      this.buildingsByCoord.set(HexGrid.key(building.coord.q, building.coord.r), building.id);
+    }
+    for (const unit of state.units) {
+      this.units.set(unit.id, unit);
+    }
+    this.workerByBuilding = new Map(state.workerByBuilding);
+  }
 }

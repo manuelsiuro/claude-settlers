@@ -287,10 +287,59 @@ export class RoadNetwork {
   private makeRoadKey(flagAId: string, flagBId: string): string {
     return flagAId < flagBId ? `${flagAId}:${flagBId}` : `${flagBId}:${flagAId}`;
   }
+
+  /** Serialization: get all internal state for save */
+  _getState(): {
+    flags: Flag[];
+    roads: Road[];
+  } {
+    return {
+      flags: Array.from(this.flags.values()),
+      roads: Array.from(this.roads.values()),
+    };
+  }
+
+  /** Serialization: restore all internal state from save */
+  _loadState(state: {
+    flags: Flag[];
+    roads: Road[];
+  }): void {
+    this.flags.clear();
+    this.flagsByCoord.clear();
+    this.roads.clear();
+    this.adjacency.clear();
+    this.roadByFlags.clear();
+
+    for (const flag of state.flags) {
+      this.flags.set(flag.id, flag);
+      const key = HexGrid.key(flag.coord.q, flag.coord.r);
+      this.flagsByCoord.set(key, flag.id);
+      this.adjacency.set(flag.id, new Set());
+    }
+
+    for (const road of state.roads) {
+      this.roads.set(road.id, road);
+      const roadKey = this.makeRoadKey(road.flagA, road.flagB);
+      this.roadByFlags.set(roadKey, road.id);
+      this.adjacency.get(road.flagA)?.add(road.flagB);
+      this.adjacency.get(road.flagB)?.add(road.flagA);
+    }
+  }
 }
 
 /** Reset ID counters (for testing) */
 export function resetRoadNetworkIdCounters(): void {
   nextFlagId = 1;
   nextRoadId = 1;
+}
+
+/** Get the current ID counter values (for serialization) */
+export function getRoadNetworkIdCounters(): { nextFlagId: number; nextRoadId: number } {
+  return { nextFlagId, nextRoadId };
+}
+
+/** Set the ID counter values (for deserialization) */
+export function setRoadNetworkIdCounters(counters: { nextFlagId: number; nextRoadId: number }): void {
+  nextFlagId = counters.nextFlagId;
+  nextRoadId = counters.nextRoadId;
 }

@@ -151,6 +151,11 @@ export class AssetLoader {
     return original.clone();
   }
 
+  /** Get the raw (non-cloned) model for instancing. Do NOT modify the returned object. */
+  getRawModel(name: string): THREE.Group | null {
+    return this.models.get(name) ?? null;
+  }
+
   /** Get a clone of a loaded building model */
   getBuildingModel(name: BuildingModelName): THREE.Group {
     const original = this.models.get(name);

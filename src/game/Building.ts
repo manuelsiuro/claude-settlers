@@ -187,3 +187,13 @@ export function initializeCastleResources(castle: Building): void {
 export function resetBuildingIdCounter(): void {
   nextBuildingId = 1;
 }
+
+/** Get the current ID counter value (for serialization) */
+export function getBuildingIdCounter(): number {
+  return nextBuildingId;
+}
+
+/** Set the ID counter value (for deserialization) */
+export function setBuildingIdCounter(value: number): void {
+  nextBuildingId = value;
+}

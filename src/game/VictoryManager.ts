@@ -71,6 +71,34 @@ export class VictoryManager {
     this.playerIds = playerIds;
   }
 
+  /** Serialization: get internal state for save */
+  _getState(): {
+    eliminatedPlayers: number[];
+    gameOver: boolean;
+    result: VictoryResult | null;
+    checkCooldown: number;
+  } {
+    return {
+      eliminatedPlayers: Array.from(this.eliminatedPlayers),
+      gameOver: this.gameOver,
+      result: this.result,
+      checkCooldown: this.checkCooldown,
+    };
+  }
+
+  /** Serialization: restore internal state from save */
+  _loadState(state: {
+    eliminatedPlayers: number[];
+    gameOver: boolean;
+    result: VictoryResult | null;
+    checkCooldown: number;
+  }): void {
+    this.eliminatedPlayers = new Set(state.eliminatedPlayers);
+    this.gameOver = state.gameOver;
+    this.result = state.result;
+    this.checkCooldown = state.checkCooldown;
+  }
+
   update(deltaTime: number): void {
     if (this.gameOver) return;
 

@@ -57,6 +57,16 @@ export class AttackManager {
     this.territoryManager = territoryManager;
   }
 
+  /** Serialization: get internal state for save */
+  _getState(): { attacks: AttackOrder[] } {
+    return { attacks: [...this.attacks] };
+  }
+
+  /** Serialization: restore internal state from save */
+  _loadState(state: { attacks: AttackOrder[] }): void {
+    this.attacks = [...state.attacks];
+  }
+
   /**
    * Order a knight to attack an enemy military building.
    * Returns true if the order was valid and issued.

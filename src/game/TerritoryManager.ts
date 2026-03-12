@@ -33,6 +33,21 @@ export class TerritoryManager {
     this.gameState = gameState;
   }
 
+  /** Serialization: get internal state for save */
+  _getState(): { territory: [string, number][]; version: number } {
+    return {
+      territory: Array.from(this.territory.entries()),
+      version: this.version,
+    };
+  }
+
+  /** Serialization: restore internal state from save */
+  _loadState(state: { territory: [string, number][]; version: number }): void {
+    this.territory = new Map(state.territory);
+    this.version = state.version;
+    this.dirty = false;
+  }
+
   /** Mark territory as needing recalculation */
   markDirty(): void {
     this.dirty = true;

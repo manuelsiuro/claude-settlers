@@ -20,6 +20,16 @@ export class UnitManager {
     this.gameState = gameState;
   }
 
+  /** Serialization: get internal state for save */
+  _getState(): { spawnCooldown: number } {
+    return { spawnCooldown: this.spawnCooldown };
+  }
+
+  /** Serialization: restore internal state from save */
+  _loadState(state: { spawnCooldown: number }): void {
+    this.spawnCooldown = state.spawnCooldown;
+  }
+
   /**
    * Main update tick. Call each frame with delta time in seconds.
    * Handles: orphan checks, spawning, assignment, movement progression.

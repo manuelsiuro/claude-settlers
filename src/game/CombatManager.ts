@@ -48,6 +48,16 @@ export class CombatManager {
     this.knightManager = knightManager;
   }
 
+  /** Serialization: get internal state for save */
+  _getState(): { combatWins: [string, number][] } {
+    return { combatWins: Array.from(this.combatWins.entries()) };
+  }
+
+  /** Serialization: restore internal state from save */
+  _loadState(state: { combatWins: [string, number][] }): void {
+    this.combatWins = new Map(state.combatWins);
+  }
+
   /**
    * Resolve a 1v1 duel between two knights.
    * The knight with higher strength has a higher probability of winning.

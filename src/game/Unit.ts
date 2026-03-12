@@ -125,3 +125,13 @@ export function clearUnitPath(unit: Unit): void {
 export function resetUnitIdCounter(): void {
   nextUnitId = 1;
 }
+
+/** Get the current ID counter value (for serialization) */
+export function getUnitIdCounter(): number {
+  return nextUnitId;
+}
+
+/** Set the ID counter value (for deserialization) */
+export function setUnitIdCounter(value: number): void {
+  nextUnitId = value;
+}

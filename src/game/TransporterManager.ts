@@ -43,6 +43,26 @@ export class TransporterManager {
     this.roadNetwork = roadNetwork;
   }
 
+  /** Serialization: get internal state for save */
+  _getState(): {
+    transporterStates: [string, TransporterState][];
+    spawnCooldown: number;
+  } {
+    return {
+      transporterStates: Array.from(this.transporterStates.entries()),
+      spawnCooldown: this.spawnCooldown,
+    };
+  }
+
+  /** Serialization: restore internal state from save */
+  _loadState(state: {
+    transporterStates: [string, TransporterState][];
+    spawnCooldown: number;
+  }): void {
+    this.transporterStates = new Map(state.transporterStates);
+    this.spawnCooldown = state.spawnCooldown;
+  }
+
   update(deltaTime: number): void {
     this.spawnTransporters(deltaTime);
     this.handleArrivals();

@@ -32,6 +32,16 @@ export class KnightManager {
     this.gameState = gameState;
   }
 
+  /** Serialization: get internal state for save */
+  _getState(): { recruitCooldown: number } {
+    return { recruitCooldown: this.recruitCooldown };
+  }
+
+  /** Serialization: restore internal state from save */
+  _loadState(state: { recruitCooldown: number }): void {
+    this.recruitCooldown = state.recruitCooldown;
+  }
+
   update(deltaTime: number): void {
     this.recruitCooldown -= deltaTime;
     if (this.recruitCooldown > 0) return;

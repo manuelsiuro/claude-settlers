@@ -38,6 +38,20 @@ export class ConstructionManager {
     this.gameState = gameState;
   }
 
+  /** Serialization: get internal state for save */
+  _getState(): { builderAssignments: [string, string][]; deliveryCooldown: number } {
+    return {
+      builderAssignments: Array.from(this.builderAssignments.entries()),
+      deliveryCooldown: this.deliveryCooldown,
+    };
+  }
+
+  /** Serialization: restore internal state from save */
+  _loadState(state: { builderAssignments: [string, string][]; deliveryCooldown: number }): void {
+    this.builderAssignments = new Map(state.builderAssignments);
+    this.deliveryCooldown = state.deliveryCooldown;
+  }
+
   /**
    * Update construction each frame.
    * Note: UnitManager handles movement and WalkingToWork→Working transitions.

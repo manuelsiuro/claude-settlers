@@ -353,4 +353,34 @@ export class AIPlayer {
   _setBuildOrderIndex(index: number): void {
     this.buildOrderIndex = Math.max(0, Math.min(index, ECONOMY_BUILD_ORDER.length));
   }
+
+  /** Serialization: get internal state for save */
+  _getState(): {
+    playerId: number;
+    buildOrderIndex: number;
+    hexRetryCount: number;
+    decisionCooldown: number;
+    attackCooldown: number;
+  } {
+    return {
+      playerId: this.playerId,
+      buildOrderIndex: this.buildOrderIndex,
+      hexRetryCount: this.hexRetryCount,
+      decisionCooldown: this.decisionCooldown,
+      attackCooldown: this.attackCooldown,
+    };
+  }
+
+  /** Serialization: restore internal state from save */
+  _loadState(state: {
+    buildOrderIndex: number;
+    hexRetryCount: number;
+    decisionCooldown: number;
+    attackCooldown: number;
+  }): void {
+    this.buildOrderIndex = state.buildOrderIndex;
+    this.hexRetryCount = state.hexRetryCount;
+    this.decisionCooldown = state.decisionCooldown;
+    this.attackCooldown = state.attackCooldown;
+  }
 }

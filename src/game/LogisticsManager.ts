@@ -29,6 +29,16 @@ export class LogisticsManager {
     this.roadNetwork = roadNetwork;
   }
 
+  /** Serialization: get internal state for save */
+  _getState(): { routingCooldown: number } {
+    return { routingCooldown: this.routingCooldown };
+  }
+
+  /** Serialization: restore internal state from save */
+  _loadState(state: { routingCooldown: number }): void {
+    this.routingCooldown = state.routingCooldown;
+  }
+
   update(deltaTime: number): void {
     this.routingCooldown -= deltaTime;
     if (this.routingCooldown > 0) return;
