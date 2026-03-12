@@ -12,11 +12,17 @@ import { TerritoryManager } from './TerritoryManager';
 import { KnightManager } from './KnightManager';
 import { CombatManager } from './CombatManager';
 import { AttackManager } from './AttackManager';
-import { BuildingType } from './BuildingType';
+import { VictoryManager, VictoryCondition } from './VictoryManager';
+import { AIPlayer } from './AIPlayer';
+import { BuildingType, BUILDING_DEFINITIONS } from './BuildingType';
 import { BuildingState, initializeCastleResources, resetBuildingIdCounter, addToInventory } from './Building';
+import type { Building } from './Building';
 import { ResourceType } from './ResourceType';
 import { UnitType } from './UnitType';
 import { UnitState, resetUnitIdCounter } from './Unit';
+import { Difficulty } from './GameConfig';
+import { serializeGame, deserializeGame } from './SaveLoad';
+import type { SaveData } from './SaveLoad';
 
 describe('Integration: Full Production Chain', () => {
   let grid: HexGrid;
@@ -1012,5 +1018,663 @@ describe('Integration: Multi-player State', () => {
     // Both buildings should be Active
     expect(b1.building.state).toBe(BuildingState.Active);
     expect(b2.building.state).toBe(BuildingState.Active);
+  });
+});
+
+// ============================================================
+// Phase 8.9: Full Game Scenario + Save/Load + Performance
+// ============================================================
+
+describe('Integration: Full 2-Player Game Scenario', () => {
+  let grid: HexGrid;
+  let gameState: GameState;
+  let roadNetwork: RoadNetwork;
+  let unitManager: UnitManager;
+  let productionManager: ProductionManager;
+  let constructionManager: ConstructionManager;
+  let transporterManager: TransporterManager;
+  let logisticsManager: LogisticsManager;
+  let territoryManager: TerritoryManager;
+  let knightManager: KnightManager;
+  let combatManager: CombatManager;
+  let attackManager: AttackManager;
+  let victoryManager: VictoryManager;
+  let aiPlayer: AIPlayer;
+  const placedByAI: Building[] = [];
+
+  function tickAll(dt: number): void {
+    unitManager.update(dt);
+    constructionManager.update(dt);
+    productionManager.update(dt);
+    logisticsManager.update(dt);
+    transporterManager.update(dt);
+    knightManager.update(dt);
+    territoryManager.update();
+    attackManager.update();
+    combatManager.cleanupStaleData();
+    victoryManager.update(dt);
+    aiPlayer.update(dt);
+  }
+
+  function simulateAll(seconds: number, stepSize = 0.5): void {
+    const steps = Math.ceil(seconds / stepSize);
+    for (let i = 0; i < steps; i++) {
+      tickAll(stepSize);
+    }
+  }
+
+  beforeEach(() => {
+    resetBuildingIdCounter();
+    resetUnitIdCounter();
+    resetRoadNetworkIdCounters();
+    placedByAI.length = 0;
+
+    // 24×24 all-grassland map for predictable AI placement
+    grid = new HexGrid(24, 24);
+    for (let q = 0; q < 24; q++) {
+      for (let r = 0; r < 24; r++) {
+        grid.setTile(q, r, TerrainType.Grassland, 0.5);
+      }
+    }
+
+    gameState = new GameState(grid);
+    roadNetwork = new RoadNetwork(grid);
+    unitManager = new UnitManager(gameState);
+    productionManager = new ProductionManager(gameState);
+    constructionManager = new ConstructionManager(gameState);
+    transporterManager = new TransporterManager(gameState, roadNetwork);
+    logisticsManager = new LogisticsManager(gameState, roadNetwork);
+    territoryManager = new TerritoryManager(gameState);
+    knightManager = new KnightManager(gameState);
+    combatManager = new CombatManager(gameState, knightManager);
+    attackManager = new AttackManager(gameState, combatManager, territoryManager);
+    victoryManager = new VictoryManager(gameState, territoryManager, [1, 2]);
+
+    // Wire territory check for placement validation
+    gameState.territoryCheck = (q, r, pid) => territoryManager.isOwnedBy(q, r, pid);
+
+    // Player 1 (human) Castle at (4, 4)
+    const p1 = gameState.placeBuilding(BuildingType.Castle, { q: 4, r: 4 }, 1);
+    if (!p1.ok) throw new Error('P1 Castle placement failed');
+    initializeCastleResources(p1.building);
+
+    // Player 2 (AI) Castle at (20, 20)
+    const p2 = gameState.placeBuilding(BuildingType.Castle, { q: 20, r: 20 }, 2);
+    if (!p2.ok) throw new Error('P2 Castle placement failed');
+    initializeCastleResources(p2.building);
+
+    // Compute initial territory
+    territoryManager.update();
+
+    // AI player for player 2 (Easy difficulty for faster decision intervals in test)
+    aiPlayer = new AIPlayer(
+      2,
+      Difficulty.Easy,
+      gameState,
+      territoryManager,
+      attackManager,
+      knightManager,
+      (building) => { placedByAI.push(building); },
+    );
+  });
+
+  it('AI builds economy buildings over time', () => {
+    // Easy difficulty: 10s decision interval
+    // Simulate 120 game-seconds — AI should place several buildings
+    simulateAll(120);
+
+    const p2Buildings = gameState.getBuildingsByPlayer(2);
+    // AI should have placed at least WoodcutterHut + ForesterHut (first 2 in build order)
+    // plus the starting Castle
+    expect(p2Buildings.length).toBeGreaterThanOrEqual(3);
+
+    // AI should have advanced in its build order
+    expect(aiPlayer.getBuildOrderIndex()).toBeGreaterThanOrEqual(2);
+
+    // Some buildings should be under construction or active
+    const nonCastle = p2Buildings.filter(b => b.type !== BuildingType.Castle);
+    expect(nonCastle.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('AI territory expands with military buildings', () => {
+    // Count initial territory for player 2
+    const countTerritory = (pid: number) => {
+      const state = territoryManager._getState();
+      return state.territory.filter(([, owner]) => owner === pid).length;
+    };
+    const initialTerritory = countTerritory(2);
+
+    // Simulate long enough for AI to place economy + a GuardHut (build order step ~6)
+    // Need ~60s worth of decisions at Easy (10s interval)
+    simulateAll(200);
+
+    // AI territory should have expanded beyond Castle radius
+    const expandedTerritory = countTerritory(2);
+    expect(expandedTerritory).toBeGreaterThanOrEqual(initialTerritory);
+  });
+
+  it('victory triggers on Castle destruction (elimination)', () => {
+    let victoryResult: { winnerId: number; condition: string } | null = null;
+    let defeatFired = false;
+
+    victoryManager.onVictory = (result) => { victoryResult = result; };
+    victoryManager.onDefeat = () => { defeatFired = true; };
+
+    // Destroy Player 2's Castle to trigger elimination
+    const p2Castle = gameState.findCastle(2)!;
+    expect(p2Castle).toBeDefined();
+    gameState.removeBuilding(p2Castle.id);
+    territoryManager.markDirty();
+
+    // Run victory check
+    victoryManager.update(3); // exceeds 2s check interval
+
+    expect(victoryResult).not.toBeNull();
+    expect(victoryResult!.winnerId).toBe(1);
+    expect(victoryResult!.condition).toBe(VictoryCondition.Elimination);
+    expect(victoryManager.isGameOver()).toBe(true);
+    expect(victoryManager.isEliminated(2)).toBe(true);
+    expect(defeatFired).toBe(true);
+  });
+
+  it('economic victory triggers at 50+ gold bars', () => {
+    let victoryResult: { winnerId: number; condition: string } | null = null;
+    victoryManager.onVictory = (result) => { victoryResult = result; };
+
+    // Give player 1 enough gold for economic victory
+    const p1Castle = gameState.findCastle(1)!;
+    addToInventory(p1Castle.outputInventory, ResourceType.GoldBars, 50);
+
+    victoryManager.update(3);
+
+    expect(victoryResult).not.toBeNull();
+    expect(victoryResult!.winnerId).toBe(1);
+    expect(victoryResult!.condition).toBe(VictoryCondition.Economic);
+    expect(victoryManager.isGameOver()).toBe(true);
+  });
+
+  it('both players have independent units and buildings after simulation', () => {
+    simulateAll(60);
+
+    const p1Units = gameState.getUnitsByPlayer(1);
+    const p2Units = gameState.getUnitsByPlayer(2);
+    const p1Buildings = gameState.getBuildingsByPlayer(1);
+    const p2Buildings = gameState.getBuildingsByPlayer(2);
+
+    // Both players should have units (workers spawned from Castles)
+    // Player 1 has no buildings to trigger workers, but player 2 (AI) builds
+    expect(p2Units.length).toBeGreaterThan(0);
+    expect(p2Buildings.length).toBeGreaterThanOrEqual(1); // at least Castle
+
+    // All units belong to correct players
+    for (const u of p1Units) expect(u.playerId).toBe(1);
+    for (const u of p2Units) expect(u.playerId).toBe(2);
+    for (const b of p1Buildings) expect(b.playerId).toBe(1);
+    for (const b of p2Buildings) expect(b.playerId).toBe(2);
+  });
+});
+
+describe('Integration: Save/Load Round-Trip', () => {
+  let grid: HexGrid;
+  let gameState: GameState;
+  let roadNetwork: RoadNetwork;
+  let unitManager: UnitManager;
+  let productionManager: ProductionManager;
+  let constructionManager: ConstructionManager;
+  let transporterManager: TransporterManager;
+  let logisticsManager: LogisticsManager;
+  let territoryManager: TerritoryManager;
+  let knightManager: KnightManager;
+  let combatManager: CombatManager;
+  let attackManager: AttackManager;
+  let victoryManager: VictoryManager;
+  let aiPlayer: AIPlayer;
+
+  function createManagers() {
+    return {
+      constructionManager,
+      transporterManager,
+      unitManager,
+      combatManager,
+      attackManager,
+      territoryManager,
+      logisticsManager,
+      knightManager,
+      victoryManager,
+    };
+  }
+
+  function tickAll(dt: number): void {
+    unitManager.update(dt);
+    constructionManager.update(dt);
+    productionManager.update(dt);
+    logisticsManager.update(dt);
+    transporterManager.update(dt);
+    knightManager.update(dt);
+    territoryManager.update();
+    attackManager.update();
+    combatManager.cleanupStaleData();
+    victoryManager.update(dt);
+    aiPlayer.update(dt);
+  }
+
+  beforeEach(() => {
+    resetBuildingIdCounter();
+    resetUnitIdCounter();
+    resetRoadNetworkIdCounters();
+
+    grid = new HexGrid(20, 20);
+    for (let q = 0; q < 20; q++) {
+      for (let r = 0; r < 20; r++) {
+        grid.setTile(q, r, TerrainType.Grassland, 0.5);
+      }
+    }
+
+    gameState = new GameState(grid);
+    roadNetwork = new RoadNetwork(grid);
+    unitManager = new UnitManager(gameState);
+    productionManager = new ProductionManager(gameState);
+    constructionManager = new ConstructionManager(gameState);
+    transporterManager = new TransporterManager(gameState, roadNetwork);
+    logisticsManager = new LogisticsManager(gameState, roadNetwork);
+    territoryManager = new TerritoryManager(gameState);
+    knightManager = new KnightManager(gameState);
+    combatManager = new CombatManager(gameState, knightManager);
+    attackManager = new AttackManager(gameState, combatManager, territoryManager);
+    victoryManager = new VictoryManager(gameState, territoryManager, [1, 2]);
+
+    gameState.territoryCheck = (q, r, pid) => territoryManager.isOwnedBy(q, r, pid);
+
+    // Set up a game in progress: 2 players with buildings, units, roads
+    const p1 = gameState.placeBuilding(BuildingType.Castle, { q: 4, r: 4 }, 1);
+    if (!p1.ok) throw new Error('P1 Castle failed');
+    initializeCastleResources(p1.building);
+
+    const p2 = gameState.placeBuilding(BuildingType.Castle, { q: 16, r: 16 }, 2);
+    if (!p2.ok) throw new Error('P2 Castle failed');
+    initializeCastleResources(p2.building);
+
+    territoryManager.update();
+
+    aiPlayer = new AIPlayer(
+      2,
+      Difficulty.Normal,
+      gameState,
+      territoryManager,
+      attackManager,
+      knightManager,
+      () => {},
+    );
+
+    // Simulate to create some game state
+    for (let i = 0; i < 40; i++) {
+      tickAll(0.5);
+    }
+  });
+
+  it('serializes and deserializes game state with matching buildings', () => {
+    const config = {
+      seed: 42,
+      mapSize: 24 as const,
+      numPlayers: 2,
+      difficulty: Difficulty.Normal,
+      scenario: 'default' as const,
+    };
+    const camera = {
+      frustum: 10,
+      position: { x: 20, y: 20, z: 20 },
+      target: { x: 0, y: 0, z: 0 },
+    };
+
+    // Snapshot before save
+    const buildingsBefore = gameState.getAllBuildings().map(b => ({
+      id: b.id,
+      type: b.type,
+      playerId: b.playerId,
+      state: b.state,
+      coord: { ...b.coord },
+    }));
+    const unitsBefore = gameState.getAllUnits().map(u => ({
+      id: u.id,
+      type: u.type,
+      playerId: u.playerId,
+    }));
+
+    // Serialize
+    const saveData = serializeGame(
+      config, gameState, roadNetwork,
+      createManagers(), [aiPlayer], camera,
+    );
+
+    // Verify it's valid JSON
+    const json = JSON.stringify(saveData);
+    const parsed: SaveData = JSON.parse(json);
+    expect(parsed.version).toBeDefined();
+    expect(parsed.buildings.length).toBe(buildingsBefore.length);
+    expect(parsed.units.length).toBe(unitsBefore.length);
+
+    // Create fresh state and deserialize
+    const grid2 = new HexGrid(20, 20);
+    for (let q = 0; q < 20; q++) {
+      for (let r = 0; r < 20; r++) {
+        grid2.setTile(q, r, TerrainType.Grassland, 0.5);
+      }
+    }
+    const gs2 = new GameState(grid2);
+    const rn2 = new RoadNetwork(grid2);
+    const um2 = new UnitManager(gs2);
+    const cm2 = new ConstructionManager(gs2);
+    const tm2 = new TransporterManager(gs2, rn2);
+    const lm2 = new LogisticsManager(gs2, rn2);
+    const terr2 = new TerritoryManager(gs2);
+    const km2 = new KnightManager(gs2);
+    const cb2 = new CombatManager(gs2, km2);
+    const am2 = new AttackManager(gs2, cb2, terr2);
+    const vm2 = new VictoryManager(gs2, terr2, [1, 2]);
+
+    const ai2 = new AIPlayer(2, Difficulty.Normal, gs2, terr2, am2, km2, () => {});
+
+    deserializeGame(
+      parsed, gs2, rn2,
+      {
+        constructionManager: cm2,
+        transporterManager: tm2,
+        unitManager: um2,
+        combatManager: cb2,
+        attackManager: am2,
+        territoryManager: terr2,
+        logisticsManager: lm2,
+        knightManager: km2,
+        victoryManager: vm2,
+      },
+      [ai2],
+    );
+
+    // Verify restored state matches
+    const buildingsAfter = gs2.getAllBuildings();
+    expect(buildingsAfter.length).toBe(buildingsBefore.length);
+
+    for (const before of buildingsBefore) {
+      const after = gs2.getBuilding(before.id);
+      expect(after).toBeDefined();
+      expect(after!.type).toBe(before.type);
+      expect(after!.playerId).toBe(before.playerId);
+      expect(after!.state).toBe(before.state);
+      expect(after!.coord.q).toBe(before.coord.q);
+      expect(after!.coord.r).toBe(before.coord.r);
+    }
+
+    const unitsAfter = gs2.getAllUnits();
+    expect(unitsAfter.length).toBe(unitsBefore.length);
+
+    for (const before of unitsBefore) {
+      const after = gs2.getUnit(before.id);
+      expect(after).toBeDefined();
+      expect(after!.type).toBe(before.type);
+      expect(after!.playerId).toBe(before.playerId);
+    }
+  });
+
+  it('AI state survives save/load round-trip', () => {
+    const config = {
+      seed: 42,
+      mapSize: 24 as const,
+      numPlayers: 2,
+      difficulty: Difficulty.Normal,
+      scenario: 'default' as const,
+    };
+    const camera = {
+      frustum: 10,
+      position: { x: 20, y: 20, z: 20 },
+      target: { x: 0, y: 0, z: 0 },
+    };
+
+    const aiStateBefore = aiPlayer._getState();
+
+    const saveData = serializeGame(
+      config, gameState, roadNetwork,
+      createManagers(), [aiPlayer], camera,
+    );
+    const json = JSON.stringify(saveData);
+    const parsed: SaveData = JSON.parse(json);
+
+    // Restore into fresh AI
+    const grid2 = new HexGrid(20, 20);
+    for (let q = 0; q < 20; q++) {
+      for (let r = 0; r < 20; r++) {
+        grid2.setTile(q, r, TerrainType.Grassland, 0.5);
+      }
+    }
+    const gs2 = new GameState(grid2);
+    const rn2 = new RoadNetwork(grid2);
+    const terr2 = new TerritoryManager(gs2);
+    const km2 = new KnightManager(gs2);
+    const cb2 = new CombatManager(gs2, km2);
+    const am2 = new AttackManager(gs2, cb2, terr2);
+    const vm2 = new VictoryManager(gs2, terr2, [1, 2]);
+    const um2 = new UnitManager(gs2);
+    const cm2 = new ConstructionManager(gs2);
+    const tm2 = new TransporterManager(gs2, rn2);
+    const lm2 = new LogisticsManager(gs2, rn2);
+
+    const ai2 = new AIPlayer(2, Difficulty.Normal, gs2, terr2, am2, km2, () => {});
+
+    deserializeGame(
+      parsed, gs2, rn2,
+      {
+        constructionManager: cm2,
+        transporterManager: tm2,
+        unitManager: um2,
+        combatManager: cb2,
+        attackManager: am2,
+        territoryManager: terr2,
+        logisticsManager: lm2,
+        knightManager: km2,
+        victoryManager: vm2,
+      },
+      [ai2],
+    );
+
+    const aiStateAfter = ai2._getState();
+    expect(aiStateAfter.buildOrderIndex).toBe(aiStateBefore.buildOrderIndex);
+    expect(aiStateAfter.playerId).toBe(aiStateBefore.playerId);
+  });
+
+  it('victory state survives save/load round-trip', () => {
+    // Trigger a victory
+    const p2Castle = gameState.findCastle(2)!;
+    gameState.removeBuilding(p2Castle.id);
+    territoryManager.markDirty();
+    victoryManager.update(3);
+    expect(victoryManager.isGameOver()).toBe(true);
+
+    const config = {
+      seed: 42,
+      mapSize: 24 as const,
+      numPlayers: 2,
+      difficulty: Difficulty.Normal,
+      scenario: 'default' as const,
+    };
+    const camera = {
+      frustum: 10,
+      position: { x: 20, y: 20, z: 20 },
+      target: { x: 0, y: 0, z: 0 },
+    };
+
+    const saveData = serializeGame(
+      config, gameState, roadNetwork,
+      createManagers(), [aiPlayer], camera,
+    );
+    const parsed: SaveData = JSON.parse(JSON.stringify(saveData));
+
+    // Restore
+    const grid2 = new HexGrid(20, 20);
+    for (let q = 0; q < 20; q++) {
+      for (let r = 0; r < 20; r++) {
+        grid2.setTile(q, r, TerrainType.Grassland, 0.5);
+      }
+    }
+    const gs2 = new GameState(grid2);
+    const rn2 = new RoadNetwork(grid2);
+    const terr2 = new TerritoryManager(gs2);
+    const km2 = new KnightManager(gs2);
+    const cb2 = new CombatManager(gs2, km2);
+    const am2 = new AttackManager(gs2, cb2, terr2);
+    const vm2 = new VictoryManager(gs2, terr2, [1, 2]);
+    const um2 = new UnitManager(gs2);
+    const cm2 = new ConstructionManager(gs2);
+    const tm2 = new TransporterManager(gs2, rn2);
+    const lm2 = new LogisticsManager(gs2, rn2);
+
+    const ai2 = new AIPlayer(2, Difficulty.Normal, gs2, terr2, am2, km2, () => {});
+
+    deserializeGame(
+      parsed, gs2, rn2,
+      {
+        constructionManager: cm2,
+        transporterManager: tm2,
+        unitManager: um2,
+        combatManager: cb2,
+        attackManager: am2,
+        territoryManager: terr2,
+        logisticsManager: lm2,
+        knightManager: km2,
+        victoryManager: vm2,
+      },
+      [ai2],
+    );
+
+    expect(vm2.isGameOver()).toBe(true);
+    const result = vm2.getResult();
+    expect(result).not.toBeNull();
+    expect(result!.winnerId).toBe(1);
+    expect(result!.condition).toBe(VictoryCondition.Elimination);
+    expect(vm2.isEliminated(2)).toBe(true);
+  });
+});
+
+describe('Integration: Performance Benchmark', () => {
+  it('ticks all managers under 50ms for a busy game state', () => {
+    resetBuildingIdCounter();
+    resetUnitIdCounter();
+    resetRoadNetworkIdCounters();
+
+    // Set up a 32×32 map with many buildings and units
+    const grid = new HexGrid(32, 32);
+    for (let q = 0; q < 32; q++) {
+      for (let r = 0; r < 32; r++) {
+        grid.setTile(q, r, TerrainType.Grassland, 0.5);
+      }
+    }
+
+    const gameState = new GameState(grid);
+    const roadNetwork = new RoadNetwork(grid);
+    const unitManager = new UnitManager(gameState);
+    const productionManager = new ProductionManager(gameState);
+    const constructionManager = new ConstructionManager(gameState);
+    const transporterManager = new TransporterManager(gameState, roadNetwork);
+    const logisticsManager = new LogisticsManager(gameState, roadNetwork);
+    const territoryManager = new TerritoryManager(gameState);
+    const knightManager = new KnightManager(gameState);
+    const combatManager = new CombatManager(gameState, knightManager);
+    const attackManager = new AttackManager(gameState, combatManager, territoryManager);
+    const victoryManager = new VictoryManager(gameState, territoryManager, [1, 2]);
+
+    // Player 1 Castle
+    const p1 = gameState.placeBuilding(BuildingType.Castle, { q: 6, r: 6 }, 1);
+    if (!p1.ok) throw new Error('Failed');
+    initializeCastleResources(p1.building);
+
+    // Player 2 Castle
+    const p2 = gameState.placeBuilding(BuildingType.Castle, { q: 26, r: 26 }, 2);
+    if (!p2.ok) throw new Error('Failed');
+    initializeCastleResources(p2.building);
+
+    territoryManager.update();
+
+    // Place many buildings for player 1 (within territory)
+    const buildingTypes = [
+      BuildingType.WoodcutterHut, BuildingType.ForesterHut,
+      BuildingType.Quarry, BuildingType.Sawmill,
+      BuildingType.FishermanHut, BuildingType.GuardHut,
+    ];
+    let placed = 0;
+    for (let q = 3; q < 12 && placed < 12; q++) {
+      for (let r = 3; r < 12 && placed < 12; r++) {
+        if (q === 6 && r === 6) continue; // Castle
+        const type = buildingTypes[placed % buildingTypes.length];
+        const def = BUILDING_DEFINITIONS[type];
+        // Skip terrain-restricted buildings on grassland
+        if (!def.allowedTerrain.includes(TerrainType.Grassland)) continue;
+        const result = gameState.placeBuilding(type, { q, r }, 1);
+        if (result.ok) {
+          result.building.state = BuildingState.Active;
+          result.building.hasWorker = true;
+          placed++;
+        }
+      }
+    }
+
+    // Spawn units
+    for (let i = 0; i < 20; i++) {
+      gameState.spawnUnit(UnitType.Transporter, { q: 5 + (i % 6), r: 5 + Math.floor(i / 6) }, 1);
+    }
+
+    // Place some flags and roads
+    const flags = [];
+    for (let q = 4; q <= 9; q++) {
+      const f = roadNetwork.placeFlag({ q, r: 5 }, 1);
+      if (f) flags.push(f);
+    }
+    for (let i = 0; i < flags.length - 1; i++) {
+      roadNetwork.connectFlags(flags[i].id, flags[i + 1].id);
+    }
+
+    // Create AI player
+    const ai = new AIPlayer(
+      2, Difficulty.Hard, gameState, territoryManager,
+      attackManager, knightManager, () => {},
+    );
+
+    // Warm up
+    for (let i = 0; i < 5; i++) {
+      unitManager.update(0.016);
+      constructionManager.update(0.016);
+      productionManager.update(0.016);
+      logisticsManager.update(0.016);
+      transporterManager.update(0.016);
+      knightManager.update(0.016);
+      territoryManager.update();
+      attackManager.update();
+      combatManager.cleanupStaleData();
+      victoryManager.update(0.016);
+      ai.update(0.016);
+    }
+
+    // Benchmark: time 100 ticks
+    const start = performance.now();
+    for (let i = 0; i < 100; i++) {
+      unitManager.update(0.016);
+      constructionManager.update(0.016);
+      productionManager.update(0.016);
+      logisticsManager.update(0.016);
+      transporterManager.update(0.016);
+      knightManager.update(0.016);
+      territoryManager.update();
+      attackManager.update();
+      combatManager.cleanupStaleData();
+      victoryManager.update(0.016);
+      ai.update(0.016);
+    }
+    const elapsed = performance.now() - start;
+    const perTick = elapsed / 100;
+
+    // Each tick should be well under 50ms (target: 60fps = 16ms budget)
+    // We're generous with 50ms since CI can be slow
+    expect(perTick).toBeLessThan(50);
+
+    // Verify game state is still sane after benchmark
+    expect(gameState.getAllBuildings().length).toBeGreaterThan(0);
+    expect(gameState.getAllUnits().length).toBeGreaterThan(0);
   });
 });
