@@ -17,10 +17,103 @@ const svgs: Record<string, string> = {
   pause: '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>',
   play_arrow: '<path d="M8 5v14l11-7z"/>',
   fast_forward: '<path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/>',
+  // UI section icons
+  crown: '<path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm0 2h14v2H5v-2z"/>',
+  skull: '<path d="M12 2C6.48 2 2 6.48 2 12c0 3.07 1.39 5.81 3.57 7.63V22h4.86v-2h3.14v2h4.86v-2.37C20.61 17.81 22 15.07 22 12c0-5.52-4.48-10-10-10zM9 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm6 0c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/>',
+  trophy: '<path d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94A5.01 5.01 0 0 0 11 15.9V19H7v2h10v-2h-4v-3.1a5.01 5.01 0 0 0 3.61-2.96C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2zM5 8V7h2v3.82C5.84 10.4 5 9.3 5 8zm14 0c0 1.3-.84 2.4-2 2.82V7h2v1z"/>',
+  shield_icon: '<path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>',
+  people: '<path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>',
+  warehouse: '<path d="M20 3H4v10c0 2.21 1.79 4 4 4h8c2.21 0 4-1.79 4-4V3zm-2 10c0 1.1-.9 2-2 2H8c-1.1 0-2-.9-2-2V5h12v8zM4 19h16v2H4z"/>',
+  hammer: '<path d="M2 19.63L13.43 8.2l-1.72-1.72 1.41-1.41 1.72 1.72 1.41-1.42-1.72-1.71L16.12 2l5.66 5.66-1.59 1.59-1.71-1.72-1.42 1.41 1.72 1.72-1.41 1.41-1.72-1.72L4.24 21.04z"/>',
+  sun: '<path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58a.996.996 0 0 0-1.41 0 .996.996 0 0 0 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37a.996.996 0 0 0-1.41 0 .996.996 0 0 0 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0a.996.996 0 0 0 0-1.41l-1.06-1.06zm1.06-10.96a.996.996 0 0 0 0-1.41.996.996 0 0 0-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36a.996.996 0 0 0 0-1.41.996.996 0 0 0-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/>',
+  moon: '<path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/>',
 };
 
 export function icon(name: string, cls?: string): string {
   const svg = svgs[name] ?? '';
   const className = cls ? ` class="${cls}"` : '';
   return `<span${className} style="display:inline-flex;align-items:center;"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">${svg}</svg></span>`;
+}
+
+/** Resource icon definitions — colored circle background + white symbol */
+const resourceIcons: Record<string, { color: string; path: string }> = {
+  wood: {
+    color: '#8B6914',
+    path: 'M4 7h8M4 9h8', // Two log lines
+  },
+  stone: {
+    color: '#9E9E9E',
+    path: 'M5 5h6v6H5z', // Cube outline
+  },
+  grain: {
+    color: '#DAA520',
+    path: 'M8 3v8M6 5l2-2 2 2M5 7l3-2 3 2', // Wheat stalk
+  },
+  fish: {
+    color: '#78909C',
+    path: 'M3 8c3-3 7-3 10 0s-7 3-10 0zM13 8l2-2M13 8l2 2', // Fish
+  },
+  iron_ore: {
+    color: '#8B4513',
+    path: 'M4 10c0-3 2-5 4-5s4 2 4 4-1 4-4 4-4-1-4-3z', // Lump
+  },
+  coal_ore: {
+    color: '#424242',
+    path: 'M4 10c0-3 2-5 4-5s4 2 4 4-1 4-4 4-4-1-4-3z', // Dark lump
+  },
+  gold_ore: {
+    color: '#B8860B',
+    path: 'M4 10c0-3 2-5 4-5s4 2 4 4-1 4-4 4-4-1-4-3zM6 5l1-1M10 4l1 1', // Sparkling lump
+  },
+  planks: {
+    color: '#D2B48C',
+    path: 'M3 6h10v4H3z', // Flat rectangle
+  },
+  flour: {
+    color: '#F5F5DC',
+    path: 'M5 11c0-3 1.5-7 3-7s3 4 3 7-1 2-3 2-3 1-3-2z', // Sack
+  },
+  bread: {
+    color: '#D4A056',
+    path: 'M3 10c0-4 3-6 5-6s5 2 5 6H3z', // Dome loaf
+  },
+  meat: {
+    color: '#C62828',
+    path: 'M8 3a3 3 0 0 1 0 6H6l-2 4v1h1l1-2 1 2h1l-1-3h2a3 3 0 0 0 0-6z', // Drumstick
+  },
+  iron_bars: {
+    color: '#607D8B',
+    path: 'M3 5h10v6H3z', // Rectangular ingot
+  },
+  gold_bars: {
+    color: '#FFD700',
+    path: 'M4 11h8L10 5H6z', // Trapezoid ingot
+  },
+  tools: {
+    color: '#795548',
+    path: 'M6 3v7l2 2v1H7v-1L5 10V3z', // Hammer
+  },
+  swords: {
+    color: '#90A4AE',
+    path: 'M8 2v9M6 9h4M7 11l1 2 1-2', // Blade
+  },
+  shields: {
+    color: '#5D4037',
+    path: 'M8 2a6 6 0 0 1 0 12A6 6 0 0 1 8 2zM8 4v8M4 8h8', // Circle with cross
+  },
+  pigs: {
+    color: '#F48FB1',
+    path: 'M4 7a4 4 0 0 1 8 0c0 3-2 5-4 5S4 10 4 7zM5 5l-1-2M11 5l1-2M6 8h1M9 8h1', // Pig face
+  },
+};
+
+/** Returns an inline SVG resource icon with colored circle background and white symbol */
+export function resourceIcon(type: string, size: number = 16): string {
+  const def = resourceIcons[type];
+  if (!def) return '';
+  const r = size / 2;
+  // Use stroke-based symbols for clarity at small sizes
+  const needsStroke = type === 'flour';
+  const strokeAttr = needsStroke ? ' stroke="#666"' : '';
+  return `<span style="display:inline-flex;align-items:center;vertical-align:middle;flex-shrink:0"><svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 16 16"><circle cx="8" cy="8" r="${r}" fill="${def.color}"/><g transform="translate(0,0)" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"${strokeAttr}><path d="${def.path}"/></g></svg></span>`;
 }

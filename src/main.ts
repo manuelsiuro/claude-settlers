@@ -1,4 +1,4 @@
-import { icon } from './ui/icons';
+import { icon, resourceIcon } from './ui/icons';
 import { Game } from './engine/Game';
 import { audioManager } from './engine/AudioManager';
 import type { GameNotification } from './engine/Game';
@@ -22,6 +22,20 @@ import {
 } from './game/SaveLoad';
 import './ui/styles.css';
 
+// ============================================================
+// Theme initialization (before DOM to avoid FOUC)
+// ============================================================
+const THEME_KEY = 'feudal-theme';
+function initTheme(): 'day' | 'night' {
+  const stored = localStorage.getItem(THEME_KEY);
+  const theme = (stored === 'night' || stored === 'day') ? stored
+    : (matchMedia('(prefers-color-scheme: dark)').matches ? 'night' : 'day');
+  if (theme === 'night') document.documentElement.setAttribute('data-theme', 'night');
+  else document.documentElement.removeAttribute('data-theme');
+  return theme;
+}
+let currentTheme = initTheme();
+
 const app = document.getElementById('app')!;
 
 app.innerHTML = `
@@ -30,14 +44,30 @@ app.innerHTML = `
 
   <!-- Navigation drawer -->
   <nav id="side-panel" class="nav-drawer">
+    <div class="nav-drawer-header">
+      <div class="nav-drawer-header-title">Feudal Realm Manager</div>
+      <div class="nav-drawer-header-version">v0.1.0</div>
+    </div>
     <ul>
+      <div class="nav-drawer-section-label">Game</div>
       <li data-headline="Buildings">${icon('construction')} Buildings</li>
       <li data-headline="Statistics">${icon('bar_chart')} Statistics</li>
       <li data-headline="Minimap">${icon('map')} Minimap</li>
+      <div class="nav-drawer-divider"></div>
+      <div class="nav-drawer-section-label">Data</div>
       <li data-headline="Save Game">${icon('save')} Save Game</li>
       <li data-headline="Load Game">${icon('folder_open')} Load Game</li>
       <li data-headline="Download Save">${icon('download')} Download Save</li>
+      <div class="nav-drawer-divider"></div>
       <li data-headline="Settings" data-nonclickable>${icon('settings')} Settings</li>
+      <div class="theme-toggle-row">
+        <span class="theme-toggle-label">${icon('sun')} Day</span>
+        <label class="theme-toggle">
+          <input type="checkbox" id="theme-toggle-input"${currentTheme === 'night' ? ' checked' : ''}>
+          <span class="theme-toggle-track"></span>
+        </label>
+        <span class="theme-toggle-label">${icon('moon')} Night</span>
+      </div>
       <div class="audio-settings" style="padding:4px 24px 12px;">
         <label class="audio-slider-label">Master Volume</label>
         <input type="range" id="vol-master" min="0" max="100" value="50" class="audio-slider">
@@ -52,19 +82,23 @@ app.innerHTML = `
   <div id="main-content">
     <header class="app-bar" id="app-bar">
       <button class="icon-btn" id="menu-btn" title="Menu">${icon('menu')}</button>
-      <span class="app-title">Feudal Realm Manager</span>
+      <span class="app-title">${icon('crown', 'app-title-crown')} Feudal Realm Manager</span>
       <div style="flex:1"></div>
-      <button class="icon-btn" id="pause-btn" title="Pause / Resume (Space)">
-        <span id="pause-icon">${icon('pause')}</span>
-        <span id="play-icon" class="hidden">${icon('play_arrow')}</span>
-      </button>
-      <button class="icon-btn" id="speed-btn" title="Game speed">${icon('fast_forward')}</button>
-      <span id="speed-label" class="speed-label">1x</span>
-      <button class="icon-btn" id="mute-btn" title="Toggle sound">
-        <span id="mute-icon-on">${icon('volume_up')}</span>
-        <span id="mute-icon-off" class="hidden">${icon('volume_off')}</span>
-      </button>
-      <button class="icon-btn" id="music-btn" title="Toggle music" style="opacity:0.5">${icon('music_note')}</button>
+      <div class="app-bar-group">
+        <button class="icon-btn" id="pause-btn" title="Pause / Resume (Space)">
+          <span id="pause-icon">${icon('pause')}</span>
+          <span id="play-icon" class="hidden">${icon('play_arrow')}</span>
+        </button>
+        <button class="icon-btn" id="speed-btn" title="Game speed">${icon('fast_forward')}</button>
+        <span id="speed-label" class="speed-label">1x</span>
+      </div>
+      <div class="app-bar-group">
+        <button class="icon-btn" id="mute-btn" title="Toggle sound">
+          <span id="mute-icon-on">${icon('volume_up')}</span>
+          <span id="mute-icon-off" class="hidden">${icon('volume_off')}</span>
+        </button>
+        <button class="icon-btn" id="music-btn" title="Toggle music" style="opacity:0.5">${icon('music_note')}</button>
+      </div>
     </header>
     <div id="game-container"></div>
   </div>
@@ -138,8 +172,10 @@ app.innerHTML = `
   <!-- Game Setup Screen -->
   <div id="setup-overlay" class="setup-overlay">
     <div class="setup-card">
+      <div class="setup-crown">${icon('crown')}</div>
       <h1 class="setup-title">Feudal Realm Manager</h1>
       <p class="setup-subtitle">Configure your world and begin your conquest</p>
+      <div class="setup-divider"></div>
 
       <div class="setup-field">
         <label class="setup-field-label" for="setup-seed">Map Seed</label>
@@ -242,6 +278,20 @@ navItems.forEach((item) => {
       showSnackbar(`${headline} — coming soon`);
     }
   });
+});
+
+// ============================================================
+// Theme toggle
+// ============================================================
+const themeToggleInput = document.getElementById('theme-toggle-input') as HTMLInputElement;
+themeToggleInput.addEventListener('change', () => {
+  currentTheme = themeToggleInput.checked ? 'night' : 'day';
+  if (currentTheme === 'night') {
+    document.documentElement.setAttribute('data-theme', 'night');
+  } else {
+    document.documentElement.removeAttribute('data-theme');
+  }
+  localStorage.setItem(THEME_KEY, currentTheme);
 });
 
 // ============================================================
@@ -352,8 +402,12 @@ function getGame(): Game {
 
 /** Show a snackbar message */
 let snackbarTimeout: ReturnType<typeof setTimeout> | null = null;
-function showSnackbar(message: string): void {
+function showSnackbar(message: string, type?: 'success' | 'warning' | 'error' | 'info'): void {
   snackbar.textContent = message;
+  snackbar.className = 'snackbar';
+  if (type === 'success') snackbar.classList.add('snackbar-success');
+  else if (type === 'warning') snackbar.classList.add('snackbar-warning');
+  else if (type === 'error') snackbar.classList.add('snackbar-error');
   snackbar.classList.add('show');
   if (snackbarTimeout) clearTimeout(snackbarTimeout);
   snackbarTimeout = setTimeout(() => {
@@ -389,8 +443,26 @@ gameOverNewGameBtn.addEventListener('click', () => {
 /** Show the game over screen */
 function showGameOver(result: VictoryResult): void {
   const isWin = result.winnerId === getGame().getHumanPlayerId();
+
+  // Add icon and styled border
+  const card = document.querySelector('.game-over-card') as HTMLElement;
+  card.style.borderTop = `4px solid ${isWin ? 'var(--color-medieval-gold)' : '#c62828'}`;
+
+  const existingIcon = document.querySelector('.game-over-icon');
+  if (existingIcon) existingIcon.remove();
+  const iconDiv = document.createElement('div');
+  iconDiv.className = 'game-over-icon';
+  iconDiv.style.color = isWin ? 'var(--color-medieval-gold)' : '#c62828';
+  iconDiv.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="currentColor">${isWin ? '<path d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94A5.01 5.01 0 0 0 11 15.9V19H7v2h10v-2h-4v-3.1a5.01 5.01 0 0 0 3.61-2.96C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2zM5 8V7h2v3.82C5.84 10.4 5 9.3 5 8zm14 0c0 1.3-.84 2.4-2 2.82V7h2v1z"/>' : '<path d="M12 2C6.48 2 2 6.48 2 12c0 3.07 1.39 5.81 3.57 7.63V22h4.86v-2h3.14v2h4.86v-2.37C20.61 17.81 22 15.07 22 12c0-5.52-4.48-10-10-10zM9 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm6 0c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/>'}</svg>`;
+  gameOverTitle.parentElement!.insertBefore(iconDiv, gameOverTitle);
+
   gameOverTitle.textContent = isWin ? 'Victory!' : 'Defeat';
   gameOverTitle.style.color = isWin ? '#4caf50' : '#f44336';
+  if (isWin) {
+    gameOverTitle.style.textShadow = '0 0 20px rgba(184, 134, 11, 0.4)';
+  } else {
+    gameOverTitle.style.textShadow = 'none';
+  }
 
   const conditionLabels: Record<string, string> = {
     [VictoryCondition.Elimination]: 'All enemies have been defeated',
@@ -520,33 +592,33 @@ function formatCostWithAvailability(
   def: BuildingDefinition,
   available: Partial<Record<ResourceType, number>>,
 ): string {
-  if (def.cost.length === 0) return '<span class="cost-ok">Free</span>';
+  if (def.cost.length === 0) return '<span class="cost-pill cost-pill-free">Free</span>';
   return def.cost
     .map((c) => {
       const have = available[c.resource] ?? 0;
       const ok = have >= c.amount;
-      const cssClass = ok ? 'cost-ok' : 'cost-short';
-      return `<span class="${cssClass}">${c.amount} ${RESOURCE_PROPERTIES[c.resource].label}</span>`;
+      const cssClass = ok ? 'cost-pill cost-pill-ok' : 'cost-pill cost-pill-short';
+      return `<span class="${cssClass}">${resourceIcon(c.resource)} ${c.amount}</span>`;
     })
-    .join(', ');
+    .join(' ');
 }
 
 /** Format production recipe summary */
 function formatProductionSummary(def: BuildingDefinition): string {
   if (!def.production) {
-    if (def.category === 'military') return 'Houses knights';
-    if (def.type === BuildingType.Warehouse) return 'Stores goods';
-    if (def.type === BuildingType.ForesterHut) return 'Plants trees';
+    if (def.category === 'military') return '<span class="production-flow">Houses knights</span>';
+    if (def.type === BuildingType.Warehouse) return '<span class="production-flow">Stores goods</span>';
+    if (def.type === BuildingType.ForesterHut) return '<span class="production-flow">Plants trees</span>';
     return '';
   }
   const inputs = def.production.inputs.map(
-    (i) => RESOURCE_PROPERTIES[i.resource].label,
+    (i) => resourceIcon(i.resource),
   );
   const outputs = def.production.outputs.map(
-    (o) => RESOURCE_PROPERTIES[o.resource].label,
+    (o) => resourceIcon(o.resource),
   );
-  if (inputs.length === 0) return `Produces ${outputs.join(', ')}`;
-  return `${inputs.join(' + ')} → ${outputs.join(', ')}`;
+  if (inputs.length === 0) return `<span class="production-flow">Produces ${outputs.join(' ')}</span>`;
+  return `<span class="production-flow">${inputs.join(' + ')} <span class="production-arrow">\u2192</span> ${outputs.join(' ')}</span>`;
 }
 
 /** Build the building menu HTML organized by tier */
@@ -562,23 +634,23 @@ function populateBuildPanel(): void {
   let html = '';
 
   // Logistics section: Flag & Road buttons
-  html += `<div class="build-tier">
-    <div class="build-tier-label">Logistics</div>
+  html += `<div class="build-tier" data-tier="logistics">
+    <div class="build-tier-label"><span class="tier-badge tier-badge-logistics">LOG</span> Logistics</div>
     <button class="build-item" data-action="place-flag">
       <span class="build-item-name">Place Flag</span>
-      <span class="build-item-cost"><span class="cost-ok">Free</span></span>
-      <span class="build-item-production">Logistics node for transporters</span>
+      <span class="build-item-cost"><span class="cost-pill cost-pill-free">Free</span></span>
+      <span class="build-item-production"><span class="production-flow">Logistics node for transporters</span></span>
     </button>
     <button class="build-item" data-action="build-road">
       <span class="build-item-name">Build Road</span>
-      <span class="build-item-cost"><span class="cost-ok">Free</span></span>
-      <span class="build-item-production">Connect flags for transport routes</span>
+      <span class="build-item-cost"><span class="cost-pill cost-pill-free">Free</span></span>
+      <span class="build-item-production"><span class="production-flow">Connect flags for transport routes</span></span>
     </button>
   </div>`;
 
   for (const { tier, label } of tiers) {
     const buildings = getBuildingsByTier(tier);
-    html += `<div class="build-tier"><div class="build-tier-label">Tier ${tier}: ${label}</div>`;
+    html += `<div class="build-tier" data-tier="${tier}"><div class="build-tier-label"><span class="tier-badge tier-badge-${tier}">${tier}</span> ${label}</div>`;
     for (const def of buildings) {
       const affordable = canAfford(def, available);
       const disabledClass = affordable ? '' : 'build-item-disabled';
@@ -733,9 +805,9 @@ function executeAttack(sourceBuildingId: string, targetBuildingId: string): void
   const attackMgr = getGame().getAttackManager();
   const success = attackMgr.orderAttack(knightId, targetBuildingId);
   if (success) {
-    showSnackbar('Attack ordered!');
+    showSnackbar('Attack ordered!', 'warning');
   } else {
-    showSnackbar('Cannot attack this building');
+    showSnackbar('Cannot attack this building', 'error');
   }
 }
 
@@ -772,7 +844,7 @@ function formatInventory(inventory: ResourceInventory): string {
     .map(([resource, amount]) => {
       const props = RESOURCE_PROPERTIES[resource as ResourceType];
       return `<div class="info-resource-row">
-        <span class="info-resource-name">${props?.label ?? resource}</span>
+        <span class="info-resource-name">${resourceIcon(resource)} ${props?.label ?? resource}</span>
         <span class="info-resource-amount">${amount}</span>
       </div>`;
     })
@@ -836,7 +908,7 @@ function renderInfoPanel(building: Building): void {
       for (const r of remaining) {
         const props = RESOURCE_PROPERTIES[r.resource];
         html += `<div class="info-resource-row">
-          <span class="info-resource-name">${props.label}</span>
+          <span class="info-resource-name">${resourceIcon(r.resource)} ${props.label}</span>
           <span class="info-resource-amount">${r.delivered} / ${r.needed}</span>
         </div>`;
       }
@@ -849,7 +921,7 @@ function renderInfoPanel(building: Building): void {
     const gameState = getGame().getGameState();
     const worker = gameState.getWorkerForBuilding(building.id);
     html += `<div class="info-section">
-      <div class="info-section-label">Worker</div>
+      <div class="info-section-label">${icon('people')} Worker</div>
       <div class="info-row">
         <span class="info-label">${def.worker}</span>
         <span class="info-value ${worker ? 'state-active' : 'state-planned'}">${worker ? 'Assigned' : 'Needed'}</span>
@@ -867,7 +939,7 @@ function renderInfoPanel(building: Building): void {
   // Production info
   if (def.production && building.state === BuildingState.Active) {
     html += `<div class="info-section">
-      <div class="info-section-label">Production</div>`;
+      <div class="info-section-label">${icon('hammer')} Production</div>`;
 
     // Inputs
     if (def.production.inputs.length > 0) {
@@ -875,7 +947,7 @@ function renderInfoPanel(building: Building): void {
       for (const input of def.production.inputs) {
         const props = RESOURCE_PROPERTIES[input.resource];
         html += `<div class="info-resource-row">
-          <span class="info-resource-name">${props.label}</span>
+          <span class="info-resource-name">${resourceIcon(input.resource)} ${props.label}</span>
           <span class="info-resource-amount">${input.amount}/cycle</span>
         </div>`;
       }
@@ -886,7 +958,7 @@ function renderInfoPanel(building: Building): void {
     for (const output of def.production.outputs) {
       const props = RESOURCE_PROPERTIES[output.resource];
       html += `<div class="info-resource-row">
-        <span class="info-resource-name">${props.label}</span>
+        <span class="info-resource-name">${resourceIcon(output.resource)} ${props.label}</span>
         <span class="info-resource-amount">${output.amount}/cycle</span>
       </div>`;
     }
@@ -913,7 +985,7 @@ function renderInfoPanel(building: Building): void {
   // Knight slots (military buildings)
   if (def.knightSlots > 0) {
     html += `<div class="info-section">
-      <div class="info-section-label">Knights</div>
+      <div class="info-section-label">${icon('shield_icon')} Knights</div>
       <div class="info-row">
         <span class="info-label">Stationed</span>
         <span class="info-value">${building.knightIds.length} / ${def.knightSlots}</span>
@@ -946,7 +1018,7 @@ function renderInfoPanel(building: Building): void {
 
   if (hasInputs || hasOutputs) {
     html += '<div class="info-section">';
-    html += '<div class="info-section-label">Inventory</div>';
+    html += `<div class="info-section-label">${icon('warehouse')} Inventory</div>`;
     if (hasInputs) {
       html += '<div class="info-subsection-label">Input</div>';
       html += formatInventory(building.inputInventory);
@@ -1068,7 +1140,7 @@ function renderStatsPanel(): void {
   let html = '';
 
   // Resources section
-  html += '<div class="info-section"><div class="info-section-label">Resources</div>';
+  html += `<div class="info-section"><div class="info-section-label">${icon('warehouse')} Resources</div>`;
   const rawResources = [
     ResourceType.Wood, ResourceType.Stone, ResourceType.Grain,
     ResourceType.Fish, ResourceType.IronOre, ResourceType.CoalOre, ResourceType.GoldOre,
@@ -1082,31 +1154,29 @@ function renderStatsPanel(): void {
   html += '<div class="info-subsection-label">Raw Materials</div>';
   for (const r of rawResources) {
     const amount = resources[r] ?? 0;
-    if (amount > 0) {
-      html += `<div class="info-resource-row">
-        <span class="info-resource-name">${RESOURCE_PROPERTIES[r].label}</span>
-        <span class="info-resource-amount">${amount}</span>
-      </div>`;
-    }
+    const zeroClass = amount === 0 ? ' resource-pill-zero' : '';
+    html += `<div class="info-resource-row">
+      <span class="info-resource-name">${resourceIcon(r)} ${RESOURCE_PROPERTIES[r].label}</span>
+      <span class="resource-pill${zeroClass}">${amount}</span>
+    </div>`;
   }
 
   html += '<div class="info-subsection-label">Processed Goods</div>';
   for (const r of processedResources) {
     const amount = resources[r] ?? 0;
-    if (amount > 0) {
-      html += `<div class="info-resource-row">
-        <span class="info-resource-name">${RESOURCE_PROPERTIES[r].label}</span>
-        <span class="info-resource-amount">${amount}</span>
-      </div>`;
-    }
+    const zeroClass = amount === 0 ? ' resource-pill-zero' : '';
+    html += `<div class="info-resource-row">
+      <span class="info-resource-name">${resourceIcon(r)} ${RESOURCE_PROPERTIES[r].label}</span>
+      <span class="resource-pill${zeroClass}">${amount}</span>
+    </div>`;
   }
   html += '</div>';
 
   // Population section
-  html += '<div class="info-section"><div class="info-section-label">Population</div>';
-  html += `<div class="info-row">
+  html += `<div class="info-section"><div class="info-section-label">${icon('people')} Population</div>`;
+  html += `<div class="stat-highlight">
     <span class="info-label">Total Units</span>
-    <span class="info-value">${totalUnits}</span>
+    <span class="stat-highlight-value">${totalUnits}</span>
   </div>`;
   for (const p of population) {
     html += `<div class="info-resource-row">
@@ -1125,10 +1195,10 @@ function renderStatsPanel(): void {
     if (b.state === BuildingState.Active) activeBuildings++;
     if (b.state === BuildingState.Planned || b.state === BuildingState.UnderConstruction) constructing++;
   }
-  html += '<div class="info-section"><div class="info-section-label">Buildings</div>';
-  html += `<div class="info-row">
+  html += `<div class="info-section"><div class="info-section-label">${icon('hammer')} Buildings</div>`;
+  html += `<div class="stat-highlight">
     <span class="info-label">Active</span>
-    <span class="info-value">${activeBuildings}</span>
+    <span class="stat-highlight-value">${activeBuildings}</span>
   </div>`;
   if (constructing > 0) {
     html += `<div class="info-row">
@@ -1148,10 +1218,10 @@ function renderStatsPanel(): void {
   // Military section
   const knights = gameState.getUnitsByPlayer(pid).filter(u => u.type === UnitType.Knight);
   const goldBars = resources[ResourceType.GoldBars] ?? 0;
-  html += '<div class="info-section"><div class="info-section-label">Military</div>';
-  html += `<div class="info-row">
+  html += `<div class="info-section"><div class="info-section-label">${icon('shield_icon')} Military</div>`;
+  html += `<div class="stat-highlight">
     <span class="info-label">Knights</span>
-    <span class="info-value">${knights.length}</span>
+    <span class="stat-highlight-value">${knights.length}</span>
   </div>`;
   html += `<div class="info-row">
     <span class="info-label">Gold Bars</span>
@@ -1266,7 +1336,7 @@ async function startGame(config: Partial<GameConfig>, savedData?: SaveData): Pro
   if (placement) {
     placement.onBuildingPlaced = (type) => {
       const def = BUILDING_DEFINITIONS[type];
-      showSnackbar(`${def.label} placed!`);
+      showSnackbar(`${def.label} placed!`, 'success');
       audioManager.play('building_placed');
     };
     placement.onModeChanged = (active) => {
@@ -1299,11 +1369,11 @@ async function startGame(config: Partial<GameConfig>, savedData?: SaveData): Pro
       }
     };
     roadCtrl.onFlagPlaced = () => {
-      showSnackbar('Flag placed!');
+      showSnackbar('Flag placed!', 'success');
       audioManager.play('flag_placed');
     };
     roadCtrl.onRoadBuilt = () => {
-      showSnackbar('Road built!');
+      showSnackbar('Road built!', 'success');
       audioManager.play('road_built');
       placementLabel.textContent = 'Building Road — click next hex to continue';
     };
@@ -1328,10 +1398,10 @@ function handleSaveGame(): void {
   try {
     const data = game.serialize();
     saveToLocalStorage(data);
-    showSnackbar('Game saved');
+    showSnackbar('Game saved', 'success');
   } catch (err) {
     console.error('Save failed:', err);
-    showSnackbar('Save failed — storage may be full');
+    showSnackbar('Save failed — storage may be full', 'error');
   }
 }
 
@@ -1344,10 +1414,10 @@ function handleDownloadSave(): void {
   try {
     const data = game.serialize();
     downloadSave(data);
-    showSnackbar('Save file downloaded');
+    showSnackbar('Save file downloaded', 'success');
   } catch (err) {
     console.error('Download save failed:', err);
-    showSnackbar('Failed to download save');
+    showSnackbar('Failed to download save', 'error');
   }
 }
 
@@ -1356,16 +1426,16 @@ async function handleLoadFromFile(): Promise<void> {
   try {
     const data = await loadFromFile();
     if (!data) {
-      showSnackbar('No valid save file selected');
+      showSnackbar('No valid save file selected', 'warning');
       return;
     }
     setupOverlay.classList.add('hidden');
     gameOverOverlay.classList.add('hidden');
     await startGame(data.config, data);
-    showSnackbar('Game loaded from file');
+    showSnackbar('Game loaded from file', 'success');
   } catch (err) {
     console.error('Load failed:', err);
-    showSnackbar('Failed to load save file');
+    showSnackbar('Failed to load save file', 'error');
   }
 }
 
@@ -1380,10 +1450,10 @@ async function handleLoadFromStorage(): Promise<void> {
     setupOverlay.classList.add('hidden');
     gameOverOverlay.classList.add('hidden');
     await startGame(data.config, data);
-    showSnackbar('Game loaded');
+    showSnackbar('Game loaded', 'success');
   } catch (err) {
     console.error('Load failed:', err);
-    showSnackbar('Failed to load saved game');
+    showSnackbar('Failed to load saved game', 'error');
     setupOverlay.classList.remove('hidden');
   }
 }
@@ -1430,7 +1500,7 @@ setupStartBtn.addEventListener('click', () => {
 
   startGame(config).catch((err) => {
     console.error('Failed to start game:', err);
-    showSnackbar('Failed to load game assets. Please reload the page.');
+    showSnackbar('Failed to load game assets. Please reload the page.', 'error');
     setupOverlay.classList.remove('hidden');
   });
 });
