@@ -598,7 +598,7 @@ function formatCostWithAvailability(
       const have = available[c.resource] ?? 0;
       const ok = have >= c.amount;
       const cssClass = ok ? 'cost-pill cost-pill-ok' : 'cost-pill cost-pill-short';
-      return `<span class="${cssClass}">${resourceIcon(c.resource)} ${c.amount}</span>`;
+      return `<span class="${cssClass}">${resourceIcon(c.resource)} ${RESOURCE_PROPERTIES[c.resource].label} ${c.amount}</span>`;
     })
     .join(' ');
 }
@@ -612,10 +612,10 @@ function formatProductionSummary(def: BuildingDefinition): string {
     return '';
   }
   const inputs = def.production.inputs.map(
-    (i) => resourceIcon(i.resource),
+    (i) => `${resourceIcon(i.resource)} ${RESOURCE_PROPERTIES[i.resource].label}`,
   );
   const outputs = def.production.outputs.map(
-    (o) => resourceIcon(o.resource),
+    (o) => `${resourceIcon(o.resource)} ${RESOURCE_PROPERTIES[o.resource].label}`,
   );
   if (inputs.length === 0) return `<span class="production-flow">Produces ${outputs.join(' ')}</span>`;
   return `<span class="production-flow">${inputs.join(' + ')} <span class="production-arrow">\u2192</span> ${outputs.join(' ')}</span>`;
