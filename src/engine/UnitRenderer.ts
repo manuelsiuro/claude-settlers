@@ -2,11 +2,13 @@ import * as THREE from 'three';
 import { HexGrid } from '../game/HexGrid';
 import type { Unit } from '../game/Unit';
 import { getUnitWorldPosition, UnitState } from '../game/Unit';
+import { UnitType } from '../game/UnitType';
 import type { ResourceType } from '../game/ResourceType';
 import { assetLoader } from './AssetLoader';
 import type { ResourceModelName } from './AssetLoader';
 import { UNIT_MODEL_MAP } from './UnitModels';
 import { MapRenderer } from './MapRenderer';
+import { getPlayerColor } from './PlayerColors';
 
 /** Scale for unit models (units are small relative to buildings) */
 const UNIT_SCALE = 0.6;
@@ -37,6 +39,10 @@ export class UnitRenderer {
   private wrapClones: Map<string, THREE.Group[]> = new Map();
   /** Track carried resource meshes: unitId → { resource, mesh } */
   private carriedMeshes: Map<string, { resource: ResourceType; mesh: THREE.Group }> = new Map();
+  /** Track knight rank chevrons: unitId → { rank, meshes } */
+  private knightChevrons: Map<string, { rank: number; group: THREE.Group }> = new Map();
+  /** Track knight faction coloring: unitId → applied */
+  private knightFactionApplied: Set<string> = new Set();
   private grid: HexGrid;
   private elapsedTime = 0;
 
@@ -96,6 +102,13 @@ export class UnitRenderer {
     mesh.position.set(x, y, z);
     mesh.name = `unit_${unit.id}`;
     mesh.userData.unitId = unit.id;
+    mesh.userData.originalScale = UNIT_SCALE;
+
+    // Apply faction coloring for knights
+    if (unit.type === UnitType.Knight) {
+      this.applyFactionColor(mesh, unit.playerId);
+      this.knightFactionApplied.add(unit.id);
+    }
 
     this.unitGroup.add(mesh);
     this.unitMeshes.set(unit.id, mesh);
@@ -121,6 +134,21 @@ export class UnitRenderer {
     this.disposeMesh(mesh);
     this.unitMeshes.delete(unitId);
     this.carriedMeshes.delete(unitId);
+
+    // Dispose knight chevron geometry/materials before removing from map
+    const chevrons = this.knightChevrons.get(unitId);
+    if (chevrons) {
+      chevrons.group.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          child.geometry?.dispose();
+          if (child.material instanceof THREE.Material) {
+            child.material.dispose();
+          }
+        }
+      });
+    }
+    this.knightChevrons.delete(unitId);
+    this.knightFactionApplied.delete(unitId);
 
     // Remove ghost clones
     const clones = this.wrapClones.get(unitId);
@@ -162,6 +190,7 @@ export class UnitRenderer {
   updatePositions(units: Unit[], deltaTime: number): void {
     this.elapsedTime += deltaTime;
     this.updateCarriedResources(units);
+    this.updateKnightChevrons(units);
 
     for (const unit of units) {
       const mesh = this.unitMeshes.get(unit.id);
@@ -198,7 +227,11 @@ export class UnitRenderer {
       let rotY = 0;
       let rotZ = 0;
 
-      if (unit.state === UnitState.Working) {
+      if (unit.state === UnitState.Fighting) {
+        // Fighting animation: aggressive bob + wider rotation
+        yOffset = Math.sin(t * WORK_BOB_SPEED * 2) * WORK_BOB_AMPLITUDE * 1.5;
+        rotZ = Math.sin(t * WORK_ROTATE_SPEED * 2) * WORK_ROTATE_AMPLITUDE * 1.5;
+      } else if (unit.state === UnitState.Working) {
         // Work animation: gentle bob + body sway
         yOffset = Math.sin(t * WORK_BOB_SPEED) * WORK_BOB_AMPLITUDE;
         rotZ = Math.sin(t * WORK_ROTATE_SPEED) * WORK_ROTATE_AMPLITUDE;
@@ -228,6 +261,81 @@ export class UnitRenderer {
         }
       }
     }
+  }
+
+  /**
+   * Update knight rank chevrons for knights whose rank has changed.
+   */
+  private updateKnightChevrons(units: Unit[]): void {
+    for (const unit of units) {
+      if (unit.type !== UnitType.Knight) continue;
+
+      const mesh = this.unitMeshes.get(unit.id);
+      if (!mesh) continue;
+
+      const existing = this.knightChevrons.get(unit.id);
+      if (existing && existing.rank === unit.knightRank) continue;
+
+      // Remove old chevrons and dispose their geometry/materials
+      if (existing) {
+        existing.group.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            child.geometry?.dispose();
+            if (child.material instanceof THREE.Material) {
+              child.material.dispose();
+            }
+          }
+        });
+        mesh.remove(existing.group);
+      }
+
+      // Create new chevrons (gold pyramids on shoulder)
+      const group = new THREE.Group();
+      group.name = 'rank_chevrons';
+
+      for (let i = 0; i < unit.knightRank; i++) {
+        const geom = new THREE.ConeGeometry(0.02, 0.04, 4);
+        const mat = new THREE.MeshStandardMaterial({ color: 0xffd700, emissive: 0x886600 });
+        const chevron = new THREE.Mesh(geom, mat);
+        chevron.position.set(-0.08, 0.25 + i * 0.05, 0);
+        group.add(chevron);
+      }
+
+      mesh.add(group);
+      this.knightChevrons.set(unit.id, { rank: unit.knightRank, group });
+
+      // Also update clones (dispose old clone chevrons)
+      const clones = this.wrapClones.get(unit.id);
+      if (clones) {
+        for (const clone of clones) {
+          const oldChevrons = clone.getObjectByName('rank_chevrons');
+          if (oldChevrons) {
+            oldChevrons.traverse((child) => {
+              if (child instanceof THREE.Mesh) {
+                child.geometry?.dispose();
+                if (child.material instanceof THREE.Material) {
+                  child.material.dispose();
+                }
+              }
+            });
+            clone.remove(oldChevrons);
+          }
+          const cloneGroup = group.clone();
+          clone.add(cloneGroup);
+        }
+      }
+    }
+  }
+
+  /** Apply faction color tint to knight armor meshes */
+  private applyFactionColor(mesh: THREE.Group, playerId: number): void {
+    const color = new THREE.Color(getPlayerColor(playerId));
+    mesh.traverse((child) => {
+      if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshStandardMaterial) {
+        // Tint toward faction color (blend 40% faction + 60% original)
+        child.material.color.lerp(color, 0.4);
+      }
+    });
   }
 
   /**

@@ -2,6 +2,16 @@
 
 This document outlines the visual design for each building in Feudal Realm Manager, using only simple 3D geometric shapes (cubes, cuboids, pyramids, cylinders, spheres, cones) and distinct colors. No complex shapes or textures are to be used. The aim is for clear, distinguishable structures that hint at their function.
 
+## Runtime Visual Effects
+
+All buildings share these runtime visual behaviors (implemented in `BuildingAnimator.ts`, `ParticleSystem.ts`, `BuildingStatusOverlay.ts`):
+
+- **Construction phase**: Opacity ramps from 30% → 100% as construction progresses. Planned buildings render at 20% translucent. Construction dust particles emit at active build sites.
+- **Completion**: Green emissive glow pulse (2 seconds) + green particle burst when a building becomes Active.
+- **Destruction**: Scale collapse (Y→0, XZ expand) + tilt + fade over 1 second, with dust particle burst.
+- **Status icon overlay**: A sprite icon floats above each building showing its current status (no-worker: red X, missing-inputs: amber hourglass, storage-full: orange warning, producing: green check, construction: blue hammer). Updates every 500ms.
+- **Scale factors**: Some buildings have per-model scale factors (1.15×–2.5×) applied at render time to ensure proportional footprints across all building types. See `BUILDING_SCALE` in `BuildingRenderer.ts`.
+
 ---
 
 ## Core Buildings
@@ -106,6 +116,8 @@ This document outlines the visual design for each building in Feudal Realm Manag
     - **Main Building:** Medium-sized cuboid (color: Brown).
     - **Roof:** A sloped cuboid roof (color: Dark Brown).
     - **Processing Area:** An open-sided extension or a slightly lower, longer cuboid attached, where logs (cylinders) might be seen at one end and planks (thin cuboids) at the other.
+    - **Particles:** Wood chips (tan, 8/s) when producing.
+    - **Animation:** Saw blade oscillates `rotation.x = sin(t * 6.0) * 0.5` when producing.
 - **Relative Dimensions:** Medium footprint, medium height.
 - **Key Colors:** Brown, Dark Brown.
 
@@ -116,6 +128,7 @@ This document outlines the visual design for each building in Feudal Realm Manag
     - **Base:** A tall, slightly tapering cylinder or an octagonal prism (color: Beige or Light Grey).
     - **Cap/Roof:** A conical or domed shape on top of the base (color: Dark Brown or Red).
     - **Sails:** Four long, thin cuboids attached to a central point on the upper part of the base, angled like windmill sails (color: White or Light Grey).
+    - **Animation:** Sails rotate at 2.0 rad/s when producing (controlled by `BuildingAnimator`). Stop when idle.
 - **Relative Dimensions:** Medium footprint, tall.
 - **Key Colors:** Beige/Light Grey, Dark Brown/Red, White.
 
@@ -126,6 +139,8 @@ This document outlines the visual design for each building in Feudal Realm Manag
     - **Main Building:** Medium cuboid (color: Orange or Terracotta).
     - **Roof:** Simple sloped cuboid roof (color: Dark Brown).
     - **Chimney:** A taller, thin square cuboid attached to the side or rear (color: Dark Grey or Black), possibly with a tiny red cube on top (embers).
+    - **Particles:** Chimney smoke (grey→white) when producing. Emitted at 3/s, lifetime 3-5s.
+    - **Animation:** Emissive glow pulse when producing.
 - **Relative Dimensions:** Medium footprint, medium height (plus chimney).
 - **Key Colors:** Orange/Terracotta, Dark Brown, Dark Grey/Black.
 
@@ -156,6 +171,8 @@ This document outlines the visual design for each building in Feudal Realm Manag
     - **Base:** A sturdy, dark grey cuboid.
     - **Furnace/Chimney:** A prominent, taller, slightly tapering square or cylindrical cuboid attached or rising from the base (color: Black or Very Dark Grey).
     - **Glow:** A small bright orange or red cube at the base of the furnace/chimney to indicate heat.
+    - **Particles:** Chimney smoke (grey→white, 3/s) + forge sparks (orange→yellow, 5/s) when producing.
+    - **Animation:** Emissive glow pulse when producing.
 - **Relative Dimensions:** Medium footprint, tall due to chimney.
 - **Key Colors:** Dark Grey, Black, Orange/Red.
 
@@ -176,6 +193,8 @@ This document outlines the visual design for each building in Feudal Realm Manag
     - **Building:** A sturdy, medium-sized cuboid (color: Light Grey or Beige).
     - **Roof:** Flat or slightly sloped cuboid roof (color: Dark Grey).
     - **Accent:** A prominent bright yellow cube or small pyramid on the roof or above the entrance.
+    - **Particles:** Chimney smoke (grey→white, 3/s) when producing.
+    - **Animation:** Emissive glow pulse when producing.
 - **Relative Dimensions:** Medium footprint, medium height.
 - **Key Colors:** Light Grey/Beige, Dark Grey, Yellow.
 
@@ -186,6 +205,8 @@ This document outlines the visual design for each building in Feudal Realm Manag
     - **Building:** A dark grey or black cuboid, possibly with an open front or large window.
     - **Forge Glow:** An orange or red glow (represented by a colored cube) visible from an opening.
     - **Chimney:** A short, wide, black cuboid chimney.
+    - **Particles:** Chimney smoke (grey→white, 3/s) + forge sparks (orange→yellow, 5/s) when producing.
+    - **Animation:** Emissive glow pulse when producing.
 - **Relative Dimensions:** Medium footprint, medium height.
 - **Key Colors:** Dark Grey/Black, Orange/Red.
 

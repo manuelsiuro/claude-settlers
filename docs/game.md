@@ -58,7 +58,11 @@ An efficient system for moving goods is vital for economic success.
     - Goods are picked up from a building's output area and dropped off at the input area of another building or a Flag along the route.
     - Only one Transporter can occupy the path segment between two adjacent Flags at any given time.
 - **Bottlenecks:** Poor road layout or an insufficient number of Transporters can lead to bottlenecks, stalling production.
-- **Prioritization:** Players can set priorities for the distribution of goods to direct resources where they are most needed.
+- **Prioritization:** Players can set priorities for the distribution of goods to direct resources where they are most needed. The **Goods Distribution** system supports:
+    - **Per-resource priority (1-5):** Controls how eagerly each resource type is routed. Higher priority = routed first.
+    - **Per-building importance (1-5):** Controls which buildings receive goods first. Default is 3.
+    - **Composite routing score:** `importance × priority / distance` — determines which building gets a resource when multiple consumers compete.
+    - Settings are serialized with save/load.
 
 ### 3.4. Territory Expansion
 
@@ -83,6 +87,12 @@ While heavily focused on economics, military conquest is the ultimate path to vi
 - **Combat Resolution:**
     - Combat is typically resolved through one-on-one duels between Knights.
     - The Knight with higher strength (factoring in rank and gold bonus) is more likely to win.
+    - **Combat Animation Phases:** Each duel plays through 5 visual phases:
+        1. **Approach** (0.5s): Knights interpolate toward midpoint, face each other.
+        2. **Clash** (0.3s × 2-4 hits): Knights swing ±0.5 rad, flash on impact.
+        3. **Recoil** (0.2s): Knights bounce apart.
+        4. **Result** (0.8s): Winner scale pulse (1.0→1.1→1.0), loser falls (rotation.x → PI/2) + fades.
+        5. **Done**: Loser removed, winner returns. Knight enters `Fighting` unit state during duel.
 - **Capturing Buildings:**
     - If all defending Knights in an enemy military building are defeated, that building is captured by the attacker.
     - Capturing an enemy military building can lead to adjacent non-military enemy buildings being captured or destroyed if they fall within the new territory.
@@ -95,6 +105,11 @@ Players manage their economy through building placement, production settings, an
 - **Indirect Control:** Players do not directly control individual serfs. Instead, they create jobs by constructing buildings. Serfs will automatically fill available roles.
 - **Distribution Settings:** A dedicated interface allows players to set priorities for which goods are transported and to which types of buildings (e.g., ensure iron goes to Toolmakers before Blacksmiths if tools are critically low).
 - **Statistics:** A statistics panel provides data on resource stockpiles, production rates, serf population, and other key economic indicators.
+- **Economy Tracking:** An `EconomyTracker` provides real-time analytics:
+    - Rolling 5-minute window of production/consumption events.
+    - Per-resource production rate (items/min), consumption rate, and net balance.
+    - Bottleneck detection: resources with negative net balance are flagged.
+    - History snapshots (10 datapoints) for sparkline visualizations.
 
 ### 3.7. World and Map
 
@@ -359,8 +374,66 @@ Unlocking a new building often requires resources produced by previous buildings
     - Option to set Knight recruitment priorities for different outposts.
 - **Minimap:** A small overview map for quick navigation.
 - **Alerts/Notifications:** Inform players of important events (e.g., mine depleted, under attack, lack of tools).
+- **Building Hover Tooltips:** Hovering over (desktop) or long-pressing (500ms, mobile) a building shows a tooltip with: name, status, worker assignment, production progress %, construction progress %, inventory summary (inputs/outputs), and knight slots. Positioned near cursor, flips if overflowing viewport.
+- **Building Status Icons:** Sprite icons above buildings indicate their current status at a glance:
+    - **No Worker** (red X) — highest priority
+    - **Missing Inputs** (amber hourglass)
+    - **Storage Full** (orange warning triangle)
+    - **Producing** (green checkmark)
+    - **Under Construction** (blue hammer) — lowest priority
+    - Icons use cached `CanvasTexture` (5 textures shared across all buildings). Update every 500ms.
+- **Production Chain Visualization:** Selecting a building shows animated dashed lines to upstream (input source buildings, blue) and downstream (output consumer buildings, orange). Cone arrows at endpoints. Max 10 connections.
 
 ## 7. Winning Conditions
 
 - **Primary Condition:** Defeat all opponent players. This is typically achieved by destroying their starting Castle.
+- **Additional Conditions:**
+    - **Domination:** Control 75%+ of claimable land.
+    - **Economic:** Accumulate 50+ gold bars.
 - **Scenario-Specific Conditions:** Pre-designed maps or missions might have unique objectives.
+
+## 8. Visual Effects & Ambient Life
+
+The game features a suite of ambient visual effects that bring the settlement to life:
+
+### 8.1. Particle Effects
+
+Pool-based particle system (800 particle budget, single draw call per effect type):
+
+| Effect | Buildings | Color | Lifetime |
+|--------|-----------|-------|----------|
+| Chimney smoke | Bakery, Smelter, Blacksmith, Goldsmith | gray→white | 3-5s |
+| Forge sparks | Smelter, Blacksmith | orange→yellow | 0.5-1s |
+| Sawmill chips | Sawmill | tan | 0.3-0.8s |
+| Construction dust | Any UnderConstruction | beige | 1-2s |
+| Tree chop debris | Woodcutter (working) | brown+green | burst |
+| Completion flash | Any → Active transition | green | burst |
+
+### 8.2. Building Animations
+
+- **Windmill sails**: Rotate at 2.0 rad/s when producing, stop when idle.
+- **Furnace glow**: Emissive pulse on Smelter/Blacksmith/Bakery/Goldsmith when producing.
+- **Sawmill blade**: Oscillates rotation when producing.
+- **Construction opacity**: Ramps from 30% to 100% based on construction progress.
+- **Planned buildings**: Render at 20% opacity (translucent preview).
+- **Completion glow**: 2-second green emissive pulse when a building becomes Active.
+- **Destruction**: Scale collapse + tilt + fade over 1 second.
+
+### 8.3. Tree Wind Sway
+
+GPU-driven wind animation via custom shader. Per-instance phase offset prevents synchronized sway. Only treetop vertices are displaced (trunk stays fixed). Zero CPU cost.
+
+### 8.4. Military Visual Effects
+
+- **Attack warning**: Pulsing red ring + exclamation icon above attacked buildings (5Hz pulse).
+- **Capture banner**: Player-colored plane rises from y=0.1 to y=0.6 over 1 second on building capture.
+- **Knight faction colors**: Knight meshes tinted 40% toward player color (blue/red/green/yellow).
+- **Rank chevrons**: Gold pyramids on knight shoulder (1-5 based on knightRank).
+
+### 8.5. Distance-Based Production
+
+Gathering buildings produce slower when far from their harvest terrain:
+- Formula: `effectiveTime = baseTime × min(3.0, 1.0 + max(0, distance-1) × 0.25)`
+- Placement preview shows color-coded distance rating (green/orange/red).
+- Mines on Mountain terrain get distance 0 (optimal). Fisherman adjacent to Water gets distance 1 (optimal).
+- Processing, military, and logistics buildings are unaffected.

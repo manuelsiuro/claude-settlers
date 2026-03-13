@@ -17,6 +17,7 @@ import { GeologistManager } from './GeologistManager';
 import { TreeManager } from './TreeManager';
 import { WoodcutterManager } from './WoodcutterManager';
 import { ForesterManager } from './ForesterManager';
+import { UpgradeManager } from './UpgradeManager';
 import { AIPlayer } from './AIPlayer';
 import { BuildingType } from './BuildingType';
 import {
@@ -81,6 +82,7 @@ function createManagers(gameState: GameState, roadNetwork: RoadNetwork, territor
     treeManager,
     woodcutterManager,
     foresterManager,
+    upgradeManager: new UpgradeManager(gameState),
   };
 }
 
@@ -117,7 +119,7 @@ describe('SaveLoad: round-trip serialization', () => {
       { frustum: 10, position: { x: 0, y: 20, z: 0 }, target: { x: 0, y: 0, z: 0 } },
     );
 
-    expect(data.version).toBe(3);
+    expect(data.version).toBe(4);
     expect(data.config).toEqual(testConfig);
     expect(data.buildings).toEqual([]);
     expect(data.units).toEqual([]);
@@ -443,7 +445,7 @@ describe('SaveLoad: round-trip serialization', () => {
     // Create an AI player
     const ai = new AIPlayer(
       2, Difficulty.Normal, gameState, territoryManager,
-      managers.attackManager, managers.knightManager, () => {},
+      managers.attackManager, managers.knightManager, managers.upgradeManager, () => {},
     );
     // Simulate some decisions
     ai._setBuildOrderIndex(5);
@@ -466,7 +468,7 @@ describe('SaveLoad: round-trip serialization', () => {
     const managers2 = createManagers(gs2, rn2, tm2);
     const ai2 = new AIPlayer(
       2, Difficulty.Normal, gs2, tm2,
-      managers2.attackManager, managers2.knightManager, () => {},
+      managers2.attackManager, managers2.knightManager, managers2.upgradeManager, () => {},
     );
 
     deserializeGame(data, gs2, rn2, managers2, [ai2]);
@@ -534,7 +536,7 @@ describe('SaveLoad: round-trip serialization', () => {
     const json = JSON.stringify(data);
     const parsed = JSON.parse(json) as SaveData;
 
-    expect(parsed.version).toBe(3);
+    expect(parsed.version).toBe(4);
     expect(parsed.config.seed).toBe(42);
     expect(parsed.buildings.length).toBe(2);
     expect(parsed.units.length).toBe(1);

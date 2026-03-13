@@ -1,9 +1,11 @@
 import { BUILDING_DEFINITIONS } from './BuildingType';
+import { BuildingState } from './Building';
 import { GameState } from './GameState';
 import type { Unit } from './Unit';
 import { UnitState, setUnitPath, clearUnitPath } from './Unit';
 import { UNIT_DEFINITIONS, WORKER_TO_UNIT_TYPE, UnitType } from './UnitType';
 import { findPath } from './Pathfinding';
+import { getMaxWorkers } from './BuildingUpgrade';
 
 /**
  * Manages unit spawning, job assignment, and movement updates.
@@ -122,6 +124,46 @@ export class UnitManager {
       }
 
       spawned = true;
+    }
+
+    // Spawn extra workers for multi-worker buildings (from worker upgrades)
+    for (const playerId of playerIds) {
+      const castle = this.gameState.findCastle(playerId);
+      if (!castle) continue;
+
+      for (const building of this.gameState.getBuildingsByPlayer(playerId)) {
+        if (building.state !== BuildingState.Active) continue;
+        const maxW = getMaxWorkers(building);
+        if (maxW <= 1) continue;
+        // Primary worker must exist first
+        if (!this.gameState.getWorkerForBuilding(building.id)) continue;
+        // Count existing extra workers (filter out removed units)
+        const existingExtra = (building.extraWorkerIds ?? []).filter(
+          (id) => this.gameState.getUnit(id),
+        );
+        building.extraWorkerIds = existingExtra;
+        if (existingExtra.length >= maxW - 1) continue;
+
+        const def = BUILDING_DEFINITIONS[building.type];
+        const unitType = WORKER_TO_UNIT_TYPE[def.worker];
+        if (!unitType) continue;
+
+        const extra = this.gameState.spawnUnit(unitType, { ...castle.coord }, playerId);
+        extra.assignedBuildingId = building.id;
+        building.extraWorkerIds.push(extra.id);
+
+        const path = findPath(this.gameState.getGrid(), castle.coord, building.coord);
+        if (path.length > 0) {
+          setUnitPath(extra, path);
+          extra.state = UnitState.WalkingToWork;
+        } else {
+          extra.state = UnitState.Idle;
+          extra.assignedBuildingId = null;
+          building.extraWorkerIds.pop();
+          this.gameState.removeUnit(extra.id);
+        }
+        spawned = true;
+      }
     }
 
     if (spawned) {

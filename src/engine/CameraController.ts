@@ -214,6 +214,13 @@ export class CameraController {
     this.keys.delete(e.key);
   };
 
+  /** Smoothly pan camera to a world position */
+  panTo(x: number, z: number): void {
+    const dx = x - this.target.x;
+    const dz = z - this.target.z;
+    this.panBy(dx, dz);
+  }
+
   /** Get the camera look-at target position */
   getTarget(): THREE.Vector3 {
     return this.target;

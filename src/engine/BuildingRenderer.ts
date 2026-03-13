@@ -127,6 +127,16 @@ export class BuildingRenderer {
     return this.buildingMeshes.get(buildingId);
   }
 
+  /** Get all building meshes (for building animator) */
+  getAllMeshes(): ReadonlyMap<string, THREE.Group> {
+    return this.buildingMeshes;
+  }
+
+  /** Get wrap groups (for syncing ghost animations) */
+  getWrapGroups(): readonly THREE.Group[] {
+    return this.wrapGroups;
+  }
+
   private disposeMesh(group: THREE.Group): void {
     group.traverse((child) => {
       if (child instanceof THREE.Mesh) {

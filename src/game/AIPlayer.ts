@@ -1,15 +1,22 @@
 import { BuildingType, BUILDING_DEFINITIONS } from './BuildingType';
-import { BuildingState } from './Building';
+import { BuildingState, getInventoryTotal } from './Building';
 import type { Building } from './Building';
 import type { HexGrid, HexCoord } from './HexGrid';
 import type { GameState } from './GameState';
 import type { TerritoryManager } from './TerritoryManager';
 import type { AttackManager } from './AttackManager';
 import type { KnightManager } from './KnightManager';
+import type { UpgradeManager } from './UpgradeManager';
 import { Difficulty } from './GameConfig';
 import { UnitType } from './UnitType';
 import { UnitState } from './Unit';
 import type { ResourceType } from './ResourceType';
+import {
+  UpgradeAxis,
+  canUpgrade,
+  getUpgradeCost,
+  getEffectiveStorageCapacity,
+} from './BuildingUpgrade';
 
 /** Callback to render a newly placed building. */
 export type BuildingPlacedCallback = (building: Building, grid: HexGrid) => void;
@@ -74,6 +81,7 @@ export class AIPlayer {
   private readonly territoryManager: TerritoryManager;
   private readonly attackManager: AttackManager;
   private readonly knightManager: KnightManager;
+  private readonly upgradeManager: UpgradeManager;
   private readonly onBuildingPlaced: BuildingPlacedCallback;
 
   /** Current position in ECONOMY_BUILD_ORDER */
@@ -97,6 +105,7 @@ export class AIPlayer {
     territoryManager: TerritoryManager,
     attackManager: AttackManager,
     knightManager: KnightManager,
+    upgradeManager: UpgradeManager,
     onBuildingPlaced: BuildingPlacedCallback,
   ) {
     this.playerId = playerId;
@@ -104,6 +113,7 @@ export class AIPlayer {
     this.territoryManager = territoryManager;
     this.attackManager = attackManager;
     this.knightManager = knightManager;
+    this.upgradeManager = upgradeManager;
     this.onBuildingPlaced = onBuildingPlaced;
 
     switch (difficulty) {
@@ -133,6 +143,10 @@ export class AIPlayer {
     if (this.decisionCooldown <= 0) {
       this.decisionCooldown = this.decisionInterval;
       this.tryBuildNext();
+      // Only try upgrades once economy is established
+      if (this.buildOrderIndex > 8) {
+        this.tryUpgrade();
+      }
     }
 
     if (this.attackCooldown <= 0) {
@@ -225,6 +239,51 @@ export class AIPlayer {
     )[0];
 
     this.attackManager.orderAttack(knight.id, target.id);
+  }
+
+  /**
+   * Try to upgrade a building. Prioritizes production speed for buildings
+   * with production recipes, then storage for buildings that are nearly full.
+   */
+  private tryUpgrade(): void {
+    const resources = this.getStoredResources();
+    const myBuildings = this.gameState.getBuildingsByPlayer(this.playerId)
+      .filter((b) => b.state === BuildingState.Active && !b.activeUpgrade);
+
+    for (const building of myBuildings) {
+      // Try production upgrade first
+      if (canUpgrade(building, UpgradeAxis.Production)) {
+        const cost = getUpgradeCost(building.type, UpgradeAxis.Production, building.upgradeLevels?.[UpgradeAxis.Production] ?? 0);
+        if (cost && this.canAffordCost(resources, cost)) {
+          this.upgradeManager.startUpgrade(building.id, UpgradeAxis.Production);
+          return;
+        }
+      }
+
+      // Then storage if output is 80%+ full
+      if (canUpgrade(building, UpgradeAxis.Storage)) {
+        const cap = getEffectiveStorageCapacity(building);
+        const outputTotal = getInventoryTotal(building.outputInventory);
+        if (outputTotal >= cap * 0.8) {
+          const cost = getUpgradeCost(building.type, UpgradeAxis.Storage, building.upgradeLevels?.[UpgradeAxis.Storage] ?? 0);
+          if (cost && this.canAffordCost(resources, cost)) {
+            this.upgradeManager.startUpgrade(building.id, UpgradeAxis.Storage);
+            return;
+          }
+        }
+      }
+    }
+  }
+
+  /** Check if stored resources can cover a cost array */
+  private canAffordCost(
+    resources: Partial<Record<ResourceType, number>>,
+    cost: { resource: ResourceType; amount: number }[],
+  ): boolean {
+    for (const c of cost) {
+      if ((resources[c.resource] ?? 0) < c.amount) return false;
+    }
+    return true;
   }
 
   // ─── Helpers ─────────────────────────────────────────────────────────────

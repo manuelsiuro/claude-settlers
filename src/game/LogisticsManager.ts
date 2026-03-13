@@ -1,8 +1,10 @@
 import type { GameState } from './GameState';
 import type { RoadNetwork } from './RoadNetwork';
 import { BUILDING_DEFINITIONS, BuildingType } from './BuildingType';
-import { BuildingState } from './Building';
+import { BuildingState, hasInputSpace } from './Building';
 import type { ResourceType } from './ResourceType';
+import type { GoodsDistributionSettings } from './GoodsDistribution';
+import { getRoutingScore } from './GoodsDistribution';
 
 /**
  * Bridges building inventories and the flag/road network.
@@ -16,6 +18,7 @@ import type { ResourceType } from './ResourceType';
 export class LogisticsManager {
   private gameState: GameState;
   private roadNetwork: RoadNetwork;
+  private distributionSettings: GoodsDistributionSettings | null = null;
 
   /** How often to run routing logic (seconds) */
   private routingCooldown = 0;
@@ -27,6 +30,11 @@ export class LogisticsManager {
   constructor(gameState: GameState, roadNetwork: RoadNetwork) {
     this.gameState = gameState;
     this.roadNetwork = roadNetwork;
+  }
+
+  /** Set distribution settings for priority-based routing */
+  setDistributionSettings(settings: GoodsDistributionSettings): void {
+    this.distributionSettings = settings;
   }
 
   /** Serialization: get internal state for save */
@@ -125,7 +133,7 @@ export class LogisticsManager {
     const buildings = this.gameState.getAllBuildings();
 
     let bestFlagId: string | null = null;
-    let bestDistance = Infinity;
+    let bestScore = -Infinity;
 
     // Priority 1: buildings that consume this resource
     for (const building of buildings) {
@@ -137,6 +145,9 @@ export class LogisticsManager {
       const inputSpec = def.production.inputs.find((inp) => inp.resource === resource);
       if (!inputSpec) continue;
 
+      // Skip if input inventory is full
+      if (!hasInputSpace(building)) continue;
+
       // Don't over-supply: cap at 2x the per-cycle amount
       const currentAmount = building.inputInventory[resource] ?? 0;
       if (currentAmount >= inputSpec.amount * 2) continue;
@@ -147,8 +158,16 @@ export class LogisticsManager {
       const route = this.roadNetwork.findRoute(sourceFlagId, destFlag.id);
       if (route.length === 0) continue;
 
-      if (route.length < bestDistance) {
-        bestDistance = route.length;
+      // Use distribution settings if available, otherwise fall back to distance
+      let score: number;
+      if (this.distributionSettings) {
+        score = getRoutingScore(this.distributionSettings, resource, building.id, route.length);
+      } else {
+        score = 1000 - route.length; // Simple distance-based (lower distance = higher score)
+      }
+
+      if (score > bestScore) {
+        bestScore = score;
         bestFlagId = destFlag.id;
       }
     }
@@ -160,14 +179,21 @@ export class LogisticsManager {
       if (building.state !== BuildingState.Active) continue;
       if (building.type !== BuildingType.Castle && building.type !== BuildingType.Warehouse) continue;
 
+      // Skip if storage is full (input + output both checked)
+      if (!hasInputSpace(building)) continue;
+
       const destFlag = this.roadNetwork.getFlagAt(building.coord.q, building.coord.r);
       if (!destFlag || destFlag.id === sourceFlagId) continue;
 
       const route = this.roadNetwork.findRoute(sourceFlagId, destFlag.id);
       if (route.length === 0) continue;
 
-      if (route.length < bestDistance) {
-        bestDistance = route.length;
+      const score = this.distributionSettings
+        ? getRoutingScore(this.distributionSettings, resource, building.id, route.length)
+        : 1000 - route.length;
+
+      if (score > bestScore) {
+        bestScore = score;
         bestFlagId = destFlag.id;
       }
     }

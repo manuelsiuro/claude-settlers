@@ -18,6 +18,7 @@ import { ResourceType } from './ResourceType';
 import { UnitType } from './UnitType';
 import { UnitState, resetUnitIdCounter } from './Unit';
 import { Difficulty } from './GameConfig';
+import { UpgradeManager } from './UpgradeManager';
 import type { Building } from './Building';
 
 // ─── Test helpers ────────────────────────────────────────────────────────────
@@ -82,7 +83,8 @@ function setupAI(
     territoryManager,
     attackManager,
     knightManager,
-    (building) => placed.push(building),
+    new UpgradeManager(gameState),
+    (building: Building) => placed.push(building),
   );
   return { ai, placed, gameState, territoryManager, attackManager, knightManager };
 }
@@ -168,7 +170,8 @@ describe('AIPlayer', () => {
       territoryManager,
       attackManager,
       knightManager,
-      (b) => placed.push(b),
+      new UpgradeManager(gameState),
+      (b: Building) => placed.push(b),
     );
 
     ai.update(20);
@@ -206,7 +209,8 @@ describe('AIPlayer', () => {
       tinyManagers.territoryManager,
       tinyManagers.attackManager,
       tinyManagers.knightManager,
-      (b) => placed.push(b),
+      new UpgradeManager(tinyState),
+      (b: Building) => placed.push(b),
     );
 
     // Territory has only the Castle hex (all water neighbors are blocked from expansion).
@@ -413,7 +417,8 @@ describe('AIPlayer', () => {
       territoryManager,
       attackManager,
       knightManager,
-      (b) => placed.push(b),
+      new UpgradeManager(gameState),
+      (b: Building) => placed.push(b),
     );
 
     // 3 ticks with no resources — should NOT advance the index via skip logic

@@ -36,38 +36,32 @@ export function findPath(
   const goalTile = grid.getTile(goalWrapped.q, goalWrapped.r);
   if (!goalTile || !WALKABLE_TERRAIN.has(goalTile.terrain)) return [];
 
-  // A* open set as a simple priority queue (sorted array)
+  // A* with binary heap for O(log n) open set operations
   const gScore: Map<string, number> = new Map();
-  const fScore: Map<string, number> = new Map();
   const cameFrom: Map<string, HexCoord> = new Map();
-  const openSet: Set<string> = new Set();
   const closedSet: Set<string> = new Set();
 
+  const startF = hexDistance(startWrapped, goalWrapped, grid);
   gScore.set(startKey, 0);
-  fScore.set(startKey, hexDistance(startWrapped, goalWrapped, grid));
-  openSet.add(startKey);
+
+  // Binary min-heap: [fScore, key]
+  const heap: [number, string][] = [[startF, startKey]];
+  const inOpen: Set<string> = new Set([startKey]);
 
   let steps = 0;
 
-  while (openSet.size > 0 && steps < maxSteps) {
+  while (heap.length > 0 && steps < maxSteps) {
     steps++;
 
-    // Pick node with lowest fScore from open set
-    let currentKey = '';
-    let currentF = Infinity;
-    for (const key of openSet) {
-      const f = fScore.get(key) ?? Infinity;
-      if (f < currentF) {
-        currentF = f;
-        currentKey = key;
-      }
-    }
+    // Pop min fScore from heap
+    const [, currentKey] = heapPop(heap);
+    if (!inOpen.has(currentKey)) continue; // stale entry
+    inOpen.delete(currentKey);
 
     if (currentKey === goalKey) {
       return reconstructPath(cameFrom, goalWrapped);
     }
 
-    openSet.delete(currentKey);
     closedSet.add(currentKey);
 
     const [cq, cr] = currentKey.split(',').map(Number);
@@ -89,8 +83,9 @@ export function findPath(
       if (tentativeG < existingG) {
         cameFrom.set(nKey, currentCoord);
         gScore.set(nKey, tentativeG);
-        fScore.set(nKey, tentativeG + hexDistance(neighborTile.coord, goalWrapped, grid));
-        openSet.add(nKey);
+        const f = tentativeG + hexDistance(neighborTile.coord, goalWrapped, grid);
+        heapPush(heap, [f, nKey]);
+        inOpen.add(nKey);
       }
     }
   }
@@ -133,6 +128,40 @@ function cubeDistance(a: HexCoord, b: HexCoord): number {
   const dq = a.q - b.q;
   const dr = a.r - b.r;
   return (Math.abs(dq) + Math.abs(dr) + Math.abs(dq + dr)) / 2;
+}
+
+/** Binary min-heap push */
+function heapPush(heap: [number, string][], item: [number, string]): void {
+  heap.push(item);
+  let i = heap.length - 1;
+  while (i > 0) {
+    const parent = (i - 1) >> 1;
+    if (heap[parent][0] <= heap[i][0]) break;
+    [heap[parent], heap[i]] = [heap[i], heap[parent]];
+    i = parent;
+  }
+}
+
+/** Binary min-heap pop */
+function heapPop(heap: [number, string][]): [number, string] {
+  const top = heap[0];
+  const last = heap.pop()!;
+  if (heap.length > 0) {
+    heap[0] = last;
+    let i = 0;
+    const n = heap.length;
+    while (true) {
+      let smallest = i;
+      const left = 2 * i + 1;
+      const right = 2 * i + 2;
+      if (left < n && heap[left][0] < heap[smallest][0]) smallest = left;
+      if (right < n && heap[right][0] < heap[smallest][0]) smallest = right;
+      if (smallest === i) break;
+      [heap[i], heap[smallest]] = [heap[smallest], heap[i]];
+      i = smallest;
+    }
+  }
+  return top;
 }
 
 /** Reconstruct path from cameFrom map */

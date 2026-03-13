@@ -872,6 +872,49 @@ html[data-theme="night"] .state-destroyed {
   background: linear-gradient(90deg, #dc2626, #ef4444);
 }
 
+.info-progress-upgrade {
+  background: linear-gradient(90deg, #2e7d32, #43a047);
+}
+
+.info-upgrade-btn {
+  width: 100%;
+  padding: 8px 12px;
+  margin-top: 6px;
+  background: #2e7d32;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.info-upgrade-btn:active {
+  background: #1b5e20;
+}
+
+.info-upgrade-btn:disabled {
+  background: #666;
+  cursor: not-allowed;
+}
+
+.info-upgrade-cancel-btn {
+  width: 100%;
+  padding: 6px 12px;
+  margin-top: 4px;
+  background: #c62828;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.info-upgrade-cancel-btn:active {
+  background: #9a0007;
+}
+
 .info-progress-text {
   position: absolute;
   top: 0;
@@ -1411,4 +1454,23 @@ html[data-theme="night"] .state-destroyed {
 
 .theme-toggle input:checked + .theme-toggle-track::after {
   transform: translateX(20px);
+}
+
+/* ============================================================
+   Tooltip
+   ============================================================ */
+
+.game-tooltip {
+  position: fixed;
+  z-index: 2200;
+  background: rgba(20, 20, 30, 0.92);
+  color: #eee;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  max-width: 240px;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  backdrop-filter: blur(4px);
 }

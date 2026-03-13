@@ -4,6 +4,7 @@ import { BuildingType, BUILDING_DEFINITIONS } from './BuildingType';
 import type { GameState } from './GameState';
 import type { ResourceType } from './ResourceType';
 import { UnitState } from './Unit';
+import { getProductionSpeedMultiplier } from './BuildingUpgrade';
 
 /** Compute the distance multiplier for gathering buildings */
 export function getDistanceMultiplier(distance: number): number {
@@ -33,6 +34,9 @@ export function getDistanceRating(multiplier: number): { label: string; color: s
 export class ProductionManager {
   private gameState: GameState;
 
+  /** Optional callback fired when production completes (for economy tracking) */
+  onProductionComplete: ((inputs: { resource: ResourceType; amount: number }[], outputs: { resource: ResourceType; amount: number }[]) => void) | null = null;
+
   constructor(gameState: GameState) {
     this.gameState = gameState;
   }
@@ -52,8 +56,9 @@ export class ProductionManager {
       // WoodcutterHut production is handled by WoodcutterManager
       if (building.type === BuildingType.WoodcutterHut) continue;
 
-      // Check worker is present and working
-      if (!this.hasActiveWorker(building)) continue;
+      // Count active workers (primary + extras from worker upgrades)
+      const activeWorkers = this.countActiveWorkers(building);
+      if (activeWorkers === 0) continue;
 
       // Gathering buildings (no inputs) always produce
       // Processing buildings need all inputs available
@@ -64,9 +69,10 @@ export class ProductionManager {
       // Need output space
       if (!hasOutputSpace(building)) continue;
 
-      // Advance production (gathering buildings scale by distance)
-      const multiplier = def.harvestTerrain ? getDistanceMultiplier(building.resourceDistance) : 1;
-      const rate = 1 / (def.production.productionTime * multiplier);
+      // Advance production (gathering buildings scale by distance, upgrades scale speed)
+      const distMultiplier = def.harvestTerrain ? getDistanceMultiplier(building.resourceDistance) : 1;
+      const speedMultiplier = getProductionSpeedMultiplier(building);
+      const rate = activeWorkers / (def.production.productionTime * distMultiplier * speedMultiplier);
       building.productionProgress += rate * deltaTime;
 
       // Production cycle complete
@@ -78,12 +84,17 @@ export class ProductionManager {
   }
 
   /**
-   * Check if the building has an assigned worker in the Working state.
+   * Count the number of active workers at this building (primary + extras).
    */
-  private hasActiveWorker(building: Building): boolean {
-    const worker = this.gameState.getWorkerForBuilding(building.id);
-    if (!worker) return false;
-    return worker.state === UnitState.Working;
+  private countActiveWorkers(building: Building): number {
+    let count = 0;
+    const primary = this.gameState.getWorkerForBuilding(building.id);
+    if (primary?.state === UnitState.Working) count++;
+    for (const id of (building.extraWorkerIds ?? [])) {
+      const unit = this.gameState.getUnit(id);
+      if (unit?.state === UnitState.Working) count++;
+    }
+    return count;
   }
 
   /**
@@ -104,5 +115,8 @@ export class ProductionManager {
       const current = building.outputInventory[output.resource] ?? 0;
       building.outputInventory[output.resource as ResourceType] = current + output.amount;
     }
+
+    // Notify economy tracker
+    this.onProductionComplete?.(def.production.inputs, def.production.outputs);
   }
 }

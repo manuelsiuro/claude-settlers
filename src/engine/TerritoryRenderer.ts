@@ -2,17 +2,7 @@ import * as THREE from 'three';
 import { HexGrid, HEX_SIZE } from '../game/HexGrid';
 import type { TerritoryManager } from '../game/TerritoryManager';
 import { MapRenderer } from './MapRenderer';
-
-/** Player colors for territory visualization */
-const PLAYER_COLORS: Record<number, number> = {
-  1: 0x4488ff, // blue
-  2: 0xff4444, // red
-  3: 0x44cc44, // green
-  4: 0xffcc00, // yellow
-};
-
-/** Fallback color for unknown players */
-const DEFAULT_COLOR = 0xaaaaaa;
+import { PLAYER_COLORS, DEFAULT_PLAYER_COLOR } from './PlayerColors';
 
 /** Territory border line thickness */
 const BORDER_WIDTH = 0.06;
@@ -160,7 +150,7 @@ export class TerritoryRenderer {
 
     // Create merged meshes per player
     for (const [playerId, borderArrays] of playerBorders) {
-      const color = PLAYER_COLORS[playerId] ?? DEFAULT_COLOR;
+      const color = PLAYER_COLORS[playerId] ?? DEFAULT_PLAYER_COLOR;
       const mesh = this.createMergedMesh(borderArrays, color, 0.8);
       this.group.add(mesh);
       this.borderMeshes.push(mesh);
@@ -173,7 +163,7 @@ export class TerritoryRenderer {
     }
 
     for (const [playerId, fillArrays] of playerFills) {
-      const color = PLAYER_COLORS[playerId] ?? DEFAULT_COLOR;
+      const color = PLAYER_COLORS[playerId] ?? DEFAULT_PLAYER_COLOR;
       const mesh = this.createMergedMesh(fillArrays, color, FILL_OPACITY);
       this.group.add(mesh);
       this.fillMeshes.push(mesh);

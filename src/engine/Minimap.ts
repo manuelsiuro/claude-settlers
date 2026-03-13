@@ -2,6 +2,7 @@ import type { Game } from './Game';
 import { HexGrid, HEX_WIDTH } from '../game/HexGrid';
 import { TerrainType } from '../game/TerrainType';
 import { BuildingState } from '../game/Building';
+import { PLAYER_TERRITORY_CSS } from './PlayerColors';
 
 /** Fixed color map for minimap terrain */
 const TERRAIN_MINIMAP_COLORS: Record<string, string> = {
@@ -15,14 +16,9 @@ const TERRAIN_MINIMAP_COLORS: Record<string, string> = {
 const BUILDING_COLOR = '#ffffff';
 const ENEMY_BUILDING_COLOR = '#ff6666';
 const CAMERA_RECT_COLOR = '#ffcc00';
-
-/** Per-player territory overlay colors (semi-transparent for minimap) */
-const PLAYER_TERRITORY_COLORS: Record<number, string> = {
-  1: 'rgba(60, 120, 255, 0.3)',   // blue
-  2: 'rgba(255, 80, 80, 0.25)',   // red
-  3: 'rgba(80, 200, 80, 0.25)',   // green
-  4: 'rgba(255, 200, 40, 0.25)',  // yellow
-};
+const UNIT_OWN_COLOR = '#cccccc';
+const UNIT_ENEMY_COLOR = '#ff4444';
+const CONSTRUCTION_COLOR = '#ffcc00';
 
 /** Throttle interval for minimap redraws (ms) */
 const REDRAW_INTERVAL = 200;
@@ -169,7 +165,7 @@ export class Minimap {
       for (let q = 0; q < this.mapWidth; q++) {
         const owner = territoryMgr.getOwner(q, r);
         if (owner === null) continue;
-        ctx.fillStyle = PLAYER_TERRITORY_COLORS[owner] ?? 'rgba(170, 170, 170, 0.2)';
+        ctx.fillStyle = PLAYER_TERRITORY_CSS[owner] ?? 'rgba(170, 170, 170, 0.2)';
         ctx.fillRect(q * cellSize, r * cellSize, cellSize, cellSize);
       }
     }
@@ -184,6 +180,32 @@ export class Minimap {
       ctx.beginPath();
       ctx.arc(px, py, Math.max(2, cellSize / 2 - 1), 0, Math.PI * 2);
       ctx.fill();
+    }
+
+    // Draw units
+    const allUnits = gameState.getAllUnits();
+    for (const u of allUnits) {
+      ctx.fillStyle = u.playerId === humanId ? UNIT_OWN_COLOR : UNIT_ENEMY_COLOR;
+      const ux = u.coord.q * cellSize + cellSize / 2;
+      const uy = u.coord.r * cellSize + cellSize / 2;
+      ctx.beginPath();
+      ctx.arc(ux, uy, Math.max(1, cellSize / 4), 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Draw construction indicators (yellow pulsing dots)
+    for (const b of allBuildings) {
+      if (b.state !== BuildingState.UnderConstruction) continue;
+      if (b.playerId !== humanId) continue;
+      const pulse = 0.5 + 0.5 * Math.sin(Date.now() * 0.005);
+      ctx.fillStyle = CONSTRUCTION_COLOR;
+      ctx.globalAlpha = pulse;
+      const cx = b.coord.q * cellSize + cellSize / 2;
+      const cy = b.coord.r * cellSize + cellSize / 2;
+      ctx.beginPath();
+      ctx.arc(cx, cy, Math.max(2, cellSize / 2 - 1), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1.0;
     }
 
     // Draw camera viewport rectangle

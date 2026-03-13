@@ -1,9 +1,10 @@
 import type { GameState } from './GameState';
-import type { RoadNetwork, FlagGood } from './RoadNetwork';
+import type { RoadNetwork, Flag, FlagGood } from './RoadNetwork';
 import type { Unit } from './Unit';
 import { UnitState, setUnitPath, clearUnitPath } from './Unit';
 import { UnitType } from './UnitType';
 import { findPath } from './Pathfinding';
+import { hasInputSpace } from './Building';
 
 /**
  * Transporter state machine within a road segment.
@@ -290,14 +291,22 @@ export class TransporterManager {
 
   /**
    * Deliver a good to the building associated with a flag.
+   * Returns false if the building's input inventory is full (backpressure).
    */
-  private deliverToBuilding(flag: { buildingId: string | null }, good: FlagGood): void {
-    if (!flag.buildingId) return;
+  private deliverToBuilding(flag: Flag, good: FlagGood): boolean {
+    if (!flag.buildingId) return false;
     const building = this.gameState.getBuilding(flag.buildingId);
-    if (!building) return;
+    if (!building) return false;
+
+    if (!hasInputSpace(building)) {
+      // Backpressure: leave the good on the flag
+      flag.goods.push(good);
+      return false;
+    }
 
     const current = building.inputInventory[good.resource] ?? 0;
     building.inputInventory[good.resource] = current + 1;
+    return true;
   }
 
   /**

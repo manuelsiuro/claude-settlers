@@ -2,6 +2,7 @@ import { BuildingType, BUILDING_DEFINITIONS } from './BuildingType';
 import type { BuildingDefinition } from './BuildingType';
 import type { ResourceType } from './ResourceType';
 import type { HexCoord } from './HexGrid';
+import { getEffectiveStorageCapacity } from './BuildingUpgrade';
 
 export const BuildingState = {
   /** Waiting for construction resources to be delivered */
@@ -46,6 +47,17 @@ export interface Building {
   knightIds: string[];
   /** Distance to nearest harvest terrain (for gathering buildings) */
   resourceDistance: number;
+  /** Current upgrade levels per axis (e.g., { storage: 1, production: 0 }) */
+  upgradeLevels: Record<string, number>;
+  /** Active upgrade in progress, or null */
+  activeUpgrade: {
+    axis: string;
+    targetLevel: number;
+    resourcesDelivered: ResourceInventory;
+    constructionProgress: number;
+  } | null;
+  /** Extra worker unit IDs from worker upgrades */
+  extraWorkerIds: string[];
 }
 
 let nextBuildingId = 1;
@@ -72,6 +84,9 @@ export function createBuilding(
     playerId,
     knightIds: [],
     resourceDistance: 0,
+    upgradeLevels: {},
+    activeUpgrade: null,
+    extraWorkerIds: [],
   };
 }
 
@@ -115,10 +130,16 @@ export function getInventoryTotal(inventory: ResourceInventory): number {
   return total;
 }
 
+/** Check if input inventory has room for more items */
+export function hasInputSpace(building: Building): boolean {
+  const cap = getEffectiveStorageCapacity(building);
+  return getInventoryTotal(building.inputInventory) < cap;
+}
+
 /** Check if output inventory has room for more items */
 export function hasOutputSpace(building: Building): boolean {
-  const def = BUILDING_DEFINITIONS[building.type];
-  return getInventoryTotal(building.outputInventory) < def.storageCapacity;
+  const cap = getEffectiveStorageCapacity(building);
+  return getInventoryTotal(building.outputInventory) < cap;
 }
 
 /** Check if building has all required inputs for one production cycle */
@@ -186,13 +207,18 @@ export function initializeCastleResources(castle: Building): void {
   }
 }
 
-/** Transfer all resources from inputInventory to outputInventory for storage buildings (Castle/Warehouse) */
+/** Transfer resources from inputInventory to outputInventory for storage buildings (Castle/Warehouse), respecting output capacity */
 export function transferStorageInputs(building: Building): void {
+  const cap = getEffectiveStorageCapacity(building);
+  let remaining = cap - getInventoryTotal(building.outputInventory);
   for (const [res, amount] of Object.entries(building.inputInventory)) {
-    if (!amount || amount <= 0) continue;
+    if (!amount || amount <= 0 || remaining <= 0) continue;
     const r = res as ResourceType;
-    building.outputInventory[r] = (building.outputInventory[r] ?? 0) + amount;
-    delete building.inputInventory[r];
+    const transfer = Math.min(amount, remaining);
+    building.outputInventory[r] = (building.outputInventory[r] ?? 0) + transfer;
+    building.inputInventory[r] = amount - transfer;
+    if (building.inputInventory[r]! <= 0) delete building.inputInventory[r];
+    remaining -= transfer;
   }
 }
 

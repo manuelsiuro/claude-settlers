@@ -169,6 +169,12 @@ export class GameState {
       this.workerByBuilding.delete(id);
     }
 
+    // Unassign extra workers (from worker upgrades)
+    for (const extraId of (building.extraWorkerIds ?? [])) {
+      const extra = this.units.get(extraId);
+      if (extra) extra.assignedBuildingId = null;
+    }
+
     const coordKey = HexGrid.key(building.coord.q, building.coord.r);
     this.buildingsByCoord.delete(coordKey);
     this.buildings.delete(id);
@@ -262,10 +268,14 @@ export class GameState {
     if (!unit) return;
     // Unassign from previous building if any
     if (unit.assignedBuildingId) {
+      const oldBuilding = this.buildings.get(unit.assignedBuildingId);
+      if (oldBuilding) oldBuilding.hasWorker = false;
       this.workerByBuilding.delete(unit.assignedBuildingId);
     }
     unit.assignedBuildingId = buildingId;
     this.workerByBuilding.set(buildingId, unitId);
+    const building = this.buildings.get(buildingId);
+    if (building) building.hasWorker = true;
   }
 
   /** Unassign a unit from its building and update the reverse index */
@@ -273,6 +283,8 @@ export class GameState {
     const unit = this.units.get(unitId);
     if (!unit) return;
     if (unit.assignedBuildingId) {
+      const building = this.buildings.get(unit.assignedBuildingId);
+      if (building) building.hasWorker = false;
       this.workerByBuilding.delete(unit.assignedBuildingId);
     }
     unit.assignedBuildingId = null;
@@ -283,6 +295,8 @@ export class GameState {
     const unit = this.units.get(id);
     if (!unit) return false;
     if (unit.assignedBuildingId) {
+      const building = this.buildings.get(unit.assignedBuildingId);
+      if (building) building.hasWorker = false;
       this.workerByBuilding.delete(unit.assignedBuildingId);
     }
     return this.units.delete(id);
@@ -364,5 +378,10 @@ export class GameState {
       this.units.set(unit.id, unit);
     }
     this.workerByBuilding = new Map(state.workerByBuilding);
+
+    // Reconcile building.hasWorker based on workerByBuilding map
+    for (const building of this.buildings.values()) {
+      building.hasWorker = this.workerByBuilding.has(building.id);
+    }
   }
 }

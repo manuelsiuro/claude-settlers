@@ -21,11 +21,14 @@ import type { GeologistManager, GeologistPhase } from './GeologistManager';
 import type { TreeManager, TreeEntity } from './TreeManager';
 import type { WoodcutterManager, WoodcutterPhase } from './WoodcutterManager';
 import type { ForesterManager, ForesterPhase } from './ForesterManager';
+import type { UpgradeManager } from './UpgradeManager';
 import type { AIPlayer } from './AIPlayer';
 import { TerrainType } from './TerrainType';
+import type { GoodsDistributionSettings } from './GoodsDistribution';
+import { serializeDistribution, deserializeDistribution } from './GoodsDistribution';
 
 /** Current save format version */
-const SAVE_VERSION = 3;
+const SAVE_VERSION = 4;
 
 /** localStorage key for auto-save */
 const STORAGE_KEY = 'feudal_realm_save';
@@ -112,6 +115,10 @@ export interface SaveData {
       plantedTiles: string[];
     }][];
   };
+  upgradeManager?: {
+    builderAssignments: [string, string][];
+    deliveryCooldown: number;
+  };
   /** Terrain overrides from original map generation (e.g., Forest↔Grassland from forestry) */
   terrainOverrides: { q: number; r: number; terrain: string }[];
   /** Revealed/claimed deposit coordinates for persistence across map regeneration */
@@ -125,6 +132,9 @@ export interface SaveData {
     result: VictoryResult | null;
     checkCooldown: number;
   };
+
+  // Economy settings
+  goodsDistribution?: ReturnType<typeof serializeDistribution>;
 
   // AI state
   aiPlayers: {
@@ -162,9 +172,11 @@ export function serializeGame(
     treeManager: TreeManager;
     woodcutterManager: WoodcutterManager;
     foresterManager: ForesterManager;
+    upgradeManager: UpgradeManager;
   },
   aiPlayers: AIPlayer[],
   camera: { frustum: number; position: { x: number; y: number; z: number }; target: { x: number; y: number; z: number } },
+  distributionSettings?: GoodsDistributionSettings,
 ): SaveData {
   const gsState = gameState._getState();
   const rnState = roadNetwork._getState();
@@ -222,9 +234,12 @@ export function serializeGame(
     treeManager: managers.treeManager._getState(),
     woodcutterManager: managers.woodcutterManager._getState(),
     foresterManager: managers.foresterManager._getState(),
+    upgradeManager: managers.upgradeManager._getState(),
     terrainOverrides,
     deposits: { revealed, claimed },
     victoryManager: managers.victoryManager._getState(),
+
+    goodsDistribution: distributionSettings ? serializeDistribution(distributionSettings) : undefined,
 
     aiPlayers: aiPlayers.map((ai) => ai._getState()),
 
@@ -257,9 +272,10 @@ export function deserializeGame(
     treeManager: TreeManager;
     woodcutterManager: WoodcutterManager;
     foresterManager: ForesterManager;
+    upgradeManager: UpgradeManager;
   },
   aiPlayers: AIPlayer[],
-): void {
+): GoodsDistributionSettings | null {
   // Restore ID counters first (so any subsequent creates don't collide)
   setBuildingIdCounter(data.nextBuildingId);
   setUnitIdCounter(data.nextUnitId);
@@ -302,6 +318,16 @@ export function deserializeGame(
   if (data.foresterManager) {
     managers.foresterManager._loadState(data.foresterManager);
   }
+  if (data.upgradeManager) {
+    managers.upgradeManager._loadState(data.upgradeManager);
+  }
+
+  // Backward compat: patch buildings missing upgrade fields (v3 → v4)
+  for (const b of data.buildings) {
+    if (!b.upgradeLevels) b.upgradeLevels = {};
+    if (b.activeUpgrade === undefined) b.activeUpgrade = null;
+    if (!b.extraWorkerIds) b.extraWorkerIds = [];
+  }
 
   // Restore terrain overrides (from forestry: Forest↔Grassland changes)
   if (data.terrainOverrides) {
@@ -339,6 +365,12 @@ export function deserializeGame(
       ai._loadState(aiState);
     }
   }
+
+  // Restore goods distribution settings (if present)
+  if (data.goodsDistribution) {
+    return deserializeDistribution(data.goodsDistribution);
+  }
+  return null;
 }
 
 /**
@@ -362,7 +394,7 @@ export function loadFromLocalStorage(): SaveData | null {
     const json = localStorage.getItem(STORAGE_KEY);
     if (!json) return null;
     const data = JSON.parse(json) as SaveData;
-    if (data.version !== SAVE_VERSION) {
+    if (data.version !== SAVE_VERSION && data.version !== 3) {
       console.warn(`Save version mismatch: expected ${SAVE_VERSION}, got ${data.version}`);
       return null;
     }
@@ -419,7 +451,7 @@ export function loadFromFile(): Promise<SaveData | null> {
       try {
         const text = await file.text();
         const data = JSON.parse(text) as SaveData;
-        if (data.version !== SAVE_VERSION) {
+        if (data.version !== SAVE_VERSION && data.version !== 3) {
           console.warn(`Save version mismatch: expected ${SAVE_VERSION}, got ${data.version}`);
           resolve(null);
           return;

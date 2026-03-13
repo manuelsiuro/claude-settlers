@@ -36,6 +36,36 @@ All design specs live in `docs/`:
 - **Indirect unit control**: players don't command individual serfs — they create jobs via buildings. Serfs auto-assign. Knights are the exception (directable for attacks).
 - **Territory system**: military buildings (Guard Hut, Watchtower, Barracks) project areas of influence that define borders.
 - **Knight recruitment**: a serf delivering a Sword+Shield set to a military building with an empty slot becomes a Knight. Knights gain ranks (1-5) through combat; Gold Bars provide a global combat bonus.
+- **Goods distribution**: per-resource priority (1-5) and per-building importance (1-5) control routing scores. `LogisticsManager` uses composite `importance × priority / distance` when deciding where to send output goods.
+- **Economy tracking**: `EconomyTracker` maintains a rolling 5-minute window of production/consumption events, providing per-resource rates, net balance, and bottleneck detection.
+
+### Visual & Animation Systems (Polish Phase)
+
+These systems were added post-Phase 8 to bring the game closer to The Settlers' visual richness:
+
+- **Particle System** (`src/engine/ParticleSystem.ts`): Pool-based `THREE.Points` renderer (single draw call per effect type, 800 particle budget). 6 effect types: chimney smoke, forge sparks, sawmill wood chips, construction dust, tree debris, completion flash. Emitters auto-bind to buildings based on state. Custom GLSL vertex/fragment shaders with soft circle falloff and additive blending.
+- **Building Animator** (`src/engine/BuildingAnimator.ts`): Per-frame sub-mesh animation. Windmill sails rotate at 2.0 rad/s when producing. Furnace emissive glow pulses on Smelter/Blacksmith/Bakery/Goldsmith. Sawmill blade oscillates. Construction opacity ramps 30%→100%. Planned buildings render at 20% opacity. Completion glow (2s green emissive). Destruction animation (scale collapse + tilt + fade over 1s).
+- **Tree Sway Shader** (`src/engine/TreeSwayShader.ts`): GPU-driven wind animation via custom `ShaderMaterial`. Per-instance phase offset from world position. Vertex displacement above Y=0.2 threshold. Zero CPU cost. Follows `WaterShader.ts` pattern.
+- **Combat Renderer** (`src/engine/CombatRenderer.ts`): Visual effects during duels — approach interpolation, clash swing rotation, recoil bounce, winner scale pulse, loser fall+fade. Attack warning rings (pulsing red, 5Hz). Capture banner animation.
+- **Building Status Overlay** (`src/engine/BuildingStatusOverlay.ts`): `THREE.Sprite` with cached `CanvasTexture` (5 status types). Priority: no-worker (red X) > missing-inputs (amber hourglass) > storage-full (orange warning) > producing (green check) > construction (blue hammer). Updates every 500ms.
+- **Production Chain Overlay** (`src/engine/ProductionChainOverlay.ts`): On building selection, draws dashed lines to upstream (blue) and downstream (orange) buildings. `LineDashedMaterial` with cone arrows. Max 10 connections.
+- **Tooltip Controller** (`src/engine/TooltipController.ts`): Mousemove → hex raycast → building lookup → tooltip popup. Shows name, status, worker, production %, inventory. Mobile: 500ms long-press. Throttled to 100ms.
+- **Player Colors** (`src/engine/PlayerColors.ts`): Shared `PLAYER_COLORS` (blue/red/green/yellow) used by TerritoryRenderer, Minimap, UnitRenderer, CombatRenderer.
+- **Knight Visuals** (in `src/engine/UnitRenderer.ts`): Faction color tinting (40% lerp toward player color). Gold `ConeGeometry` rank chevrons on shoulder (1-5). `Fighting` unit state with aggressive animation.
+- **Combat Animation State** (`src/game/CombatAnimationState.ts`): `ActiveDuel` interface with 5 phases: Approach (0.5s) → Clash × N (0.3s each) → Recoil (0.2s) → Result (0.8s) → Done.
+- **Economy Tracker** (`src/game/EconomyTracker.ts`): Rolling 300s window. `getProductionRate()`, `getConsumptionRate()`, `getNetBalance()`, `getBottlenecks()`. History snapshots for sparklines.
+- **Goods Distribution** (`src/game/GoodsDistribution.ts`): `GoodsDistributionSettings` with `resourcePriority` and `buildingImportance`. `getRoutingScore()` for composite routing. Serializable for save/load.
+
+**Integration pattern**: All visual systems are instantiated in `Game` constructor, added to scene in `start()`, updated in the animate loop (after manager updates, before render), and disposed in `dispose()`.
+
+### Distance-Based Production
+
+Gathering buildings (Woodcutter, Quarry, Fisherman, Farm, mines) scale production time by distance to their harvest terrain:
+- `harvestTerrain` field on `BuildingDefinition`
+- Distance computed via BFS at placement time (with world wrapping)
+- Multiplier: `min(3.0, 1.0 + max(0, dist-1) * 0.25)`
+- Placement preview: ghost mesh colored green/orange/red by distance rating
+- Processing/military/logistics buildings are unaffected
 
 ### Blender MCP Integration — Primary 3D Asset Pipeline
 
@@ -149,6 +179,20 @@ Each phase must be fully working and tested before moving to the next. Within ea
 - Sound effects and music
 - Save/load system
 - Win/defeat conditions
+
+#### Phase 9: Visual Richness & Strategic UX (Polish Phase)
+- Particle system (smoke, sparks, dust, debris, completion flash)
+- Building animations (windmill sails, furnace glow, sawmill blade, construction opacity, destruction)
+- Tree wind sway shader (GPU-driven)
+- Player colors (shared module), knight faction coloring + rank chevrons
+- Combat animation system (5-phase duels, attack warnings, capture banners)
+- Goods distribution priority routing
+- Building hover tooltips (desktop + mobile long-press)
+- Building status icon overlay (5 status types)
+- Economy tracker (production/consumption rates, bottleneck detection)
+- Production chain visualization (upstream/downstream dashed lines)
+- Minimap enhancements (unit dots, construction indicators)
+- Pathfinding binary heap optimization
 
 ### Verification & Testing Strategy
 

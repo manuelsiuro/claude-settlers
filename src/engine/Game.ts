@@ -36,9 +36,19 @@ import { RoadPlacementController } from './RoadPlacementController';
 import { CameraController } from './CameraController';
 import { assetLoader } from './AssetLoader';
 import { updateWaterTime } from './WaterShader';
+import { updateTreeSwayTime } from './TreeSwayShader';
 import { BUILDING_DEFINITIONS } from '../game/BuildingType';
 import type { SaveData } from '../game/SaveLoad';
 import { serializeGame, deserializeGame } from '../game/SaveLoad';
+import { ParticleSystem, ParticleEffect } from './ParticleSystem';
+import { BuildingAnimator } from './BuildingAnimator';
+import { BuildingStatusOverlay } from './BuildingStatusOverlay';
+import { CombatRenderer } from './CombatRenderer';
+import { ProductionChainOverlay } from './ProductionChainOverlay';
+import { EconomyTracker } from '../game/EconomyTracker';
+import { UpgradeManager } from '../game/UpgradeManager';
+import { createDefaultDistribution } from '../game/GoodsDistribution';
+import type { GoodsDistributionSettings } from '../game/GoodsDistribution';
 
 export type GameNotificationType =
   | 'building_complete'
@@ -81,6 +91,14 @@ export class Game {
   private woodcutterManager: WoodcutterManager;
   private foresterManager: ForesterManager;
   private depositRenderer: DepositRenderer;
+  private particleSystem: ParticleSystem;
+  private buildingAnimator: BuildingAnimator;
+  private buildingStatusOverlay: BuildingStatusOverlay;
+  private combatRenderer: CombatRenderer;
+  private productionChainOverlay: ProductionChainOverlay;
+  private economyTracker: EconomyTracker;
+  private upgradeManager: UpgradeManager;
+  private distributionSettings: GoodsDistributionSettings;
   private aiPlayers: AIPlayer[] = [];
   private roadRenderer: RoadRenderer;
   private territoryRenderer: TerritoryRenderer;
@@ -177,6 +195,24 @@ export class Game {
     this.woodcutterManager = new WoodcutterManager(this.gameState, this.treeManager);
     this.foresterManager = new ForesterManager(this.gameState, this.treeManager);
     this.depositRenderer = new DepositRenderer();
+    this.particleSystem = new ParticleSystem();
+    this.buildingAnimator = new BuildingAnimator();
+    this.buildingStatusOverlay = new BuildingStatusOverlay();
+    this.combatRenderer = new CombatRenderer();
+    this.productionChainOverlay = new ProductionChainOverlay();
+    this.economyTracker = new EconomyTracker();
+    this.upgradeManager = new UpgradeManager(this.gameState);
+    this.distributionSettings = createDefaultDistribution();
+    this.logisticsManager.setDistributionSettings(this.distributionSettings);
+    // Wire production events to economy tracker
+    this.productionManager.onProductionComplete = (inputs, outputs) => {
+      for (const input of inputs) {
+        this.economyTracker.recordConsumption(input.resource, input.amount);
+      }
+      for (const output of outputs) {
+        this.economyTracker.recordProduction(output.resource, output.amount);
+      }
+    };
     this.victoryManager.onVictory = (result) => {
       const conditionLabels = {
         elimination: 'All enemies defeated',
@@ -197,6 +233,12 @@ export class Game {
     };
     this.constructionManager.onBuildingActivated = (building) => {
       this.territoryManager.markDirty();
+      this.buildingAnimator.onBuildingActivated(building.id);
+      // Completion particle burst
+      const { x, z } = HexGrid.hexToWorld(building.coord.q, building.coord.r);
+      const tile = this.grid.getTile(building.coord.q, building.coord.r);
+      const y = tile ? MapRenderer.getTileY(tile) : 0;
+      this.particleSystem.emitBurst(x, y + 0.3, z, ParticleEffect.CompletionFlash, 20);
       if (building.playerId === this.humanPlayerId) {
         const def = BUILDING_DEFINITIONS[building.type];
         this.onNotification?.({ type: 'building_complete', message: `${def.label} construction complete` });
@@ -230,12 +272,14 @@ export class Game {
       // NPC-vs-NPC duels: no notification for human player
     };
     this.attackManager.onBuildingUnderAttack = (building) => {
+      this.combatRenderer.showAttackWarning(building);
       if (building.playerId === this.humanPlayerId) {
         const def = BUILDING_DEFINITIONS[building.type];
         this.onNotification?.({ type: 'under_attack', message: `${def.label} is under attack!` });
       }
     };
     this.attackManager.onBuildingCaptured = (building, byPlayerId, oldPlayerId) => {
+      this.combatRenderer.showCaptureBanner(building, byPlayerId);
       const def = BUILDING_DEFINITIONS[building.type];
       if (byPlayerId === this.humanPlayerId) {
         this.onNotification?.({ type: 'building_captured', message: `${def.label} captured!` });
@@ -320,10 +364,19 @@ export class Game {
     // Set up tree renderer
     this.treeRenderer.addToScene(this.scene);
 
+    // Set up particle system
+    this.particleSystem.addToScene(this.scene);
+
+    // Set up combat renderer
+    this.combatRenderer.addToScene(this.scene, this.grid);
+
+    // Set up production chain overlay
+    this.productionChainOverlay.addToScene(this.scene, this.grid);
+
     if (savedData) {
       // Restore saved state
       this.initAIPlayers();
-      deserializeGame(
+      const restoredDistribution = deserializeGame(
         savedData,
         this.gameState,
         this.roadNetwork,
@@ -341,9 +394,16 @@ export class Game {
           treeManager: this.treeManager,
           woodcutterManager: this.woodcutterManager,
           foresterManager: this.foresterManager,
+          upgradeManager: this.upgradeManager,
         },
         this.aiPlayers,
       );
+
+      // Restore goods distribution settings if present
+      if (restoredDistribution) {
+        this.distributionSettings = restoredDistribution;
+        this.logisticsManager.setDistributionSettings(restoredDistribution);
+      }
 
       // Rebuild renderers from restored state
       for (const building of this.gameState.getAllBuildings()) {
@@ -421,9 +481,11 @@ export class Game {
       this.animationId = requestAnimationFrame(animate);
       const rawDelta = Math.min(clock.getDelta(), 0.1); // Cap at 100ms to prevent teleporting
 
-      // Camera and water always update (even when paused)
+      // Camera, water, and tree sway always update (even when paused)
       this.cameraController?.update();
-      updateWaterTime(clock.getElapsedTime());
+      const elapsed = clock.getElapsedTime();
+      updateWaterTime(elapsed);
+      updateTreeSwayTime(elapsed);
 
       // Scale delta by game speed; zero when paused
       const deltaTime = this._paused ? 0 : rawDelta * this._gameSpeed;
@@ -439,6 +501,7 @@ export class Game {
       this.territoryManager.update();
       this.unitManager.update(deltaTime);
       this.constructionManager.update(deltaTime);
+      this.upgradeManager.update(deltaTime);
       this.productionManager.update(deltaTime);
       this.geologistManager.update(deltaTime);
       this.treeManager.update(deltaTime);
@@ -454,11 +517,33 @@ export class Game {
       for (const ai of this.aiPlayers) {
         ai.update(deltaTime);
       }
+      this.economyTracker.update(deltaTime);
       this.roadRenderer.sync(this.roadNetwork);
       this.territoryRenderer.sync(this.territoryManager);
       const allUnits = this.gameState.getAllUnits();
       this.unitRenderer.syncUnits(allUnits);
       this.unitRenderer.updatePositions(allUnits, deltaTime);
+
+      // Visual systems (particles, animations, overlays)
+      this.particleSystem.update(deltaTime, allBuildings, this.grid);
+      this.buildingAnimator.update(
+        deltaTime,
+        allBuildings,
+        (id) => this.buildingRenderer.getMesh(id),
+      );
+      this.buildingStatusOverlay.update(
+        deltaTime,
+        allBuildings,
+        this.gameState,
+        (id) => this.buildingRenderer.getMesh(id),
+      );
+      this.combatRenderer.update(
+        deltaTime,
+        [],
+        (id) => this.unitRenderer.getMesh(id),
+      );
+      this.productionChainOverlay.update(deltaTime);
+
       this.renderer.render(this.scene, this.camera);
     };
     animate();
@@ -474,6 +559,7 @@ export class Game {
         this.territoryManager,
         this.attackManager,
         this.knightManager,
+        this.upgradeManager,
         (building, grid) => {
           this.buildingRenderer.addBuilding(building, grid);
         },
@@ -606,6 +692,11 @@ export class Game {
     this.selectionController?.dispose();
     this.placementController?.dispose();
     this.cameraController?.dispose();
+    this.productionChainOverlay.dispose();
+    this.combatRenderer.dispose();
+    this.buildingStatusOverlay.dispose();
+    this.buildingAnimator.dispose();
+    this.particleSystem.dispose();
     this.treeRenderer.dispose();
     this.depositRenderer.dispose();
     this.territoryRenderer.dispose();
@@ -740,6 +831,43 @@ export class Game {
     return this.depositRenderer;
   }
 
+  getParticleSystem(): ParticleSystem {
+    return this.particleSystem;
+  }
+
+  getBuildingAnimator(): BuildingAnimator {
+    return this.buildingAnimator;
+  }
+
+  getBuildingStatusOverlay(): BuildingStatusOverlay {
+    return this.buildingStatusOverlay;
+  }
+
+  getCombatRenderer(): CombatRenderer {
+    return this.combatRenderer;
+  }
+
+  getProductionChainOverlay(): ProductionChainOverlay {
+    return this.productionChainOverlay;
+  }
+
+  getUpgradeManager(): UpgradeManager {
+    return this.upgradeManager;
+  }
+
+  getEconomyTracker(): EconomyTracker {
+    return this.economyTracker;
+  }
+
+  getDistributionSettings(): GoodsDistributionSettings {
+    return this.distributionSettings;
+  }
+
+  setDistributionSettings(settings: GoodsDistributionSettings): void {
+    this.distributionSettings = settings;
+    this.logisticsManager.setDistributionSettings(settings);
+  }
+
   /** Serialize the full game state for save/load */
   serialize(): SaveData {
     // Compute camera target (point the camera is looking at)
@@ -765,6 +893,7 @@ export class Game {
         treeManager: this.treeManager,
         woodcutterManager: this.woodcutterManager,
         foresterManager: this.foresterManager,
+        upgradeManager: this.upgradeManager,
       },
       this.aiPlayers,
       {
@@ -780,6 +909,7 @@ export class Game {
           z: target.z,
         },
       },
+      this.distributionSettings,
     );
   }
 

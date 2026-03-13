@@ -17,6 +17,8 @@ export const UnitState = {
   Working: 'working',
   /** Walking back to Castle (e.g., building destroyed, reassignment) */
   WalkingHome: 'walking_home',
+  /** Engaged in combat (knight-only) */
+  Fighting: 'fighting',
 } as const;
 
 export type UnitState = (typeof UnitState)[keyof typeof UnitState];

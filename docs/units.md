@@ -196,7 +196,18 @@ Each profession will be identified by the base serf model holding or wearing a d
 - **Equipment:**
     - **Sword:** Held in one "hand" area (long, thin, flat grey cuboid blade, with faction-colored or brown hilt).
     - **Shield:** Held in the other "hand" area or on the "arm" (flat square or circular thin cuboid, colored with player faction color, or wooden brown with player faction emblem – a simple colored shape like a circle or square).
-- **Rank Indication (Optional):**
-    - Small chevrons (tiny pyramids or flat triangles) of a contrasting color (e.g., gold or white) on the shoulder or chest. Number of chevrons indicates rank (1-5).
-    - Alternatively, the helmet design could change slightly with rank (e.g., a small plume – a tiny colored cone – for higher ranks).
-- **Key Colors:** Player Faction Color, Grey (weapons), Brown (weapon hilts).
+- **Faction Color Tinting (Implemented):**
+    - On spawn, the knight mesh materials are tinted 40% toward the player's faction color via `color.lerp()`. This gives each player's knights a distinct look while preserving model detail.
+    - Player colors: Player 1 = Blue (0x4488ff), Player 2 = Red (0xff4444), Player 3 = Green (0x44cc44), Player 4 = Yellow (0xffcc00). Defined in `PlayerColors.ts`.
+- **Rank Chevrons (Implemented):**
+    - Gold `ConeGeometry(0.02, 0.04, 4)` pyramids positioned on the knight's shoulder.
+    - Number of chevrons = knight rank (1-5). Updated per frame as rank changes.
+    - Chevrons are children of a group attached to the knight mesh.
+- **Unit States:**
+    - Standard states: idle, walking_to_work, working, walking_home.
+    - **Fighting** state: Added for combat animation. Knights in `Fighting` state have aggressive bob animation (2× speed) and wider rotation amplitude (1.5×).
+- **Combat Animation:**
+    - During duels, knights progress through 5 visual phases: Approach → Clash × N → Recoil → Result → Done.
+    - Clash phase: ±0.5 rad swing rotation. Result phase: winner scale pulse, loser fall + fade.
+    - See `CombatAnimationState.ts` and `CombatRenderer.ts`.
+- **Key Colors:** Player Faction Color, Grey (weapons), Brown (weapon hilts), Gold (rank chevrons).

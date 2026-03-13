@@ -1,5 +1,6 @@
 import { icon, resourceIcon } from './ui/icons';
 import { Game } from './engine/Game';
+import { TooltipController } from './engine/TooltipController';
 import { audioManager } from './engine/AudioManager';
 import type { GameNotification } from './engine/Game';
 import { Minimap } from './engine/Minimap';
@@ -8,11 +9,20 @@ import { VictoryCondition } from './game/VictoryManager';
 import type { GameConfig } from './game/GameConfig';
 import { BuildingType, BUILDING_DEFINITIONS, getBuildingsByTier } from './game/BuildingType';
 import type { BuildingDefinition } from './game/BuildingType';
-import { BuildingState } from './game/Building';
+import { BuildingState, getInventoryAmount } from './game/Building';
 import type { Building, ResourceInventory } from './game/Building';
 import { RESOURCE_PROPERTIES, ResourceType } from './game/ResourceType';
 import { getDistanceMultiplier, getDistanceRating } from './game/ProductionManager';
 import { UNIT_DEFINITIONS, UnitType } from './game/UnitType';
+import {
+  BUILDING_UPGRADES,
+  UpgradeAxis,
+  getUpgradeCost,
+  getEffectiveStorageCapacity,
+  getProductionSpeedMultiplier,
+  getMaxWorkers,
+  canUpgrade,
+} from './game/BuildingUpgrade';
 import {
   type SaveData,
   saveToLocalStorage,
@@ -145,6 +155,9 @@ app.innerHTML = `
     <span id="placement-distance" class="placement-distance" style="display:none"></span>
     <button id="placement-cancel-btn" class="btn-text">Cancel (Esc)</button>
   </div>
+
+  <!-- Tooltip -->
+  <div id="tooltip" class="game-tooltip" style="display:none"></div>
 
   <!-- Snackbar -->
   <div id="snackbar" class="snackbar"></div>
@@ -396,6 +409,7 @@ window.addEventListener('keydown', (e) => {
 // Game init — deferred until setup screen is submitted
 const container = document.getElementById('game-container')!;
 let game: Game | undefined;
+let currentTooltip: TooltipController | undefined;
 
 /** Get the active Game instance (only call from UI handlers after game starts) */
 function getGame(): Game {
@@ -936,12 +950,15 @@ function renderInfoPanel(building: Building): void {
   // Worker info
   if (def.worker) {
     const gameState = getGame().getGameState();
-    const worker = gameState.getWorkerForBuilding(building.id);
+    const primaryWorker = gameState.getWorkerForBuilding(building.id);
+    const maxW = getMaxWorkers(building);
+    const assignedCount = (primaryWorker ? 1 : 0) + (building.extraWorkerIds ?? []).filter((id) => gameState.getUnit(id)).length;
+    const sectionLabel = maxW > 1 ? 'Workers' : 'Worker';
     html += `<div class="info-section">
-      <div class="info-section-label">${icon('people')} Worker</div>
+      <div class="info-section-label">${icon('people')} ${sectionLabel}</div>
       <div class="info-row">
         <span class="info-label">${def.worker}</span>
-        <span class="info-value ${worker ? 'state-active' : 'state-planned'}">${worker ? 'Assigned' : 'Needed'}</span>
+        <span class="info-value ${assignedCount >= maxW ? 'state-active' : 'state-planned'}">${assignedCount}/${maxW}</span>
       </div>`;
     if (def.workerTool) {
       const toolProps = RESOURCE_PROPERTIES[def.workerTool];
@@ -982,7 +999,8 @@ function renderInfoPanel(building: Building): void {
 
     // Distance and efficiency info for gathering buildings
     const multiplier = def.harvestTerrain ? getDistanceMultiplier(building.resourceDistance) : 1;
-    const effectiveTime = def.production.productionTime * multiplier;
+    const speedMult = getProductionSpeedMultiplier(building);
+    const effectiveTime = def.production.productionTime * multiplier * speedMult;
     const rating = def.harvestTerrain ? getDistanceRating(multiplier) : null;
     const progressColor = rating
       ? (multiplier <= 1.5 ? 'info-progress-perfect' : multiplier <= 2.0 ? 'info-progress-medium' : 'info-progress-poor')
@@ -1102,10 +1120,81 @@ function renderInfoPanel(building: Building): void {
       html += '<div class="info-subsection-label">Output</div>';
       html += formatInventory(building.outputInventory);
     }
+    const effectiveCap = getEffectiveStorageCapacity(building);
     html += `<div class="info-row">
       <span class="info-label">Capacity</span>
-      <span class="info-value">${def.storageCapacity}</span>
+      <span class="info-value">${effectiveCap}</span>
     </div>`;
+    html += '</div>';
+  }
+
+  // Upgrades section (only for active buildings owned by human player)
+  const upgradeSpec = BUILDING_UPGRADES[building.type];
+  if (upgradeSpec && building.state === BuildingState.Active && building.playerId === getGame().getHumanPlayerId()) {
+    html += '<div class="info-section">';
+    html += `<div class="info-section-label">${icon('hammer')} Upgrades</div>`;
+
+    const axes: { axis: UpgradeAxis; label: string }[] = [
+      { axis: UpgradeAxis.Storage, label: 'Storage' },
+      { axis: UpgradeAxis.Production, label: 'Speed' },
+      { axis: UpgradeAxis.Workers, label: 'Workers' },
+    ];
+
+    for (const { axis, label } of axes) {
+      const config = upgradeSpec[axis];
+      if (!config) continue;
+
+      const currentLevel = building.upgradeLevels?.[axis] ?? 0;
+
+      // Show current effect
+      let effectText = '';
+      if (axis === UpgradeAxis.Storage) {
+        effectText = `${getEffectiveStorageCapacity(building)} cap`;
+      } else if (axis === UpgradeAxis.Production) {
+        const mult = getProductionSpeedMultiplier(building);
+        effectText = mult < 1 ? `${Math.round((1 / mult - 1) * 100)}% faster` : 'Normal';
+      } else if (axis === UpgradeAxis.Workers) {
+        effectText = `${getMaxWorkers(building)} worker${getMaxWorkers(building) > 1 ? 's' : ''}`;
+      }
+
+      html += `<div class="info-row">
+        <span class="info-label">${label} Lv.${currentLevel}</span>
+        <span class="info-value">${effectText}</span>
+      </div>`;
+
+      if (building.activeUpgrade?.axis === axis) {
+        const cost = getUpgradeCost(building.type, axis, currentLevel);
+        const allDelivered = cost ? cost.every((c) => {
+          const delivered = getInventoryAmount(building.activeUpgrade!.resourcesDelivered, c.resource);
+          return delivered >= c.amount;
+        }) : true;
+
+        if (!allDelivered && cost) {
+          // Show resource gathering progress
+          const gatherParts = cost.map((c) => {
+            const delivered = getInventoryAmount(building.activeUpgrade!.resourcesDelivered, c.resource);
+            return `${delivered}/${c.amount} ${RESOURCE_PROPERTIES[c.resource].label}`;
+          });
+          html += `<div class="info-row"><span class="info-label">Gathering</span><span class="info-value">${gatherParts.join(', ')}</span></div>`;
+        } else {
+          // Show construction progress bar
+          const pct = Math.round((building.activeUpgrade.constructionProgress ?? 0) * 100);
+          html += `<div class="info-progress-bar"><div class="info-progress-fill info-progress-upgrade" style="width: ${pct}%"></div></div>`;
+          html += `<div class="info-row"><span class="info-label">Building...</span><span class="info-value">${pct}%</span></div>`;
+        }
+        html += `<button class="info-upgrade-cancel-btn" data-building-id="${building.id}">Cancel Upgrade</button>`;
+      } else if (canUpgrade(building, axis)) {
+        const cost = getUpgradeCost(building.type, axis, currentLevel);
+        if (cost) {
+          const castle = getGame().getGameState().findCastle(building.playerId);
+          const canAfford = castle ? cost.every((c) => getInventoryAmount(castle.outputInventory, c.resource) >= c.amount) : false;
+          const costStr = cost.map((c) => `${c.amount} ${RESOURCE_PROPERTIES[c.resource].label}`).join(', ');
+          html += `<button class="info-upgrade-btn" data-building-id="${building.id}" data-axis="${axis}"${canAfford ? '' : ' disabled'}>Upgrade (${costStr})</button>`;
+        }
+      } else if (currentLevel >= config.maxLevel) {
+        html += `<div class="info-row"><span class="info-label"></span><span class="info-value" style="color: #4caf50;">MAX</span></div>`;
+      }
+    }
     html += '</div>';
   }
 
@@ -1350,6 +1439,27 @@ infoPanelContent.addEventListener('click', (e) => {
   if (target?.dataset.buildingId) {
     startAttackTargeting(target.dataset.buildingId);
   }
+
+  const upgradeBtn = (e.target as HTMLElement).closest('.info-upgrade-btn') as HTMLElement | null;
+  if (upgradeBtn?.dataset.buildingId && upgradeBtn?.dataset.axis) {
+    const ok = getGame().getUpgradeManager().startUpgrade(
+      upgradeBtn.dataset.buildingId,
+      upgradeBtn.dataset.axis as UpgradeAxis,
+    );
+    if (ok) {
+      const building = getGame().getGameState().getBuilding(upgradeBtn.dataset.buildingId);
+      if (building) renderInfoPanel(building);
+    }
+  }
+
+  const cancelBtn = (e.target as HTMLElement).closest('.info-upgrade-cancel-btn') as HTMLElement | null;
+  if (cancelBtn?.dataset.buildingId) {
+    const cancelled = getGame().getUpgradeManager().cancelUpgrade(cancelBtn.dataset.buildingId);
+    if (cancelled) {
+      const building = getGame().getGameState().getBuilding(cancelBtn.dataset.buildingId);
+      if (building) renderInfoPanel(building);
+    }
+  }
 });
 
 // Event delegation for build panel buttons (avoids re-attaching handlers on every populateBuildPanel)
@@ -1406,7 +1516,14 @@ async function startGame(config: Partial<GameConfig>, savedData?: SaveData): Pro
   wireNotifications(game);
   updatePauseSpeedUI(false, 1); // Reset pause/speed UI for new game
 
+  // Dispose previous tooltip controller
+  currentTooltip?.dispose();
+
   await game.start(savedData);
+
+  // Set up tooltip controller
+  const tooltipEl = document.getElementById('tooltip')!;
+  currentTooltip = new TooltipController(game, tooltipEl);
 
   const placement = game.getPlacementController();
   if (placement) {
@@ -1452,12 +1569,15 @@ async function startGame(config: Partial<GameConfig>, savedData?: SaveData): Pro
 
   const selection = game.getSelectionController();
   if (selection) {
+    const g = game; // capture non-null reference for closure
     selection.onSelectionChanged = (building) => {
       if (building) {
         showInfoPanel(building);
+        g.getProductionChainOverlay().show(building, g.getGameState());
       } else {
         infoPanel.classList.add('hidden');
         stopInfoPanelUpdates();
+        g.getProductionChainOverlay().clear();
       }
     };
   }
