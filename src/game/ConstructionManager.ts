@@ -73,11 +73,21 @@ export class ConstructionManager {
     if (this.deliveryCooldown > 0) return;
     this.deliveryCooldown = ConstructionManager.DELIVERY_INTERVAL;
 
-    const buildings = this.gameState.getAllBuildings();
+    const buildings = this.gameState.getAllBuildings()
+      .filter(b => b.state === BuildingState.Planned);
+
+    // Sort by completion % descending — finish nearly-done buildings first
+    buildings.sort((a, b) => {
+      const defA = BUILDING_DEFINITIONS[a.type];
+      const defB = BUILDING_DEFINITIONS[b.type];
+      const totalA = defA.cost.reduce((sum, c) => sum + c.amount, 0) || 1;
+      const totalB = defB.cost.reduce((sum, c) => sum + c.amount, 0) || 1;
+      const deliveredA = Object.values(a.constructionDelivered).reduce((s, v) => s + (v ?? 0), 0);
+      const deliveredB = Object.values(b.constructionDelivered).reduce((s, v) => s + (v ?? 0), 0);
+      return (deliveredB / totalB) - (deliveredA / totalA);
+    });
 
     for (const building of buildings) {
-      if (building.state !== BuildingState.Planned) continue;
-
       const remaining = getRemainingConstructionCost(building);
       if (remaining.length === 0) {
         // All resources delivered — transition to UnderConstruction

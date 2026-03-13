@@ -31,6 +31,8 @@ import {
   loadFromFile,
   hasSave,
 } from './game/SaveLoad';
+import { renderEconomySection, drawEconomySparklines } from './ui/EconomyPanel';
+import { renderPriorityPanel } from './ui/ResourcePriorityPanel';
 import './ui/styles.css';
 
 // ============================================================
@@ -63,6 +65,7 @@ app.innerHTML = `
       <div class="nav-drawer-section-label">Game</div>
       <li data-headline="Buildings">${icon('construction')} Buildings</li>
       <li data-headline="Statistics">${icon('bar_chart')} Statistics</li>
+      <li data-headline="Resource Priority">${icon('tune')} Resource Priority</li>
       <li data-headline="Minimap">${icon('map')} Minimap</li>
       <div class="nav-drawer-divider"></div>
       <div class="nav-drawer-section-label">Data</div>
@@ -147,6 +150,15 @@ app.innerHTML = `
       <button class="icon-btn" id="stats-close-btn">${icon('close')}</button>
     </div>
     <div id="stats-panel-content" class="info-panel-content"></div>
+  </div>
+
+  <!-- Resource Priority Panel -->
+  <div id="priority-panel" class="stats-panel hidden">
+    <div class="info-panel-header">
+      <span class="info-panel-title">Resource Priority</span>
+      <button class="icon-btn" id="priority-close-btn">${icon('close')}</button>
+    </div>
+    <div id="priority-panel-content" class="info-panel-content"></div>
   </div>
 
   <!-- Placement Info Bar -->
@@ -281,6 +293,8 @@ navItems.forEach((item) => {
     closeDrawer();
     if (headline === 'Statistics') {
       showStatsPanel();
+    } else if (headline === 'Resource Priority') {
+      showPriorityPanel();
     } else if (headline === 'Buildings') {
       toggleBuildPanel();
     } else if (headline === 'Save Game') {
@@ -576,6 +590,10 @@ const statsPanelContent = document.getElementById('stats-panel-content')!;
 const statsCloseBtn = document.getElementById('stats-close-btn')!;
 let statsPanelUpdateInterval: ReturnType<typeof setInterval> | null = null;
 
+const priorityPanel = document.getElementById('priority-panel')!;
+const priorityPanelContent = document.getElementById('priority-panel-content')!;
+const priorityCloseBtn = document.getElementById('priority-close-btn')!;
+
 // Build panel periodic update
 let buildPanelUpdateInterval: ReturnType<typeof setInterval> | null = null;
 
@@ -699,6 +717,7 @@ function toggleBuildPanel(): void {
     populateBuildPanel();
     closeInfoPanel();
     closeStatsPanel();
+    closePriorityPanel();
     stopBuildPanelUpdates();
     buildPanelUpdateInterval = setInterval(populateBuildPanel, 1000);
   }
@@ -777,6 +796,7 @@ function startAttackTargeting(sourceBuildingId: string): void {
   closeInfoPanel();
   closeBuildPanel();
   closeStatsPanel();
+  closePriorityPanel();
   cancelPlacement();
   cancelRoadPlacement();
   placementLabel.textContent = 'Attack — click an enemy military building (Esc to cancel)';
@@ -1219,6 +1239,7 @@ function showInfoPanel(building: Building): void {
   // Close other panels when info panel opens
   closeBuildPanel();
   closeStatsPanel();
+  closePriorityPanel();
 
   // Start live updates (every 500ms)
   stopInfoPanelUpdates();
@@ -1400,7 +1421,14 @@ function renderStatsPanel(): void {
   }
   html += '</div>';
 
+  // Economy section
+  const tracker = getGame().getEconomyTracker();
+  html += renderEconomySection(tracker);
+
   statsPanelContent.innerHTML = html;
+
+  // Draw sparkline canvases after DOM update
+  drawEconomySparklines(statsPanelContent, tracker);
 }
 
 function showStatsPanel(): void {
@@ -1408,6 +1436,7 @@ function showStatsPanel(): void {
   statsPanel.classList.remove('hidden');
   closeBuildPanel();
   closeInfoPanel();
+  closePriorityPanel();
 
   // Live updates
   stopStatsPanelUpdates();
@@ -1426,11 +1455,25 @@ function stopStatsPanelUpdates(): void {
   }
 }
 
+function showPriorityPanel(): void {
+  if (!game) return;
+  priorityPanel.classList.remove('hidden');
+  closeBuildPanel();
+  closeInfoPanel();
+  closeStatsPanel();
+  renderPriorityPanel(priorityPanelContent, getGame());
+}
+
+function closePriorityPanel(): void {
+  priorityPanel.classList.add('hidden');
+}
+
 // Event listeners
 buildFab.addEventListener('click', toggleBuildPanel);
 buildCloseBtn.addEventListener('click', closeBuildPanel);
 placementCancelBtn.addEventListener('click', cancelPlacement);
 statsCloseBtn.addEventListener('click', closeStatsPanel);
+priorityCloseBtn.addEventListener('click', closePriorityPanel);
 infoCloseBtn.addEventListener('click', closeInfoPanel);
 
 // Event delegation for info panel buttons (avoids re-attaching handlers on every render)

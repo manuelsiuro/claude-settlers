@@ -119,7 +119,7 @@ describe('SaveLoad: round-trip serialization', () => {
       { frustum: 10, position: { x: 0, y: 20, z: 0 }, target: { x: 0, y: 0, z: 0 } },
     );
 
-    expect(data.version).toBe(4);
+    expect(data.version).toBe(5);
     expect(data.config).toEqual(testConfig);
     expect(data.buildings).toEqual([]);
     expect(data.units).toEqual([]);
@@ -536,7 +536,7 @@ describe('SaveLoad: round-trip serialization', () => {
     const json = JSON.stringify(data);
     const parsed = JSON.parse(json) as SaveData;
 
-    expect(parsed.version).toBe(4);
+    expect(parsed.version).toBe(5);
     expect(parsed.config.seed).toBe(42);
     expect(parsed.buildings.length).toBe(2);
     expect(parsed.units.length).toBe(1);

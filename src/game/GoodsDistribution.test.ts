@@ -6,6 +6,8 @@ import {
   getBuildingImportance,
   setBuildingImportance,
   getRoutingScore,
+  getResourceCategoryWeights,
+  setResourceCategoryWeights,
   serializeDistribution,
   deserializeDistribution,
 } from './GoodsDistribution';
@@ -66,5 +68,66 @@ describe('GoodsDistribution', () => {
     expect(getResourcePriority(restored, ResourceType.Stone)).toBe(1);
     expect(getBuildingImportance(restored, 'b1')).toBe(4);
     expect(getBuildingImportance(restored, 'other')).toBe(3); // default
+  });
+
+  describe('CategoryWeights', () => {
+    it('should return default category weights for Wood', () => {
+      const settings = createDefaultDistribution();
+      const w = getResourceCategoryWeights(settings, ResourceType.Wood);
+      expect(w.production).toBe(50);
+      expect(w.construction).toBe(40);
+      expect(w.storage).toBe(10);
+    });
+
+    it('should return fallback category weights for non-configured resources', () => {
+      const settings = createDefaultDistribution();
+      const w = getResourceCategoryWeights(settings, ResourceType.Fish);
+      expect(w.production).toBe(70);
+      expect(w.construction).toBe(20);
+      expect(w.storage).toBe(10);
+    });
+
+    it('should set and get category weights', () => {
+      const settings = createDefaultDistribution();
+      setResourceCategoryWeights(settings, ResourceType.Wood, { production: 30, construction: 60, storage: 10 });
+      const w = getResourceCategoryWeights(settings, ResourceType.Wood);
+      expect(w.production).toBe(30);
+      expect(w.construction).toBe(60);
+      expect(w.storage).toBe(10);
+    });
+
+    it('should reject weights that do not sum to 100', () => {
+      const settings = createDefaultDistribution();
+      expect(() =>
+        setResourceCategoryWeights(settings, ResourceType.Wood, { production: 50, construction: 50, storage: 50 }),
+      ).toThrow();
+    });
+
+    it('should serialize and deserialize category weights', () => {
+      const settings = createDefaultDistribution();
+      setResourceCategoryWeights(settings, ResourceType.Stone, { production: 20, construction: 70, storage: 10 });
+
+      const serialized = serializeDistribution(settings);
+      expect(serialized.resourceCategoryWeights).toBeDefined();
+
+      const restored = deserializeDistribution(serialized);
+      const w = getResourceCategoryWeights(restored, ResourceType.Stone);
+      expect(w.production).toBe(20);
+      expect(w.construction).toBe(70);
+      expect(w.storage).toBe(10);
+    });
+
+    it('should deserialize without category weights (backward compat)', () => {
+      const data = {
+        resourcePriority: {},
+        buildingImportance: [] as [string, number][],
+      };
+      const restored = deserializeDistribution(data);
+      const w = getResourceCategoryWeights(restored, ResourceType.Wood);
+      // Should use built-in defaults
+      expect(w.production).toBe(50);
+      expect(w.construction).toBe(40);
+      expect(w.storage).toBe(10);
+    });
   });
 });

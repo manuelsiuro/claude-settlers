@@ -151,5 +151,10 @@
 - [DONE] Phase F: AI upgrades — AI tries production and storage upgrades once economy is established (build order index > 8) — 2026-03-13
 - [DONE] Phase G: Polish — "Upgrading" status icon in BuildingStatusOverlay, effective capacity in storage full check, upgrade levels and progress in TooltipController — 2026-03-13
 
+### Resource Distribution Fix, Economy Dashboard & Priority Panel [COMPLETE]
+- [DONE] Part 1: Fix resource distribution — Added CategoryWeights to GoodsDistribution (production/construction/storage %), LogisticsManager reservation system with per-tick budgets, smart defaults (Wood 50/40/10, Stone 30/60/10, Planks 40/50/10), ConstructionManager sorts Planned buildings by completion %, SaveLoad v5 with backward compat — 2026-03-13
+- [DONE] Part 2: Economy Dashboard UI — EconomyPanel.ts renders production/consumption rates per resource with net balance, bottleneck alerts, sparkline canvases; Sparkline.ts canvas utility with retina support; integrated into Stats panel with live 1-second updates — 2026-03-13
+- [DONE] Part 3: Resource Priority Settings Panel — ResourcePriorityPanel.ts with per-resource sliders (production/construction/storage), proportional redistribution on change, reset to defaults; new nav drawer item with tune icon; panel wired into main.ts panel management — 2026-03-13
+
 ## Blockers
 _None._

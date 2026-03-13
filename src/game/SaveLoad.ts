@@ -28,7 +28,7 @@ import type { GoodsDistributionSettings } from './GoodsDistribution';
 import { serializeDistribution, deserializeDistribution } from './GoodsDistribution';
 
 /** Current save format version */
-const SAVE_VERSION = 4;
+const SAVE_VERSION = 5;
 
 /** localStorage key for auto-save */
 const STORAGE_KEY = 'feudal_realm_save';
@@ -394,7 +394,7 @@ export function loadFromLocalStorage(): SaveData | null {
     const json = localStorage.getItem(STORAGE_KEY);
     if (!json) return null;
     const data = JSON.parse(json) as SaveData;
-    if (data.version !== SAVE_VERSION && data.version !== 3) {
+    if (data.version !== SAVE_VERSION && data.version !== 4 && data.version !== 3) {
       console.warn(`Save version mismatch: expected ${SAVE_VERSION}, got ${data.version}`);
       return null;
     }
@@ -451,7 +451,7 @@ export function loadFromFile(): Promise<SaveData | null> {
       try {
         const text = await file.text();
         const data = JSON.parse(text) as SaveData;
-        if (data.version !== SAVE_VERSION && data.version !== 3) {
+        if (data.version !== SAVE_VERSION && data.version !== 4 && data.version !== 3) {
           console.warn(`Save version mismatch: expected ${SAVE_VERSION}, got ${data.version}`);
           resolve(null);
           return;

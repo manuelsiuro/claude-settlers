@@ -1318,6 +1318,26 @@ html[data-theme="night"] .state-destroyed {
     padding: 1px 6px;
     font-size: 0.625rem;
   }
+
+  .economy-sparkline {
+    width: 36px;
+    height: 14px;
+  }
+
+  .priority-resource-card {
+    padding: 8px 10px 10px;
+    margin-bottom: 6px;
+  }
+
+  .priority-cat-label {
+    min-width: 68px;
+    font-size: 0.625rem;
+  }
+
+  .priority-legend {
+    gap: 10px;
+    font-size: 0.625rem;
+  }
 }
 
 /* ============================================================
@@ -1460,6 +1480,227 @@ html[data-theme="night"] .state-destroyed {
    Tooltip
    ============================================================ */
 
+/* ============================================================
+   Economy Panel
+   ============================================================ */
+.economy-bottleneck-alert {
+  background: rgba(255, 152, 0, 0.12);
+  border: 1px solid rgba(255, 152, 0, 0.3);
+  border-radius: 8px;
+  padding: 6px 10px;
+  margin-bottom: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #e65100;
+}
+
+html[data-theme="night"] .economy-bottleneck-alert {
+  background: rgba(255, 152, 0, 0.15);
+  border-color: rgba(255, 152, 0, 0.25);
+  color: #FFB74D;
+}
+
+.economy-resource-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 0;
+  font-size: 0.75rem;
+}
+
+.economy-rate-positive {
+  color: #2e7d32;
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.economy-rate-negative {
+  color: #c62828;
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-theme="night"] .economy-rate-positive {
+  color: #66BB6A;
+}
+
+html[data-theme="night"] .economy-rate-negative {
+  color: #EF5350;
+}
+
+.economy-net-positive {
+  font-weight: 600;
+  color: #2e7d32;
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+  min-width: 36px;
+  text-align: right;
+}
+
+.economy-net-negative {
+  font-weight: 600;
+  color: #c62828;
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+  min-width: 36px;
+  text-align: right;
+}
+
+html[data-theme="night"] .economy-net-positive {
+  color: #66BB6A;
+}
+
+html[data-theme="night"] .economy-net-negative {
+  color: #EF5350;
+}
+
+.economy-sparkline {
+  width: 48px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   Resource Priority Panel
+   ============================================================ */
+
+/* Legend row at top */
+.priority-legend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 4px 0 10px;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--color-on-surface-variant);
+}
+
+.priority-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.priority-legend-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+.priority-dot-production { background: #2e7d32; }
+.priority-dot-construction { background: #e65100; }
+.priority-dot-storage { background: #1565c0; }
+
+html[data-theme="night"] .priority-dot-production { background: #66BB6A; }
+html[data-theme="night"] .priority-dot-construction { background: #FF9800; }
+html[data-theme="night"] .priority-dot-storage { background: #42a5f5; }
+
+/* Resource card */
+.priority-resource-card {
+  padding: 10px 14px 12px;
+  margin-bottom: 8px;
+  border-radius: 12px;
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-card-border);
+  box-shadow: var(--color-card-shadow);
+}
+
+.priority-card-header {
+  margin-bottom: 6px;
+}
+
+.priority-card-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  color: var(--color-on-surface);
+}
+
+/* Stacked bar showing current distribution at a glance */
+.priority-stacked-bar {
+  display: flex;
+  height: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 8px;
+  background: var(--color-progress-bg);
+}
+
+.priority-bar-seg {
+  height: 100%;
+  transition: width 0.15s ease;
+  min-width: 1px;
+}
+
+.priority-seg-production { background: #2e7d32; }
+.priority-seg-construction { background: #e65100; }
+.priority-seg-storage { background: #1565c0; }
+
+html[data-theme="night"] .priority-seg-production { background: #66BB6A; }
+html[data-theme="night"] .priority-seg-construction { background: #FF9800; }
+html[data-theme="night"] .priority-seg-storage { background: #42a5f5; }
+
+/* Slider rows */
+.priority-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+}
+
+.priority-cat-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  min-width: 82px;
+  flex-shrink: 0;
+}
+
+.priority-cat-production { color: #2e7d32; }
+.priority-cat-construction { color: #e65100; }
+.priority-cat-storage { color: #1565c0; }
+
+html[data-theme="night"] .priority-cat-production { color: #66BB6A; }
+html[data-theme="night"] .priority-cat-construction { color: #FF9800; }
+html[data-theme="night"] .priority-cat-storage { color: #42a5f5; }
+
+.priority-slider {
+  flex: 1;
+  height: 4px;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.priority-slider-production { accent-color: #2e7d32; }
+.priority-slider-construction { accent-color: #e65100; }
+.priority-slider-storage { accent-color: #1565c0; }
+
+html[data-theme="night"] .priority-slider-production { accent-color: #66BB6A; }
+html[data-theme="night"] .priority-slider-construction { accent-color: #FF9800; }
+html[data-theme="night"] .priority-slider-storage { accent-color: #42a5f5; }
+
+.priority-percentage {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  width: 36px;
+  flex-shrink: 0;
+  text-align: right;
+  color: var(--color-on-surface-variant);
+}
+
+.priority-reset-btn {
+  width: 100%;
+  margin-top: 4px;
+  font-size: 0.8125rem;
+}
+
+/* ============================================================
+   Tooltip
+   ============================================================ */
 .game-tooltip {
   position: fixed;
   z-index: 2200;
