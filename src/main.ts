@@ -656,8 +656,16 @@ function formatProductionSummary(def: BuildingDefinition): string {
   const outputs = def.production.outputs.map(
     (o) => `${resourceIcon(o.resource)} ${RESOURCE_PROPERTIES[o.resource].label}`,
   );
-  if (inputs.length === 0) return `<span class="production-flow">Produces ${outputs.join(' ')}</span>`;
-  return `<span class="production-flow">${inputs.join(' + ')} <span class="production-arrow">\u2192</span> ${outputs.join(' ')}</span>`;
+  // Gathering buildings (no inputs)
+  if (inputs.length === 0) {
+    return `<span class="production-flow">Produces ${outputs.join(', ')}</span>`;
+  }
+  // Complex recipes: stacked layout with inputs/arrow/outputs
+  return `<div class="production-chain">
+    <span class="production-inputs">${inputs.join('<span class="production-plus">+</span>')}</span>
+    <span class="production-arrow">\u2192</span>
+    <span class="production-outputs">${outputs.join(', ')}</span>
+  </div>`;
 }
 
 /** Build the building menu HTML organized by tier */
@@ -678,12 +686,18 @@ function populateBuildPanel(): void {
     <button class="build-item" data-action="place-flag">
       <span class="build-item-name">Place Flag</span>
       <span class="build-item-desc">Logistics node for transporters</span>
-      <span class="build-item-cost"><span class="cost-pill cost-pill-free">Free</span></span>
+      <div class="build-item-section">
+        <span class="build-item-section-label">Cost</span>
+        <div class="build-item-section-content"><span class="cost-pill cost-pill-free">Free</span></div>
+      </div>
     </button>
     <button class="build-item" data-action="build-road">
       <span class="build-item-name">Build Road</span>
       <span class="build-item-desc">Connect flags for transport routes</span>
-      <span class="build-item-cost"><span class="cost-pill cost-pill-free">Free</span></span>
+      <div class="build-item-section">
+        <span class="build-item-section-label">Cost</span>
+        <div class="build-item-section-content"><span class="cost-pill cost-pill-free">Free</span></div>
+      </div>
     </button>
   </div>`;
 
@@ -699,9 +713,18 @@ function populateBuildPanel(): void {
         <button class="build-item ${disabledClass}" data-building-type="${def.type}">
           <span class="build-item-name">${def.label}</span>
           <span class="build-item-desc">${def.description}</span>
-          <span class="build-item-cost">${formatCostWithAvailability(def, available)}</span>
-          ${prodSummary ? `<span class="build-item-production">${prodSummary}</span>` : ''}
-          ${milInfo}
+          <div class="build-item-section">
+            <span class="build-item-section-label">Cost</span>
+            <div class="build-item-section-content">${formatCostWithAvailability(def, available)}</div>
+          </div>
+          ${prodSummary ? `<div class="build-item-section">
+            <span class="build-item-section-label">Production</span>
+            <div class="build-item-section-content">${prodSummary}</div>
+          </div>` : ''}
+          ${milInfo ? `<div class="build-item-section">
+            <span class="build-item-section-label">Military</span>
+            <div class="build-item-section-content">${milInfo}</div>
+          </div>` : ''}
         </button>
       `;
     }
