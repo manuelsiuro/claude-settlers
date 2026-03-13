@@ -677,13 +677,13 @@ function populateBuildPanel(): void {
     <div class="build-tier-label"><span class="tier-badge tier-badge-logistics">LOG</span> Logistics</div>
     <button class="build-item" data-action="place-flag">
       <span class="build-item-name">Place Flag</span>
+      <span class="build-item-desc">Logistics node for transporters</span>
       <span class="build-item-cost"><span class="cost-pill cost-pill-free">Free</span></span>
-      <span class="build-item-production"><span class="production-flow">Logistics node for transporters</span></span>
     </button>
     <button class="build-item" data-action="build-road">
       <span class="build-item-name">Build Road</span>
+      <span class="build-item-desc">Connect flags for transport routes</span>
       <span class="build-item-cost"><span class="cost-pill cost-pill-free">Free</span></span>
-      <span class="build-item-production"><span class="production-flow">Connect flags for transport routes</span></span>
     </button>
   </div>`;
 
@@ -694,11 +694,14 @@ function populateBuildPanel(): void {
       const affordable = canAfford(def, available);
       const disabledClass = affordable ? '' : 'build-item-disabled';
       const prodSummary = formatProductionSummary(def);
+      const milInfo = def.knightSlots > 0 ? `<span class="build-item-military">${def.knightSlots} knight slots \u00b7 range ${def.influenceRadius}</span>` : '';
       html += `
         <button class="build-item ${disabledClass}" data-building-type="${def.type}">
           <span class="build-item-name">${def.label}</span>
+          <span class="build-item-desc">${def.description}</span>
           <span class="build-item-cost">${formatCostWithAvailability(def, available)}</span>
           ${prodSummary ? `<span class="build-item-production">${prodSummary}</span>` : ''}
+          ${milInfo}
         </button>
       `;
     }

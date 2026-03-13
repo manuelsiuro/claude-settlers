@@ -478,10 +478,17 @@ html, body {
   color: var(--color-on-surface);
 }
 
+.build-item-desc {
+  font-size: 0.6875rem;
+  color: var(--color-on-surface-faint);
+  line-height: 1.3;
+  margin-top: 1px;
+}
+
 .build-item-cost {
   font-size: 0.75rem;
   color: var(--color-on-surface-variant);
-  margin-top: 2px;
+  margin-top: 4px;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -489,14 +496,25 @@ html, body {
 }
 
 .build-item-production {
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   color: var(--color-on-surface-faint);
-  margin-top: 1px;
+  margin-top: 3px;
   font-style: italic;
   display: flex;
   align-items: center;
   gap: 3px;
   flex-wrap: wrap;
+}
+
+.build-item-military {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: #c62828;
+  margin-top: 3px;
+}
+
+html[data-theme="night"] .build-item-military {
+  color: #EF5350;
 }
 
 .build-item-disabled {

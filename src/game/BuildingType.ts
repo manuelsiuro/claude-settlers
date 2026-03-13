@@ -60,6 +60,7 @@ export interface ProductionRecipe {
 export interface BuildingDefinition {
   type: BuildingType;
   label: string;
+  description: string;
   category: BuildingCategory;
   tier: number;
   /** Resources required for construction */
@@ -93,6 +94,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
   [BuildingType.Castle]: {
     type: BuildingType.Castle,
     label: 'Castle',
+    description: 'Your seat of power and main storage hub',
     category: 'core',
     tier: 0,
     cost: [],
@@ -114,6 +116,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
   [BuildingType.WoodcutterHut]: {
     type: BuildingType.WoodcutterHut,
     label: "Woodcutter's Hut",
+    description: 'Harvests wood from nearby forests',
     category: 'gathering',
     tier: 1,
     cost: [{ resource: ResourceType.Wood, amount: 2 }],
@@ -136,6 +139,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
   [BuildingType.ForesterHut]: {
     type: BuildingType.ForesterHut,
     label: "Forester's Hut",
+    description: 'Plants new trees to sustain wood supply',
     category: 'gathering',
     tier: 1,
     cost: [{ resource: ResourceType.Wood, amount: 2 }],
@@ -154,6 +158,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
   [BuildingType.Quarry]: {
     type: BuildingType.Quarry,
     label: 'Quarry',
+    description: 'Extracts stone from mountain terrain',
     category: 'gathering',
     tier: 1,
     cost: [{ resource: ResourceType.Wood, amount: 2 }],
@@ -176,6 +181,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
   [BuildingType.FishermanHut]: {
     type: BuildingType.FishermanHut,
     label: "Fisherman's Hut",
+    description: 'Catches fish near water to feed miners',
     category: 'gathering',
     tier: 1,
     cost: [{ resource: ResourceType.Wood, amount: 2 }],
@@ -198,6 +204,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
   [BuildingType.GuardHut]: {
     type: BuildingType.GuardHut,
     label: 'Guard Hut',
+    description: 'Small outpost that expands borders and houses knights',
     category: 'military',
     tier: 1,
     cost: [{ resource: ResourceType.Wood, amount: 3 }],
@@ -219,6 +226,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
   [BuildingType.Sawmill]: {
     type: BuildingType.Sawmill,
     label: 'Sawmill',
+    description: 'Cuts wood into planks for construction',
     category: 'processing',
     tier: 2,
     cost: [{ resource: ResourceType.Wood, amount: 3 }],
@@ -241,6 +249,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
   [BuildingType.Farm]: {
     type: BuildingType.Farm,
     label: 'Farm',
+    description: 'Grows grain on grassland for flour and pig feed',
     category: 'gathering',
     tier: 2,
     cost: [
@@ -266,6 +275,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
   [BuildingType.GeologistHut]: {
     type: BuildingType.GeologistHut,
     label: "Geologist's Hut",
+    description: 'Surveys mountains to reveal mineral deposits',
     category: 'gathering',
     tier: 2,
     cost: [
@@ -287,6 +297,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
   [BuildingType.IronMine]: {
     type: BuildingType.IronMine,
     label: 'Iron Mine',
+    description: 'Mines iron ore from mountain deposits',
     category: 'gathering',
     tier: 2,
     cost: [
@@ -312,6 +323,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
   [BuildingType.CoalMine]: {
     type: BuildingType.CoalMine,
     label: 'Coal Mine',
+    description: 'Mines coal needed for smelting and baking',
     category: 'gathering',
     tier: 2,
     cost: [
@@ -337,6 +349,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
   [BuildingType.GoldMine]: {
     type: BuildingType.GoldMine,
     label: 'Gold Mine',
+    description: 'Mines gold ore to boost knight combat strength',
     category: 'gathering',
     tier: 2,
     cost: [
@@ -362,6 +375,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
   [BuildingType.StoneMine]: {
     type: BuildingType.StoneMine,
     label: 'Stone Mine',
+    description: 'Deep-mines stone from mountain deposits',
     category: 'gathering',
     tier: 2,
     cost: [
@@ -388,6 +402,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
   [BuildingType.Watchtower]: {
     type: BuildingType.Watchtower,
     label: 'Watchtower',
+    description: 'Fortified tower with wider territory reach',
     category: 'military',
     tier: 2,
     cost: [
@@ -413,6 +428,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
   [BuildingType.Windmill]: {
     type: BuildingType.Windmill,
     label: 'Windmill',
+    description: 'Grinds grain into flour for bread',
     category: 'processing',
     tier: 3,
     cost: [
@@ -439,6 +455,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
   [BuildingType.Bakery]: {
     type: BuildingType.Bakery,
     label: 'Bakery',
+    description: 'Bakes flour and coal into bread for your people',
     category: 'processing',
     tier: 3,
     cost: [
@@ -468,6 +485,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
   [BuildingType.PigFarm]: {
     type: BuildingType.PigFarm,
     label: 'Pig Farm',
+    description: 'Raises pigs from grain for the slaughterhouse',
     category: 'processing',
     tier: 3,
     cost: [
@@ -493,6 +511,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
   [BuildingType.Slaughterhouse]: {
     type: BuildingType.Slaughterhouse,
     label: 'Slaughterhouse',
+    description: 'Produces meat from pigs to feed workers',
     category: 'processing',
     tier: 3,
     cost: [
@@ -519,6 +538,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
   [BuildingType.IronSmelter]: {
     type: BuildingType.IronSmelter,
     label: 'Iron Smelter',
+    description: 'Smelts iron ore with coal into iron bars',
     category: 'processing',
     tier: 3,
     cost: [
@@ -548,6 +568,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
   [BuildingType.ToolmakerWorkshop]: {
     type: BuildingType.ToolmakerWorkshop,
     label: "Toolmaker's Workshop",
+    description: 'Crafts tools from iron bars, essential for workers',
     category: 'processing',
     tier: 3,
     cost: [
@@ -577,6 +598,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
   [BuildingType.GoldsmithMint]: {
     type: BuildingType.GoldsmithMint,
     label: 'Goldsmith / Mint',
+    description: 'Refines gold ore into bars that boost knights',
     category: 'processing',
     tier: 3,
     cost: [
@@ -606,6 +628,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
   [BuildingType.BlacksmithArmory]: {
     type: BuildingType.BlacksmithArmory,
     label: 'Blacksmith / Armory',
+    description: 'Forges swords and shields to recruit knights',
     category: 'processing',
     tier: 3,
     cost: [
@@ -639,6 +662,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
   [BuildingType.Barracks]: {
     type: BuildingType.Barracks,
     label: 'Barracks',
+    description: 'Major fortress with large territory and knight capacity',
     category: 'military',
     tier: 3,
     cost: [
@@ -664,6 +688,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
   [BuildingType.Warehouse]: {
     type: BuildingType.Warehouse,
     label: 'Warehouse',
+    description: 'Extra storage depot for overflow goods',
     category: 'logistics',
     tier: 2,
     cost: [
