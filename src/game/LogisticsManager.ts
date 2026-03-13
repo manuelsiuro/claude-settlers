@@ -1,8 +1,8 @@
 import type { GameState } from './GameState';
 import type { RoadNetwork } from './RoadNetwork';
 import { BUILDING_DEFINITIONS, BuildingType } from './BuildingType';
-import { BuildingState, hasInputSpace, getRemainingConstructionCost } from './Building';
-import type { ResourceType } from './ResourceType';
+import { BuildingState, hasInputSpace, getRemainingConstructionCost, getInventoryAmount } from './Building';
+import { ResourceType } from './ResourceType';
 import type { GoodsDistributionSettings } from './GoodsDistribution';
 import { getRoutingScore, getResourceCategoryWeights } from './GoodsDistribution';
 
@@ -266,6 +266,44 @@ export class LogisticsManager {
     if (bestFlagId && bestIsProduction) {
       if (budgetEntry) budgetEntry.routed++;
       return bestFlagId;
+    }
+
+    // Priority 1.5: route Swords/Shields to military buildings with empty knight slots
+    if (resource === ResourceType.Swords || resource === ResourceType.Shields) {
+      bestFlagId = null;
+      bestScore = -Infinity;
+
+      for (const building of buildings) {
+        if (building.state !== BuildingState.Active) continue;
+
+        const def = BUILDING_DEFINITIONS[building.type];
+        if (def.knightSlots <= 0) continue;
+
+        // Skip if all knight slots are filled
+        if (building.knightIds.length >= def.knightSlots) continue;
+
+        // Skip if already has enough of this weapon (1 per empty slot)
+        const emptySlots = def.knightSlots - building.knightIds.length;
+        const currentAmount = getInventoryAmount(building.inputInventory, resource);
+        if (currentAmount >= emptySlots) continue;
+
+        // Skip if input inventory is full
+        if (!hasInputSpace(building)) continue;
+
+        const destFlag = this.roadNetwork.getFlagAt(building.coord.q, building.coord.r);
+        if (!destFlag || destFlag.id === sourceFlagId) continue;
+
+        const route = this.roadNetwork.findRoute(sourceFlagId, destFlag.id);
+        if (route.length === 0) continue;
+
+        const score = 1000 - route.length;
+        if (score > bestScore) {
+          bestScore = score;
+          bestFlagId = destFlag.id;
+        }
+      }
+
+      if (bestFlagId) return bestFlagId;
     }
 
     // Priority 2: Castle or Warehouse storage
