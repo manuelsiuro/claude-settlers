@@ -155,32 +155,34 @@ describe('VictoryManager', () => {
   });
 
   it('should trigger domination victory at 75%+ territory', () => {
-    // Use a 6x6 grid — small enough that a Castle (radius 8) dominates everything
-    // Player 2 gets a tiny corner with radius-4 Guard Hut equivalent
-    const smallGrid = makeGrid(6, 6);
-    const gs = new GameState(smallGrid);
+    // Use a 24x24 grid with many military buildings for player 1 to dominate
+    // maxSafeRadius = floor(24/4)-1 = 5, so Castle influence capped to 5
+    const largeGrid = makeGrid(24, 24);
+    const gs = new GameState(largeGrid);
     const tm = new TerritoryManager(gs);
     const vm = new VictoryManager(gs, tm, [1, 2]);
     const v: VictoryResult[] = [];
     vm.onVictory = (r) => v.push(r);
 
-    // Player 1 Castle at center — radius 8 covers the entire 6x6 grid
-    gs.placeBuilding(BuildingType.Castle, { q: 3, r: 3 }, 1);
-    // Player 2 Castle in corner — radius 8 also covers a lot, but player 1 is closer to more tiles
+    // Player 1 Castle at center
+    gs.placeBuilding(BuildingType.Castle, { q: 12, r: 12 }, 1);
+    // Player 2 Castle in corner — minimal territory
     gs.placeBuilding(BuildingType.Castle, { q: 0, r: 0 }, 2);
 
-    // Add Guard Huts for player 1 to guarantee >75% coverage
-    const gh1 = gs.placeBuilding(BuildingType.GuardHut, { q: 5, r: 5 }, 1);
-    if (gh1.ok) gh1.building.state = BuildingState.Active;
-    const gh2 = gs.placeBuilding(BuildingType.GuardHut, { q: 1, r: 5 }, 1);
-    if (gh2.ok) gh2.building.state = BuildingState.Active;
-    const gh3 = gs.placeBuilding(BuildingType.GuardHut, { q: 5, r: 1 }, 1);
-    if (gh3.ok) gh3.building.state = BuildingState.Active;
+    // Spread Guard Huts and Watchtowers across the map for player 1 to guarantee >75%
+    const militaryPositions = [
+      { q: 5, r: 5 }, { q: 18, r: 5 }, { q: 5, r: 18 }, { q: 18, r: 18 },
+      { q: 12, r: 5 }, { q: 12, r: 18 }, { q: 5, r: 12 }, { q: 18, r: 12 },
+    ];
+    for (const pos of militaryPositions) {
+      const result = gs.placeBuilding(BuildingType.GuardHut, pos, 1);
+      if (result.ok) result.building.state = BuildingState.Active;
+    }
 
     tm.update();
 
     const fraction = vm.getPlayerTerritoryFraction(1);
-    // With Castle at center + 3 Guard Huts, player 1 should dominate the small grid
+    // With Castle + 8 Guard Huts covering the map, player 1 should dominate
     expect(fraction).toBeGreaterThanOrEqual(VictoryManager.DOMINATION_THRESHOLD);
 
     vm.checkNow();

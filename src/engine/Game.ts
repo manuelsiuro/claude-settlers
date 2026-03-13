@@ -618,7 +618,6 @@ export class Game {
           { q: Math.floor((5 * w) / 6), r: Math.floor((5 * h) / 6) },
         ];
       case 4:
-      default:
         // 2x2 grid
         return [
           { q: qQuarter, r: rQuarter },
@@ -626,6 +625,11 @@ export class Game {
           { q: qQuarter, r: r3Quarter },
           { q: q3Quarter, r: r3Quarter },
         ];
+      default: {
+        // Clamp to valid range and recurse
+        const clamped = Math.max(1, Math.min(4, n));
+        return this.getStartingPositions(w, h, clamped);
+      }
     }
   }
 
@@ -716,6 +720,7 @@ export class Game {
     this.buildingRenderer.dispose();
     this.mapRenderer.dispose();
     this.renderer.dispose();
+    this.renderer.domElement.remove();
 
     this.aiPlayers = [];
 

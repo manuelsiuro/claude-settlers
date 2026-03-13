@@ -216,18 +216,39 @@ describe('TerritoryManager', () => {
   });
 
   it('should handle Watchtower radius 6 and Barracks radius 8', () => {
+    // Use a larger grid so the influence radius cap doesn't interfere
+    const largeGrid = makeGrid(48, 48);
+    const gs = new GameState(largeGrid);
+    const tm = new TerritoryManager(gs);
+
     // Place a Watchtower
-    const wt = gameState.placeBuilding(BuildingType.Watchtower, { q: 10, r: 10 }, 1);
+    const wt = gs.placeBuilding(BuildingType.Watchtower, { q: 24, r: 24 }, 1);
     expect(wt.ok).toBe(true);
     if (wt.ok) {
       wt.building.state = BuildingState.Active;
     }
 
-    territory.update();
+    tm.update();
 
     // 6 hexes away in q direction should be in territory
-    expect(territory.getOwner(16, 10)).toBe(1);
+    expect(tm.getOwner(30, 24)).toBe(1);
     // 7 hexes away should NOT be
-    expect(territory.getOwner(17, 10)).toBeNull();
+    expect(tm.getOwner(31, 24)).toBeNull();
+  });
+
+  it('should cap influence radius on small maps to prevent wrapping', () => {
+    // On a 24×24 map, maxSafeRadius = floor(24/4) - 1 = 5
+    const smallGrid = makeGrid(24, 24);
+    const gs = new GameState(smallGrid);
+    const tm = new TerritoryManager(gs);
+
+    // Place Castle at center — Castle has influenceRadius 8, capped to 5
+    gs.placeBuilding(BuildingType.Castle, { q: 12, r: 12 }, 1);
+    tm.update();
+
+    // 5 hexes away should be owned (within capped radius)
+    expect(tm.getOwner(17, 12)).toBe(1);
+    // 6 hexes away should NOT be owned (beyond capped radius)
+    expect(tm.getOwner(18, 12)).toBeNull();
   });
 });

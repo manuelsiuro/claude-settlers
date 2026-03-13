@@ -114,6 +114,9 @@ export class TerritoryManager {
     // Collect influence sources: { coord, playerId, radius }
     const sources: { q: number; r: number; playerId: number; radius: number }[] = [];
 
+    // Cap influence radius so territory can't wrap past 1/4 of the smallest map dimension
+    const maxSafeRadius = Math.floor(Math.min(grid.width, grid.height) / 4) - 1;
+
     for (const building of buildings) {
       if (building.state !== BuildingState.Active) continue;
       const def = BUILDING_DEFINITIONS[building.type];
@@ -122,7 +125,7 @@ export class TerritoryManager {
         q: building.coord.q,
         r: building.coord.r,
         playerId: building.playerId,
-        radius: def.influenceRadius,
+        radius: Math.min(def.influenceRadius, maxSafeRadius),
       });
     }
 
