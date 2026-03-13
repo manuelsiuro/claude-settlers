@@ -1,5 +1,5 @@
 import { BuildingType } from './BuildingType';
-import { BuildingState, addToInventory } from './Building';
+import { BuildingState, addToInventory, hasOutputSpace } from './Building';
 import type { Building } from './Building';
 import type { GameState } from './GameState';
 import type { TreeManager } from './TreeManager';
@@ -98,6 +98,12 @@ export class WoodcutterManager {
       case 'idle_at_hut': {
         ws.idleCooldown -= deltaTime;
         if (ws.idleCooldown > 0) return;
+
+        // Don't start a new cycle if output is full
+        if (!hasOutputSpace(building)) {
+          ws.idleCooldown = IDLE_COOLDOWN;
+          return;
+        }
 
         // Find nearest mature tree
         const tree = this.treeManager.findNearestMatureTree(

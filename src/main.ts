@@ -1141,7 +1141,10 @@ function renderInfoPanel(building: Building): void {
       html += formatInventory(building.outputInventory);
     }
     const effectiveCap = getEffectiveStorageCapacity(building);
-    const totalUsed = getInventoryTotal(building.inputInventory) + getInventoryTotal(building.outputInventory);
+    const isStorage = building.type === BuildingType.Castle || building.type === BuildingType.Warehouse;
+    const totalUsed = isStorage
+      ? getInventoryTotal(building.inputInventory) + getInventoryTotal(building.outputInventory)
+      : getInventoryTotal(building.outputInventory);
     const pct = effectiveCap > 0 ? Math.min(100, Math.round((totalUsed / effectiveCap) * 100)) : 0;
     const barClass = pct > 85 ? 'capacity-bar-red' : pct > 60 ? 'capacity-bar-amber' : 'capacity-bar-green';
     html += `<div class="capacity-bar-wrapper">
