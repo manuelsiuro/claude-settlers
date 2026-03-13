@@ -133,6 +133,10 @@ export function getInventoryTotal(inventory: ResourceInventory): number {
 /** Check if input inventory has room for more items */
 export function hasInputSpace(building: Building): boolean {
   const cap = getEffectiveStorageCapacity(building);
+  // Storage buildings (Castle/Warehouse) share capacity across both inventories
+  if (building.type === BuildingType.Castle || building.type === BuildingType.Warehouse) {
+    return getInventoryTotal(building.inputInventory) + getInventoryTotal(building.outputInventory) < cap;
+  }
   return getInventoryTotal(building.inputInventory) < cap;
 }
 
