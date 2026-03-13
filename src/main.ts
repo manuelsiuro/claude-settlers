@@ -9,7 +9,7 @@ import { VictoryCondition } from './game/VictoryManager';
 import type { GameConfig } from './game/GameConfig';
 import { BuildingType, BUILDING_DEFINITIONS, getBuildingsByTier } from './game/BuildingType';
 import type { BuildingDefinition } from './game/BuildingType';
-import { BuildingState, getInventoryAmount } from './game/Building';
+import { BuildingState, getInventoryAmount, getInventoryTotal } from './game/Building';
 import type { Building, ResourceInventory } from './game/Building';
 import { RESOURCE_PROPERTIES, ResourceType } from './game/ResourceType';
 import { getDistanceMultiplier, getDistanceRating } from './game/ProductionManager';
@@ -1141,9 +1141,17 @@ function renderInfoPanel(building: Building): void {
       html += formatInventory(building.outputInventory);
     }
     const effectiveCap = getEffectiveStorageCapacity(building);
-    html += `<div class="info-row">
-      <span class="info-label">Capacity</span>
-      <span class="info-value">${effectiveCap}</span>
+    const totalUsed = getInventoryTotal(building.inputInventory) + getInventoryTotal(building.outputInventory);
+    const pct = effectiveCap > 0 ? Math.min(100, Math.round((totalUsed / effectiveCap) * 100)) : 0;
+    const barClass = pct > 85 ? 'capacity-bar-red' : pct > 60 ? 'capacity-bar-amber' : 'capacity-bar-green';
+    html += `<div class="capacity-bar-wrapper">
+      <div class="capacity-bar-label">
+        <span class="info-label">Capacity</span>
+        <span class="info-value">${totalUsed} / ${effectiveCap}</span>
+      </div>
+      <div class="capacity-bar-track">
+        <div class="capacity-bar-fill ${barClass}" style="width:${pct}%"></div>
+      </div>
     </div>`;
     html += '</div>';
   }

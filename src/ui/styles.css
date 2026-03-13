@@ -1701,6 +1701,33 @@ html[data-theme="night"] .priority-slider-storage { accent-color: #42a5f5; }
 /* ============================================================
    Tooltip
    ============================================================ */
+/* Capacity progress bar */
+.capacity-bar-wrapper {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-outline-soft);
+}
+.capacity-bar-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.capacity-bar-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--color-outline-soft);
+  overflow: hidden;
+}
+.capacity-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+.capacity-bar-green { background: #4caf50; }
+.capacity-bar-amber { background: #ff9800; }
+.capacity-bar-red   { background: #f44336; }
+
 .game-tooltip {
   position: fixed;
   z-index: 2200;
