@@ -154,6 +154,7 @@ const EFFECT_CONFIGS: Record<string, EffectConfig> = {
 };
 
 const PARTICLE_VERTEX_SHADER = /* glsl */ `
+  uniform float uFrustum;
   attribute float aSize;
   attribute float aAlpha;
   attribute vec3 aColor;
@@ -163,7 +164,8 @@ const PARTICLE_VERTEX_SHADER = /* glsl */ `
     vAlpha = aAlpha;
     vColor = aColor;
     vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-    gl_PointSize = aSize * (200.0 / -mvPosition.z);
+    // Scale point size inversely with ortho frustum (zoom level)
+    gl_PointSize = aSize * (20.0 / uFrustum);
     gl_Position = projectionMatrix * mvPosition;
   }
 `;
@@ -217,6 +219,9 @@ class ParticlePool {
     this.geometry.setAttribute('aColor', new THREE.BufferAttribute(this.data.colors, 3));
 
     const material = new THREE.ShaderMaterial({
+      uniforms: {
+        uFrustum: { value: 10.0 },
+      },
       vertexShader: PARTICLE_VERTEX_SHADER,
       fragmentShader: PARTICLE_FRAGMENT_SHADER,
       transparent: true,
@@ -230,6 +235,12 @@ class ParticlePool {
 
   getObject(): THREE.Points {
     return this.points;
+  }
+
+  /** Update the frustum uniform so particle sizes scale with ortho zoom */
+  setFrustum(frustum: number): void {
+    const mat = this.points.material as THREE.ShaderMaterial;
+    mat.uniforms.uFrustum.value = frustum;
   }
 
   /** Emit a single particle at the given world position */
@@ -349,7 +360,11 @@ export class ParticleSystem {
     deltaTime: number,
     buildings: readonly Building[],
     grid: HexGrid,
+    frustum?: number,
   ): void {
+    if (frustum !== undefined) {
+      this.pool.setFrustum(frustum);
+    }
     // Emit particles for active producing buildings
     for (const building of buildings) {
       const emitters = BUILDING_EMITTERS[building.type];

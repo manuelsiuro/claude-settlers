@@ -28,11 +28,11 @@ export type BuildingUpgradeSpec = Partial<Record<UpgradeAxis, BuildingUpgradeCon
 const MAX_LEVEL = 10;
 
 /**
- * Storage capacity formula: Math.ceil(baseCapacity * (1 + 0.25 * level))
- * Lv.1: 1.25x → Lv.5: 2.25x → Lv.10: 3.5x
+ * Storage capacity formula: Math.ceil(baseCapacity * (1 + 0.4 * level))
+ * Lv.1: 1.4x → Lv.5: 3.0x → Lv.10: 5.0x
  */
 function storageValue(baseCapacity: number, level: number): number {
-  return Math.ceil(baseCapacity * (1 + 0.25 * level));
+  return Math.ceil(baseCapacity * (1 + 0.4 * level));
 }
 
 /**

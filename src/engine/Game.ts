@@ -525,7 +525,7 @@ export class Game {
       this.unitRenderer.updatePositions(allUnits, deltaTime);
 
       // Visual systems (particles, animations, overlays)
-      this.particleSystem.update(deltaTime, allBuildings, this.grid);
+      this.particleSystem.update(deltaTime, allBuildings, this.grid, this.frustum);
       this.buildingAnimator.update(
         deltaTime,
         allBuildings,

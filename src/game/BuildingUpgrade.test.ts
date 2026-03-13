@@ -119,25 +119,25 @@ describe('BuildingUpgrade', () => {
       expect(getEffectiveStorageCapacity(building)).toBe(6); // base capacity
     });
 
-    it('should return 1.25x at level 1', () => {
+    it('should return 1.4x at level 1', () => {
       const building = createBuilding(BuildingType.Sawmill, { q: 5, r: 5 }, 1);
       building.upgradeLevels[UpgradeAxis.Storage] = 1;
-      // ceil(6 * 1.25) = ceil(7.5) = 8
-      expect(getEffectiveStorageCapacity(building)).toBe(8);
+      // ceil(6 * 1.4) = ceil(8.4) = 9
+      expect(getEffectiveStorageCapacity(building)).toBe(9);
     });
 
-    it('should return 2.25x at level 5', () => {
+    it('should return 3.0x at level 5', () => {
       const building = createBuilding(BuildingType.Sawmill, { q: 5, r: 5 }, 1);
       building.upgradeLevels[UpgradeAxis.Storage] = 5;
-      // ceil(6 * 2.25) = ceil(13.5) = 14
-      expect(getEffectiveStorageCapacity(building)).toBe(14);
+      // ceil(6 * 3.0) = 18
+      expect(getEffectiveStorageCapacity(building)).toBe(18);
     });
 
-    it('should return 3.5x at level 10', () => {
+    it('should return 5.0x at level 10', () => {
       const building = createBuilding(BuildingType.Sawmill, { q: 5, r: 5 }, 1);
       building.upgradeLevels[UpgradeAxis.Storage] = 10;
-      // ceil(6 * 3.5) = 21
-      expect(getEffectiveStorageCapacity(building)).toBe(21);
+      // ceil(6 * 5.0) = 30
+      expect(getEffectiveStorageCapacity(building)).toBe(30);
     });
   });
 

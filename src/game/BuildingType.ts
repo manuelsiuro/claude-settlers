@@ -104,7 +104,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     harvestTerrain: null,
     knightSlots: 0,
     influenceRadius: 8,
-    storageCapacity: 50,
+    storageCapacity: 150,
     constructionTime: 0,
   },
 

@@ -130,8 +130,8 @@ describe('UpgradeManager', () => {
 
     expect(sawmill.building.upgradeLevels[UpgradeAxis.Storage]).toBe(1);
     expect(sawmill.building.activeUpgrade).toBeNull();
-    // New formula: ceil(6 * 1.25) = 8
-    expect(getEffectiveStorageCapacity(sawmill.building)).toBe(8);
+    // New formula: ceil(6 * 1.4) = 9
+    expect(getEffectiveStorageCapacity(sawmill.building)).toBe(9);
   });
 
   it('should cancel upgrade and refund resources', () => {
