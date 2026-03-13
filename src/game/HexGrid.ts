@@ -184,6 +184,21 @@ export class HexGrid {
   }
 
   /**
+   * Hex distance considering toroidal wrapping.
+   * Checks all 9 images of `b` (shifted by width/height) and returns the minimum.
+   */
+  static hexDistanceWrapped(a: HexCoord, b: HexCoord, width: number, height: number): number {
+    let best = Infinity;
+    for (const dq of [0, -width, width]) {
+      for (const dr of [0, -height, height]) {
+        const dist = HexGrid.hexDistance(a, { q: b.q + dq, r: b.r + dr });
+        if (dist < best) best = dist;
+      }
+    }
+    return best;
+  }
+
+  /**
    * BFS from `coord` outward through hex neighbors (with world wrapping),
    * returning the distance to the nearest tile matching `terrain`.
    * If the building's own tile matches, distance is 0.

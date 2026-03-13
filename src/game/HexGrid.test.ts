@@ -88,6 +88,40 @@ describe('HexGrid.hexDistance', () => {
   });
 });
 
+describe('HexGrid.hexDistanceWrapped', () => {
+  it('should return same as hexDistance when no wrapping needed', () => {
+    const dist = HexGrid.hexDistanceWrapped({ q: 5, r: 5 }, { q: 10, r: 5 }, 32, 32);
+    expect(dist).toBe(HexGrid.hexDistance({ q: 5, r: 5 }, { q: 10, r: 5 }));
+  });
+
+  it('should find shorter path across map edge', () => {
+    // On a 32x32 map, (2,2) and (30,30): naive distance is 56 (hex cube dist)
+    // Wrapping via (-2,-2) image: dq=4, dr=4, hex dist = max(4,4,8) = 8
+    const naive = HexGrid.hexDistance({ q: 2, r: 2 }, { q: 30, r: 30 });
+    const wrapped = HexGrid.hexDistanceWrapped({ q: 2, r: 2 }, { q: 30, r: 30 }, 32, 32);
+    expect(wrapped).toBeLessThan(naive);
+    expect(wrapped).toBe(8);
+  });
+
+  it('should return 0 for same coordinate', () => {
+    expect(HexGrid.hexDistanceWrapped({ q: 5, r: 5 }, { q: 5, r: 5 }, 32, 32)).toBe(0);
+  });
+
+  it('should handle edge positions correctly', () => {
+    // (0,0) and (31,0) on a 32-wide map — 1 apart via wrapping
+    const dist = HexGrid.hexDistanceWrapped({ q: 0, r: 0 }, { q: 31, r: 0 }, 32, 32);
+    expect(dist).toBe(1);
+  });
+
+  it('should be symmetric', () => {
+    const a = { q: 4, r: 4 };
+    const b = { q: 27, r: 27 };
+    const d1 = HexGrid.hexDistanceWrapped(a, b, 32, 32);
+    const d2 = HexGrid.hexDistanceWrapped(b, a, 32, 32);
+    expect(d1).toBe(d2);
+  });
+});
+
 describe('HexGrid.findNearestTerrain', () => {
   it('should return 0 if the building tile matches', () => {
     const grid = new HexGrid(10, 10);

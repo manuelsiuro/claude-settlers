@@ -584,51 +584,62 @@ export class Game {
     }
   }
 
-  /** Get starting positions spread across the map for N players */
+  /**
+   * Get starting positions spread across the map for N players.
+   * Uses positions that maximize toroidal (wrapping) distance between players
+   * so territories don't wrap across the map seam.
+   */
   private getStartingPositions(
     w: number,
     h: number,
     n: number,
   ): { q: number; r: number }[] {
-    const margin = Math.max(3, Math.floor(w * 0.15));
+    const qQuarter = Math.floor(w / 4);
+    const rQuarter = Math.floor(h / 4);
+    const qHalf = Math.floor(w / 2);
+    const rHalf = Math.floor(h / 2);
+    const q3Quarter = Math.floor((3 * w) / 4);
+    const r3Quarter = Math.floor((3 * h) / 4);
+
     switch (n) {
       case 1:
-        return [{ q: Math.floor(w / 2), r: Math.floor(h / 2) }];
+        return [{ q: qHalf, r: rHalf }];
       case 2:
+        // Half-map separation on a torus
         return [
-          { q: margin, r: margin },
-          { q: w - margin - 1, r: h - margin - 1 },
+          { q: qQuarter, r: rQuarter },
+          { q: q3Quarter, r: r3Quarter },
         ];
       case 3:
+        // Triangular placement
         return [
-          { q: margin, r: margin },
-          { q: w - margin - 1, r: margin },
-          { q: Math.floor(w / 2), r: h - margin - 1 },
+          { q: Math.floor(w / 6), r: rHalf },
+          { q: qHalf, r: Math.floor(h / 6) },
+          { q: Math.floor((5 * w) / 6), r: Math.floor((5 * h) / 6) },
         ];
       case 4:
       default:
+        // 2x2 grid
         return [
-          { q: margin, r: margin },
-          { q: w - margin - 1, r: margin },
-          { q: margin, r: h - margin - 1 },
-          { q: w - margin - 1, r: h - margin - 1 },
+          { q: qQuarter, r: rQuarter },
+          { q: q3Quarter, r: rQuarter },
+          { q: qQuarter, r: r3Quarter },
+          { q: q3Quarter, r: r3Quarter },
         ];
     }
   }
 
-  /** Spiral outward from target to place a Castle on grassland */
+  /** Spiral outward from target to place a Castle on grassland, wrapping across map edges */
   private placeCastleNear(targetQ: number, targetR: number, playerId: number): void {
     const maxRadius = 8;
     for (let radius = 0; radius <= maxRadius; radius++) {
       for (let dq = -radius; dq <= radius; dq++) {
         for (let dr = -radius; dr <= radius; dr++) {
           if (Math.abs(dq) + Math.abs(dr) + Math.abs(-dq - dr) > 2 * radius) continue;
-          const q = targetQ + dq;
-          const r = targetR + dr;
-          if (q < 0 || q >= this.grid.width || r < 0 || r >= this.grid.height) continue;
+          const wrapped = this.grid.wrap(targetQ + dq, targetR + dr);
           const result = this.gameState.placeBuilding(
             BuildingType.Castle,
-            { q, r },
+            wrapped,
             playerId,
           );
           if (result.ok) {

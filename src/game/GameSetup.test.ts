@@ -5,6 +5,7 @@ import { BuildingType } from './BuildingType';
 import { TerrainType } from './TerrainType';
 import { initializeCastleResources, resetBuildingIdCounter } from './Building';
 import { SCENARIO_TERRAIN_BALANCE, Scenario, MapSize } from './GameConfig';
+import { HexGrid } from './HexGrid';
 
 describe('Game Setup', () => {
   beforeEach(() => {
@@ -86,15 +87,19 @@ describe('Game Setup', () => {
   });
 
   describe('Multi-player castle placement', () => {
-    it('should place castles for 2 players at opposite corners', () => {
-      const grid = generateMap({ width: 24, height: 24, seed: 42 });
+    it('should place castles for 2 players with good toroidal separation', () => {
+      const w = 24, h = 24;
+      const grid = generateMap({ width: w, height: h, seed: 42 });
       const gs = new GameState(grid);
 
-      const margin = Math.max(3, Math.floor(24 * 0.15));
-      // Player 1 at top-left quadrant
-      placeCastleNear(gs, margin, margin, 1, grid);
-      // Player 2 at bottom-right quadrant
-      placeCastleNear(gs, 24 - margin - 1, 24 - margin - 1, 2, grid);
+      // Quarter-based positions (toroidal-aware)
+      const qQuarter = Math.floor(w / 4);
+      const rQuarter = Math.floor(h / 4);
+      const q3Quarter = Math.floor((3 * w) / 4);
+      const r3Quarter = Math.floor((3 * h) / 4);
+
+      placeCastleNear(gs, qQuarter, rQuarter, 1, grid);
+      placeCastleNear(gs, q3Quarter, r3Quarter, 2, grid);
 
       const castle1 = gs.findCastle(1);
       const castle2 = gs.findCastle(2);
@@ -103,22 +108,28 @@ describe('Game Setup', () => {
       expect(castle1!.playerId).toBe(1);
       expect(castle2!.playerId).toBe(2);
 
-      // Castles should be far apart
-      const dq = Math.abs(castle1!.coord.q - castle2!.coord.q);
-      const dr = Math.abs(castle1!.coord.r - castle2!.coord.r);
-      expect(dq + dr).toBeGreaterThan(10);
+      // Measure toroidal distance — should be well separated
+      const toroidalDist = HexGrid.hexDistanceWrapped(
+        castle1!.coord, castle2!.coord, w, h,
+      );
+      expect(toroidalDist).toBeGreaterThan(8);
     });
 
-    it('should place castles for 4 players in all corners', () => {
-      const grid = generateMap({ width: 32, height: 32, seed: 42 });
+    it('should place castles for 4 players in 2x2 grid pattern', () => {
+      const w = 32, h = 32;
+      const grid = generateMap({ width: w, height: h, seed: 42 });
       const gs = new GameState(grid);
 
-      const margin = Math.max(3, Math.floor(32 * 0.15));
+      const qQuarter = Math.floor(w / 4);
+      const rQuarter = Math.floor(h / 4);
+      const q3Quarter = Math.floor((3 * w) / 4);
+      const r3Quarter = Math.floor((3 * h) / 4);
+
       const positions = [
-        { q: margin, r: margin },
-        { q: 32 - margin - 1, r: margin },
-        { q: margin, r: 32 - margin - 1 },
-        { q: 32 - margin - 1, r: 32 - margin - 1 },
+        { q: qQuarter, r: rQuarter },
+        { q: q3Quarter, r: rQuarter },
+        { q: qQuarter, r: r3Quarter },
+        { q: q3Quarter, r: r3Quarter },
       ];
 
       for (let i = 0; i < 4; i++) {
@@ -129,6 +140,17 @@ describe('Game Setup', () => {
         const castle = gs.findCastle(i);
         expect(castle).toBeDefined();
         expect(castle!.playerId).toBe(i);
+      }
+
+      // All pairs should have good toroidal separation
+      const castles = [1, 2, 3, 4].map(id => gs.findCastle(id)!);
+      for (let i = 0; i < castles.length; i++) {
+        for (let j = i + 1; j < castles.length; j++) {
+          const dist = HexGrid.hexDistanceWrapped(
+            castles[i].coord, castles[j].coord, w, h,
+          );
+          expect(dist).toBeGreaterThan(6);
+        }
       }
     });
 
@@ -152,23 +174,21 @@ describe('Game Setup', () => {
   });
 });
 
-/** Helper: spiral outward from target to place a Castle on grassland */
+/** Helper: spiral outward from target to place a Castle on grassland, with wrapping */
 function placeCastleNear(
   gs: GameState,
   targetQ: number,
   targetR: number,
   playerId: number,
-  grid: { width: number; height: number },
+  grid: HexGrid,
 ): void {
   const maxRadius = 8;
   for (let radius = 0; radius <= maxRadius; radius++) {
     for (let dq = -radius; dq <= radius; dq++) {
       for (let dr = -radius; dr <= radius; dr++) {
         if (Math.abs(dq) + Math.abs(dr) + Math.abs(-dq - dr) > 2 * radius) continue;
-        const q = targetQ + dq;
-        const r = targetR + dr;
-        if (q < 0 || q >= grid.width || r < 0 || r >= grid.height) continue;
-        const result = gs.placeBuilding(BuildingType.Castle, { q, r }, playerId);
+        const wrapped = grid.wrap(targetQ + dq, targetR + dr);
+        const result = gs.placeBuilding(BuildingType.Castle, wrapped, playerId);
         if (result.ok) return;
       }
     }
