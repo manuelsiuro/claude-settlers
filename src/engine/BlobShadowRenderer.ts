@@ -74,8 +74,16 @@ export class BlobShadowRenderer {
     scene.add(this.unitInstanced);
   }
 
+  /** Enable or disable blob shadow rendering */
+  setEnabled(enabled: boolean): void {
+    if (this.buildingInstanced) this.buildingInstanced.visible = enabled;
+    if (this.unitInstanced) this.unitInstanced.visible = enabled;
+  }
+
   /** Update shadow positions each frame */
   update(buildings: Building[], units: Unit[]): void {
+    // Skip updates when hidden (meshes may exist but be invisible)
+    if (this.buildingInstanced && !this.buildingInstanced.visible) return;
     this.updateBuildings(buildings);
     this.updateUnits(units);
   }

@@ -1,6 +1,7 @@
 import type { Game } from './Game';
 import { HexGrid, HEX_WIDTH } from '../game/HexGrid';
 import { TerrainType } from '../game/TerrainType';
+import { ResourceType } from '../game/ResourceType';
 import { BuildingState } from '../game/Building';
 import { PLAYER_TERRITORY_CSS } from './PlayerColors';
 
@@ -19,6 +20,13 @@ const CAMERA_RECT_COLOR = '#ffcc00';
 const UNIT_OWN_COLOR = '#cccccc';
 const UNIT_ENEMY_COLOR = '#ff4444';
 const CONSTRUCTION_COLOR = '#ffcc00';
+
+/** Minimap colors for revealed resource deposits */
+const DEPOSIT_COLORS: Partial<Record<ResourceType, string>> = {
+  [ResourceType.IronOre]: '#888888',
+  [ResourceType.CoalOre]: '#333333',
+  [ResourceType.GoldOre]: '#ffd700',
+};
 
 /** Throttle interval for minimap redraws (ms) */
 const REDRAW_INTERVAL = 200;
@@ -42,6 +50,15 @@ export class Minimap {
 
   /** Cached terrain image — terrain never changes */
   private terrainCache: ImageData | null = null;
+
+  /** Layer visibility toggles */
+  private layers = {
+    territory: true,
+    buildings: true,
+    units: true,
+    deposits: true,
+    fog: true,
+  };
 
   constructor(game: Game, container: HTMLElement) {
     this.game = game;
@@ -150,6 +167,7 @@ export class Minimap {
     const { ctx, cellSize } = this;
     const gameState = this.game.getGameState();
     const humanId = this.game.getHumanPlayerId();
+    const grid = this.game.getGrid();
 
     // Draw cached terrain (only compute once)
     if (!this.terrainCache) {
@@ -160,63 +178,93 @@ export class Minimap {
     }
 
     // Draw territory overlay (all players)
-    const territoryMgr = this.game.getTerritoryManager();
-    for (let r = 0; r < this.mapHeight; r++) {
-      for (let q = 0; q < this.mapWidth; q++) {
-        const owner = territoryMgr.getOwner(q, r);
-        if (owner === null) continue;
-        ctx.fillStyle = PLAYER_TERRITORY_CSS[owner] ?? 'rgba(170, 170, 170, 0.2)';
-        ctx.fillRect(q * cellSize, r * cellSize, cellSize, cellSize);
+    if (this.layers.territory) {
+      const territoryMgr = this.game.getTerritoryManager();
+      for (let r = 0; r < this.mapHeight; r++) {
+        for (let q = 0; q < this.mapWidth; q++) {
+          const owner = territoryMgr.getOwner(q, r);
+          if (owner === null) continue;
+          ctx.fillStyle = PLAYER_TERRITORY_CSS[owner] ?? 'rgba(170, 170, 170, 0.2)';
+          ctx.fillRect(q * cellSize, r * cellSize, cellSize, cellSize);
+        }
       }
     }
 
     // Draw fog of war overlay
-    const fogMgr = this.game.getFogOfWarManager();
-    for (let r = 0; r < this.mapHeight; r++) {
-      for (let q = 0; q < this.mapWidth; q++) {
-        const vis = fogMgr.getVisibility(q, r, humanId);
-        if (vis === 2) continue; // Visible — no fog overlay
-        ctx.fillStyle = vis === 0 ? 'rgba(0, 0, 0, 0.9)' : 'rgba(0, 0, 0, 0.45)';
-        ctx.fillRect(q * cellSize, r * cellSize, cellSize, cellSize);
+    if (this.layers.fog) {
+      const fogMgr = this.game.getFogOfWarManager();
+      for (let r = 0; r < this.mapHeight; r++) {
+        for (let q = 0; q < this.mapWidth; q++) {
+          const vis = fogMgr.getVisibility(q, r, humanId);
+          if (vis === 2) continue; // Visible — no fog overlay
+          ctx.fillStyle = vis === 0 ? 'rgba(0, 0, 0, 0.9)' : 'rgba(0, 0, 0, 0.45)';
+          ctx.fillRect(q * cellSize, r * cellSize, cellSize, cellSize);
+        }
       }
     }
 
     // Draw buildings (all players)
     const allBuildings = gameState.getAllBuildings();
-    for (const b of allBuildings) {
-      if (b.state === BuildingState.Destroyed) continue;
-      ctx.fillStyle = b.playerId === humanId ? BUILDING_COLOR : ENEMY_BUILDING_COLOR;
-      const px = b.coord.q * cellSize + cellSize / 2;
-      const py = b.coord.r * cellSize + cellSize / 2;
-      ctx.beginPath();
-      ctx.arc(px, py, Math.max(2, cellSize / 2 - 1), 0, Math.PI * 2);
-      ctx.fill();
+    if (this.layers.buildings) {
+      for (const b of allBuildings) {
+        if (b.state === BuildingState.Destroyed) continue;
+        ctx.fillStyle = b.playerId === humanId ? BUILDING_COLOR : ENEMY_BUILDING_COLOR;
+        const px = b.coord.q * cellSize + cellSize / 2;
+        const py = b.coord.r * cellSize + cellSize / 2;
+        ctx.beginPath();
+        ctx.arc(px, py, Math.max(2, cellSize / 2 - 1), 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // Draw resource deposit markers (revealed but unclaimed)
+    if (this.layers.deposits) {
+      const depositRadius = Math.max(1, cellSize / 3);
+      for (let r = 0; r < this.mapHeight; r++) {
+        for (let q = 0; q < this.mapWidth; q++) {
+          const tile = grid.getTile(q, r);
+          if (!tile?.deposit) continue;
+          if (!tile.deposit.revealed || tile.deposit.claimed) continue;
+          const color = DEPOSIT_COLORS[tile.deposit.resource];
+          if (!color) continue;
+          ctx.fillStyle = color;
+          const dx = q * cellSize + cellSize / 2;
+          const dy = r * cellSize + cellSize / 2;
+          ctx.beginPath();
+          ctx.arc(dx, dy, depositRadius, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
     }
 
     // Draw units
-    const allUnits = gameState.getAllUnits();
-    for (const u of allUnits) {
-      ctx.fillStyle = u.playerId === humanId ? UNIT_OWN_COLOR : UNIT_ENEMY_COLOR;
-      const ux = u.coord.q * cellSize + cellSize / 2;
-      const uy = u.coord.r * cellSize + cellSize / 2;
-      ctx.beginPath();
-      ctx.arc(ux, uy, Math.max(1, cellSize / 4), 0, Math.PI * 2);
-      ctx.fill();
+    if (this.layers.units) {
+      const allUnits = gameState.getAllUnits();
+      for (const u of allUnits) {
+        ctx.fillStyle = u.playerId === humanId ? UNIT_OWN_COLOR : UNIT_ENEMY_COLOR;
+        const ux = u.coord.q * cellSize + cellSize / 2;
+        const uy = u.coord.r * cellSize + cellSize / 2;
+        ctx.beginPath();
+        ctx.arc(ux, uy, Math.max(1, cellSize / 4), 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
 
     // Draw construction indicators (yellow pulsing dots)
-    for (const b of allBuildings) {
-      if (b.state !== BuildingState.UnderConstruction) continue;
-      if (b.playerId !== humanId) continue;
-      const pulse = 0.5 + 0.5 * Math.sin(Date.now() * 0.005);
-      ctx.fillStyle = CONSTRUCTION_COLOR;
-      ctx.globalAlpha = pulse;
-      const cx = b.coord.q * cellSize + cellSize / 2;
-      const cy = b.coord.r * cellSize + cellSize / 2;
-      ctx.beginPath();
-      ctx.arc(cx, cy, Math.max(2, cellSize / 2 - 1), 0, Math.PI * 2);
-      ctx.fill();
-      ctx.globalAlpha = 1.0;
+    if (this.layers.buildings) {
+      for (const b of allBuildings) {
+        if (b.state !== BuildingState.UnderConstruction) continue;
+        if (b.playerId !== humanId) continue;
+        const pulse = 0.5 + 0.5 * Math.sin(Date.now() * 0.005);
+        ctx.fillStyle = CONSTRUCTION_COLOR;
+        ctx.globalAlpha = pulse;
+        const cx = b.coord.q * cellSize + cellSize / 2;
+        const cy = b.coord.r * cellSize + cellSize / 2;
+        ctx.beginPath();
+        ctx.arc(cx, cy, Math.max(2, cellSize / 2 - 1), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1.0;
+      }
     }
 
     // Draw camera viewport rectangle
@@ -271,6 +319,13 @@ export class Minimap {
     ctx.strokeStyle = CAMERA_RECT_COLOR;
     ctx.lineWidth = 2;
     ctx.strokeRect(rx, ry, rw, rh);
+  }
+
+  /** Toggle visibility of a minimap layer */
+  setLayerVisible(layer: keyof typeof this.layers, visible: boolean): void {
+    if (layer in this.layers) {
+      this.layers[layer] = visible;
+    }
   }
 
   dispose(): void {

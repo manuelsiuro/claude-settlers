@@ -348,6 +348,16 @@ export class MapRenderer {
     mesh.boundingSphere = sphere;
   }
 
+  /** Enable or disable receiveShadow on all terrain InstancedMeshes */
+  setReceiveShadow(enabled: boolean): void {
+    for (const mesh of this.instancedMeshes) {
+      mesh.receiveShadow = enabled;
+    }
+    for (const ghost of this.ghostMeshes) {
+      ghost.receiveShadow = enabled;
+    }
+  }
+
   /** Clean up all meshes */
   dispose(): void {
     // Remove + dispose all InstancedMeshes (releases GPU instanceMatrix buffers)

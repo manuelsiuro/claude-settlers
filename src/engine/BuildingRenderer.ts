@@ -172,6 +172,25 @@ export class BuildingRenderer {
     return this.buildingMeshes.get(buildingId);
   }
 
+  /** Enable or disable castShadow on all building meshes */
+  setCastShadow(enabled: boolean): void {
+    for (const group of this.buildingMeshes.values()) {
+      group.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          child.castShadow = enabled;
+        }
+      });
+    }
+    // Also update ghost (wrap) copies
+    for (const ghost of this.wrapGroups) {
+      ghost.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          child.castShadow = enabled;
+        }
+      });
+    }
+  }
+
   /** Get all building meshes (for building animator) */
   getAllMeshes(): ReadonlyMap<string, THREE.Group> {
     return this.buildingMeshes;

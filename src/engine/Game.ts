@@ -56,6 +56,14 @@ import { PerformanceMonitor } from './PerformanceMonitor';
 import { PostProcessing } from './PostProcessing';
 import { WeatherController } from './WeatherController';
 
+export const ShadowQuality = {
+  Off: 'off',
+  BlobOnly: 'blob_only',
+  Low: 'low',
+  High: 'high',
+} as const;
+export type ShadowQuality = (typeof ShadowQuality)[keyof typeof ShadowQuality];
+
 export type GameNotificationType =
   | 'building_complete'
   | 'knight_recruited'
@@ -124,6 +132,9 @@ export class Game {
   private frustum = 10;
   private directionalLight: THREE.DirectionalLight;
   private config: GameConfig;
+
+  /** Current shadow quality setting (default: BlobOnly — matches original behavior) */
+  private _shadowQuality: ShadowQuality = ShadowQuality.BlobOnly;
 
   /** The human player's ID (always 1 for now) */
   private humanPlayerId = 1;
@@ -754,6 +765,78 @@ export class Game {
     if (this._gameSpeed !== clamped) {
       this._gameSpeed = clamped;
       this.onSpeedChange?.(this._paused, this._gameSpeed);
+    }
+  }
+
+  /** Get current shadow quality */
+  getShadowQuality(): ShadowQuality {
+    return this._shadowQuality;
+  }
+
+  /** Set shadow quality at runtime */
+  setShadowQuality(quality: ShadowQuality): void {
+    if (this._shadowQuality === quality) return;
+    this._shadowQuality = quality;
+
+    switch (quality) {
+      case ShadowQuality.Off:
+        this.renderer.shadowMap.enabled = false;
+        this.directionalLight.castShadow = false;
+        this.blobShadowRenderer.setEnabled(false);
+        this.buildingRenderer.setCastShadow(false);
+        this.mapRenderer.setReceiveShadow(false);
+        break;
+
+      case ShadowQuality.BlobOnly:
+        this.renderer.shadowMap.enabled = false;
+        this.directionalLight.castShadow = false;
+        this.blobShadowRenderer.setEnabled(true);
+        this.buildingRenderer.setCastShadow(false);
+        this.mapRenderer.setReceiveShadow(false);
+        break;
+
+      case ShadowQuality.Low:
+        this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.type = THREE.BasicShadowMap;
+        this.configureShadowCamera(512);
+        this.blobShadowRenderer.setEnabled(false);
+        this.buildingRenderer.setCastShadow(true);
+        this.mapRenderer.setReceiveShadow(true);
+        break;
+
+      case ShadowQuality.High:
+        this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        this.configureShadowCamera(1024);
+        this.blobShadowRenderer.setEnabled(false);
+        this.buildingRenderer.setCastShadow(true);
+        this.mapRenderer.setReceiveShadow(true);
+        break;
+    }
+
+    // Force shadow map recompilation when toggling
+    this.renderer.shadowMap.needsUpdate = true;
+  }
+
+  /** Configure directional light shadow camera for real-time shadows */
+  private configureShadowCamera(mapSize: number): void {
+    this.directionalLight.castShadow = true;
+    this.directionalLight.shadow.mapSize.set(mapSize, mapSize);
+    this.directionalLight.shadow.camera.near = 0.5;
+    this.directionalLight.shadow.camera.far = 100;
+
+    // Fit shadow camera frustum to visible area
+    const bounds = this.frustum * 2;
+    this.directionalLight.shadow.camera.left = -bounds;
+    this.directionalLight.shadow.camera.right = bounds;
+    this.directionalLight.shadow.camera.top = bounds;
+    this.directionalLight.shadow.camera.bottom = -bounds;
+    this.directionalLight.shadow.camera.updateProjectionMatrix();
+
+    // Dispose old shadow map so it gets recreated at the new size
+    if (this.directionalLight.shadow.map) {
+      this.directionalLight.shadow.map.dispose();
+      this.directionalLight.shadow.map = null;
     }
   }
 
