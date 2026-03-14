@@ -18,8 +18,11 @@ export function autoConnectBuilding(
   roadNetwork: RoadNetwork,
   grid: HexGrid,
 ): boolean {
-  // The building should already have a flag (created by LogisticsManager)
-  const buildingFlag = roadNetwork.getFlagAt(buildingCoord.q, buildingCoord.r);
+  // Ensure the building has a flag (create one if LogisticsManager hasn't yet)
+  let buildingFlag = roadNetwork.getFlagAt(buildingCoord.q, buildingCoord.r);
+  if (!buildingFlag) {
+    buildingFlag = roadNetwork.placeFlag(buildingCoord, playerId) ?? undefined;
+  }
   if (!buildingFlag) return false;
 
   // If the flag is already connected, nothing to do
