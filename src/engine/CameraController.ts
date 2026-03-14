@@ -1,10 +1,10 @@
 import * as THREE from 'three';
+import { HexGrid } from '../game/HexGrid';
 import type { Game } from './Game';
 
 const PAN_SPEED = 0.02;
 const ZOOM_SPEED = 0.5;
 const MIN_FRUSTUM = 4;
-const MAX_FRUSTUM = 30;
 const TOUCH_PAN_SPEED = 0.03;
 
 interface TouchState {
@@ -30,6 +30,18 @@ export class CameraController {
   private target: THREE.Vector3;
   // Isometric direction vector (normalized)
   private isoDir: THREE.Vector3;
+  // Hex grid Z range and per-row X range for parallelogram clamping
+  private mapMinZ: number;
+  private mapMaxZ: number;
+  private mapRowWidth: number;   // world-space width of one hex row
+  private mapSkewFactor: number; // X offset per unit Z (hex grid shears right)
+  // Dynamic max frustum (zoom out limit based on map size)
+  private maxFrustum: number;
+  // Camera basis vectors projected to XZ (fixed for isometric view)
+  private camRightXZ = { x: 0, z: 0 };
+  private camUpXZ = { x: 0, z: 0 };
+  // Fixed offset from target to camera position (isometric direction)
+  private cameraOffset: THREE.Vector3;
 
   constructor(game: Game) {
     this.game = game;
@@ -39,13 +51,40 @@ export class CameraController {
     this.target = new THREE.Vector3();
     camera.getWorldDirection(this.isoDir = new THREE.Vector3()).negate();
 
-    // Compute initial target from camera position
-    this.target.copy(camera.position).sub(
-      this.isoDir.clone().multiplyScalar(
-        camera.position.length() / this.isoDir.length()
-      )
-    );
+    // Compute initial target: intersect camera ray with Y=0 ground plane
+    const tRay = camera.position.y / this.isoDir.y;
+    this.target.copy(camera.position).sub(this.isoDir.clone().multiplyScalar(tRay));
     this.target.y = 0;
+
+    // Store fixed offset from target to camera (preserved during all panning)
+    this.cameraOffset = camera.position.clone().sub(this.target);
+
+    // Compute hex grid parallelogram bounds for pan clamping
+    const grid = game.getGrid();
+    const topLeft = HexGrid.hexToWorld(0, 0);
+    const topRight = HexGrid.hexToWorld(grid.width - 1, 0);
+    const bottomRight = HexGrid.hexToWorld(grid.width - 1, grid.height - 1);
+    this.mapMinZ = topLeft.z;
+    this.mapMaxZ = bottomRight.z;
+    this.mapRowWidth = topRight.x - topLeft.x; // width of a single row
+    // How much X shifts per unit Z (hex rows skew right)
+    const bottomLeft = HexGrid.hexToWorld(0, grid.height - 1);
+    this.mapSkewFactor = this.mapMaxZ > 0 ? bottomLeft.x / this.mapMaxZ : 0;
+
+    // Dynamic max zoom: cap so max zoom-out shows roughly the full map
+    const mapWorldW = bottomRight.x - topLeft.x;
+    const mapWorldH = bottomRight.z - topLeft.z;
+    this.maxFrustum = Math.max(MIN_FRUSTUM, Math.min(50, Math.max(mapWorldW, mapWorldH) / 2 + 2));
+
+    // Compute camera basis vectors in XZ (these are fixed for isometric view)
+    const right = new THREE.Vector3();
+    const up = new THREE.Vector3();
+    const forward = new THREE.Vector3();
+    camera.getWorldDirection(forward);
+    right.crossVectors(forward, camera.up).normalize();
+    up.crossVectors(right, forward).normalize();
+    this.camRightXZ = { x: right.x, z: right.z };
+    this.camUpXZ = { x: up.x, z: up.z };
 
     this.bindEvents();
   }
@@ -93,15 +132,51 @@ export class CameraController {
 
   private panBy(dx: number, dz: number): void {
     const camera = this.game.getCamera();
-    camera.position.x += dx;
-    camera.position.z += dz;
-    this.target.x += dx;
-    this.target.z += dz;
+
+    let newX = this.target.x + dx;
+    let newZ = this.target.z + dz;
+
+    // Find the nearest map point to the proposed target (on the hex parallelogram)
+    const nearZ = Math.max(this.mapMinZ, Math.min(this.mapMaxZ, newZ));
+    const skewX = nearZ * this.mapSkewFactor;
+    const nearX = Math.max(skewX, Math.min(this.mapRowWidth + skewX, newX));
+
+    // Offset from nearest map point to proposed target
+    let offX = newX - nearX;
+    let offZ = newZ - nearZ;
+
+    // Project offset onto camera axes to check frustum containment
+    const camX = offX * this.camRightXZ.x + offZ * this.camRightXZ.z;
+    const camY = offX * this.camUpXZ.x + offZ * this.camUpXZ.z;
+
+    // Clamp so nearest map point stays well within the camera frustum
+    // Use 75% of frustum so map edge is clearly visible, not at pixel boundary
+    const limitW = camera.right * 0.75;
+    const limitH = camera.top * 0.75;
+    const scaleW = limitW / Math.max(Math.abs(camX), 0.001);
+    const scaleH = limitH / Math.max(Math.abs(camY), 0.001);
+    const scale = Math.min(scaleW, scaleH, 1.0);
+
+    if (scale < 1.0) {
+      offX *= scale;
+      offZ *= scale;
+    }
+
+    newX = nearX + offX;
+    newZ = nearZ + offZ;
+
+    this.target.x = newX;
+    this.target.z = newZ;
+
+    // Set camera position absolutely from target + fixed offset (prevents drift)
+    camera.position.x = newX + this.cameraOffset.x;
+    camera.position.y = this.cameraOffset.y;
+    camera.position.z = newZ + this.cameraOffset.z;
   }
 
   private zoom(delta: number): void {
     const frustum = this.game.getFrustum();
-    const newFrustum = Math.max(MIN_FRUSTUM, Math.min(MAX_FRUSTUM, frustum + delta));
+    const newFrustum = Math.max(MIN_FRUSTUM, Math.min(this.maxFrustum, frustum + delta));
     this.game.setFrustum(newFrustum);
   }
 
