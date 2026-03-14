@@ -12,6 +12,7 @@ export const StatusType = {
   NoWorker: 'no_worker',
   MissingInputs: 'missing_inputs',
   StorageFull: 'storage_full',
+  Paused: 'paused',
   Upgrading: 'upgrading',
   Producing: 'producing',
   Construction: 'construction',
@@ -25,6 +26,7 @@ const STATUS_COLORS: Record<string, number> = {
   [StatusType.NoWorker]: 0xff3333,
   [StatusType.MissingInputs]: 0xffaa00,
   [StatusType.StorageFull]: 0xff8800,
+  [StatusType.Paused]: 0x888888,
   [StatusType.Upgrading]: 0x2196f3,
   [StatusType.Producing]: 0x44cc44,
   [StatusType.Construction]: 0x4488ff,
@@ -93,6 +95,12 @@ function getStatusTexture(status: StatusType): THREE.CanvasTexture {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText('!', 16, 20);
+      break;
+    case StatusType.Paused:
+      // Grey pause bars
+      ctx.fillStyle = cssColor;
+      ctx.fillRect(9, 6, 5, 20);
+      ctx.fillRect(18, 6, 5, 20);
       break;
     case StatusType.Upgrading:
       // Blue upward arrow
@@ -226,6 +234,11 @@ export class BuildingStatusOverlay {
     // No-worker check (buildings that need workers) — use canonical truth from gameState
     if (def.worker && !gameState.getWorkerForBuilding(building.id)) {
       return StatusType.NoWorker;
+    }
+
+    // Production paused
+    if (building.productionPaused) {
+      return StatusType.Paused;
     }
 
     // Missing inputs check

@@ -203,6 +203,49 @@ export class RoadNetwork {
     return roads;
   }
 
+  /**
+   * Check if removing a road would disconnect the road network.
+   * Uses BFS to test if flagA and flagB would still be connected
+   * via other roads if this road were removed.
+   */
+  wouldDisconnect(id: string): boolean {
+    const road = this.roads.get(id);
+    if (!road) return false;
+
+    // Temporarily remove the road from adjacency
+    this.adjacency.get(road.flagA)?.delete(road.flagB);
+    this.adjacency.get(road.flagB)?.delete(road.flagA);
+
+    // BFS from flagA — can we still reach flagB?
+    const visited = new Set<string>();
+    const queue: string[] = [road.flagA];
+    visited.add(road.flagA);
+    let connected = false;
+
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      if (current === road.flagB) {
+        connected = true;
+        break;
+      }
+      const neighbors = this.adjacency.get(current);
+      if (neighbors) {
+        for (const neighbor of neighbors) {
+          if (!visited.has(neighbor)) {
+            visited.add(neighbor);
+            queue.push(neighbor);
+          }
+        }
+      }
+    }
+
+    // Restore the road in adjacency
+    this.adjacency.get(road.flagA)?.add(road.flagB);
+    this.adjacency.get(road.flagB)?.add(road.flagA);
+
+    return !connected;
+  }
+
   /** Remove a road */
   removeRoad(id: string): boolean {
     const road = this.roads.get(id);

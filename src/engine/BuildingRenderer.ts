@@ -5,6 +5,7 @@ import { BuildingType } from '../game/BuildingType';
 import { assetLoader } from './AssetLoader';
 import { BUILDING_MODEL_MAP } from './BuildingModels';
 import { MapRenderer } from './MapRenderer';
+import type { FogOfWarManager } from '../game/FogOfWarManager';
 
 /** Scale factors for building models to fit hex tiles nicely */
 const BUILDING_SCALE: Partial<Record<string, number>> = {
@@ -39,10 +40,40 @@ export class BuildingRenderer {
   private buildingGroup: THREE.Group;
   private wrapGroups: THREE.Group[] = [];
   private buildingMeshes: Map<string, THREE.Group> = new Map();
+  private fogManager: FogOfWarManager | null = null;
+  private humanPlayerId = 1;
 
   constructor() {
     this.buildingGroup = new THREE.Group();
     this.buildingGroup.name = 'buildings';
+  }
+
+  /** Set fog of war manager for visibility filtering */
+  setFogOfWar(fogManager: FogOfWarManager, humanPlayerId: number): void {
+    this.fogManager = fogManager;
+    this.humanPlayerId = humanPlayerId;
+  }
+
+  /** Update building visibility based on fog of war. Call each frame. */
+  updateFogVisibility(buildings: Building[]): void {
+    if (!this.fogManager) return;
+    for (const building of buildings) {
+      if (building.playerId === this.humanPlayerId) continue; // Own buildings always visible
+      const mesh = this.buildingMeshes.get(building.id);
+      if (!mesh) continue;
+
+      const explored = this.fogManager.isExplored(
+        building.coord.q, building.coord.r, this.humanPlayerId,
+      );
+      // Enemy buildings: hidden if unexplored, shown if explored (even if not currently visible)
+      mesh.visible = explored;
+      for (const ghost of this.wrapGroups) {
+        const ghostChild = ghost.children.find(
+          (c) => c.userData.buildingId === building.id,
+        );
+        if (ghostChild) ghostChild.visible = explored;
+      }
+    }
   }
 
   /** Add to scene and set up world wrapping */
@@ -88,6 +119,20 @@ export class BuildingRenderer {
     mesh.position.set(x, y, z);
     mesh.name = `building_${building.id}`;
     mesh.userData.buildingId = building.id;
+
+    // Metal material adjustments for forge-type buildings
+    if (
+      building.type === BuildingType.BlacksmithArmory ||
+      building.type === BuildingType.IronSmelter ||
+      building.type === BuildingType.GoldsmithMint
+    ) {
+      mesh.traverse((child) => {
+        if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshStandardMaterial) {
+          child.material.metalness = 0.6;
+          child.material.roughness = 0.4;
+        }
+      });
+    }
 
     this.buildingGroup.add(mesh);
     this.buildingMeshes.set(building.id, mesh);

@@ -58,6 +58,8 @@ export interface Building {
   } | null;
   /** Extra worker unit IDs from worker upgrades */
   extraWorkerIds: string[];
+  /** Whether production is paused (building remains active but doesn't produce) */
+  productionPaused: boolean;
 }
 
 let nextBuildingId = 1;
@@ -87,6 +89,7 @@ export function createBuilding(
     upgradeLevels: {},
     activeUpgrade: null,
     extraWorkerIds: [],
+    productionPaused: false,
   };
 }
 

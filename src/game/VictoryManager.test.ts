@@ -332,4 +332,255 @@ describe('VictoryManager', () => {
     // Defeat should fire before victory
     expect(events).toEqual(['defeat:2', 'victory:1']);
   });
+
+  // --- Peaceful victory condition tests ---
+
+  describe('peaceful victory', () => {
+    let peacefulVictory: VictoryManager;
+    let pVictories: VictoryResult[];
+
+    beforeEach(() => {
+      peacefulVictory = new VictoryManager(gameState, territory, [1, 2], {
+        peacefulEnabled: true,
+      });
+      pVictories = [];
+      peacefulVictory.onVictory = (r) => pVictories.push(r);
+    });
+
+    it('should trigger peaceful victory at 100+ total goods in Castle/Warehouse', () => {
+      gameState.placeBuilding(BuildingType.Castle, { q: 5, r: 5 }, 1);
+      gameState.placeBuilding(BuildingType.Castle, { q: 15, r: 15 }, 2);
+
+      const castle = gameState.findCastle(1)!;
+      // Add 100 total goods (mixed resources)
+      addToInventory(castle.outputInventory, ResourceType.Wood, 40);
+      addToInventory(castle.outputInventory, ResourceType.Stone, 30);
+      addToInventory(castle.outputInventory, ResourceType.Bread, 30);
+
+      peacefulVictory.checkNow();
+
+      expect(pVictories).toHaveLength(1);
+      expect(pVictories[0].winnerId).toBe(1);
+      expect(pVictories[0].condition).toBe(VictoryCondition.Peaceful);
+      expect(peacefulVictory.isGameOver()).toBe(true);
+    });
+
+    it('should not trigger peaceful victory below 100 goods', () => {
+      gameState.placeBuilding(BuildingType.Castle, { q: 5, r: 5 }, 1);
+      gameState.placeBuilding(BuildingType.Castle, { q: 15, r: 15 }, 2);
+
+      const castle = gameState.findCastle(1)!;
+      addToInventory(castle.outputInventory, ResourceType.Wood, 99);
+
+      peacefulVictory.checkNow();
+
+      expect(pVictories).toHaveLength(0);
+      expect(peacefulVictory.isGameOver()).toBe(false);
+    });
+
+    it('should count goods from both Castle and Warehouse', () => {
+      gameState.placeBuilding(BuildingType.Castle, { q: 5, r: 5 }, 1);
+      gameState.placeBuilding(BuildingType.Castle, { q: 15, r: 15 }, 2);
+
+      const castle = gameState.findCastle(1)!;
+      addToInventory(castle.outputInventory, ResourceType.Wood, 60);
+
+      const wr = gameState.placeBuilding(BuildingType.Warehouse, { q: 6, r: 5 }, 1);
+      expect(wr.ok).toBe(true);
+      if (wr.ok) {
+        wr.building.state = BuildingState.Active;
+        addToInventory(wr.building.outputInventory, ResourceType.Stone, 40);
+      }
+
+      peacefulVictory.checkNow();
+
+      expect(pVictories).toHaveLength(1);
+      expect(pVictories[0].condition).toBe(VictoryCondition.Peaceful);
+    });
+
+    it('should not count goods from non-storage buildings', () => {
+      gameState.placeBuilding(BuildingType.Castle, { q: 5, r: 5 }, 1);
+      gameState.placeBuilding(BuildingType.Castle, { q: 15, r: 15 }, 2);
+
+      // Add goods to a non-storage building (e.g., a Sawmill)
+      const sr = gameState.placeBuilding(BuildingType.Sawmill, { q: 6, r: 5 }, 1);
+      expect(sr.ok).toBe(true);
+      if (sr.ok) {
+        sr.building.state = BuildingState.Active;
+        addToInventory(sr.building.outputInventory, ResourceType.Planks, 200);
+      }
+
+      const total = peacefulVictory.getPlayerStorageGoods(1);
+      // Only Castle's goods should be counted (Castle starts with initial resources via placeBuilding,
+      // but the castle output is the only storage building)
+      expect(total).toBeLessThan(VictoryManager.PEACEFUL_GOODS_TARGET);
+    });
+
+    it('should not count goods from non-active Castle/Warehouse', () => {
+      gameState.placeBuilding(BuildingType.Castle, { q: 5, r: 5 }, 1);
+      gameState.placeBuilding(BuildingType.Castle, { q: 15, r: 15 }, 2);
+
+      const wr = gameState.placeBuilding(BuildingType.Warehouse, { q: 6, r: 5 }, 1);
+      expect(wr.ok).toBe(true);
+      if (wr.ok) {
+        // Leave as Planned — not Active
+        addToInventory(wr.building.outputInventory, ResourceType.Wood, 200);
+      }
+
+      // Only active Castle's goods should count
+      const storageGoods = peacefulVictory.getPlayerStorageGoods(1);
+      expect(storageGoods).toBeLessThan(200); // The 200 in planned warehouse shouldn't be included
+    });
+
+    it('should not trigger when peacefulEnabled is false (default)', () => {
+      // Use the default victory manager (no peaceful option)
+      gameState.placeBuilding(BuildingType.Castle, { q: 5, r: 5 }, 1);
+      gameState.placeBuilding(BuildingType.Castle, { q: 15, r: 15 }, 2);
+
+      const castle = gameState.findCastle(1)!;
+      addToInventory(castle.outputInventory, ResourceType.Wood, 150);
+
+      victory.checkNow();
+
+      expect(victories).toHaveLength(0);
+      expect(victory.isGameOver()).toBe(false);
+    });
+  });
+
+  // --- Timed victory condition tests ---
+
+  describe('timed victory', () => {
+    it('should trigger timed victory when time limit expires', () => {
+      const timedVictory = new VictoryManager(gameState, territory, [1, 2], {
+        timedLimit: 60, // 60 seconds
+      });
+      const tVictories: VictoryResult[] = [];
+      timedVictory.onVictory = (r) => tVictories.push(r);
+
+      gameState.placeBuilding(BuildingType.Castle, { q: 5, r: 5 }, 1);
+      gameState.placeBuilding(BuildingType.Castle, { q: 15, r: 15 }, 2);
+      territory.update();
+
+      // Advance time past the limit
+      timedVictory.update(61);
+
+      expect(tVictories).toHaveLength(1);
+      expect(tVictories[0].condition).toBe(VictoryCondition.Timed);
+      expect(timedVictory.isGameOver()).toBe(true);
+    });
+
+    it('should not trigger timed victory before time limit', () => {
+      const timedVictory = new VictoryManager(gameState, territory, [1, 2], {
+        timedLimit: 60,
+      });
+      const tVictories: VictoryResult[] = [];
+      timedVictory.onVictory = (r) => tVictories.push(r);
+
+      gameState.placeBuilding(BuildingType.Castle, { q: 5, r: 5 }, 1);
+      gameState.placeBuilding(BuildingType.Castle, { q: 15, r: 15 }, 2);
+
+      // Advance time to just under the limit
+      timedVictory.update(59);
+
+      expect(tVictories).toHaveLength(0);
+      expect(timedVictory.isGameOver()).toBe(false);
+    });
+
+    it('should award timed victory to the player with the most territory', () => {
+      // Use a larger grid so territory can be meaningfully different
+      const largeGrid = makeGrid(24, 24);
+      const gs = new GameState(largeGrid);
+      const tm = new TerritoryManager(gs);
+      const timedVictory = new VictoryManager(gs, tm, [1, 2], {
+        timedLimit: 60,
+      });
+      const tVictories: VictoryResult[] = [];
+      timedVictory.onVictory = (r) => tVictories.push(r);
+
+      // Player 1 gets Castle + lots of military buildings for more territory
+      gs.placeBuilding(BuildingType.Castle, { q: 12, r: 12 }, 1);
+      const positions = [
+        { q: 6, r: 6 }, { q: 18, r: 6 }, { q: 6, r: 18 }, { q: 18, r: 18 },
+      ];
+      for (const pos of positions) {
+        const result = gs.placeBuilding(BuildingType.GuardHut, pos, 1);
+        if (result.ok) result.building.state = BuildingState.Active;
+      }
+
+      // Player 2 gets only a Castle in the corner
+      gs.placeBuilding(BuildingType.Castle, { q: 0, r: 0 }, 2);
+
+      tm.update();
+
+      // Verify player 1 has more territory
+      const p1Hexes = timedVictory.getPlayerTerritoryHexCount(1);
+      const p2Hexes = timedVictory.getPlayerTerritoryHexCount(2);
+      expect(p1Hexes).toBeGreaterThan(p2Hexes);
+
+      // Trigger timed victory
+      timedVictory.update(61);
+
+      expect(tVictories).toHaveLength(1);
+      expect(tVictories[0].winnerId).toBe(1);
+      expect(tVictories[0].condition).toBe(VictoryCondition.Timed);
+    });
+
+    it('should not trigger timed victory when timedLimit is 0 (disabled)', () => {
+      // Default (no options) means timedLimit = 0
+      gameState.placeBuilding(BuildingType.Castle, { q: 5, r: 5 }, 1);
+      gameState.placeBuilding(BuildingType.Castle, { q: 15, r: 15 }, 2);
+
+      // Advance lots of time
+      victory.update(100000);
+
+      expect(victories).toHaveLength(0);
+      expect(victory.isGameOver()).toBe(false);
+    });
+
+    it('should track elapsed time across multiple updates', () => {
+      const timedVictory = new VictoryManager(gameState, territory, [1, 2], {
+        timedLimit: 10,
+      });
+      const tVictories: VictoryResult[] = [];
+      timedVictory.onVictory = (r) => tVictories.push(r);
+
+      gameState.placeBuilding(BuildingType.Castle, { q: 5, r: 5 }, 1);
+      gameState.placeBuilding(BuildingType.Castle, { q: 15, r: 15 }, 2);
+      territory.update();
+
+      timedVictory.update(3);
+      expect(timedVictory.getElapsedTime()).toBeCloseTo(3);
+      expect(tVictories).toHaveLength(0);
+
+      timedVictory.update(4);
+      expect(timedVictory.getElapsedTime()).toBeCloseTo(7);
+      expect(tVictories).toHaveLength(0);
+
+      timedVictory.update(4);
+      expect(timedVictory.getElapsedTime()).toBeCloseTo(11);
+      expect(tVictories).toHaveLength(1);
+      expect(tVictories[0].condition).toBe(VictoryCondition.Timed);
+    });
+
+    it('should serialize and restore elapsed time', () => {
+      const timedVictory = new VictoryManager(gameState, territory, [1, 2], {
+        timedLimit: 100,
+      });
+
+      gameState.placeBuilding(BuildingType.Castle, { q: 5, r: 5 }, 1);
+      gameState.placeBuilding(BuildingType.Castle, { q: 15, r: 15 }, 2);
+
+      timedVictory.update(42);
+
+      const state = timedVictory._getState();
+      expect(state.elapsedTime).toBeCloseTo(42);
+
+      // Restore into a new instance
+      const timedVictory2 = new VictoryManager(gameState, territory, [1, 2], {
+        timedLimit: 100,
+      });
+      timedVictory2._loadState(state);
+      expect(timedVictory2.getElapsedTime()).toBeCloseTo(42);
+    });
+  });
 });

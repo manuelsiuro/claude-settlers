@@ -19,6 +19,7 @@ import { UnitType } from './UnitType';
 import { UnitState, resetUnitIdCounter } from './Unit';
 import { Difficulty } from './GameConfig';
 import { UpgradeManager } from './UpgradeManager';
+import { RoadNetwork } from './RoadNetwork';
 import type { Building } from './Building';
 
 // ─── Test helpers ────────────────────────────────────────────────────────────
@@ -84,6 +85,7 @@ function setupAI(
     attackManager,
     knightManager,
     new UpgradeManager(gameState),
+    new RoadNetwork(gameState.getGrid()),
     (building: Building) => placed.push(building),
   );
   return { ai, placed, gameState, territoryManager, attackManager, knightManager };
@@ -171,6 +173,7 @@ describe('AIPlayer', () => {
       attackManager,
       knightManager,
       new UpgradeManager(gameState),
+      new RoadNetwork(gameState.getGrid()),
       (b: Building) => placed.push(b),
     );
 
@@ -210,6 +213,7 @@ describe('AIPlayer', () => {
       tinyManagers.attackManager,
       tinyManagers.knightManager,
       new UpgradeManager(tinyState),
+      new RoadNetwork(tinyGrid),
       (b: Building) => placed.push(b),
     );
 
@@ -418,6 +422,7 @@ describe('AIPlayer', () => {
       attackManager,
       knightManager,
       new UpgradeManager(gameState),
+      new RoadNetwork(gameState.getGrid()),
       (b: Building) => placed.push(b),
     );
 

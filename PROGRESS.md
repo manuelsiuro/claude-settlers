@@ -156,5 +156,65 @@
 - [DONE] Part 2: Economy Dashboard UI — EconomyPanel.ts renders production/consumption rates per resource with net balance, bottleneck alerts, sparkline canvases; Sparkline.ts canvas utility with retina support; integrated into Stats panel with live 1-second updates — 2026-03-13
 - [DONE] Part 3: Resource Priority Settings Panel — ResourcePriorityPanel.ts with per-resource sliders (production/construction/storage), proportional redistribution on change, reset to defaults; new nav drawer item with tune icon; panel wired into main.ts panel management — 2026-03-13
 
+### Full Code Review & Improvement Plan [IN PROGRESS]
+
+#### Phase 1: Fog of War [DONE]
+- [DONE] 1A: FogOfWarManager — per-player Uint8Array (Unexplored/Explored/Visible), vision from military buildings (Castle:10, GuardHut:6, Watchtower:10, Barracks:9) + units (2, knights:3), dirty flag BFS recalc, base64 serialization, save version bumped to 6 — 2026-03-13
+- [DONE] 1B: FogOfWarRenderer — merged hex geometry overlay (unexplored: 0.92 opacity black, explored: 0.45 opacity), world wrapping, version-tracked rebuild — 2026-03-13
+- [DONE] 1C: Integration — UnitRenderer hides enemy units in non-visible hexes, BuildingRenderer hides enemy buildings in unexplored hexes, Minimap fog overlay, TooltipController skips hidden enemies, Game.ts wiring — 2026-03-13
+
+#### Phase 2: Shadows [DONE]
+- [DONE] 2A: Blob Shadows — BlobShadowRenderer with canvas radial gradient texture, 2 InstancedMesh draw calls (buildings + units), proportional sizing per building type — 2026-03-13
+
+#### Phase 3: Auto-Road & AI Road Building [DONE]
+- [DONE] 3A: AutoRoad system — autoConnectBuilding() BFS pathfinding to nearest connected flag, intermediate flag placement, road building along path — 2026-03-13
+- [DONE] 3B: AI Road Building — AIPlayer calls autoConnectBuilding() after every building placement, making AI logistics functional — 2026-03-13
+- [DONE] 3C: Road disconnect check — RoadNetwork.wouldDisconnect() BFS connectivity test before removal — 2026-03-13
+
+#### Phase 4: Building Management [DONE]
+- [DONE] 4A: Building Demolition — GameState.demolishBuilding() with 50% cost refund, Castle exempt — 2026-03-13
+- [DONE] 4B: Pause Production Toggle — productionPaused field on Building, ProductionManager skips paused, LogisticsManager skips routing to paused, grey "Paused" status icon in overlay, backward compat in SaveLoad — 2026-03-13
+
+#### Phase 5: Lighting & Material Improvements [DONE]
+- [DONE] 5A: Water Specular Highlights — Blinn-Phong specular term in WaterShader fragment shader (wave-perturbed normals, power 64, warm sun color, 0.4 intensity) — 2026-03-13
+- [DONE] 5B: Metal Material Adjustments — Blacksmith/Smelter/Goldsmith meshes get metalness 0.6, roughness 0.4 — 2026-03-13
+- [DONE] 5C: Terrain Edge Ambient Occlusion — per-instance color darkening (0.85-1.0) based on elevation relative to neighbors, baked at map generation time — 2026-03-13
+
+#### Phase 6: Post-Processing [DONE]
+- [DONE] 6A+B: EffectComposer + Color Grading — PostProcessing.ts with RenderPass, custom ColorGradingShader (warm tint, contrast 1.15, saturation 1.1), OutputPass — 2026-03-13
+- [DONE] 6C: Selective Bloom — UnrealBloomPass (threshold 0.85, strength 0.3, radius 0.4), lazily created, togglable via setBloomEnabled() — 2026-03-13
+
+#### Phase 7: Atmosphere System [DONE]
+- [DONE] 7A: Time-of-Day Presets — AtmosphereController with 4 presets (Morning/Midday/Evening/Night), smooth lerp transitions, auto-cycle (5min per preset) or manual — 2026-03-13
+
+#### Phase 9: AI Improvements [DONE]
+- [DONE] 9A: Strategy Templates — 3 build orders (Aggressive/Balanced/Economic) selected by difficulty (Hard/Normal/Easy) — 2026-03-13
+- [DONE] 9B: AI Threat Response — onUnderAttack() sets underThreat flag, halves next attack cooldown — 2026-03-13
+- [DONE] 9C: Enhanced Difficulty Scaling — Easy: skips 30% of decision ticks; Hard: sends 2 knights per attack — 2026-03-13
+
+#### Phase 10: Code Quality [DONE]
+- [DONE] 10A: Structured Logger — Logger.ts with LogLevel (Debug/Info/Warn/Error), dev=Debug, prod=Warn — 2026-03-13
+- [DONE] 10D: Dev Performance Monitor — PerformanceMonitor.ts FPS overlay, dev mode or ?fps URL param — 2026-03-13
+
+#### Phase 11: Gameplay Polish [DONE]
+- [DONE] 11B: Idle Serf Counter — Game.getIdleSerfCount() for UI badge — 2026-03-13
+- [DONE] 11C: 0.5x Game Speed — Speed cycle now 0.5→1→2→3→0.5 — 2026-03-13
+- [DONE] 11D: More Victory Conditions — Timed (most territory at time limit) and Peaceful (100+ goods in storage), with 12 new tests — 2026-03-13
+
+#### Remaining (not yet implemented)
+- [ ] Phase 7B: Weather Effects (rain/snow particles)
+- [ ] Phase 7C: Seasonal Colors
+- [ ] Phase 2B: Real-Time Shadows (quality-tiered)
+- [ ] Phase 8A: main.ts Refactor into modules
+- [ ] Phase 8B: Build Menu Category Tabs + Hotkeys
+- [ ] Phase 8C: Minimap layer toggles + deposit dots
+- [ ] Phase 8D: Mobile Bottom Sheets
+- [ ] Phase 10B: Save Format Migration System
+- [ ] Phase 10C: Asset Loading Retry
+- [ ] Phase 10E: Shader Time Manager
+- [ ] Phase 11A: Traffic Visualization
+
+12 new tests added (VictoryManager). 569 tests passing, 0 errors. Build clean, lint clean.
+
 ## Blockers
 _None._

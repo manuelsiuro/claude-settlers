@@ -9,6 +9,7 @@ import type { ResourceModelName } from './AssetLoader';
 import { UNIT_MODEL_MAP } from './UnitModels';
 import { MapRenderer } from './MapRenderer';
 import { getPlayerColor } from './PlayerColors';
+import type { FogOfWarManager } from '../game/FogOfWarManager';
 
 /** Scale for unit models (units are small relative to buildings) */
 const UNIT_SCALE = 0.6;
@@ -45,11 +46,19 @@ export class UnitRenderer {
   private knightFactionApplied: Set<string> = new Set();
   private grid: HexGrid;
   private elapsedTime = 0;
+  private fogManager: FogOfWarManager | null = null;
+  private humanPlayerId = 1;
 
   constructor() {
     this.unitGroup = new THREE.Group();
     this.unitGroup.name = 'units';
     this.grid = new HexGrid(1, 1); // Placeholder, set properly in addToScene
+  }
+
+  /** Set fog of war manager for visibility filtering */
+  setFogOfWar(fogManager: FogOfWarManager, humanPlayerId: number): void {
+    this.fogManager = fogManager;
+    this.humanPlayerId = humanPlayerId;
   }
 
   /** Add to scene and set up world wrapping */
@@ -195,6 +204,17 @@ export class UnitRenderer {
     for (const unit of units) {
       const mesh = this.unitMeshes.get(unit.id);
       if (!mesh) continue;
+
+      // Hide enemy units in non-visible hexes (fog of war)
+      if (this.fogManager && unit.playerId !== this.humanPlayerId) {
+        const isVis = this.fogManager.isVisible(unit.coord.q, unit.coord.r, this.humanPlayerId);
+        mesh.visible = isVis;
+        const clones = this.wrapClones.get(unit.id);
+        if (clones) {
+          for (const clone of clones) clone.visible = isVis;
+        }
+        if (!isVis) continue;
+      }
 
       // Get interpolated position (fractional hex coords during movement)
       const interpCoord = getUnitWorldPosition(unit);

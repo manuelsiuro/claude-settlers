@@ -47,8 +47,14 @@ import { CombatRenderer } from './CombatRenderer';
 import { ProductionChainOverlay } from './ProductionChainOverlay';
 import { EconomyTracker } from '../game/EconomyTracker';
 import { UpgradeManager } from '../game/UpgradeManager';
+import { FogOfWarManager } from '../game/FogOfWarManager';
+import { FogOfWarRenderer } from './FogOfWarRenderer';
+import { BlobShadowRenderer } from './BlobShadowRenderer';
+import { AtmosphereController } from './AtmosphereController';
 import { createDefaultDistribution } from '../game/GoodsDistribution';
 import type { GoodsDistributionSettings } from '../game/GoodsDistribution';
+import { PerformanceMonitor } from './PerformanceMonitor';
+import { PostProcessing } from './PostProcessing';
 
 export type GameNotificationType =
   | 'building_complete'
@@ -98,7 +104,13 @@ export class Game {
   private productionChainOverlay: ProductionChainOverlay;
   private economyTracker: EconomyTracker;
   private upgradeManager: UpgradeManager;
+  private fogOfWarManager: FogOfWarManager;
+  private fogOfWarRenderer: FogOfWarRenderer;
+  private blobShadowRenderer: BlobShadowRenderer;
+  private atmosphereController: AtmosphereController;
   private distributionSettings: GoodsDistributionSettings;
+  private performanceMonitor: PerformanceMonitor;
+  private postProcessing: PostProcessing;
   private aiPlayers: AIPlayer[] = [];
   private roadRenderer: RoadRenderer;
   private territoryRenderer: TerritoryRenderer;
@@ -115,7 +127,7 @@ export class Game {
   /** The human player's ID (always 1 for now) */
   private humanPlayerId = 1;
 
-  /** Game speed multiplier (1 = normal, 2 = fast, 3 = fastest) */
+  /** Game speed multiplier (0.5 = slow, 1 = normal, 2 = fast, 3 = fastest) */
   private _gameSpeed = 1;
 
   /** Whether the game is paused */
@@ -165,6 +177,12 @@ export class Game {
     this.directionalLight.position.set(10, 20, 10);
     this.scene.add(this.directionalLight);
 
+    // Atmosphere controller (time-of-day lighting presets)
+    this.atmosphereController = new AtmosphereController(
+      hemiLight, this.directionalLight,
+      this.scene.fog as THREE.FogExp2, this.renderer,
+    );
+
     // Grid, game state, and renderers (map built after assets load)
     const terrainBalance = SCENARIO_TERRAIN_BALANCE[this.config.scenario];
     this.grid = generateMap({
@@ -202,8 +220,13 @@ export class Game {
     this.productionChainOverlay = new ProductionChainOverlay();
     this.economyTracker = new EconomyTracker();
     this.upgradeManager = new UpgradeManager(this.gameState);
+    this.fogOfWarManager = new FogOfWarManager(this.gameState);
+    this.fogOfWarRenderer = new FogOfWarRenderer();
+    this.blobShadowRenderer = new BlobShadowRenderer();
     this.distributionSettings = createDefaultDistribution();
     this.logisticsManager.setDistributionSettings(this.distributionSettings);
+    this.performanceMonitor = new PerformanceMonitor();
+    this.postProcessing = new PostProcessing(this.renderer, this.scene, this.camera);
     // Wire production events to economy tracker
     this.productionManager.onProductionComplete = (inputs, outputs) => {
       for (const input of inputs) {
@@ -214,10 +237,12 @@ export class Game {
       }
     };
     this.victoryManager.onVictory = (result) => {
-      const conditionLabels = {
+      const conditionLabels: Record<string, string> = {
         elimination: 'All enemies defeated',
         domination: 'Territorial domination',
         economic: 'Economic supremacy',
+        timed: 'Time limit reached',
+        peaceful: 'Trade empire',
       };
       const label = conditionLabels[result.condition] ?? result.condition;
       if (result.winnerId === this.humanPlayerId) {
@@ -277,6 +302,12 @@ export class Game {
         const def = BUILDING_DEFINITIONS[building.type];
         this.onNotification?.({ type: 'under_attack', message: `${def.label} is under attack!` });
       }
+      // Notify AI player of the attack so it can respond
+      for (const ai of this.aiPlayers) {
+        if (ai.getPlayerId() === building.playerId) {
+          ai.onUnderAttack(building.id);
+        }
+      }
     };
     this.attackManager.onBuildingCaptured = (building, byPlayerId, oldPlayerId) => {
       this.combatRenderer.showCaptureBanner(building, byPlayerId);
@@ -332,6 +363,7 @@ export class Game {
     this.camera.updateProjectionMatrix();
 
     this.renderer.setSize(this.width, this.height);
+    this.postProcessing.resize(this.width, this.height);
   }
 
   async start(savedData?: SaveData): Promise<void> {
@@ -373,6 +405,15 @@ export class Game {
     // Set up production chain overlay
     this.productionChainOverlay.addToScene(this.scene, this.grid);
 
+    // Set up blob shadows
+    this.blobShadowRenderer.addToScene(this.scene, this.grid);
+
+    // Set up fog of war renderer + wire into unit/building renderers
+    this.fogOfWarRenderer.addToScene(this.scene, this.grid);
+    this.fogOfWarRenderer.setPlayerId(this.humanPlayerId);
+    this.unitRenderer.setFogOfWar(this.fogOfWarManager, this.humanPlayerId);
+    this.buildingRenderer.setFogOfWar(this.fogOfWarManager, this.humanPlayerId);
+
     if (savedData) {
       // Restore saved state
       this.initAIPlayers();
@@ -395,6 +436,7 @@ export class Game {
           woodcutterManager: this.woodcutterManager,
           foresterManager: this.foresterManager,
           upgradeManager: this.upgradeManager,
+          fogOfWarManager: this.fogOfWarManager,
         },
         this.aiPlayers,
       );
@@ -479,6 +521,7 @@ export class Game {
     const clock = new THREE.Clock();
     const animate = (): void => {
       this.animationId = requestAnimationFrame(animate);
+      this.performanceMonitor.tick();
       const rawDelta = Math.min(clock.getDelta(), 0.1); // Cap at 100ms to prevent teleporting
 
       // Camera, water, and tree sway always update (even when paused)
@@ -486,6 +529,9 @@ export class Game {
       const elapsed = clock.getElapsedTime();
       updateWaterTime(elapsed);
       updateTreeSwayTime(elapsed);
+
+      // Atmosphere always updates (even paused) for smooth transitions
+      this.atmosphereController.update(rawDelta);
 
       // Scale delta by game speed; zero when paused
       const deltaTime = this._paused ? 0 : rawDelta * this._gameSpeed;
@@ -520,11 +566,16 @@ export class Game {
       this.economyTracker.update(deltaTime);
       this.roadRenderer.sync(this.roadNetwork);
       this.territoryRenderer.sync(this.territoryManager);
+      this.fogOfWarManager.markDirty(); // Units move every frame
+      this.fogOfWarManager.update();
+      this.fogOfWarRenderer.sync(this.fogOfWarManager);
+      this.buildingRenderer.updateFogVisibility(allBuildings);
       const allUnits = this.gameState.getAllUnits();
       this.unitRenderer.syncUnits(allUnits);
       this.unitRenderer.updatePositions(allUnits, deltaTime);
 
-      // Visual systems (particles, animations, overlays)
+      // Visual systems (shadows, particles, animations, overlays)
+      this.blobShadowRenderer.update(allBuildings, allUnits);
       this.particleSystem.update(deltaTime, allBuildings, this.grid, this.frustum);
       this.buildingAnimator.update(
         deltaTime,
@@ -544,7 +595,7 @@ export class Game {
       );
       this.productionChainOverlay.update(deltaTime);
 
-      this.renderer.render(this.scene, this.camera);
+      this.postProcessing.render();
     };
     animate();
   }
@@ -560,6 +611,7 @@ export class Game {
         this.attackManager,
         this.knightManager,
         this.upgradeManager,
+        this.roadNetwork,
         (building, grid) => {
           this.buildingRenderer.addBuilding(building, grid);
         },
@@ -677,21 +729,23 @@ export class Game {
     }
   }
 
-  /** Current game speed multiplier (1, 2, or 3) */
+  /** Current game speed multiplier (0.5, 1, 2, or 3) */
   get gameSpeed(): number {
     return this._gameSpeed;
   }
 
-  /** Cycle game speed: 1 → 2 → 3 → 1 */
+  /** Cycle game speed: 0.5 → 1 → 2 → 3 → 0.5 */
   cycleSpeed(): number {
-    this._gameSpeed = this._gameSpeed >= 3 ? 1 : this._gameSpeed + 1;
+    const speeds = [0.5, 1, 2, 3];
+    const idx = speeds.indexOf(this._gameSpeed);
+    this._gameSpeed = idx >= 0 ? speeds[(idx + 1) % speeds.length] : speeds[0];
     this.onSpeedChange?.(this._paused, this._gameSpeed);
     return this._gameSpeed;
   }
 
-  /** Set game speed directly (clamped to 1-3) */
+  /** Set game speed directly (clamped to 0.5-3, rounded to nearest 0.5) */
   setGameSpeed(speed: number): void {
-    const clamped = Math.max(1, Math.min(3, Math.round(speed)));
+    const clamped = Math.max(0.5, Math.min(3, Math.round(speed * 2) / 2));
     if (this._gameSpeed !== clamped) {
       this._gameSpeed = clamped;
       this.onSpeedChange?.(this._paused, this._gameSpeed);
@@ -707,6 +761,9 @@ export class Game {
     this.selectionController?.dispose();
     this.placementController?.dispose();
     this.cameraController?.dispose();
+    this.performanceMonitor.dispose();
+    this.blobShadowRenderer.dispose();
+    this.fogOfWarRenderer.dispose();
     this.productionChainOverlay.dispose();
     this.combatRenderer.dispose();
     this.buildingStatusOverlay.dispose();
@@ -719,6 +776,7 @@ export class Game {
     this.unitRenderer.dispose();
     this.buildingRenderer.dispose();
     this.mapRenderer.dispose();
+    this.postProcessing.dispose();
     this.renderer.dispose();
     this.renderer.domElement.remove();
 
@@ -875,6 +933,19 @@ export class Game {
     return this.economyTracker;
   }
 
+  /** Get the count of idle (unassigned) serfs at the Castle */
+  getIdleSerfCount(): number {
+    return this.gameState.getIdleUnitsAtCastle(this.humanPlayerId).length;
+  }
+
+  getAtmosphereController(): AtmosphereController {
+    return this.atmosphereController;
+  }
+
+  getFogOfWarManager(): FogOfWarManager {
+    return this.fogOfWarManager;
+  }
+
   getDistributionSettings(): GoodsDistributionSettings {
     return this.distributionSettings;
   }
@@ -910,6 +981,7 @@ export class Game {
         woodcutterManager: this.woodcutterManager,
         foresterManager: this.foresterManager,
         upgradeManager: this.upgradeManager,
+        fogOfWarManager: this.fogOfWarManager,
       },
       this.aiPlayers,
       {

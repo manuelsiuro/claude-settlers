@@ -49,6 +49,7 @@ export class ProductionManager {
 
     for (const building of buildings) {
       if (building.state !== BuildingState.Active) continue;
+      if (building.productionPaused) continue;
 
       const def = BUILDING_DEFINITIONS[building.type];
       if (!def.production) continue;

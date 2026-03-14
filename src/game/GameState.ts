@@ -184,6 +184,35 @@ export class GameState {
     return true;
   }
 
+  /**
+   * Demolish a building: triggers destruction animation, refunds 50% of cost
+   * to the building's flag goods, and removes it from the game.
+   * Cannot demolish Castle.
+   * @returns refunded resources (empty if building not found or is Castle)
+   */
+  demolishBuilding(id: string): { resource: ResourceType; amount: number }[] {
+    const building = this.buildings.get(id);
+    if (!building) return [];
+    if (building.type === BuildingType.Castle) return [];
+
+    const def = BUILDING_DEFINITIONS[building.type];
+    const refund: { resource: ResourceType; amount: number }[] = [];
+    for (const cost of def.cost) {
+      const amount = Math.floor(cost.amount * 0.5);
+      if (amount > 0) {
+        refund.push({ resource: cost.resource, amount });
+      }
+    }
+
+    // Mark as destroyed (triggers animation in BuildingAnimator)
+    building.state = BuildingState.Destroyed;
+
+    // Remove after short delay for animation — for now remove immediately
+    this.removeBuilding(id);
+
+    return refund;
+  }
+
   /** Check if a tile has a building */
   hasBuildingAt(q: number, r: number): boolean {
     return this.buildingsByCoord.has(HexGrid.key(q, r));

@@ -226,6 +226,7 @@ export class LogisticsManager {
     if (!productionBlocked) {
       for (const building of buildings) {
         if (building.state !== BuildingState.Active) continue;
+        if (building.productionPaused) continue; // Don't route to paused buildings
 
         const def = BUILDING_DEFINITIONS[building.type];
         if (!def.production) continue;

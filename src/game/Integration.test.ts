@@ -26,6 +26,7 @@ import { TreeManager } from './TreeManager';
 import { WoodcutterManager } from './WoodcutterManager';
 import { ForesterManager } from './ForesterManager';
 import { UpgradeManager } from './UpgradeManager';
+import { FogOfWarManager } from './FogOfWarManager';
 import { serializeGame, deserializeGame } from './SaveLoad';
 import type { SaveData } from './SaveLoad';
 
@@ -1132,6 +1133,7 @@ describe('Integration: Full 2-Player Game Scenario', () => {
       attackManager,
       knightManager,
       new UpgradeManager(gameState),
+      roadNetwork,
       (building: Building) => { placedByAI.push(building); },
     );
   });
@@ -1251,6 +1253,7 @@ describe('Integration: Save/Load Round-Trip', () => {
   let woodcutterManager: WoodcutterManager;
   let foresterManager: ForesterManager;
   let upgradeManager: UpgradeManager;
+  let fogOfWarManager: FogOfWarManager;
   let aiPlayer: AIPlayer;
 
   function createManagers() {
@@ -1269,6 +1272,7 @@ describe('Integration: Save/Load Round-Trip', () => {
       woodcutterManager,
       foresterManager,
       upgradeManager,
+      fogOfWarManager,
     };
   }
 
@@ -1315,6 +1319,7 @@ describe('Integration: Save/Load Round-Trip', () => {
     woodcutterManager = new WoodcutterManager(gameState, treeManager);
     foresterManager = new ForesterManager(gameState, treeManager);
     upgradeManager = new UpgradeManager(gameState);
+    fogOfWarManager = new FogOfWarManager(gameState);
 
     gameState.territoryCheck = (q, r, pid) => territoryManager.isOwnedBy(q, r, pid);
 
@@ -1337,6 +1342,7 @@ describe('Integration: Save/Load Round-Trip', () => {
       attackManager,
       knightManager,
       upgradeManager,
+      roadNetwork,
       () => {},
     );
 
@@ -1407,7 +1413,7 @@ describe('Integration: Save/Load Round-Trip', () => {
     const vm2 = new VictoryManager(gs2, terr2, [1, 2]);
     const gm2 = new GeologistManager(gs2);
 
-    const ai2 = new AIPlayer(2, Difficulty.Normal, gs2, terr2, am2, km2, new UpgradeManager(gs2), () => {});
+    const ai2 = new AIPlayer(2, Difficulty.Normal, gs2, terr2, am2, km2, new UpgradeManager(gs2), rn2, () => {});
 
     deserializeGame(
       parsed, gs2, rn2,
@@ -1426,6 +1432,7 @@ describe('Integration: Save/Load Round-Trip', () => {
         woodcutterManager: new WoodcutterManager(gs2, new TreeManager()),
         foresterManager: new ForesterManager(gs2, new TreeManager()),
         upgradeManager: new UpgradeManager(gs2),
+        fogOfWarManager: new FogOfWarManager(gs2),
       },
       [ai2],
     );
@@ -1498,7 +1505,7 @@ describe('Integration: Save/Load Round-Trip', () => {
     const lm2 = new LogisticsManager(gs2, rn2);
     const gm2 = new GeologistManager(gs2);
 
-    const ai2 = new AIPlayer(2, Difficulty.Normal, gs2, terr2, am2, km2, new UpgradeManager(gs2), () => {});
+    const ai2 = new AIPlayer(2, Difficulty.Normal, gs2, terr2, am2, km2, new UpgradeManager(gs2), rn2, () => {});
 
     deserializeGame(
       parsed, gs2, rn2,
@@ -1517,6 +1524,7 @@ describe('Integration: Save/Load Round-Trip', () => {
         woodcutterManager: new WoodcutterManager(gs2, new TreeManager()),
         foresterManager: new ForesterManager(gs2, new TreeManager()),
         upgradeManager: new UpgradeManager(gs2),
+        fogOfWarManager: new FogOfWarManager(gs2),
       },
       [ai2],
     );
@@ -1573,7 +1581,7 @@ describe('Integration: Save/Load Round-Trip', () => {
     const lm2 = new LogisticsManager(gs2, rn2);
     const gm2 = new GeologistManager(gs2);
 
-    const ai2 = new AIPlayer(2, Difficulty.Normal, gs2, terr2, am2, km2, new UpgradeManager(gs2), () => {});
+    const ai2 = new AIPlayer(2, Difficulty.Normal, gs2, terr2, am2, km2, new UpgradeManager(gs2), rn2, () => {});
 
     deserializeGame(
       parsed, gs2, rn2,
@@ -1592,6 +1600,7 @@ describe('Integration: Save/Load Round-Trip', () => {
         woodcutterManager: new WoodcutterManager(gs2, new TreeManager()),
         foresterManager: new ForesterManager(gs2, new TreeManager()),
         upgradeManager: new UpgradeManager(gs2),
+        fogOfWarManager: new FogOfWarManager(gs2),
       },
       [ai2],
     );
@@ -1685,7 +1694,7 @@ describe('Integration: Performance Benchmark', () => {
     // Create AI player
     const ai = new AIPlayer(
       2, Difficulty.Hard, gameState, territoryManager,
-      attackManager, knightManager, new UpgradeManager(gameState), () => {},
+      attackManager, knightManager, new UpgradeManager(gameState), roadNetwork, () => {},
     );
 
     // Warm up

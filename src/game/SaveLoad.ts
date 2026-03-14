@@ -22,13 +22,14 @@ import type { TreeManager, TreeEntity } from './TreeManager';
 import type { WoodcutterManager, WoodcutterPhase } from './WoodcutterManager';
 import type { ForesterManager, ForesterPhase } from './ForesterManager';
 import type { UpgradeManager } from './UpgradeManager';
+import type { FogOfWarManager } from './FogOfWarManager';
 import type { AIPlayer } from './AIPlayer';
 import { TerrainType } from './TerrainType';
 import type { GoodsDistributionSettings } from './GoodsDistribution';
 import { serializeDistribution, deserializeDistribution } from './GoodsDistribution';
 
 /** Current save format version */
-const SAVE_VERSION = 5;
+const SAVE_VERSION = 6;
 
 /** localStorage key for auto-save */
 const STORAGE_KEY = 'feudal_realm_save';
@@ -119,6 +120,10 @@ export interface SaveData {
     builderAssignments: [string, string][];
     deliveryCooldown: number;
   };
+  fogOfWarManager?: {
+    players: { playerId: number; data: string }[];
+    version: number;
+  };
   /** Terrain overrides from original map generation (e.g., Forest↔Grassland from forestry) */
   terrainOverrides: { q: number; r: number; terrain: string }[];
   /** Revealed/claimed deposit coordinates for persistence across map regeneration */
@@ -131,6 +136,7 @@ export interface SaveData {
     gameOver: boolean;
     result: VictoryResult | null;
     checkCooldown: number;
+    elapsedTime?: number;
   };
 
   // Economy settings
@@ -173,6 +179,7 @@ export function serializeGame(
     woodcutterManager: WoodcutterManager;
     foresterManager: ForesterManager;
     upgradeManager: UpgradeManager;
+    fogOfWarManager: FogOfWarManager;
   },
   aiPlayers: AIPlayer[],
   camera: { frustum: number; position: { x: number; y: number; z: number }; target: { x: number; y: number; z: number } },
@@ -235,6 +242,7 @@ export function serializeGame(
     woodcutterManager: managers.woodcutterManager._getState(),
     foresterManager: managers.foresterManager._getState(),
     upgradeManager: managers.upgradeManager._getState(),
+    fogOfWarManager: managers.fogOfWarManager._getState(),
     terrainOverrides,
     deposits: { revealed, claimed },
     victoryManager: managers.victoryManager._getState(),
@@ -273,6 +281,7 @@ export function deserializeGame(
     woodcutterManager: WoodcutterManager;
     foresterManager: ForesterManager;
     upgradeManager: UpgradeManager;
+    fogOfWarManager: FogOfWarManager;
   },
   aiPlayers: AIPlayer[],
 ): GoodsDistributionSettings | null {
@@ -321,12 +330,16 @@ export function deserializeGame(
   if (data.upgradeManager) {
     managers.upgradeManager._loadState(data.upgradeManager);
   }
+  if (data.fogOfWarManager) {
+    managers.fogOfWarManager._loadState(data.fogOfWarManager);
+  }
 
-  // Backward compat: patch buildings missing upgrade fields (v3 → v4)
+  // Backward compat: patch buildings missing fields from older versions
   for (const b of data.buildings) {
     if (!b.upgradeLevels) b.upgradeLevels = {};
     if (b.activeUpgrade === undefined) b.activeUpgrade = null;
     if (!b.extraWorkerIds) b.extraWorkerIds = [];
+    if (b.productionPaused === undefined) b.productionPaused = false;
   }
 
   // Restore terrain overrides (from forestry: Forest↔Grassland changes)
@@ -394,7 +407,7 @@ export function loadFromLocalStorage(): SaveData | null {
     const json = localStorage.getItem(STORAGE_KEY);
     if (!json) return null;
     const data = JSON.parse(json) as SaveData;
-    if (data.version !== SAVE_VERSION && data.version !== 4 && data.version !== 3) {
+    if (data.version < 3 || data.version > SAVE_VERSION) {
       console.warn(`Save version mismatch: expected ${SAVE_VERSION}, got ${data.version}`);
       return null;
     }
@@ -451,7 +464,7 @@ export function loadFromFile(): Promise<SaveData | null> {
       try {
         const text = await file.text();
         const data = JSON.parse(text) as SaveData;
-        if (data.version !== SAVE_VERSION && data.version !== 4 && data.version !== 3) {
+        if (data.version < 3 || data.version > SAVE_VERSION) {
           console.warn(`Save version mismatch: expected ${SAVE_VERSION}, got ${data.version}`);
           resolve(null);
           return;

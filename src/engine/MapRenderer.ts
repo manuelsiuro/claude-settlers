@@ -134,15 +134,29 @@ export class MapRenderer {
 
   // ── Terrain tiles ──────────────────────────────────────────────
 
+  /** Compute ambient occlusion factor for a tile based on neighbor elevations.
+   *  Lower tiles relative to neighbors get darkened (0.85–1.0). Baked at build time. */
+  private computeAOFactor(tile: HexTile, grid: HexGrid): number {
+    const neighbors = grid.getNeighbors(tile.coord.q, tile.coord.r);
+    if (neighbors.length === 0) return 1.0;
+    let sum = 0;
+    for (const n of neighbors) sum += n.elevation;
+    const avg = sum / neighbors.length;
+    // clamp(0.85, 0.95 + (tileElev - avgNeighborElev) * 0.1, 1.0)
+    const raw = 0.95 + (tile.elevation - avg) * 0.1;
+    return Math.max(0.85, Math.min(1.0, raw));
+  }
+
   private buildTerrainInstances(
     tiles: HexTile[],
     wrapOffsets: { x: number; z: number }[],
     scene: THREE.Scene,
   ): void {
     const hexGeo = this.getHexGeometry();
+    const grid = this.grid!;
 
-    // Group non-water tiles by color
-    const colorGroups = new Map<number, { x: number; y: number; z: number }[]>();
+    // Group non-water tiles by color, storing AO factor per instance
+    const colorGroups = new Map<number, { x: number; y: number; z: number; ao: number }[]>();
     const waterEntries: { x: number; y: number; z: number }[] = [];
 
     for (const tile of tiles) {
@@ -158,13 +172,15 @@ export class MapRenderer {
           list = [];
           colorGroups.set(color, list);
         }
-        list.push({ x, y, z });
+        const ao = this.computeAOFactor(tile, grid);
+        list.push({ x, y, z, ao });
       }
     }
 
     const matrix = new THREE.Matrix4();
+    const instanceColor = new THREE.Color();
 
-    // Land tiles: 1 InstancedMesh per color
+    // Land tiles: 1 InstancedMesh per color, with per-instance AO darkening
     for (const [color, entries] of colorGroups) {
       const mat = new THREE.MeshLambertMaterial({ color, side: THREE.DoubleSide });
       this.ownedMaterials.push(mat);
@@ -173,8 +189,14 @@ export class MapRenderer {
       for (let i = 0; i < entries.length; i++) {
         matrix.identity().setPosition(entries[i].x, entries[i].y, entries[i].z);
         mesh.setMatrixAt(i, matrix);
+        // Instance color acts as a multiplier on material color.
+        // White (1,1,1) = no change; gray = darkened by AO factor.
+        const ao = entries[i].ao;
+        instanceColor.setRGB(ao, ao, ao);
+        mesh.setColorAt(i, instanceColor);
       }
       mesh.instanceMatrix.needsUpdate = true;
+      mesh.instanceColor!.needsUpdate = true;
       this.computeInstancedBounds(mesh);
       scene.add(mesh);
       this.instancedMeshes.push(mesh);

@@ -12,6 +12,7 @@ const waterVertexShader = /* glsl */ `
   uniform float uTime;
   varying vec2 vUv;
   varying float vWave;
+  varying vec3 vPos;
 
   void main() {
     vUv = uv;
@@ -23,6 +24,7 @@ const waterVertexShader = /* glsl */ `
     pos.y += wave1 + wave2;
 
     vWave = wave1 + wave2;
+    vPos = pos;
 
     #ifdef USE_INSTANCING
       vec4 mvPosition = modelViewMatrix * instanceMatrix * vec4(pos, 1.0);
@@ -45,6 +47,7 @@ const waterFragmentShader = /* glsl */ `
 
   varying vec2 vUv;
   varying float vWave;
+  varying vec3 vPos;
 
   void main() {
     // Mix between shallow and deep color based on wave height + subtle animation
@@ -56,6 +59,25 @@ const waterFragmentShader = /* glsl */ `
     // Subtle foam highlights on wave peaks
     float foam = smoothstep(0.025, 0.035, vWave);
     color = mix(color, vec3(0.85, 0.95, 1.0), foam * 0.4);
+
+    // Blinn-Phong specular highlights
+    // Compute wave-perturbed normal from analytical partial derivatives
+    float dydx = cos(vPos.x * 4.0 + uTime * 1.5) * 4.0 * 0.02
+               + 0.0; // wave2 has no x dependency
+    float dydz = 0.0   // wave1 has no z dependency
+               + cos(vPos.z * 3.0 + uTime * 1.2 + 1.5) * 3.0 * 0.015;
+    vec3 normal = normalize(vec3(-dydx, 1.0, -dydz));
+
+    // Fixed isometric view direction and light direction (sun)
+    vec3 viewDir = normalize(vec3(-1.0, 1.0, -1.0));
+    vec3 lightDir = normalize(vec3(0.5, 1.0, 0.75)); // directional sun
+    vec3 halfDir = normalize(lightDir + viewDir);
+
+    float specAngle = max(dot(normal, halfDir), 0.0);
+    float specular = pow(specAngle, 64.0);
+
+    vec3 sunColor = vec3(1.0, 0.95, 0.8);
+    color += sunColor * specular * 0.4;
 
     gl_FragColor = vec4(color, uOpacity);
 

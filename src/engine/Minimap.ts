@@ -170,6 +170,17 @@ export class Minimap {
       }
     }
 
+    // Draw fog of war overlay
+    const fogMgr = this.game.getFogOfWarManager();
+    for (let r = 0; r < this.mapHeight; r++) {
+      for (let q = 0; q < this.mapWidth; q++) {
+        const vis = fogMgr.getVisibility(q, r, humanId);
+        if (vis === 2) continue; // Visible — no fog overlay
+        ctx.fillStyle = vis === 0 ? 'rgba(0, 0, 0, 0.9)' : 'rgba(0, 0, 0, 0.45)';
+        ctx.fillRect(q * cellSize, r * cellSize, cellSize, cellSize);
+      }
+    }
+
     // Draw buildings (all players)
     const allBuildings = gameState.getAllBuildings();
     for (const b of allBuildings) {

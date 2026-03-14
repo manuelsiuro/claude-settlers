@@ -17,17 +17,69 @@ import {
   getUpgradeCost,
   getEffectiveStorageCapacity,
 } from './BuildingUpgrade';
+import { autoConnectBuilding } from './AutoRoad';
+import type { RoadNetwork } from './RoadNetwork';
 
 /** Callback to render a newly placed building. */
 export type BuildingPlacedCallback = (building: Building, grid: HexGrid) => void;
 
+// ─── Strategy Templates ─────────────────────────────────────────────────────
+
 /**
- * Build order for the AI economy.
+ * Aggressive: Fewer economy buildings, earlier military, attacks at build step 8.
+ */
+const AGGRESSIVE_BUILD_ORDER: BuildingType[] = [
+  BuildingType.WoodcutterHut,
+  BuildingType.ForesterHut,
+  BuildingType.Quarry,
+  BuildingType.Sawmill,
+  BuildingType.GuardHut,
+  BuildingType.GuardHut,
+  BuildingType.FishermanHut,
+  BuildingType.Farm,
+  BuildingType.IronMine,
+  BuildingType.CoalMine,
+  BuildingType.IronSmelter,
+  BuildingType.BlacksmithArmory,
+  BuildingType.Barracks,
+  BuildingType.Barracks,
+  BuildingType.Watchtower,
+];
+
+/**
+ * Economic: Full production chains, delayed military, attacks at build step 16+.
+ */
+const ECONOMIC_BUILD_ORDER: BuildingType[] = [
+  BuildingType.WoodcutterHut,
+  BuildingType.ForesterHut,
+  BuildingType.WoodcutterHut,
+  BuildingType.Quarry,
+  BuildingType.Sawmill,
+  BuildingType.FishermanHut,
+  BuildingType.Farm,
+  BuildingType.Warehouse,
+  BuildingType.GeologistHut,
+  BuildingType.Windmill,
+  BuildingType.Bakery,
+  BuildingType.IronMine,
+  BuildingType.CoalMine,
+  BuildingType.IronSmelter,
+  BuildingType.ToolmakerWorkshop,
+  BuildingType.GuardHut,
+  BuildingType.BlacksmithArmory,
+  BuildingType.GoldMine,
+  BuildingType.GoldsmithMint,
+  BuildingType.Barracks,
+  BuildingType.Watchtower,
+];
+
+/**
+ * Balanced: Default build order with a mix of economy and military.
  * Mountain-specific buildings (GeologistHut, IronMine, CoalMine, GoldMine) will be
  * skipped automatically if no mountain tiles exist in the AI's territory.
  * FishermanHut will be skipped if no water-adjacent tiles are available.
  */
-const ECONOMY_BUILD_ORDER: BuildingType[] = [
+const BALANCED_BUILD_ORDER: BuildingType[] = [
   // ── Tier 1: basic economy ───────────────────────────────────────────────
   BuildingType.WoodcutterHut,
   BuildingType.ForesterHut,
@@ -68,23 +120,36 @@ const MAX_HEX_RETRIES = 3;
 /**
  * Heuristic AI controller for a non-human player.
  *
+ * Three strategy templates are selected based on difficulty:
+ *   - Easy → Economic (full chains, delayed military, attacks at step 16, skips 30% of ticks)
+ *   - Normal → Balanced (mixed economy/military, attacks at step 12)
+ *   - Hard → Aggressive (fewer eco buildings, early military, attacks at step 8, sends 2 knights)
+ *
  * Decision priorities (evaluated each tick):
- *   1. Economy: follow ECONOMY_BUILD_ORDER, placing buildings when affordable
+ *   1. Economy: follow the selected build order, placing buildings when affordable
  *   2. Military: attack the weakest enemy military building with available knights
  *
+ * Threat response: when `onUnderAttack()` is called, the next attack cooldown is halved.
  * Territory expansion is handled implicitly via GuardHuts in the build order.
- * Difficulty scales decision speed (decisionInterval).
  */
 export class AIPlayer {
   private readonly playerId: number;
+  private readonly difficulty: Difficulty;
   private readonly gameState: GameState;
   private readonly territoryManager: TerritoryManager;
   private readonly attackManager: AttackManager;
   private readonly knightManager: KnightManager;
   private readonly upgradeManager: UpgradeManager;
+  private readonly roadNetwork: RoadNetwork;
   private readonly onBuildingPlaced: BuildingPlacedCallback;
 
-  /** Current position in ECONOMY_BUILD_ORDER */
+  /** Strategy-specific build order (selected based on difficulty). */
+  private readonly buildOrder: BuildingType[];
+
+  /** Build order step at which the AI will begin attacking. */
+  private readonly attackThreshold: number;
+
+  /** Current position in the build order */
   private buildOrderIndex = 0;
 
   /** Consecutive ticks where the current building had no valid hex */
@@ -98,6 +163,9 @@ export class AIPlayer {
   readonly attackInterval: number;
   private attackCooldown: number;
 
+  /** Set to true when the AI is under attack; halves attack cooldown for one cycle. */
+  private underThreat = false;
+
   constructor(
     playerId: number,
     difficulty: Difficulty,
@@ -106,26 +174,36 @@ export class AIPlayer {
     attackManager: AttackManager,
     knightManager: KnightManager,
     upgradeManager: UpgradeManager,
+    roadNetwork: RoadNetwork,
     onBuildingPlaced: BuildingPlacedCallback,
   ) {
     this.playerId = playerId;
+    this.difficulty = difficulty;
     this.gameState = gameState;
     this.territoryManager = territoryManager;
     this.attackManager = attackManager;
     this.knightManager = knightManager;
     this.upgradeManager = upgradeManager;
+    this.roadNetwork = roadNetwork;
     this.onBuildingPlaced = onBuildingPlaced;
 
+    // Select strategy template and attack threshold based on difficulty
     switch (difficulty) {
       case Difficulty.Easy:
+        this.buildOrder = ECONOMIC_BUILD_ORDER;
+        this.attackThreshold = 16;
         this.decisionInterval = 10.0;
         this.attackInterval = 20.0;
         break;
       case Difficulty.Hard:
+        this.buildOrder = AGGRESSIVE_BUILD_ORDER;
+        this.attackThreshold = 8;
         this.decisionInterval = 2.5;
         this.attackInterval = 8.0;
         break;
       default: // Normal
+        this.buildOrder = BALANCED_BUILD_ORDER;
+        this.attackThreshold = 12;
         this.decisionInterval = 5.0;
         this.attackInterval = 15.0;
     }
@@ -142,15 +220,24 @@ export class AIPlayer {
 
     if (this.decisionCooldown <= 0) {
       this.decisionCooldown = this.decisionInterval;
-      this.tryBuildNext();
-      // Only try upgrades once economy is established
-      if (this.buildOrderIndex > 8) {
-        this.tryUpgrade();
+
+      // Easy difficulty: skip 30% of decision ticks randomly
+      if (this.difficulty !== Difficulty.Easy || Math.random() >= 0.3) {
+        this.tryBuildNext();
+        // Only try upgrades once economy is established
+        if (this.buildOrderIndex > 8) {
+          this.tryUpgrade();
+        }
       }
     }
 
     if (this.attackCooldown <= 0) {
-      this.attackCooldown = this.attackInterval;
+      // When under threat, halve the attack cooldown for faster response
+      this.attackCooldown = this.underThreat
+        ? this.attackInterval * 0.5
+        : this.attackInterval;
+      // Reset threat flag after one attack cycle
+      this.underThreat = false;
       this.tryAttack();
     }
   }
@@ -161,9 +248,9 @@ export class AIPlayer {
    * - Skips the building after MAX_HEX_RETRIES if no valid placement hex exists.
    */
   private tryBuildNext(): void {
-    if (this.buildOrderIndex >= ECONOMY_BUILD_ORDER.length) return;
+    if (this.buildOrderIndex >= this.buildOrder.length) return;
 
-    const type = ECONOMY_BUILD_ORDER[this.buildOrderIndex];
+    const type = this.buildOrder[this.buildOrderIndex];
 
     // Wait for resources if we can't afford it yet.
     // Reset hexRetryCount so resource-wait periods don't consume the retry budget.
@@ -191,6 +278,8 @@ export class AIPlayer {
     if (result.ok) {
       this.onBuildingPlaced(result.building, this.gameState.getGrid());
       this.territoryManager.markDirty();
+      // Auto-connect the new building to the road network
+      autoConnectBuilding(coord, this.playerId, this.roadNetwork, this.gameState.getGrid());
       this.buildOrderIndex++;
       this.hexRetryCount = 0;
     } else {
@@ -204,12 +293,12 @@ export class AIPlayer {
   }
 
   /**
-   * Try to send the strongest available knight to attack the weakest enemy
-   * military building. Only activates once the economy is established
-   * (build order past step 12).
+   * Try to send available knight(s) to attack the weakest enemy military building.
+   * Only activates once the economy is established (build order past the
+   * strategy's attack threshold). Hard difficulty sends up to 2 knights per attack.
    */
   private tryAttack(): void {
-    if (this.buildOrderIndex < 12) return;
+    if (this.buildOrderIndex < this.attackThreshold) return;
 
     const availableKnights = this.getAvailableKnights();
     if (availableKnights.length === 0) return;
@@ -231,14 +320,18 @@ export class AIPlayer {
       b.knightIds.length < weakest.knightIds.length ? b : weakest,
     );
 
-    // Send strongest knight
-    const knight = availableKnights.sort(
+    // Sort by strength descending — send strongest knight(s) first
+    availableKnights.sort(
       (a, b) =>
         this.knightManager.getKnightStrength(b.id) -
         this.knightManager.getKnightStrength(a.id),
-    )[0];
+    );
 
-    this.attackManager.orderAttack(knight.id, target.id);
+    // Hard difficulty sends up to 2 knights per attack; others send 1
+    const knightsToSend = this.difficulty === Difficulty.Hard ? 2 : 1;
+    for (let i = 0; i < Math.min(knightsToSend, availableKnights.length); i++) {
+      this.attackManager.orderAttack(availableKnights[i].id, target.id);
+    }
   }
 
   /**
@@ -394,9 +487,20 @@ export class AIPlayer {
     });
   }
 
+  // ─── Public API ──────────────────────────────────────────────────────────
+
+  /**
+   * Called when one of this AI's buildings is under attack.
+   * Sets a threat flag that halves the next attack cooldown, causing
+   * the AI to counter-attack sooner.
+   */
+  onUnderAttack(_buildingId: string): void { // eslint-disable-line @typescript-eslint/no-unused-vars
+    this.underThreat = true;
+  }
+
   // ─── Accessors ───────────────────────────────────────────────────────────
 
-  /** Current position in the build order (0-based index into ECONOMY_BUILD_ORDER). */
+  /** Current position in the build order (0-based index into the active strategy). */
   getBuildOrderIndex(): number {
     return this.buildOrderIndex;
   }
@@ -406,12 +510,17 @@ export class AIPlayer {
     return this.playerId;
   }
 
+  /** The difficulty level this AI was created with. */
+  getDifficulty(): Difficulty {
+    return this.difficulty;
+  }
+
   /**
    * Override the build order position — for testing only.
    * @internal
    */
   _setBuildOrderIndex(index: number): void {
-    this.buildOrderIndex = Math.max(0, Math.min(index, ECONOMY_BUILD_ORDER.length));
+    this.buildOrderIndex = Math.max(0, Math.min(index, this.buildOrder.length));
   }
 
   /** Serialization: get internal state for save */

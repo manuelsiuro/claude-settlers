@@ -121,6 +121,16 @@ export class TooltipController {
       return;
     }
 
+    // Skip enemy buildings hidden by fog of war
+    const humanId = this.game.getHumanPlayerId();
+    if (building.playerId !== humanId) {
+      const fogMgr = this.game.getFogOfWarManager();
+      if (!fogMgr.isExplored(wrapped.q, wrapped.r, humanId)) {
+        this.hide();
+        return;
+      }
+    }
+
     if (building.id === this.currentBuildingId) return; // Same building
 
     this.currentBuildingId = building.id;
