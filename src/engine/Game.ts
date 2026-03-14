@@ -23,7 +23,7 @@ import { WoodcutterManager } from '../game/WoodcutterManager';
 import { ForesterManager } from '../game/ForesterManager';
 import { DepositRenderer } from './DepositRenderer';
 import { TreeRenderer } from './TreeRenderer';
-import type { GameConfig } from '../game/GameConfig';
+import type { GameConfig, GraphicsSettings } from '../game/GameConfig';
 import { DEFAULT_CONFIG, SCENARIO_TERRAIN_BALANCE } from '../game/GameConfig';
 import { RoadRenderer } from './RoadRenderer';
 import { TerritoryRenderer } from './TerritoryRenderer';
@@ -1035,8 +1035,41 @@ export class Game {
     return this.weatherController;
   }
 
+  getPostProcessing(): PostProcessing {
+    return this.postProcessing;
+  }
+
+  getFogOfWarRenderer(): FogOfWarRenderer {
+    return this.fogOfWarRenderer;
+  }
+
   getFogOfWarManager(): FogOfWarManager {
     return this.fogOfWarManager;
+  }
+
+  /** Apply all graphics settings at once (called on startup and from UI) */
+  applyGraphicsSettings(settings: GraphicsSettings): void {
+    this.setShadowQuality(settings.shadows as ShadowQuality);
+    this.postProcessing.setMode(settings.postProcessing);
+    this.weatherController.setWeather(settings.weather as 'none' | 'rain' | 'snow');
+
+    // Fog of war
+    this.fogOfWarRenderer.setEnabled(settings.fogOfWar);
+    if (settings.fogOfWar) {
+      this.unitRenderer.setFogOfWar(this.fogOfWarManager, this.humanPlayerId);
+      this.buildingRenderer.setFogOfWar(this.fogOfWarManager, this.humanPlayerId);
+    } else {
+      this.unitRenderer.setFogOfWar(null!, this.humanPlayerId);
+      this.buildingRenderer.setFogOfWar(null!, this.humanPlayerId);
+    }
+
+    // Time of day / atmosphere
+    if (settings.timeOfDay === 'auto') {
+      this.atmosphereController.setAutoCycle(true);
+    } else {
+      this.atmosphereController.setAutoCycle(false);
+      this.atmosphereController.setPreset(settings.timeOfDay);
+    }
   }
 
   getDistributionSettings(): GoodsDistributionSettings {

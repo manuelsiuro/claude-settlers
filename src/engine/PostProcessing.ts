@@ -60,17 +60,26 @@ const ColorGradingShader = {
  * Always-on: color grading (warm tint, contrast, saturation).
  * Optional:  UnrealBloomPass for selective bloom on emissive objects.
  */
+export type PostProcessingMode = 'off' | 'color_only' | 'full';
+
 export class PostProcessing {
   private composer: EffectComposer;
   private bloomPass: UnrealBloomPass | null = null;
   private colorGradingPass: ShaderPass;
   private outputPass: OutputPass;
+  private _renderer: THREE.WebGLRenderer;
+  private _scene: THREE.Scene;
+  private _camera: THREE.Camera;
+  private _mode: PostProcessingMode = 'color_only';
 
   constructor(
     renderer: THREE.WebGLRenderer,
     scene: THREE.Scene,
     camera: THREE.Camera,
   ) {
+    this._renderer = renderer;
+    this._scene = scene;
+    this._camera = camera;
     this.composer = new EffectComposer(renderer);
 
     // 1. Render the scene
@@ -110,9 +119,35 @@ export class PostProcessing {
     }
   }
 
+  /** Set post-processing mode: off bypasses composer, color_only disables bloom, full enables everything. */
+  setMode(mode: PostProcessingMode): void {
+    this._mode = mode;
+    switch (mode) {
+      case 'off':
+        // No passes needed — render() will call renderer directly
+        break;
+      case 'color_only':
+        this.colorGradingPass.enabled = true;
+        if (this.bloomPass) this.bloomPass.enabled = false;
+        break;
+      case 'full':
+        this.colorGradingPass.enabled = true;
+        this.setBloomEnabled(true);
+        break;
+    }
+  }
+
+  getMode(): PostProcessingMode {
+    return this._mode;
+  }
+
   /** Render the scene with post-processing applied. */
   render(): void {
-    this.composer.render();
+    if (this._mode === 'off') {
+      this._renderer.render(this._scene, this._camera);
+    } else {
+      this.composer.render();
+    }
   }
 
   /** Update internal render targets when the window resizes. */

@@ -2,6 +2,8 @@ import type { Game } from '../engine/Game';
 import { audioManager } from '../engine/AudioManager';
 import { showSnackbar } from './Snackbar';
 import { saveToLocalStorage, downloadSave } from '../game/SaveLoad';
+import { loadSettings, saveSettings } from '../game/SettingsStorage';
+import type { GraphicsSettings } from '../game/GameConfig';
 
 let game: Game | undefined;
 let pauseIcon: HTMLElement;
@@ -54,6 +56,7 @@ export function initAppBar(
   const navItems = sidePanel.querySelectorAll('[data-headline]');
   navItems.forEach((item) => {
     item.addEventListener('click', () => {
+      if (item.hasAttribute('data-nonclickable')) return;
       const headline = item.getAttribute('data-headline');
       closeDrawer();
       if (headline === 'Statistics') {
@@ -108,6 +111,7 @@ export function initAppBar(
     audioManager.muted = !audioManager.muted;
     updateMuteUI();
     updateMusicUI();
+    persistCurrentSettings();
   });
 
   musicBtn.addEventListener('click', () => {
@@ -120,14 +124,43 @@ export function initAppBar(
     updateMusicUI();
   });
 
+  function persistCurrentSettings(): void {
+    const gfxShadows = document.getElementById('gfx-shadows') as HTMLSelectElement;
+    const gfxPost = document.getElementById('gfx-post') as HTMLSelectElement;
+    const gfxWeather = document.getElementById('gfx-weather') as HTMLSelectElement;
+    const gfxTime = document.getElementById('gfx-time') as HTMLSelectElement;
+    const gfxFog = document.getElementById('gfx-fog') as HTMLSelectElement;
+
+    const graphics: GraphicsSettings = {
+      shadows: gfxShadows.value as GraphicsSettings['shadows'],
+      postProcessing: gfxPost.value as GraphicsSettings['postProcessing'],
+      weather: gfxWeather.value as GraphicsSettings['weather'],
+      timeOfDay: gfxTime.value as GraphicsSettings['timeOfDay'],
+      fogOfWar: gfxFog.value === 'on',
+    };
+
+    saveSettings({
+      graphics,
+      audio: {
+        masterVolume: Number(volMaster.value) / 100,
+        sfxVolume: Number(volSfx.value) / 100,
+        musicVolume: Number(volMusic.value) / 100,
+        muted: audioManager.muted,
+      },
+    });
+  }
+
   volMaster.addEventListener('input', () => {
     audioManager.masterVolume = Number(volMaster.value) / 100;
+    persistCurrentSettings();
   });
   volSfx.addEventListener('input', () => {
     audioManager.sfxVolume = Number(volSfx.value) / 100;
+    persistCurrentSettings();
   });
   volMusic.addEventListener('input', () => {
     audioManager.musicVolume = Number(volMusic.value) / 100;
+    persistCurrentSettings();
   });
 
   // Pause & speed controls
@@ -172,6 +205,31 @@ export function initAppBar(
     e.preventDefault();
     game.togglePause();
   });
+
+  // Graphics settings change handlers
+  const gfxSelects = ['gfx-shadows', 'gfx-post', 'gfx-weather', 'gfx-time', 'gfx-fog'];
+  for (const id of gfxSelects) {
+    document.getElementById(id)!.addEventListener('change', () => {
+      const current = loadSettings();
+      const gfxShadows = document.getElementById('gfx-shadows') as HTMLSelectElement;
+      const gfxPost = document.getElementById('gfx-post') as HTMLSelectElement;
+      const gfxWeather = document.getElementById('gfx-weather') as HTMLSelectElement;
+      const gfxTime = document.getElementById('gfx-time') as HTMLSelectElement;
+      const gfxFog = document.getElementById('gfx-fog') as HTMLSelectElement;
+
+      const graphics: GraphicsSettings = {
+        shadows: gfxShadows.value as GraphicsSettings['shadows'],
+        postProcessing: gfxPost.value as GraphicsSettings['postProcessing'],
+        weather: gfxWeather.value as GraphicsSettings['weather'],
+        timeOfDay: gfxTime.value as GraphicsSettings['timeOfDay'],
+        fogOfWar: gfxFog.value === 'on',
+      };
+
+      game = getGame();
+      game?.applyGraphicsSettings(graphics);
+      saveSettings({ graphics, audio: current.audio });
+    });
+  }
 
   /** Save the current game to localStorage */
   function handleSaveGame(): void {

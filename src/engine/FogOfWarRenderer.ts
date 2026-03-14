@@ -32,6 +32,7 @@ export class FogOfWarRenderer {
   private exploredMesh: THREE.Mesh | null = null;
   private lastVersion = -1;
   private playerId = 1;
+  private _enabled = true;
 
   constructor() {
     this.group = new THREE.Group();
@@ -42,6 +43,21 @@ export class FogOfWarRenderer {
   setPlayerId(playerId: number): void {
     this.playerId = playerId;
     this.lastVersion = -1; // Force rebuild
+  }
+
+  setEnabled(enabled: boolean): void {
+    this._enabled = enabled;
+    this.group.visible = enabled;
+    for (const g of this.wrapGroups) g.visible = enabled;
+    if (!enabled) {
+      this.clearMeshes();
+    } else {
+      this.lastVersion = -1; // Force rebuild on next sync
+    }
+  }
+
+  isEnabled(): boolean {
+    return this._enabled;
   }
 
   addToScene(scene: THREE.Scene, grid: HexGrid): void {
@@ -75,6 +91,7 @@ export class FogOfWarRenderer {
    * Call each frame — internally tracks version to avoid redundant rebuilds.
    */
   sync(fogManager: FogOfWarManager): void {
+    if (!this._enabled) return;
     const version = fogManager.getVersion();
     if (version === this.lastVersion) return;
     this.lastVersion = version;

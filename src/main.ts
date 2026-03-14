@@ -6,6 +6,7 @@ import { Minimap } from './engine/Minimap';
 import type { GameConfig } from './game/GameConfig';
 import { BUILDING_DEFINITIONS } from './game/BuildingType';
 import type { SaveData } from './game/SaveLoad';
+import { loadSettings } from './game/SettingsStorage';
 import './ui/styles.css';
 
 // UI modules
@@ -99,6 +100,42 @@ app.innerHTML = `
         <input type="range" id="vol-sfx" min="0" max="100" value="80" class="audio-slider">
         <label class="audio-slider-label">Music Volume</label>
         <input type="range" id="vol-music" min="0" max="100" value="30" class="audio-slider">
+      </div>
+      <div class="nav-drawer-divider"></div>
+      <li data-headline="Graphics" data-nonclickable>${icon('settings')} Graphics</li>
+      <div class="graphics-settings" style="padding:4px 24px 12px;">
+        <label class="audio-slider-label">Shadows</label>
+        <select id="gfx-shadows" class="settings-select">
+          <option value="off">Off</option>
+          <option value="blob_only">Blob Only</option>
+          <option value="low">Low</option>
+          <option value="high">High</option>
+        </select>
+        <label class="audio-slider-label">Post-Processing</label>
+        <select id="gfx-post" class="settings-select">
+          <option value="off">Off</option>
+          <option value="color_only">Color Only</option>
+          <option value="full">Full (Bloom)</option>
+        </select>
+        <label class="audio-slider-label">Weather</label>
+        <select id="gfx-weather" class="settings-select">
+          <option value="none">Off</option>
+          <option value="rain">Rain</option>
+          <option value="snow">Snow</option>
+        </select>
+        <label class="audio-slider-label">Time of Day</label>
+        <select id="gfx-time" class="settings-select">
+          <option value="morning">Morning</option>
+          <option value="midday">Midday</option>
+          <option value="evening">Evening</option>
+          <option value="night">Night</option>
+          <option value="auto">Auto-Cycle</option>
+        </select>
+        <label class="audio-slider-label">Fog of War</label>
+        <select id="gfx-fog" class="settings-select">
+          <option value="on">On</option>
+          <option value="off">Off</option>
+        </select>
       </div>
     </ul>
   </nav>
@@ -309,6 +346,24 @@ initAppBar(
 
 initSetupScreen(startGame);
 
+// Initialize settings UI from persisted values
+{
+  const saved = loadSettings();
+  (document.getElementById('vol-master') as HTMLInputElement).value = String(Math.round(saved.audio.masterVolume * 100));
+  (document.getElementById('vol-sfx') as HTMLInputElement).value = String(Math.round(saved.audio.sfxVolume * 100));
+  (document.getElementById('vol-music') as HTMLInputElement).value = String(Math.round(saved.audio.musicVolume * 100));
+  (document.getElementById('gfx-shadows') as HTMLSelectElement).value = saved.graphics.shadows;
+  (document.getElementById('gfx-post') as HTMLSelectElement).value = saved.graphics.postProcessing;
+  (document.getElementById('gfx-weather') as HTMLSelectElement).value = saved.graphics.weather;
+  (document.getElementById('gfx-time') as HTMLSelectElement).value = saved.graphics.timeOfDay;
+  (document.getElementById('gfx-fog') as HTMLSelectElement).value = saved.graphics.fogOfWar ? 'on' : 'off';
+  // Apply persisted audio volumes immediately
+  audioManager.masterVolume = saved.audio.masterVolume;
+  audioManager.sfxVolume = saved.audio.sfxVolume;
+  audioManager.musicVolume = saved.audio.musicVolume;
+  if (saved.audio.muted) audioManager.muted = true;
+}
+
 // ============================================================
 // startGame — creates Game instance and wires controllers
 // ============================================================
@@ -346,6 +401,9 @@ async function startGame(config: Partial<GameConfig>, savedData?: SaveData): Pro
   currentTooltip?.dispose();
 
   await game.start(savedData);
+
+  // Apply persisted graphics settings
+  game.applyGraphicsSettings(loadSettings().graphics);
 
   // Set up tooltip controller
   const tooltipEl = document.getElementById('tooltip')!;

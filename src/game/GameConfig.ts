@@ -70,3 +70,33 @@ export const SCENARIO_TERRAIN_BALANCE: Record<
     [TerrainType.Desert]: 0.05,
   },
 };
+
+export interface GraphicsSettings {
+  shadows: 'off' | 'blob_only' | 'low' | 'high';
+  postProcessing: 'off' | 'color_only' | 'full';
+  weather: 'none' | 'rain' | 'snow';
+  timeOfDay: 'morning' | 'midday' | 'evening' | 'night' | 'auto';
+  fogOfWar: boolean;
+}
+
+export const DEFAULT_GRAPHICS: GraphicsSettings = {
+  shadows: 'blob_only',
+  postProcessing: 'color_only',
+  weather: 'none',
+  timeOfDay: 'midday',
+  fogOfWar: true,
+};
+
+export interface AudioSettings {
+  masterVolume: number;
+  sfxVolume: number;
+  musicVolume: number;
+  muted: boolean;
+}
+
+export const DEFAULT_AUDIO: AudioSettings = {
+  masterVolume: 0.5,
+  sfxVolume: 0.8,
+  musicVolume: 0.3,
+  muted: false,
+};
