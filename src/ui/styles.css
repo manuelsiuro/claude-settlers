@@ -39,6 +39,46 @@
   --color-tier-3: #7B1FA2;
 }
 
+/* Day theme defaults (unlayered so they resolve outside @layer theme) */
+:root {
+  --color-primary: #1a73e8;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #d0e8ff;
+  --color-on-primary-container: #003366;
+  --color-surface: #FAFAF7;
+  --color-on-surface: #1a1a1a;
+  --color-on-surface-variant: #666666;
+  --color-on-surface-muted: #555555;
+  --color-on-surface-faint: #999999;
+  --color-outline-variant: #e0e0e0;
+  --color-outline-soft: #e8e5dc;
+  --color-surface-container: #f5f0e8;
+  --color-surface-dim: #f0efe8;
+  --color-surface-container-highest: #f0f0f0;
+  --color-secondary-container: #e0e0e0;
+  --color-input-bg: #ffffff;
+  --color-input-border: #cccccc;
+  --color-progress-bg: #e0e0e0;
+  --color-icon-btn-hover: rgba(0,0,0,0.08);
+  --color-icon-btn-active: rgba(0,0,0,0.12);
+  --color-overlay-bg: rgba(0,0,0,0.04);
+  --color-card-bg: #ffffff;
+  --color-card-border: rgba(0,0,0,0.08);
+  --color-card-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  --color-card-shadow-hover: 0 2px 8px rgba(0,0,0,0.1);
+  --color-pill-bg: rgba(0,0,0,0.05);
+  --color-pill-border: rgba(0,0,0,0.08);
+  --color-stat-highlight-bg: rgba(26,115,232,0.08);
+  --color-stat-highlight-border: rgba(26,115,232,0.15);
+  --color-medieval-gold: #B8860B;
+  --color-medieval-brown: #3E2723;
+  --color-medieval-green: #2E7D32;
+  --color-tier-logistics: #607D8B;
+  --color-tier-1: #4CAF50;
+  --color-tier-2: #FF8F00;
+  --color-tier-3: #7B1FA2;
+}
+
 /* Night theme overrides */
 html[data-theme="night"] {
   --color-primary: #6ba3f7;
@@ -389,7 +429,8 @@ html, body {
   right: 16px;
   width: 300px;
   max-height: 60vh;
-  background: var(--color-surface);
+  background-color: var(--color-surface);
+  color: var(--color-on-surface);
   border-radius: 16px;
   box-shadow: 0 4px 24px rgba(0,0,0,0.15);
   z-index: var(--z-panels);
@@ -724,7 +765,8 @@ html[data-theme="night"] .cost-short {
   left: 16px;
   width: 280px;
   max-height: 60vh;
-  background: var(--color-surface);
+  background-color: var(--color-surface);
+  color: var(--color-on-surface);
   border-radius: 16px;
   box-shadow: 0 4px 24px rgba(0,0,0,0.15);
   z-index: var(--z-panels);
@@ -1043,7 +1085,8 @@ html[data-theme="night"] .state-destroyed {
   left: 16px;
   width: 280px;
   max-height: calc(100vh - 80px);
-  background: var(--color-surface);
+  background-color: var(--color-surface);
+  color: var(--color-on-surface);
   border-radius: 16px;
   box-shadow: 0 4px 24px rgba(0,0,0,0.15);
   z-index: var(--z-panels);
