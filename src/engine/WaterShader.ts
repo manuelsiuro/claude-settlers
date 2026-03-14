@@ -103,23 +103,15 @@ export function createWaterMaterial(): THREE.ShaderMaterial {
   });
 }
 
-/** Shared water materials that get updated each frame */
-const waterMaterials: THREE.ShaderMaterial[] = [];
+import { shaderTimeManager } from './ShaderTimeManager';
 
 /** Register a water material for time updates */
 export function registerWaterMaterial(mat: THREE.ShaderMaterial): void {
-  waterMaterials.push(mat);
+  shaderTimeManager.register(mat as Parameters<typeof shaderTimeManager.register>[0]);
 }
 
 /** Unregister a water material (call on dispose to prevent leaks) */
 export function unregisterWaterMaterial(mat: THREE.ShaderMaterial): void {
-  const idx = waterMaterials.indexOf(mat);
-  if (idx !== -1) waterMaterials.splice(idx, 1);
+  shaderTimeManager.unregister(mat as Parameters<typeof shaderTimeManager.unregister>[0]);
 }
 
-/** Call each frame to animate all water materials */
-export function updateWaterTime(time: number): void {
-  for (const mat of waterMaterials) {
-    mat.uniforms.uTime.value = time;
-  }
-}

@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { HexGrid } from '../game/HexGrid';
 import type { Flag, Road } from '../game/RoadNetwork';
 import type { RoadNetwork } from '../game/RoadNetwork';
+import type { Unit } from '../game/Unit';
 import { MapRenderer } from './MapRenderer';
 import { assetLoader } from './AssetLoader';
 import type { ResourceModelName } from './AssetLoader';
@@ -12,10 +13,20 @@ const FLAG_HEIGHT = 0.6;
 const FLAG_COLOR = 0xdd3333;
 /** Flag pole color */
 const POLE_COLOR = 0x8b4513;
-/** Road line color */
+/** Road default color (transporter assigned, idle) */
 const ROAD_COLOR = 0xc4a060;
+/** Road color when transporter is actively carrying goods */
+const ROAD_COLOR_ACTIVE = 0x4caf50;
+/** Road color when no transporter is assigned yet */
+const ROAD_COLOR_UNASSIGNED = 0x999999;
 /** Road line width - used for tube radius */
 const ROAD_RADIUS = 0.04;
+
+/** Traffic state for a road segment */
+type TrafficState = 'unassigned' | 'idle' | 'active';
+
+/** Lookup function to get a unit by ID */
+export type UnitLookup = (id: string) => (Pick<Unit, 'carryingResource'>) | undefined;
 /** Scale for resource models at flags */
 const FLAG_RESOURCE_SCALE = 0.9;
 /** Y offset for resource models at flags */
@@ -36,6 +47,8 @@ export class RoadRenderer {
   private roadMeshes: Map<string, THREE.Mesh> = new Map();
   private flagResourceMeshes: Map<string, THREE.Group> = new Map();
   private flagResourceFingerprints: Map<string, string> = new Map();
+  /** Cached traffic state per road to avoid unnecessary material updates */
+  private roadTrafficStates: Map<string, TrafficState> = new Map();
   private grid: HexGrid;
 
   constructor() {
@@ -81,11 +94,20 @@ export class RoadRenderer {
   /**
    * Sync the 3D scene with the current road network state.
    * Call each frame or when the network changes.
+   * @param unitLookup Optional function to look up units by ID for traffic coloring.
+   *   When provided, roads are colored based on traffic activity:
+   *   - Green: transporter actively carrying goods
+   *   - Default (sandy): transporter assigned but idle
+   *   - Grey: no transporter assigned yet
    */
-  sync(network: RoadNetwork): void {
+  sync(network: RoadNetwork, unitLookup?: UnitLookup): void {
     const flags = network.getAllFlags();
+    const roads = network.getAllRoads();
     this.syncFlags(flags);
-    this.syncRoads(network.getAllRoads(), network);
+    this.syncRoads(roads, network);
+    if (unitLookup) {
+      this.syncRoadTraffic(roads, unitLookup);
+    }
     this.syncFlagResources(flags);
   }
 
@@ -121,6 +143,56 @@ export class RoadRenderer {
     for (const id of this.roadMeshes.keys()) {
       if (!currentIds.has(id)) {
         this.removeRoad(id);
+      }
+    }
+  }
+
+  /** Determine the traffic state for a road segment */
+  private getTrafficState(road: Road, unitLookup: UnitLookup): TrafficState {
+    if (!road.transporterId) return 'unassigned';
+    const unit = unitLookup(road.transporterId);
+    if (unit?.carryingResource) return 'active';
+    return 'idle';
+  }
+
+  /** Get the color for a given traffic state */
+  private getTrafficColor(state: TrafficState): number {
+    switch (state) {
+      case 'active': return ROAD_COLOR_ACTIVE;
+      case 'unassigned': return ROAD_COLOR_UNASSIGNED;
+      default: return ROAD_COLOR;
+    }
+  }
+
+  /**
+   * Update road colors based on transporter traffic activity.
+   * Only updates materials when the traffic state actually changes.
+   */
+  private syncRoadTraffic(roads: Road[], unitLookup: UnitLookup): void {
+    for (const road of roads) {
+      const mesh = this.roadMeshes.get(road.id);
+      if (!mesh) continue;
+
+      const newState = this.getTrafficState(road, unitLookup);
+      const oldState = this.roadTrafficStates.get(road.id);
+
+      if (newState === oldState) continue;
+
+      this.roadTrafficStates.set(road.id, newState);
+      const color = this.getTrafficColor(newState);
+
+      // Update main mesh material color
+      if (mesh.material instanceof THREE.MeshLambertMaterial) {
+        mesh.material.color.setHex(color);
+      }
+
+      // Update ghost clone materials
+      const meshName = `road_${road.id}`;
+      for (const { roads: ghost } of this.wrapGroups) {
+        const clone = ghost.children.find((c) => c.name === meshName);
+        if (clone instanceof THREE.Mesh && clone.material instanceof THREE.MeshLambertMaterial) {
+          clone.material.color.setHex(color);
+        }
       }
     }
   }
@@ -224,6 +296,7 @@ export class RoadRenderer {
         mesh.material.dispose();
       }
       this.roadMeshes.delete(id);
+      this.roadTrafficStates.delete(id);
     }
 
     for (const { roads: ghost } of this.wrapGroups) {
@@ -360,6 +433,7 @@ export class RoadRenderer {
     }
     this.flagResourceMeshes.clear();
     this.flagResourceFingerprints.clear();
+    this.roadTrafficStates.clear();
 
     this.flagGroup.removeFromParent();
     this.roadGroup.removeFromParent();

@@ -98,20 +98,46 @@ export type ResourceModelName = (typeof RESOURCE_MODELS)[number];
  * Loads and caches GLTF models for reuse via cloning.
  * All models are loaded once at startup; instances are cloned per use.
  */
+/** Check whether an error looks like a network failure (as opposed to a GLTF parse error). */
+function isNetworkError(error: unknown): boolean {
+  if (error instanceof TypeError) return true; // fetch network errors
+  const msg = error instanceof Error ? error.message : String(error);
+  return /network|fetch|abort|timeout|ERR_CONNECTION|ECONNREFUSED/i.test(msg);
+}
+
 export class AssetLoader {
   private loader = new GLTFLoader();
   private models = new Map<string, THREE.Group>();
+
+  /**
+   * Load a GLTF model with retry logic for transient network failures.
+   * Retries up to `maxRetries` times with exponential backoff (500ms, 1000ms, ...).
+   * Only network errors are retried; parse errors are thrown immediately.
+   */
+  private async loadWithRetry(url: string, maxRetries = 2): Promise<THREE.Group> {
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const gltf = await this.loader.loadAsync(url);
+        const group = new THREE.Group();
+        while (gltf.scene.children.length > 0) {
+          group.add(gltf.scene.children[0]);
+        }
+        return group;
+      } catch (error) {
+        const shouldRetry = attempt < maxRetries && isNetworkError(error);
+        if (!shouldRetry) throw error;
+        await new Promise((resolve) => setTimeout(resolve, 500 * Math.pow(2, attempt)));
+      }
+    }
+    throw new Error(`Failed to load ${url}`); // unreachable
+  }
 
   /** Load a batch of models from a directory. Logs warnings for failed loads. */
   private async loadModels(names: readonly string[], directory: string): Promise<void> {
     const promises = names.map(async (name) => {
       const path = `/models/${directory}/${name}.glb`;
       try {
-        const gltf = await this.loader.loadAsync(path);
-        const group = new THREE.Group();
-        while (gltf.scene.children.length > 0) {
-          group.add(gltf.scene.children[0]);
-        }
+        const group = await this.loadWithRetry(path);
         group.name = name;
         this.models.set(name, group);
       } catch (err) {

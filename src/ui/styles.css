@@ -423,6 +423,32 @@ html, body {
   background: var(--color-surface-dim);
 }
 
+.build-category-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px 8px 8px;
+  overflow-x: auto;
+  flex-shrink: 0;
+}
+.build-tab {
+  padding: 4px 10px;
+  border-radius: 16px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid var(--color-outline);
+  background: transparent;
+  color: var(--color-on-surface-variant);
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+.build-tab:hover { background: var(--color-surface-variant); }
+.build-tab-active {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  border-color: var(--color-primary);
+}
+
 .build-tier {
   margin-bottom: 8px;
 }
@@ -1289,32 +1315,42 @@ html[data-theme="night"] .state-destroyed {
   to { transform: scale(1); opacity: 1; }
 }
 
-/* Mobile: full-width panels */
-@media (max-width: 480px) {
+/* Mobile: bottom sheet panels */
+@media (max-width: 768px) {
+  /* Info panel, stats panel, build panel — slide up from bottom */
+  .info-panel,
+  .stats-panel,
   .build-panel {
-    left: 8px;
-    right: 8px;
-    width: auto;
-    bottom: 80px;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
     max-height: 50vh;
+    border-radius: 16px 16px 0 0;
+    overflow-y: auto;
+    transform: translateY(0);
+    transition: transform 0.3s ease;
   }
 
-  .info-panel {
-    left: 8px;
-    right: 8px;
-    width: auto;
-    bottom: 80px;
-    max-height: 50vh;
+  /* Add a drag handle indicator at the top */
+  .info-panel::before,
+  .stats-panel::before,
+  .build-panel::before {
+    content: '';
+    display: block;
+    width: 40px;
+    height: 4px;
+    background: rgba(128, 128, 128, 0.5);
+    border-radius: 2px;
+    margin: 8px auto;
   }
+}
 
-  .stats-panel {
-    left: 8px;
-    right: 8px;
-    width: auto;
-    top: 56px;
-    max-height: calc(100vh - 140px);
-  }
-
+/* Mobile: smaller elements */
+@media (max-width: 480px) {
   .minimap-container {
     width: 120px;
     top: 48px;

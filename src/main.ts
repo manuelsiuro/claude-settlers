@@ -668,6 +668,9 @@ function formatProductionSummary(def: BuildingDefinition): string {
   </div>`;
 }
 
+/** Current build panel filter category */
+let buildFilterCategory: string = 'all';
+
 /** Build the building menu HTML organized by tier */
 function populateBuildPanel(): void {
   const tiers = [
@@ -678,9 +681,24 @@ function populateBuildPanel(): void {
 
   const available = getPlayerResources();
 
-  let html = '';
+  // Category filter tabs
+  const categories = [
+    { key: 'all', label: 'All' },
+    { key: 'gathering', label: 'Economy' },
+    { key: 'processing', label: 'Processing' },
+    { key: 'military', label: 'Military' },
+    { key: 'logistics', label: 'Logistics' },
+  ];
+  let html = '<div class="build-category-tabs">';
+  for (const cat of categories) {
+    const active = buildFilterCategory === cat.key ? 'build-tab-active' : '';
+    html += `<button class="build-tab ${active}" data-category="${cat.key}">${cat.label}</button>`;
+  }
+  html += '</div>';
 
-  // Logistics section: Flag & Road buttons
+  // Logistics section: Flag & Road buttons (visible in 'all' and 'logistics' filters)
+  const showLogistics = buildFilterCategory === 'all' || buildFilterCategory === 'logistics';
+  if (showLogistics) {
   html += `<div class="build-tier" data-tier="logistics">
     <div class="build-tier-label"><span class="tier-badge tier-badge-logistics">LOG</span> Logistics</div>
     <button class="build-item" data-action="place-flag">
@@ -700,9 +718,14 @@ function populateBuildPanel(): void {
       </div>
     </button>
   </div>`;
+  }
 
   for (const { tier, label } of tiers) {
-    const buildings = getBuildingsByTier(tier);
+    const buildings = getBuildingsByTier(tier).filter((def) => {
+      if (buildFilterCategory === 'all') return true;
+      return def.category === buildFilterCategory;
+    });
+    if (buildings.length === 0) continue;
     html += `<div class="build-tier" data-tier="${tier}"><div class="build-tier-label"><span class="tier-badge tier-badge-${tier}">${tier}</span> ${label}</div>`;
     for (const def of buildings) {
       const affordable = canAfford(def, available);
@@ -1560,6 +1583,40 @@ buildContent.addEventListener('click', (e) => {
   const type = btn.dataset.buildingType as BuildingType;
   if (type) {
     startPlacement(type);
+  }
+});
+
+// Category tab click handler
+buildContent.addEventListener('click', (e) => {
+  const tab = (e.target as HTMLElement).closest('.build-tab') as HTMLElement | null;
+  if (!tab) return;
+  const cat = tab.dataset.category;
+  if (cat) {
+    buildFilterCategory = cat;
+    populateBuildPanel();
+  }
+});
+
+// Building hotkeys (only when build panel is open)
+document.addEventListener('keydown', (e) => {
+  if (buildPanel.classList.contains('hidden')) return;
+  if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+  const HOTKEYS: Record<string, BuildingType> = {
+    'w': BuildingType.WoodcutterHut,
+    'f': BuildingType.ForesterHut,
+    'q': BuildingType.Quarry,
+    'g': BuildingType.GuardHut,
+    's': BuildingType.Sawmill,
+    'b': BuildingType.Barracks,
+  };
+  const type = HOTKEYS[e.key.toLowerCase()];
+  if (type) {
+    e.preventDefault();
+    const def = BUILDING_DEFINITIONS[type];
+    const available = getPlayerResources();
+    if (canAfford(def, available)) {
+      startPlacement(type);
+    }
   }
 });
 

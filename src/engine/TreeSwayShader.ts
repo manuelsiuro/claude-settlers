@@ -83,23 +83,15 @@ export function createTreeSwayMaterial(
   return mat;
 }
 
-/** Shared tree sway materials that get updated each frame */
-const treeSwayMaterials: THREE.ShaderMaterial[] = [];
+import { shaderTimeManager } from './ShaderTimeManager';
 
 /** Register a tree sway material for time updates */
 export function registerTreeSwayMaterial(mat: THREE.ShaderMaterial): void {
-  treeSwayMaterials.push(mat);
+  shaderTimeManager.register(mat as Parameters<typeof shaderTimeManager.register>[0]);
 }
 
 /** Unregister a tree sway material (call on dispose) */
 export function unregisterTreeSwayMaterial(mat: THREE.ShaderMaterial): void {
-  const idx = treeSwayMaterials.indexOf(mat);
-  if (idx !== -1) treeSwayMaterials.splice(idx, 1);
+  shaderTimeManager.unregister(mat as Parameters<typeof shaderTimeManager.unregister>[0]);
 }
 
-/** Call each frame to animate all tree sway materials */
-export function updateTreeSwayTime(time: number): void {
-  for (const mat of treeSwayMaterials) {
-    mat.uniforms.uTime.value = time;
-  }
-}

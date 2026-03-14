@@ -35,8 +35,7 @@ import { SelectionController } from './SelectionController';
 import { RoadPlacementController } from './RoadPlacementController';
 import { CameraController } from './CameraController';
 import { assetLoader } from './AssetLoader';
-import { updateWaterTime } from './WaterShader';
-import { updateTreeSwayTime } from './TreeSwayShader';
+import { shaderTimeManager } from './ShaderTimeManager';
 import { BUILDING_DEFINITIONS } from '../game/BuildingType';
 import type { SaveData } from '../game/SaveLoad';
 import { serializeGame, deserializeGame } from '../game/SaveLoad';
@@ -55,6 +54,7 @@ import { createDefaultDistribution } from '../game/GoodsDistribution';
 import type { GoodsDistributionSettings } from '../game/GoodsDistribution';
 import { PerformanceMonitor } from './PerformanceMonitor';
 import { PostProcessing } from './PostProcessing';
+import { WeatherController } from './WeatherController';
 
 export type GameNotificationType =
   | 'building_complete'
@@ -111,6 +111,7 @@ export class Game {
   private distributionSettings: GoodsDistributionSettings;
   private performanceMonitor: PerformanceMonitor;
   private postProcessing: PostProcessing;
+  private weatherController: WeatherController;
   private aiPlayers: AIPlayer[] = [];
   private roadRenderer: RoadRenderer;
   private territoryRenderer: TerritoryRenderer;
@@ -227,6 +228,7 @@ export class Game {
     this.logisticsManager.setDistributionSettings(this.distributionSettings);
     this.performanceMonitor = new PerformanceMonitor();
     this.postProcessing = new PostProcessing(this.renderer, this.scene, this.camera);
+    this.weatherController = new WeatherController();
     // Wire production events to economy tracker
     this.productionManager.onProductionComplete = (inputs, outputs) => {
       for (const input of inputs) {
@@ -408,6 +410,9 @@ export class Game {
     // Set up blob shadows
     this.blobShadowRenderer.addToScene(this.scene, this.grid);
 
+    // Set up weather controller
+    this.weatherController.addToScene(this.scene);
+
     // Set up fog of war renderer + wire into unit/building renderers
     this.fogOfWarRenderer.addToScene(this.scene, this.grid);
     this.fogOfWarRenderer.setPlayerId(this.humanPlayerId);
@@ -451,7 +456,7 @@ export class Game {
       for (const building of this.gameState.getAllBuildings()) {
         this.buildingRenderer.addBuilding(building, this.grid);
       }
-      this.roadRenderer.sync(this.roadNetwork);
+      this.roadRenderer.sync(this.roadNetwork, (id) => this.gameState.getUnit(id));
       this.territoryRenderer.sync(this.territoryManager);
 
       // Rebuild deposit markers from revealed deposits
@@ -524,11 +529,10 @@ export class Game {
       this.performanceMonitor.tick();
       const rawDelta = Math.min(clock.getDelta(), 0.1); // Cap at 100ms to prevent teleporting
 
-      // Camera, water, and tree sway always update (even when paused)
+      // Camera and shader time always update (even when paused)
       this.cameraController?.update();
       const elapsed = clock.getElapsedTime();
-      updateWaterTime(elapsed);
-      updateTreeSwayTime(elapsed);
+      shaderTimeManager.update(elapsed);
 
       // Atmosphere always updates (even paused) for smooth transitions
       this.atmosphereController.update(rawDelta);
@@ -564,7 +568,7 @@ export class Game {
         ai.update(deltaTime);
       }
       this.economyTracker.update(deltaTime);
-      this.roadRenderer.sync(this.roadNetwork);
+      this.roadRenderer.sync(this.roadNetwork, (id) => this.gameState.getUnit(id));
       this.territoryRenderer.sync(this.territoryManager);
       this.fogOfWarManager.markDirty(); // Units move every frame
       this.fogOfWarManager.update();
@@ -594,6 +598,7 @@ export class Game {
         (id) => this.unitRenderer.getMesh(id),
       );
       this.productionChainOverlay.update(deltaTime);
+      this.weatherController.update(rawDelta, this.camera.position);
 
       this.postProcessing.render();
     };
@@ -768,6 +773,7 @@ export class Game {
     this.combatRenderer.dispose();
     this.buildingStatusOverlay.dispose();
     this.buildingAnimator.dispose();
+    this.weatherController.dispose();
     this.particleSystem.dispose();
     this.treeRenderer.dispose();
     this.depositRenderer.dispose();
@@ -940,6 +946,10 @@ export class Game {
 
   getAtmosphereController(): AtmosphereController {
     return this.atmosphereController;
+  }
+
+  getWeatherController(): WeatherController {
+    return this.weatherController;
   }
 
   getFogOfWarManager(): FogOfWarManager {

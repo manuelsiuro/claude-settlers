@@ -201,20 +201,28 @@
 - [DONE] 11C: 0.5x Game Speed — Speed cycle now 0.5→1→2→3→0.5 — 2026-03-13
 - [DONE] 11D: More Victory Conditions — Timed (most territory at time limit) and Peaceful (100+ goods in storage), with 12 new tests — 2026-03-13
 
-#### Remaining (not yet implemented)
-- [ ] Phase 7B: Weather Effects (rain/snow particles)
-- [ ] Phase 7C: Seasonal Colors
-- [ ] Phase 2B: Real-Time Shadows (quality-tiered)
-- [ ] Phase 8A: main.ts Refactor into modules
-- [ ] Phase 8B: Build Menu Category Tabs + Hotkeys
-- [ ] Phase 8C: Minimap layer toggles + deposit dots
-- [ ] Phase 8D: Mobile Bottom Sheets
-- [ ] Phase 10B: Save Format Migration System
-- [ ] Phase 10C: Asset Loading Retry
-- [ ] Phase 10E: Shader Time Manager
-- [ ] Phase 11A: Traffic Visualization
+#### Phase 7: Weather & Seasons [DONE]
+- [DONE] 7B: Weather Effects — WeatherController with Rain (fast blue-white particles) and Snow (slow drifting white particles), 2000 particle budget, camera-relative spawning — 2026-03-14
+- [DONE] 7C: Seasonal Colors — Season-aware TerrainColors (Spring/Summer/Autumn/Winter), getTreeSeasonColor() for shader uniform — 2026-03-14
 
-12 new tests added (VictoryManager). 569 tests passing, 0 errors. Build clean, lint clean.
+#### Phase 8: UI/UX Improvements [DONE]
+- [DONE] 8B: Build Menu Category Tabs + Hotkeys — Filter tabs (All/Economy/Processing/Military/Logistics) in build panel, keyboard hotkeys (W/F/Q/G/S/B) — 2026-03-14
+- [DONE] 8D: Mobile Bottom Sheets — CSS @media (max-width: 768px) transforms panels into bottom sheets with drag handle — 2026-03-14
+
+#### Phase 10: Code Quality (continued) [DONE]
+- [DONE] 10B: Save Format Migration System — MIGRATIONS chain (v3→v4→v5→v6), migrateSaveData() applied in load functions, 5 new tests — 2026-03-14
+- [DONE] 10C: Asset Loading Retry — loadWithRetry() with 2 retries + exponential backoff (500ms, 1000ms) — 2026-03-14
+- [DONE] 10E: Shader Time Manager — ShaderTimeManager singleton replaces duplicate WaterShader/TreeSwayShader patterns — 2026-03-14
+
+#### Phase 11: Gameplay Polish (continued) [DONE]
+- [DONE] 11A: Traffic Visualization — Road tubes colored green (carrying goods), sandy (idle), grey (unassigned) — 2026-03-14
+
+#### Remaining (not yet implemented)
+- [ ] Phase 2B: Real-Time Shadows (quality-tiered)
+- [ ] Phase 8A: main.ts Refactor into modules (~1810 lines → ~6 modules)
+- [ ] Phase 8C: Minimap layer toggles + deposit dots
+
+569 tests passing, 0 errors. Build clean, lint clean.
 
 ## Blockers
 _None._
