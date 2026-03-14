@@ -217,12 +217,16 @@
 #### Phase 11: Gameplay Polish (continued) [DONE]
 - [DONE] 11A: Traffic Visualization — Road tubes colored green (carrying goods), sandy (idle), grey (unassigned) — 2026-03-14
 
-#### Remaining (not yet implemented)
-- [ ] Phase 2B: Real-Time Shadows (quality-tiered)
-- [ ] Phase 8A: main.ts Refactor into modules (~1810 lines → ~6 modules)
-- [ ] Phase 8C: Minimap layer toggles + deposit dots
+#### Phase 2B: Real-Time Shadows [DONE]
+- [DONE] 2B: Real-Time Shadows — ShadowQuality (Off/BlobOnly/Low/High), setShadowQuality() on Game, BuildingRenderer.setCastShadow(), MapRenderer.setReceiveShadow(), BasicShadowMap (512px) for Low, PCFSoftShadowMap (1024px) for High — 2026-03-14
 
-569 tests passing, 0 errors. Build clean, lint clean.
+#### Phase 8A: main.ts Refactor [DONE]
+- [DONE] 8A: main.ts refactored from 1867 → 443 lines (76% reduction), split into 8 focused UI modules: Snackbar (20), NotificationWiring (50), SetupScreen (98), GameOverScreen (110), AppBar (209), StatsPanel (234), BuildPanel (453), InfoPanel (475) — 2026-03-14
+
+#### Phase 8C: Minimap Enhancements [DONE]
+- [DONE] 8C: Minimap deposit dots (iron=grey, coal=dark, gold=yellow) + layer toggles (territory/buildings/units/deposits/fog) via setLayerVisible() — 2026-03-14
+
+All 17 tasks from the improvement plan are now complete. 569 tests passing, 0 errors. Build clean, lint clean.
 
 ## Blockers
 _None._

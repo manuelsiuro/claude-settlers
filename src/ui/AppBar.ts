@@ -1,0 +1,209 @@
+import type { Game } from '../engine/Game';
+import { audioManager } from '../engine/AudioManager';
+import { showSnackbar } from './Snackbar';
+import { saveToLocalStorage, downloadSave } from '../game/SaveLoad';
+
+let game: Game | undefined;
+let pauseIcon: HTMLElement;
+let playIcon: HTMLElement;
+let speedLabel: HTMLElement;
+let pauseOverlay: HTMLElement;
+
+type ToggleBuildPanelFn = () => void;
+type ShowStatsPanelFn = () => void;
+type ShowPriorityPanelFn = () => void;
+type HandleLoadFromFileFn = () => void;
+
+export function updatePauseSpeedUI(paused: boolean, speed: number): void {
+  pauseIcon.classList.toggle('hidden', paused);
+  playIcon.classList.toggle('hidden', !paused);
+  speedLabel.textContent = `${speed}x`;
+  pauseOverlay.classList.toggle('hidden', !paused);
+}
+
+export function initAppBar(
+  getGame: () => Game | undefined,
+  toggleBuildPanel: ToggleBuildPanelFn,
+  showStatsPanel: ShowStatsPanelFn,
+  showPriorityPanel: ShowPriorityPanelFn,
+  handleLoadFromFile: HandleLoadFromFileFn,
+): void {
+  const THEME_KEY = 'feudal-theme';
+
+  // Side panel toggle
+  const menuBtn = document.getElementById('menu-btn')!;
+  const sidePanel = document.getElementById('side-panel')!;
+  const navOverlay = document.getElementById('nav-overlay')!;
+
+  function openDrawer(): void {
+    sidePanel.classList.add('open');
+    navOverlay.classList.add('open');
+  }
+  function closeDrawer(): void {
+    sidePanel.classList.remove('open');
+    navOverlay.classList.remove('open');
+  }
+
+  menuBtn.addEventListener('click', () => {
+    if (sidePanel.classList.contains('open')) closeDrawer();
+    else openDrawer();
+  });
+  navOverlay.addEventListener('click', closeDrawer);
+
+  // Navigation drawer item clicks
+  const navItems = sidePanel.querySelectorAll('[data-headline]');
+  navItems.forEach((item) => {
+    item.addEventListener('click', () => {
+      const headline = item.getAttribute('data-headline');
+      closeDrawer();
+      if (headline === 'Statistics') {
+        showStatsPanel();
+      } else if (headline === 'Resource Priority') {
+        showPriorityPanel();
+      } else if (headline === 'Buildings') {
+        toggleBuildPanel();
+      } else if (headline === 'Save Game') {
+        handleSaveGame();
+      } else if (headline === 'Load Game') {
+        handleLoadFromFile();
+      } else if (headline === 'Download Save') {
+        handleDownloadSave();
+      } else {
+        showSnackbar(`${headline} — coming soon`);
+      }
+    });
+  });
+
+  // Theme toggle
+  const themeToggleInput = document.getElementById('theme-toggle-input') as HTMLInputElement;
+  themeToggleInput.addEventListener('change', () => {
+    const currentTheme = themeToggleInput.checked ? 'night' : 'day';
+    if (currentTheme === 'night') {
+      document.documentElement.setAttribute('data-theme', 'night');
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+    }
+    localStorage.setItem(THEME_KEY, currentTheme);
+  });
+
+  // Audio controls
+  const muteBtn = document.getElementById('mute-btn')!;
+  const muteIconOn = document.getElementById('mute-icon-on')!;
+  const muteIconOff = document.getElementById('mute-icon-off')!;
+  const musicBtn = document.getElementById('music-btn')!;
+  const volMaster = document.getElementById('vol-master') as HTMLInputElement;
+  const volSfx = document.getElementById('vol-sfx') as HTMLInputElement;
+  const volMusic = document.getElementById('vol-music') as HTMLInputElement;
+
+  function updateMuteUI(): void {
+    muteIconOn.classList.toggle('hidden', audioManager.muted);
+    muteIconOff.classList.toggle('hidden', !audioManager.muted);
+  }
+
+  function updateMusicUI(): void {
+    musicBtn.style.opacity = audioManager.isMusicPlaying ? '1' : '0.5';
+  }
+
+  muteBtn.addEventListener('click', () => {
+    audioManager.muted = !audioManager.muted;
+    updateMuteUI();
+    updateMusicUI();
+  });
+
+  musicBtn.addEventListener('click', () => {
+    if (audioManager.muted) return;
+    if (audioManager.isMusicPlaying) {
+      audioManager.stopMusic();
+    } else {
+      audioManager.startMusic();
+    }
+    updateMusicUI();
+  });
+
+  volMaster.addEventListener('input', () => {
+    audioManager.masterVolume = Number(volMaster.value) / 100;
+  });
+  volSfx.addEventListener('input', () => {
+    audioManager.sfxVolume = Number(volSfx.value) / 100;
+  });
+  volMusic.addEventListener('input', () => {
+    audioManager.musicVolume = Number(volMusic.value) / 100;
+  });
+
+  // Pause & speed controls
+  const pauseBtn = document.getElementById('pause-btn')!;
+  pauseIcon = document.getElementById('pause-icon')!;
+  playIcon = document.getElementById('play-icon')!;
+  const speedBtn = document.getElementById('speed-btn')!;
+  speedLabel = document.getElementById('speed-label')!;
+  pauseOverlay = document.getElementById('pause-overlay')!;
+  const pauseResumeBtn = document.getElementById('pause-resume-btn')!;
+
+  pauseBtn.addEventListener('click', () => {
+    game = getGame();
+    if (!game) return;
+    game.togglePause();
+    audioManager.play('ui_click');
+  });
+
+  pauseResumeBtn.addEventListener('click', () => {
+    game = getGame();
+    if (!game) return;
+    game.setPaused(false);
+    audioManager.play('ui_click');
+  });
+
+  speedBtn.addEventListener('click', () => {
+    game = getGame();
+    if (!game) return;
+    game.cycleSpeed();
+    audioManager.play('ui_click');
+  });
+
+  // Spacebar to toggle pause
+  window.addEventListener('keydown', (e) => {
+    game = getGame();
+    if (!game) return;
+    if (e.code !== 'Space') return;
+    const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+    const setupOv = document.getElementById('setup-overlay')!;
+    if (!setupOv.classList.contains('hidden')) return;
+    e.preventDefault();
+    game.togglePause();
+  });
+
+  /** Save the current game to localStorage */
+  function handleSaveGame(): void {
+    game = getGame();
+    if (!game) {
+      showSnackbar('No game in progress');
+      return;
+    }
+    try {
+      const data = game.serialize();
+      saveToLocalStorage(data);
+      showSnackbar('Game saved', 'success');
+    } catch (err) {
+      console.error('Save failed:', err);
+      showSnackbar('Save failed — storage may be full', 'error');
+    }
+  }
+
+  /** Download the current save as a JSON file */
+  function handleDownloadSave(): void {
+    game = getGame();
+    if (!game) {
+      showSnackbar('No game in progress');
+      return;
+    }
+    try {
+      const data = game.serialize();
+      downloadSave(data);
+      showSnackbar('Save file downloaded', 'success');
+    } catch (err) {
+      console.error('Download save failed:', err);
+      showSnackbar('Failed to download save', 'error');
+    }
+  }
+}
