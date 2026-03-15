@@ -66,11 +66,11 @@ export class TerritoryManager {
     return this.version;
   }
 
-  /** Get the player who controls a hex, or null if unclaimed */
+  /** Get the player who controls a hex, or null if unclaimed/out of bounds */
   getOwner(q: number, r: number): number | null {
     const grid = this.gameState.getGrid();
-    const wrapped = grid.wrap(q, r);
-    const key = HexGrid.key(wrapped.q, wrapped.r);
+    if (!grid.isInBounds(q, r)) return null;
+    const key = HexGrid.key(q, r);
     return this.territory.get(key) ?? null;
   }
 
@@ -153,11 +153,10 @@ export class TerritoryManager {
     source: { q: number; r: number; playerId: number; radius: number },
     distanceMap: Map<string, { playerId: number; distance: number }>,
   ): void {
-    const startWrapped = grid.wrap(source.q, source.r);
-    const startKey = HexGrid.key(startWrapped.q, startWrapped.r);
+    const startKey = HexGrid.key(source.q, source.r);
 
     // BFS queue: [q, r, distance]
-    const queue: [number, number, number][] = [[startWrapped.q, startWrapped.r, 0]];
+    const queue: [number, number, number][] = [[source.q, source.r, 0]];
     const visited = new Set<string>();
     visited.add(startKey);
 

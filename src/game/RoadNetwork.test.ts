@@ -68,10 +68,9 @@ describe('RoadNetwork', () => {
       expect(network.getFlagAt(4, 4)).toBeUndefined();
     });
 
-    it('should wrap coordinates when placing flags', () => {
-      const flag = network.placeFlag({ q: 20, r: 20 }, 1); // wraps to (4, 4) on 16x16
-      expect(flag).not.toBeNull();
-      expect(flag!.coord).toEqual({ q: 4, r: 4 });
+    it('should reject out-of-bounds coordinates when placing flags', () => {
+      const flag = network.placeFlag({ q: 20, r: 20 }, 1); // out of bounds on 16x16
+      expect(flag).toBeNull();
     });
   });
 

@@ -24,19 +24,22 @@ describe('HexGrid', () => {
     expect(grid.getTile(0, 0)).toBeUndefined();
   });
 
-  it('should wrap coordinates for world wrapping', () => {
+  it('should check bounds correctly', () => {
     const grid = new HexGrid(10, 8);
-    expect(grid.wrap(12, 3)).toEqual({ q: 2, r: 3 });
-    expect(grid.wrap(-1, -1)).toEqual({ q: 9, r: 7 });
-    expect(grid.wrap(5, 5)).toEqual({ q: 5, r: 5 });
+    expect(grid.isInBounds(0, 0)).toBe(true);
+    expect(grid.isInBounds(9, 7)).toBe(true);
+    expect(grid.isInBounds(5, 5)).toBe(true);
+    expect(grid.isInBounds(-1, 0)).toBe(false);
+    expect(grid.isInBounds(0, -1)).toBe(false);
+    expect(grid.isInBounds(10, 0)).toBe(false);
+    expect(grid.isInBounds(0, 8)).toBe(false);
   });
 
-  it('should get tiles with world wrapping', () => {
+  it('should return undefined for out-of-bounds coordinates', () => {
     const grid = new HexGrid(10, 10);
     grid.setTile(0, 0, TerrainType.Water);
-    const tile = grid.getTile(10, 10);
-    expect(tile).toBeDefined();
-    expect(tile!.terrain).toBe(TerrainType.Water);
+    expect(grid.getTile(10, 10)).toBeUndefined();
+    expect(grid.getTile(-1, 0)).toBeUndefined();
   });
 
   it('should return 6 neighbors', () => {
@@ -58,15 +61,16 @@ describe('HexGrid', () => {
     expect(grid.getAllTiles().length).toBe(3);
   });
 
-  it('should compute wrap vectors', () => {
-    const grid = new HexGrid(10, 8);
-    const { wrapQ, wrapR } = grid.getWrapVectors();
-    // wrapQ should be purely horizontal (q-direction offset)
-    expect(wrapQ.x).toBeCloseTo(Math.sqrt(3) * 10);
-    expect(wrapQ.z).toBeCloseTo(0);
-    // wrapR has both x and z components (r-direction is diagonal)
-    expect(wrapR.x).toBeCloseTo(Math.sqrt(3) / 2 * 8);
-    expect(wrapR.z).toBeCloseTo(1.5 * 8);
+  it('should return fewer than 6 neighbors at map edges', () => {
+    const grid = new HexGrid(10, 10);
+    for (let q = 0; q < 10; q++) {
+      for (let r = 0; r < 10; r++) {
+        grid.setTile(q, r, TerrainType.Grassland);
+      }
+    }
+    // Corner tile should have fewer neighbors
+    const neighbors = grid.getNeighbors(0, 0);
+    expect(neighbors.length).toBeLessThan(6);
   });
 });
 
@@ -88,29 +92,14 @@ describe('HexGrid.hexDistance', () => {
   });
 });
 
-describe('HexGrid.hexDistanceWrapped', () => {
-  it('should return same as hexDistance when no wrapping needed', () => {
+describe('HexGrid.hexDistanceWrapped (deprecated, delegates to hexDistance)', () => {
+  it('should return same as hexDistance', () => {
     const dist = HexGrid.hexDistanceWrapped({ q: 5, r: 5 }, { q: 10, r: 5 }, 32, 32);
     expect(dist).toBe(HexGrid.hexDistance({ q: 5, r: 5 }, { q: 10, r: 5 }));
   });
 
-  it('should find shorter path across map edge', () => {
-    // On a 32x32 map, (2,2) and (30,30): naive distance is 56 (hex cube dist)
-    // Wrapping via (-2,-2) image: dq=4, dr=4, hex dist = max(4,4,8) = 8
-    const naive = HexGrid.hexDistance({ q: 2, r: 2 }, { q: 30, r: 30 });
-    const wrapped = HexGrid.hexDistanceWrapped({ q: 2, r: 2 }, { q: 30, r: 30 }, 32, 32);
-    expect(wrapped).toBeLessThan(naive);
-    expect(wrapped).toBe(8);
-  });
-
   it('should return 0 for same coordinate', () => {
     expect(HexGrid.hexDistanceWrapped({ q: 5, r: 5 }, { q: 5, r: 5 }, 32, 32)).toBe(0);
-  });
-
-  it('should handle edge positions correctly', () => {
-    // (0,0) and (31,0) on a 32-wide map — 1 apart via wrapping
-    const dist = HexGrid.hexDistanceWrapped({ q: 0, r: 0 }, { q: 31, r: 0 }, 32, 32);
-    expect(dist).toBe(1);
   });
 
   it('should be symmetric', () => {
@@ -158,15 +147,15 @@ describe('HexGrid.findNearestTerrain', () => {
     expect(grid.findNearestTerrain({ q: 5, r: 5 }, TerrainType.Water, 10)).toBe(10);
   });
 
-  it('should find terrain with world wrapping', () => {
+  it('should not find terrain across map boundary (no wrapping)', () => {
     const grid = new HexGrid(10, 10);
     for (let q = 0; q < 10; q++)
       for (let r = 0; r < 10; r++)
         grid.setTile(q, r, TerrainType.Grassland);
     grid.setTile(9, 0, TerrainType.Forest);
-    // Coord (0, 0) wraps around — q=9 is neighbor via wrapping
+    // q=9 is 9 hexes away from (0,0) since there's no wrapping
     const dist = grid.findNearestTerrain({ q: 0, r: 0 }, TerrainType.Forest);
-    expect(dist).toBe(1);
+    expect(dist).toBe(9);
   });
 });
 

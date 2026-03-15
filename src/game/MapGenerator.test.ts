@@ -61,9 +61,10 @@ describe('MapGenerator', () => {
     expect(grassRatio).toBeGreaterThan(0.2);
     expect(grassRatio).toBeLessThan(0.55);
 
+    // Water border adds ~2 rings of water tiles, so water ratio is higher
     const waterRatio = counts[TerrainType.Water] / total;
     expect(waterRatio).toBeGreaterThan(0.05);
-    expect(waterRatio).toBeLessThan(0.25);
+    expect(waterRatio).toBeLessThan(0.35);
   });
 
   it('should have elevation values in [0, 1]', () => {

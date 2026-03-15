@@ -38,7 +38,6 @@ const DEFAULT_BUILDING_SCALE = 1.0;
  */
 export class BuildingRenderer {
   private buildingGroup: THREE.Group;
-  private wrapGroups: THREE.Group[] = [];
   private buildingMeshes: Map<string, THREE.Group> = new Map();
   private fogManager: FogOfWarManager | null = null;
   private humanPlayerId = 1;
@@ -67,39 +66,13 @@ export class BuildingRenderer {
       );
       // Enemy buildings: hidden if unexplored, shown if explored (even if not currently visible)
       mesh.visible = explored;
-      for (const ghost of this.wrapGroups) {
-        const ghostChild = ghost.children.find(
-          (c) => c.userData.buildingId === building.id,
-        );
-        if (ghostChild) ghostChild.visible = explored;
-      }
     }
   }
 
-  /** Add to scene and set up world wrapping */
-  addToScene(scene: THREE.Scene, grid: HexGrid): void {
+  /** Add to scene */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  addToScene(scene: THREE.Scene, _grid: HexGrid): void {
     scene.add(this.buildingGroup);
-
-    // World wrapping: 8 ghost copies matching MapRenderer
-    const { wrapQ, wrapR } = grid.getWrapVectors();
-    const multipliers = [
-      { mq: -1, mr: 0 }, { mq: 1, mr: 0 },
-      { mq: 0, mr: -1 }, { mq: 0, mr: 1 },
-      { mq: -1, mr: -1 }, { mq: 1, mr: -1 },
-      { mq: -1, mr: 1 }, { mq: 1, mr: 1 },
-    ];
-
-    for (const { mq, mr } of multipliers) {
-      const ghost = new THREE.Group();
-      ghost.position.set(
-        mq * wrapQ.x + mr * wrapR.x,
-        0,
-        mq * wrapQ.z + mr * wrapR.z,
-      );
-      ghost.name = `buildings_ghost_${mq}_${mr}`;
-      scene.add(ghost);
-      this.wrapGroups.push(ghost);
-    }
   }
 
   /** Add a building mesh to the scene */
@@ -137,13 +110,6 @@ export class BuildingRenderer {
     this.buildingGroup.add(mesh);
     this.buildingMeshes.set(building.id, mesh);
 
-    // Add clone to each ghost group for world wrapping
-    for (const ghost of this.wrapGroups) {
-      const clone = mesh.clone();
-      clone.position.copy(mesh.position);
-      clone.userData.buildingId = building.id;
-      ghost.add(clone);
-    }
   }
 
   /** Remove a building mesh from the scene */
@@ -155,16 +121,6 @@ export class BuildingRenderer {
     this.disposeMesh(mesh);
     this.buildingMeshes.delete(buildingId);
 
-    // Remove from ghost groups
-    for (const ghost of this.wrapGroups) {
-      const ghostChild = ghost.children.find(
-        (c) => c.userData.buildingId === buildingId,
-      );
-      if (ghostChild) {
-        ghost.remove(ghostChild);
-        this.disposeMesh(ghostChild as THREE.Group);
-      }
-    }
   }
 
   /** Get the 3D mesh for a building (for selection highlighting etc.) */
@@ -181,24 +137,11 @@ export class BuildingRenderer {
         }
       });
     }
-    // Also update ghost (wrap) copies
-    for (const ghost of this.wrapGroups) {
-      ghost.traverse((child) => {
-        if (child instanceof THREE.Mesh) {
-          child.castShadow = enabled;
-        }
-      });
-    }
   }
 
   /** Get all building meshes (for building animator) */
   getAllMeshes(): ReadonlyMap<string, THREE.Group> {
     return this.buildingMeshes;
-  }
-
-  /** Get wrap groups (for syncing ghost animations) */
-  getWrapGroups(): readonly THREE.Group[] {
-    return this.wrapGroups;
   }
 
   private disposeMesh(group: THREE.Group): void {
@@ -235,9 +178,5 @@ export class BuildingRenderer {
     };
 
     disposeGroup(this.buildingGroup);
-    for (const ghost of this.wrapGroups) {
-      disposeGroup(ghost);
-    }
-    this.wrapGroups = [];
   }
 }

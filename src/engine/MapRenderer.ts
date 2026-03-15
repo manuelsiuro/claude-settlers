@@ -7,14 +7,6 @@ import { createRng } from '../game/noise';
 import { assetLoader } from './AssetLoader';
 import { createWaterMaterial, registerWaterMaterial, unregisterWaterMaterial } from './WaterShader';
 
-/** World-wrap offset multipliers (8 neighbors) */
-const WRAP_MULTIPLIERS = [
-  { mq: -1, mr: 0 }, { mq: 1, mr: 0 },
-  { mq: 0, mr: -1 }, { mq: 0, mr: 1 },
-  { mq: -1, mr: -1 }, { mq: 1, mr: -1 },
-  { mq: -1, mr: 1 }, { mq: 1, mr: 1 },
-];
-
 /** Decoration placement data (no Three.js objects) */
 interface DecorationPlacement {
   modelName: string;
@@ -38,11 +30,9 @@ interface SubMeshInfo {
  * Renders a HexGrid as 3D terrain using InstancedMesh for performance.
  * Terrain tiles: 1 InstancedMesh per color group (+ 1 for water).
  * Decorations: 1 InstancedMesh per model sub-mesh type.
- * World wrapping via cloned InstancedMesh with position offsets.
  */
 export class MapRenderer {
   private instancedMeshes: THREE.InstancedMesh[] = [];
-  private ghostMeshes: THREE.InstancedMesh[] = [];
   /** Materials we created (and must dispose). Excludes shared materials from AssetLoader. */
   private ownedMaterials: THREE.Material[] = [];
   private waterMaterial: THREE.ShaderMaterial | null = null;
@@ -61,13 +51,12 @@ export class MapRenderer {
     this.grid = grid;
 
     const tiles = grid.getAllTiles();
-    const wrapOffsets = this.getWrapOffsets(grid);
 
     // Build terrain tile instances
-    this.buildTerrainInstances(tiles, wrapOffsets, scene);
+    this.buildTerrainInstances(tiles, scene);
 
     // Build decoration instances
-    this.buildDecorationInstances(tiles, wrapOffsets, scene);
+    this.buildDecorationInstances(tiles, scene);
   }
 
   /** Rebuild all terrain meshes (e.g., after terrain type changes) */
@@ -89,15 +78,6 @@ export class MapRenderer {
     const centerR = grid.height / 2;
     const { x, z } = HexGrid.hexToWorld(centerQ, centerR);
     return new THREE.Vector3(x, 0, z);
-  }
-
-  /** Compute world-space wrap offsets for the 8 ghost copies */
-  private getWrapOffsets(grid: HexGrid): { x: number; z: number }[] {
-    const { wrapQ, wrapR } = grid.getWrapVectors();
-    return WRAP_MULTIPLIERS.map(({ mq, mr }) => ({
-      x: mq * wrapQ.x + mr * wrapR.x,
-      z: mq * wrapQ.z + mr * wrapR.z,
-    }));
   }
 
   /** Extract geometry from the hex_tile GLTF model */
@@ -149,7 +129,6 @@ export class MapRenderer {
 
   private buildTerrainInstances(
     tiles: HexTile[],
-    wrapOffsets: { x: number; z: number }[],
     scene: THREE.Scene,
   ): void {
     const hexGeo = this.getHexGeometry();
@@ -200,9 +179,6 @@ export class MapRenderer {
       this.computeInstancedBounds(mesh);
       scene.add(mesh);
       this.instancedMeshes.push(mesh);
-
-      // Ghost copies
-      this.addGhostCopies(mesh, wrapOffsets, scene);
     }
 
     // Water tiles: 1 InstancedMesh with water ShaderMaterial
@@ -220,8 +196,6 @@ export class MapRenderer {
       this.computeInstancedBounds(waterMesh);
       scene.add(waterMesh);
       this.instancedMeshes.push(waterMesh);
-
-      this.addGhostCopies(waterMesh, wrapOffsets, scene);
     }
   }
 
@@ -229,7 +203,6 @@ export class MapRenderer {
 
   private buildDecorationInstances(
     tiles: HexTile[],
-    wrapOffsets: { x: number; z: number }[],
     scene: THREE.Scene,
   ): void {
     // Collect all decoration placements grouped by model name
@@ -294,27 +267,11 @@ export class MapRenderer {
         this.computeInstancedBounds(instMesh);
         scene.add(instMesh);
         this.instancedMeshes.push(instMesh);
-
-        this.addGhostCopies(instMesh, wrapOffsets, scene);
       }
     }
   }
 
   // ── Helpers ────────────────────────────────────────────────────
-
-  /** Clone an InstancedMesh for each wrap offset and add to scene */
-  private addGhostCopies(
-    mesh: THREE.InstancedMesh,
-    wrapOffsets: { x: number; z: number }[],
-    scene: THREE.Scene,
-  ): void {
-    for (const offset of wrapOffsets) {
-      const ghost = mesh.clone();
-      ghost.position.set(offset.x, 0, offset.z);
-      scene.add(ghost);
-      this.ghostMeshes.push(ghost);
-    }
-  }
 
   /** Compute bounding sphere that encompasses all instances for proper frustum culling */
   private computeInstancedBounds(mesh: THREE.InstancedMesh): void {
@@ -353,9 +310,6 @@ export class MapRenderer {
     for (const mesh of this.instancedMeshes) {
       mesh.receiveShadow = enabled;
     }
-    for (const ghost of this.ghostMeshes) {
-      ghost.receiveShadow = enabled;
-    }
   }
 
   /** Clean up all meshes */
@@ -367,12 +321,6 @@ export class MapRenderer {
       mesh.dispose();
     }
     this.instancedMeshes = [];
-
-    for (const ghost of this.ghostMeshes) {
-      ghost.removeFromParent();
-      ghost.dispose();
-    }
-    this.ghostMeshes = [];
 
     // Dispose only materials we created (NOT shared AssetLoader materials/geometries)
     for (const mat of this.ownedMaterials) {

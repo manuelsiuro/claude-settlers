@@ -188,29 +188,27 @@ export class TreeManager {
     grid: HexGrid,
   ): TreeEntity | null {
     const visited = new Set<string>();
-    const startWrapped = grid.wrap(origin.q, origin.r);
-    visited.add(HexGrid.key(startWrapped.q, startWrapped.r));
+    visited.add(HexGrid.key(origin.q, origin.r));
 
     // Check origin tile first
-    const originResult = this.findMatureTreeOnTile(startWrapped);
+    const originResult = this.findMatureTreeOnTile(origin);
     if (originResult) return originResult;
 
-    let frontier: HexCoord[] = [startWrapped];
+    let frontier: HexCoord[] = [origin];
 
     for (let dist = 1; dist <= maxRadius; dist++) {
       const nextFrontier: HexCoord[] = [];
       for (const pos of frontier) {
         const neighbors = grid.getNeighbors(pos.q, pos.r);
         for (const neighbor of neighbors) {
-          const nw = grid.wrap(neighbor.coord.q, neighbor.coord.r);
-          const key = HexGrid.key(nw.q, nw.r);
+          const key = HexGrid.key(neighbor.coord.q, neighbor.coord.r);
           if (visited.has(key)) continue;
           visited.add(key);
 
-          const result = this.findMatureTreeOnTile(nw);
+          const result = this.findMatureTreeOnTile(neighbor.coord);
           if (result) return result;
 
-          nextFrontier.push(nw);
+          nextFrontier.push(neighbor.coord);
         }
       }
       frontier = nextFrontier;
@@ -244,25 +242,23 @@ export class TreeManager {
     excludeTiles?: Set<string>,
   ): HexCoord | null {
     const visited = new Set<string>();
-    const startWrapped = grid.wrap(origin.q, origin.r);
-    visited.add(HexGrid.key(startWrapped.q, startWrapped.r));
+    visited.add(HexGrid.key(origin.q, origin.r));
 
-    let frontier: HexCoord[] = [startWrapped];
+    let frontier: HexCoord[] = [origin];
 
     for (let dist = 0; dist <= maxRadius; dist++) {
-      const tilesToCheck = dist === 0 ? [startWrapped] : [] as HexCoord[];
+      const tilesToCheck = dist === 0 ? [origin] : [] as HexCoord[];
 
       if (dist > 0) {
         const nextFrontier: HexCoord[] = [];
         for (const pos of frontier) {
           const neighbors = grid.getNeighbors(pos.q, pos.r);
           for (const neighbor of neighbors) {
-            const nw = grid.wrap(neighbor.coord.q, neighbor.coord.r);
-            const key = HexGrid.key(nw.q, nw.r);
+            const key = HexGrid.key(neighbor.coord.q, neighbor.coord.r);
             if (visited.has(key)) continue;
             visited.add(key);
-            nextFrontier.push(nw);
-            tilesToCheck.push(nw);
+            nextFrontier.push(neighbor.coord);
+            tilesToCheck.push(neighbor.coord);
           }
         }
         frontier = nextFrontier;

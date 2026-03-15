@@ -59,7 +59,6 @@ const HEX_VERTICES = Array.from({ length: 6 }, (_, i) => hexVertex(i));
  */
 export class TerritoryRenderer {
   private group: THREE.Group;
-  private wrapGroups: THREE.Group[] = [];
   private grid: HexGrid;
   private borderMeshes: THREE.Mesh[] = [];
   private fillMeshes: THREE.Mesh[] = [];
@@ -74,27 +73,6 @@ export class TerritoryRenderer {
   addToScene(scene: THREE.Scene, grid: HexGrid): void {
     this.grid = grid;
     scene.add(this.group);
-
-    // World wrapping ghost copies
-    const { wrapQ, wrapR } = grid.getWrapVectors();
-    const multipliers = [
-      { mq: -1, mr: 0 }, { mq: 1, mr: 0 },
-      { mq: 0, mr: -1 }, { mq: 0, mr: 1 },
-      { mq: -1, mr: -1 }, { mq: 1, mr: -1 },
-      { mq: -1, mr: 1 }, { mq: 1, mr: 1 },
-    ];
-
-    for (const { mq, mr } of multipliers) {
-      const ghost = new THREE.Group();
-      ghost.position.set(
-        mq * wrapQ.x + mr * wrapR.x,
-        0,
-        mq * wrapQ.z + mr * wrapR.z,
-      );
-      ghost.name = `territory_ghost_${mq}_${mr}`;
-      scene.add(ghost);
-      this.wrapGroups.push(ghost);
-    }
   }
 
   /**
@@ -134,8 +112,13 @@ export class TerritoryRenderer {
         const neighbor = EDGE_NEIGHBORS[edge];
         const nq = q + neighbor.dq;
         const nr = r + neighbor.dr;
-        const wrapped = this.grid.wrap(nq, nr);
-        const nKey = HexGrid.key(wrapped.q, wrapped.r);
+        if (!this.grid.isInBounds(nq, nr)) {
+          // Out of bounds = unowned → draw border
+          if (!playerBorders.has(playerId)) playerBorders.set(playerId, []);
+          playerBorders.get(playerId)!.push(this.createBorderVertices(x, y + BORDER_Y_OFFSET, z, edge));
+          continue;
+        }
+        const nKey = HexGrid.key(nq, nr);
         const neighborOwner = territoryMap.get(nKey);
 
         // Draw border if neighbor is unowned or owned by another player
@@ -154,12 +137,6 @@ export class TerritoryRenderer {
       const mesh = this.createMergedMesh(borderArrays, color, 0.8);
       this.group.add(mesh);
       this.borderMeshes.push(mesh);
-
-      // Ghost clones
-      for (const ghost of this.wrapGroups) {
-        const clone = mesh.clone();
-        ghost.add(clone);
-      }
     }
 
     for (const [playerId, fillArrays] of playerFills) {
@@ -167,12 +144,6 @@ export class TerritoryRenderer {
       const mesh = this.createMergedMesh(fillArrays, color, FILL_OPACITY);
       this.group.add(mesh);
       this.fillMeshes.push(mesh);
-
-      // Ghost clones
-      for (const ghost of this.wrapGroups) {
-        const clone = mesh.clone();
-        ghost.add(clone);
-      }
     }
   }
 
@@ -266,26 +237,10 @@ export class TerritoryRenderer {
     }
     this.borderMeshes = [];
     this.fillMeshes = [];
-
-    // Clear ghost groups
-    for (const ghost of this.wrapGroups) {
-      while (ghost.children.length > 0) {
-        const child = ghost.children[0];
-        ghost.remove(child);
-        if (child instanceof THREE.Mesh) {
-          child.geometry?.dispose();
-          if (child.material instanceof THREE.Material) child.material.dispose();
-        }
-      }
-    }
   }
 
   dispose(): void {
     this.clearMeshes();
     this.group.removeFromParent();
-    for (const ghost of this.wrapGroups) {
-      ghost.removeFromParent();
-    }
-    this.wrapGroups = [];
   }
 }

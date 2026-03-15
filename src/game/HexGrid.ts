@@ -94,10 +94,15 @@ export class HexGrid {
     return true;
   }
 
-  /** Get a tile, applying world wrapping */
+  /** Check if coordinates are within grid bounds */
+  isInBounds(q: number, r: number): boolean {
+    return q >= 0 && q < this.width && r >= 0 && r < this.height;
+  }
+
+  /** Get a tile at the given coordinate, or undefined if out of bounds */
   getTile(q: number, r: number): HexTile | undefined {
-    const wrapped = this.wrap(q, r);
-    return this.tiles.get(HexGrid.key(wrapped.q, wrapped.r));
+    if (!this.isInBounds(q, r)) return undefined;
+    return this.tiles.get(HexGrid.key(q, r));
   }
 
   /** Get all tiles */
@@ -117,11 +122,12 @@ export class HexGrid {
     return neighbors;
   }
 
-  /** Wrap coordinates for world wrapping */
+  /**
+   * @deprecated World wrapping has been removed. Use isInBounds() instead.
+   * Returns coords clamped to bounds for backwards compatibility.
+   */
   wrap(q: number, r: number): HexCoord {
-    const col = ((q % this.width) + this.width) % this.width;
-    const row = ((r % this.height) + this.height) % this.height;
-    return { q: col, r: row };
+    return { q, r };
   }
 
   /**
@@ -162,15 +168,9 @@ export class HexGrid {
     return { q: rq, r: rr };
   }
 
-  /**
-   * Compute the world-space wrapping vectors for this grid.
-   * wrapQ = offset when shifting by grid.width in q direction
-   * wrapR = offset when shifting by grid.height in r direction
-   */
+  /** @deprecated World wrapping removed. Returns zero vectors. */
   getWrapVectors(): { wrapQ: { x: number; z: number }; wrapR: { x: number; z: number } } {
-    const wrapQ = HexGrid.hexToWorld(this.width, 0);
-    const wrapR = HexGrid.hexToWorld(0, this.height);
-    return { wrapQ, wrapR };
+    return { wrapQ: { x: 0, z: 0 }, wrapR: { x: 0, z: 0 } };
   }
 
   /**
@@ -184,48 +184,39 @@ export class HexGrid {
   }
 
   /**
-   * Hex distance considering toroidal wrapping.
-   * Checks all 9 images of `b` (shifted by width/height) and returns the minimum.
+   * @deprecated World wrapping removed. Use hexDistance() instead.
    */
-  static hexDistanceWrapped(a: HexCoord, b: HexCoord, width: number, height: number): number {
-    let best = Infinity;
-    for (const dq of [0, -width, width]) {
-      for (const dr of [0, -height, height]) {
-        const dist = HexGrid.hexDistance(a, { q: b.q + dq, r: b.r + dr });
-        if (dist < best) best = dist;
-      }
-    }
-    return best;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  static hexDistanceWrapped(a: HexCoord, b: HexCoord, _width: number, _height: number): number {
+    return HexGrid.hexDistance(a, b);
   }
 
   /**
-   * BFS from `coord` outward through hex neighbors (with world wrapping),
+   * BFS from `coord` outward through hex neighbors,
    * returning the distance to the nearest tile matching `terrain`.
    * If the building's own tile matches, distance is 0.
    * Max search radius defaults to 20.
    */
   findNearestTerrain(coord: HexCoord, terrain: TerrainType, maxRadius = 20): number {
-    const wrapped = this.wrap(coord.q, coord.r);
-    const startTile = this.getTile(wrapped.q, wrapped.r);
+    const startTile = this.getTile(coord.q, coord.r);
     if (startTile && startTile.terrain === terrain) return 0;
 
     const visited = new Set<string>();
-    visited.add(HexGrid.key(wrapped.q, wrapped.r));
+    visited.add(HexGrid.key(coord.q, coord.r));
 
-    let frontier: HexCoord[] = [wrapped];
+    let frontier: HexCoord[] = [coord];
 
     for (let dist = 1; dist <= maxRadius; dist++) {
       const nextFrontier: HexCoord[] = [];
       for (const pos of frontier) {
-        for (const dir of AXIAL_DIRECTIONS) {
-          const nw = this.wrap(pos.q + dir.q, pos.r + dir.r);
-          const key = HexGrid.key(nw.q, nw.r);
+        const neighbors = this.getNeighbors(pos.q, pos.r);
+        for (const neighbor of neighbors) {
+          const key = HexGrid.key(neighbor.coord.q, neighbor.coord.r);
           if (visited.has(key)) continue;
           visited.add(key);
 
-          const tile = this.tiles.get(key);
-          if (tile && tile.terrain === terrain) return dist;
-          nextFrontier.push(nw);
+          if (neighbor.terrain === terrain) return dist;
+          nextFrontier.push(neighbor.coord);
         }
       }
       frontier = nextFrontier;

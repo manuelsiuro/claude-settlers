@@ -148,7 +148,8 @@ export class RoadPlacementController {
     const camera = this.game.getCamera();
     const coord = this.picker.screenToHex(screenX, screenY, camera, this.canvas);
     if (!coord) return null;
-    return this.game.getGrid().wrap(coord.q, coord.r);
+    if (!this.game.getGrid().isInBounds(coord.q, coord.r)) return null;
+    return coord;
   }
 
   private updatePreview(screenX: number, screenY: number): void {

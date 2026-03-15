@@ -179,17 +179,16 @@ describe('TerritoryManager', () => {
     expect(owned2).toBe(owned1);
   });
 
-  it('should handle world wrapping for territory near edges', () => {
+  it('should not extend territory across map boundary (no wrapping)', () => {
     // Place Castle near the edge
     gameState.placeBuilding(BuildingType.Castle, { q: 1, r: 1 }, 1);
     territory.update();
 
-    // Should wrap and own tiles on the other side
     // q=0 is 1 hex away, should be owned
     expect(territory.getOwner(0, 1)).toBe(1);
 
-    // Due to wrapping, q=19 (width-1) wraps to be adjacent
-    expect(territory.getOwner(19, 1)).toBe(1);
+    // q=19 (far edge) should NOT be owned since there's no wrapping
+    expect(territory.getOwner(19, 1)).toBeNull();
   });
 
   it('should return correct isOwnedBy results', () => {

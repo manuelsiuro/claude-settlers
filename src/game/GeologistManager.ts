@@ -203,25 +203,23 @@ export class GeologistManager {
     grid: HexGrid,
   ): HexCoord | null {
     const visited = new Set<string>();
-    const startWrapped = grid.wrap(origin.q, origin.r);
-    visited.add(HexGrid.key(startWrapped.q, startWrapped.r));
+    visited.add(HexGrid.key(origin.q, origin.r));
 
-    let frontier: HexCoord[] = [startWrapped];
+    let frontier: HexCoord[] = [origin];
 
     for (let dist = 1; dist <= MAX_PROSPECT_RADIUS; dist++) {
       const nextFrontier: HexCoord[] = [];
       for (const pos of frontier) {
         const neighbors = grid.getNeighbors(pos.q, pos.r);
         for (const neighbor of neighbors) {
-          const nw = grid.wrap(neighbor.coord.q, neighbor.coord.r);
-          const key = HexGrid.key(nw.q, nw.r);
+          const key = HexGrid.key(neighbor.coord.q, neighbor.coord.r);
           if (visited.has(key)) continue;
           visited.add(key);
 
           if (neighbor.terrain === TerrainType.Mountain && !prospectedTiles.has(key)) {
-            return nw;
+            return neighbor.coord;
           }
-          nextFrontier.push(nw);
+          nextFrontier.push(neighbor.coord);
         }
       }
       frontier = nextFrontier;

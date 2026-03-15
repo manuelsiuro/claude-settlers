@@ -31,13 +31,10 @@ const CARRY_SCALE = 1.8;
 /**
  * Renders units on the hex map.
  * Each frame, updates unit positions based on their movement state.
- * Supports world wrapping via ghost groups (same pattern as BuildingRenderer).
  */
 export class UnitRenderer {
   private unitGroup: THREE.Group;
-  private wrapGroups: THREE.Group[] = [];
   private unitMeshes: Map<string, THREE.Group> = new Map();
-  private wrapClones: Map<string, THREE.Group[]> = new Map();
   /** Track carried resource meshes: unitId → { resource, mesh } */
   private carriedMeshes: Map<string, { resource: ResourceType; mesh: THREE.Group }> = new Map();
   /** Track knight rank chevrons: unitId → { rank, meshes } */
@@ -61,31 +58,10 @@ export class UnitRenderer {
     this.humanPlayerId = humanPlayerId;
   }
 
-  /** Add to scene and set up world wrapping */
+  /** Add to scene */
   addToScene(scene: THREE.Scene, grid: HexGrid): void {
     this.grid = grid;
     scene.add(this.unitGroup);
-
-    // World wrapping: 8 ghost copies matching MapRenderer/BuildingRenderer
-    const { wrapQ, wrapR } = grid.getWrapVectors();
-    const multipliers = [
-      { mq: -1, mr: 0 }, { mq: 1, mr: 0 },
-      { mq: 0, mr: -1 }, { mq: 0, mr: 1 },
-      { mq: -1, mr: -1 }, { mq: 1, mr: -1 },
-      { mq: -1, mr: 1 }, { mq: 1, mr: 1 },
-    ];
-
-    for (const { mq, mr } of multipliers) {
-      const ghost = new THREE.Group();
-      ghost.position.set(
-        mq * wrapQ.x + mr * wrapR.x,
-        0,
-        mq * wrapQ.z + mr * wrapR.z,
-      );
-      ghost.name = `units_ghost_${mq}_${mr}`;
-      scene.add(ghost);
-      this.wrapGroups.push(ghost);
-    }
   }
 
   /** Add a unit mesh to the scene */
@@ -121,17 +97,6 @@ export class UnitRenderer {
 
     this.unitGroup.add(mesh);
     this.unitMeshes.set(unit.id, mesh);
-
-    // Add clones to ghost groups for world wrapping
-    const clones: THREE.Group[] = [];
-    for (const ghost of this.wrapGroups) {
-      const clone = mesh.clone();
-      clone.position.copy(mesh.position);
-      clone.userData.unitId = unit.id;
-      ghost.add(clone);
-      clones.push(clone);
-    }
-    this.wrapClones.set(unit.id, clones);
   }
 
   /** Remove a unit mesh from the scene */
@@ -158,16 +123,6 @@ export class UnitRenderer {
     }
     this.knightChevrons.delete(unitId);
     this.knightFactionApplied.delete(unitId);
-
-    // Remove ghost clones
-    const clones = this.wrapClones.get(unitId);
-    if (clones) {
-      for (let i = 0; i < clones.length; i++) {
-        this.wrapGroups[i].remove(clones[i]);
-        this.disposeMesh(clones[i]);
-      }
-      this.wrapClones.delete(unitId);
-    }
   }
 
   /**
@@ -209,10 +164,6 @@ export class UnitRenderer {
       if (this.fogManager && unit.playerId !== this.humanPlayerId) {
         const isVis = this.fogManager.isVisible(unit.coord.q, unit.coord.r, this.humanPlayerId);
         mesh.visible = isVis;
-        const clones = this.wrapClones.get(unit.id);
-        if (clones) {
-          for (const clone of clones) clone.visible = isVis;
-        }
         if (!isVis) continue;
       }
 
@@ -271,15 +222,6 @@ export class UnitRenderer {
 
       mesh.position.set(x, baseY + yOffset, z);
       mesh.rotation.set(0, rotY, rotZ);
-
-      // Update ghost clones
-      const clones = this.wrapClones.get(unit.id);
-      if (clones) {
-        for (const clone of clones) {
-          clone.position.copy(mesh.position);
-          clone.rotation.copy(mesh.rotation);
-        }
-      }
     }
   }
 
@@ -323,27 +265,6 @@ export class UnitRenderer {
 
       mesh.add(group);
       this.knightChevrons.set(unit.id, { rank: unit.knightRank, group });
-
-      // Also update clones (dispose old clone chevrons)
-      const clones = this.wrapClones.get(unit.id);
-      if (clones) {
-        for (const clone of clones) {
-          const oldChevrons = clone.getObjectByName('rank_chevrons');
-          if (oldChevrons) {
-            oldChevrons.traverse((child) => {
-              if (child instanceof THREE.Mesh) {
-                child.geometry?.dispose();
-                if (child.material instanceof THREE.Material) {
-                  child.material.dispose();
-                }
-              }
-            });
-            clone.remove(oldChevrons);
-          }
-          const cloneGroup = group.clone();
-          clone.add(cloneGroup);
-        }
-      }
     }
   }
 
@@ -376,16 +297,6 @@ export class UnitRenderer {
           mesh.remove(current.mesh);
           this.disposeMesh(current.mesh);
           this.carriedMeshes.delete(unit.id);
-          // Update clones
-          const clones = this.wrapClones.get(unit.id);
-          if (clones) {
-            for (const clone of clones) {
-              const child = clone.getObjectByName('carried_resource');
-              if (child) {
-                clone.remove(child);
-              }
-            }
-          }
         }
         continue;
       }
@@ -407,18 +318,6 @@ export class UnitRenderer {
       resourceMesh.position.set(0, CARRY_HEIGHT, 0);
       mesh.add(resourceMesh);
       this.carriedMeshes.set(unit.id, { resource: carrying, mesh: resourceMesh });
-
-      // Update clones
-      const clones = this.wrapClones.get(unit.id);
-      if (clones) {
-        for (const clone of clones) {
-          const oldChild = clone.getObjectByName('carried_resource');
-          if (oldChild) clone.remove(oldChild);
-          const cloneResource = resourceMesh.clone();
-          cloneResource.name = 'carried_resource';
-          clone.add(cloneResource);
-        }
-      }
     }
   }
 
@@ -444,7 +343,6 @@ export class UnitRenderer {
       this.disposeMesh(mesh);
     }
     this.unitMeshes.clear();
-    this.wrapClones.clear();
 
     const disposeGroup = (group: THREE.Group) => {
       group.traverse((child) => {
@@ -462,9 +360,5 @@ export class UnitRenderer {
     };
 
     disposeGroup(this.unitGroup);
-    for (const ghost of this.wrapGroups) {
-      disposeGroup(ghost);
-    }
-    this.wrapGroups = [];
   }
 }

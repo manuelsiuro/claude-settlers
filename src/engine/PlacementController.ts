@@ -188,19 +188,24 @@ export class PlacementController {
       return;
     }
 
-    // Wrap to valid coordinates
+    // Check bounds
     const grid = this.game.getGrid();
-    const wrapped = grid.wrap(coord.q, coord.r);
-
-    // Skip if same hex as before
-    if (this.currentHex && this.currentHex.q === wrapped.q && this.currentHex.r === wrapped.r) {
+    if (!grid.isInBounds(coord.q, coord.r)) {
+      this.removeGhost();
+      this.removeHighlight();
+      this.currentHex = null;
       return;
     }
-    this.currentHex = wrapped;
+
+    // Skip if same hex as before
+    if (this.currentHex && this.currentHex.q === coord.q && this.currentHex.r === coord.r) {
+      return;
+    }
+    this.currentHex = coord;
 
     // Check placement validity
     const gameState = this.game.getGameState();
-    const error = gameState.canPlace(this.selectedType, wrapped, this.game.getHumanPlayerId());
+    const error = gameState.canPlace(this.selectedType, coord, this.game.getHumanPlayerId());
     this.canPlaceHere = error === null;
     this.currentPlacementError = error;
 
@@ -211,7 +216,7 @@ export class PlacementController {
     let ghostColor = this.canPlaceHere ? VALID_COLOR : INVALID_COLOR;
 
     if (def.harvestTerrain && this.canPlaceHere) {
-      const dist = grid.findNearestTerrain(wrapped, def.harvestTerrain);
+      const dist = grid.findNearestTerrain(coord, def.harvestTerrain);
       const multiplier = getDistanceMultiplier(dist);
       const rating = getDistanceRating(multiplier);
       this._placementDistance = dist;
@@ -224,8 +229,8 @@ export class PlacementController {
     this.removeGhost();
     this.removeHighlight();
 
-    const { x, z } = HexGrid.hexToWorld(wrapped.q, wrapped.r);
-    const tile = grid.getTile(wrapped.q, wrapped.r);
+    const { x, z } = HexGrid.hexToWorld(coord.q, coord.r);
+    const tile = grid.getTile(coord.q, coord.r);
     const y = tile ? MapRenderer.getTileY(tile) : 0;
 
     // Ghost building mesh

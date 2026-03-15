@@ -65,8 +65,8 @@ export class FogOfWarManager {
     const arr = this.visibility.get(playerId);
     if (!arr) return UNEXPLORED;
     const grid = this.gameState.getGrid();
-    const wrapped = grid.wrap(q, r);
-    return arr[this.index(wrapped.q, wrapped.r)];
+    if (!grid.isInBounds(q, r)) return UNEXPLORED;
+    return arr[this.index(q, r)];
   }
 
   /** Check if a hex is currently visible (state 2) */
@@ -123,7 +123,7 @@ export class FogOfWarManager {
    *       - Active buildings with visionRadius > 0 belonging to this player
    *       - Units belonging to this player (radius 2, knights radius 3)
    *    c. For each source, BFS flood fill up to radius, marking hexes as VISIBLE(2)
-   *    d. BFS wraps coordinates via grid.wrap() and does NOT stop at water
+   *    d. BFS explores neighbors and does NOT stop at water
    */
   private recalculate(): void {
     const grid = this.gameState.getGrid();
@@ -194,7 +194,7 @@ export class FogOfWarManager {
 
   /**
    * BFS flood fill from a source, marking hexes as VISIBLE(2) up to the given radius.
-   * Does NOT stop at water. Wraps coordinates via grid.wrap().
+   * Does NOT stop at water.
    */
   private floodFillVision(
     grid: HexGrid,
@@ -203,14 +203,13 @@ export class FogOfWarManager {
     sourceR: number,
     radius: number,
   ): void {
-    const startWrapped = grid.wrap(sourceQ, sourceR);
-    const startIdx = this.index(startWrapped.q, startWrapped.r);
+    const startIdx = this.index(sourceQ, sourceR);
 
     // Mark the source hex as visible
     arr[startIdx] = VISIBLE;
 
     // BFS queue: [q, r, distance]
-    const queue: [number, number, number][] = [[startWrapped.q, startWrapped.r, 0]];
+    const queue: [number, number, number][] = [[sourceQ, sourceR, 0]];
     const visited = new Set<number>();
     visited.add(startIdx);
 

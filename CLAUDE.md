@@ -25,7 +25,7 @@ All design specs live in `docs/`:
 - **Asset pipeline**: Blender → export GLTF/GLB to `public/models/` → load in Three.js via GLTFLoader. Keep models lightweight for mobile performance.
 - **Isometric perspective**: main game view is isometric, scrollable, and zoomable
 - **Tailwind CSS v4**: utility-first CSS via `@tailwindcss/vite` plugin. UI uses plain HTML elements with custom component classes (`.icon-btn`, `.btn-filled`, `.btn-outlined`, `.btn-text`, `.nav-drawer`) defined in `src/ui/styles.css`. Icons are inline SVGs from `src/ui/icons.ts`.
-- **World wrapping**: maps wrap around — units/expansion going off one edge appear on the opposite side
+- **Bounded map**: maps are finite with water borders at the edges. Camera is clamped to map bounds. No world wrapping.
 
 ## Architecture Notes
 
@@ -62,7 +62,7 @@ These systems were added post-Phase 8 to bring the game closer to The Settlers' 
 
 Gathering buildings (Woodcutter, Quarry, Fisherman, Farm, mines) scale production time by distance to their harvest terrain:
 - `harvestTerrain` field on `BuildingDefinition`
-- Distance computed via BFS at placement time (with world wrapping)
+- Distance computed via BFS at placement time
 - Multiplier: `min(3.0, 1.0 + max(0, dist-1) * 0.25)`
 - Placement preview: ghost mesh colored green/orange/red by distance rating
 - Processing/military/logistics buildings are unaffected
@@ -131,7 +131,7 @@ Each phase must be fully working and tested before moving to the next. Within ea
 - Dev server, build, and lint configuration
 
 #### Phase 2: Terrain & Map System
-- Hex/tile grid system with world wrapping
+- Hex/tile grid system with water-bordered edges
 - Terrain type rendering (grassland, forest, mountain, water, desert) per `docs/terrains.md`
 - Map generation from seed
 - Camera controls (pan, zoom) for desktop and touch

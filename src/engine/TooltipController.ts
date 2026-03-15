@@ -110,11 +110,14 @@ export class TooltipController {
     const hexCoord = HexGrid.worldToHex(intersection.x, intersection.z);
     const q = Math.round(hexCoord.q);
     const r = Math.round(hexCoord.r);
-    const wrapped = grid.wrap(q, r);
+    if (!grid.isInBounds(q, r)) {
+      this.hide();
+      return;
+    }
 
     // Find building at this hex
     const gameState = this.game.getGameState();
-    const building = gameState.getBuildingAt(wrapped.q, wrapped.r);
+    const building = gameState.getBuildingAt(q, r);
 
     if (!building || building.state === BuildingState.Destroyed) {
       this.hide();
@@ -125,7 +128,7 @@ export class TooltipController {
     const humanId = this.game.getHumanPlayerId();
     if (building.playerId !== humanId) {
       const fogMgr = this.game.getFogOfWarManager();
-      if (!fogMgr.isExplored(wrapped.q, wrapped.r, humanId)) {
+      if (!fogMgr.isExplored(q, r, humanId)) {
         this.hide();
         return;
       }

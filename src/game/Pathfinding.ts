@@ -13,7 +13,7 @@ const WALKABLE_TERRAIN: Set<string> = new Set([
 /**
  * A* pathfinding on the hex grid.
  * Finds the shortest walkable path between two hex coordinates.
- * Respects world wrapping. Avoids water tiles.
+ * Avoids water tiles.
  *
  * @returns Array of HexCoord from start to goal (inclusive), or empty array if no path.
  */
@@ -23,17 +23,15 @@ export function findPath(
   goal: HexCoord,
   maxSteps = 200,
 ): HexCoord[] {
-  const startWrapped = grid.wrap(start.q, start.r);
-  const goalWrapped = grid.wrap(goal.q, goal.r);
-
-  const startKey = HexGrid.key(startWrapped.q, startWrapped.r);
-  const goalKey = HexGrid.key(goalWrapped.q, goalWrapped.r);
+  const startKey = HexGrid.key(start.q, start.r);
+  const goalKey = HexGrid.key(goal.q, goal.r);
 
   // Trivial case
-  if (startKey === goalKey) return [startWrapped];
+  if (startKey === goalKey) return [start];
 
-  // Check goal is walkable
-  const goalTile = grid.getTile(goalWrapped.q, goalWrapped.r);
+  // Check bounds and walkability
+  if (!grid.isInBounds(goal.q, goal.r)) return [];
+  const goalTile = grid.getTile(goal.q, goal.r);
   if (!goalTile || !WALKABLE_TERRAIN.has(goalTile.terrain)) return [];
 
   // A* with binary heap for O(log n) open set operations
@@ -41,7 +39,7 @@ export function findPath(
   const cameFrom: Map<string, HexCoord> = new Map();
   const closedSet: Set<string> = new Set();
 
-  const startF = hexDistance(startWrapped, goalWrapped, grid);
+  const startF = hexDistance(start, goal);
   gScore.set(startKey, 0);
 
   // Binary min-heap: [fScore, key]
@@ -59,7 +57,7 @@ export function findPath(
     inOpen.delete(currentKey);
 
     if (currentKey === goalKey) {
-      return reconstructPath(cameFrom, goalWrapped);
+      return reconstructPath(cameFrom, goal);
     }
 
     closedSet.add(currentKey);
@@ -83,7 +81,7 @@ export function findPath(
       if (tentativeG < existingG) {
         cameFrom.set(nKey, currentCoord);
         gScore.set(nKey, tentativeG);
-        const f = tentativeG + hexDistance(neighborTile.coord, goalWrapped, grid);
+        const f = tentativeG + hexDistance(neighborTile.coord, goal);
         heapPush(heap, [f, nKey]);
         inOpen.add(nKey);
       }
@@ -96,31 +94,11 @@ export function findPath(
 
 /**
  * Hex distance heuristic for A*.
- * Accounts for world wrapping by checking all wrap-around routes
- * and returning the minimum distance.
+ * Simple cube distance (no wrapping).
  */
-export function hexDistance(a: HexCoord, b: HexCoord, grid: HexGrid): number {
-  // Direct distance
-  let minDist = cubeDistance(a, b);
-
-  // Check wrapped distances (shifting b by grid dimensions)
-  const offsets = [
-    { dq: grid.width, dr: 0 },
-    { dq: -grid.width, dr: 0 },
-    { dq: 0, dr: grid.height },
-    { dq: 0, dr: -grid.height },
-    { dq: grid.width, dr: grid.height },
-    { dq: -grid.width, dr: grid.height },
-    { dq: grid.width, dr: -grid.height },
-    { dq: -grid.width, dr: -grid.height },
-  ];
-
-  for (const { dq, dr } of offsets) {
-    const dist = cubeDistance(a, { q: b.q + dq, r: b.r + dr });
-    if (dist < minDist) minDist = dist;
-  }
-
-  return minDist;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function hexDistance(a: HexCoord, b: HexCoord, _grid?: HexGrid): number {
+  return cubeDistance(a, b);
 }
 
 /** Cube distance between two hex coords (without wrapping) */

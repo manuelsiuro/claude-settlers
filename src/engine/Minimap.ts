@@ -117,23 +117,12 @@ export class Minimap {
     // Convert hex to world position
     const { x, z } = HexGrid.hexToWorld(q, r);
 
-    // Move camera by shifting position so it looks at the target
-    // Use shortest-path wrapping to avoid camera jumping across the whole map
+    // Move camera to target position
     const camera = this.game.getCamera();
     const currentLookAt = this.estimateLookAt();
 
-    // Calculate world dimensions for wrapping
-    const worldW = HEX_WIDTH * this.mapWidth;
-    const worldH = 1.5 * this.mapHeight;
-
-    let dx = x - currentLookAt.x;
-    let dz = z - currentLookAt.z;
-
-    // Pick shortest path with wrapping
-    if (dx > worldW / 2) dx -= worldW;
-    else if (dx < -worldW / 2) dx += worldW;
-    if (dz > worldH / 2) dz -= worldH;
-    else if (dz < -worldH / 2) dz += worldH;
+    const dx = x - currentLookAt.x;
+    const dz = z - currentLookAt.z;
 
     camera.position.x += dx;
     camera.position.z += dz;

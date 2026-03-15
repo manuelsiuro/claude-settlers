@@ -20,13 +20,11 @@ for (let i = 0; i < 6; i++) {
  * - Explored hexes: dimmed dark overlay (opacity 0.4)
  * - Visible hexes: no overlay rendered
  *
- * Uses merged geometry (same pattern as TerritoryRenderer) with
- * world wrapping ghost copies. Rebuilds only when FogOfWarManager
- * version changes.
+ * Uses merged geometry (same pattern as TerritoryRenderer).
+ * Rebuilds only when FogOfWarManager version changes.
  */
 export class FogOfWarRenderer {
   private group: THREE.Group;
-  private wrapGroups: THREE.Group[] = [];
   private grid: HexGrid;
   private unexploredMesh: THREE.Mesh | null = null;
   private exploredMesh: THREE.Mesh | null = null;
@@ -48,7 +46,6 @@ export class FogOfWarRenderer {
   setEnabled(enabled: boolean): void {
     this._enabled = enabled;
     this.group.visible = enabled;
-    for (const g of this.wrapGroups) g.visible = enabled;
     if (!enabled) {
       this.clearMeshes();
     } else {
@@ -63,27 +60,6 @@ export class FogOfWarRenderer {
   addToScene(scene: THREE.Scene, grid: HexGrid): void {
     this.grid = grid;
     scene.add(this.group);
-
-    // World wrapping ghost copies
-    const { wrapQ, wrapR } = grid.getWrapVectors();
-    const multipliers = [
-      { mq: -1, mr: 0 }, { mq: 1, mr: 0 },
-      { mq: 0, mr: -1 }, { mq: 0, mr: 1 },
-      { mq: -1, mr: -1 }, { mq: 1, mr: -1 },
-      { mq: -1, mr: 1 }, { mq: 1, mr: 1 },
-    ];
-
-    for (const { mq, mr } of multipliers) {
-      const ghost = new THREE.Group();
-      ghost.position.set(
-        mq * wrapQ.x + mr * wrapR.x,
-        0,
-        mq * wrapQ.z + mr * wrapR.z,
-      );
-      ghost.name = `fog_ghost_${mq}_${mr}`;
-      scene.add(ghost);
-      this.wrapGroups.push(ghost);
-    }
   }
 
   /**
@@ -127,17 +103,11 @@ export class FogOfWarRenderer {
     if (unexploredVerts.length > 0) {
       this.unexploredMesh = this.createMergedMesh(unexploredVerts, 0x000000, 0.92);
       this.group.add(this.unexploredMesh);
-      for (const ghost of this.wrapGroups) {
-        ghost.add(this.unexploredMesh.clone());
-      }
     }
 
     if (exploredVerts.length > 0) {
       this.exploredMesh = this.createMergedMesh(exploredVerts, 0x111111, 0.45);
       this.group.add(this.exploredMesh);
-      for (const ghost of this.wrapGroups) {
-        ghost.add(this.exploredMesh.clone());
-      }
     }
   }
 
@@ -201,25 +171,10 @@ export class FogOfWarRenderer {
     disposeMesh(this.exploredMesh);
     this.unexploredMesh = null;
     this.exploredMesh = null;
-
-    for (const ghost of this.wrapGroups) {
-      while (ghost.children.length > 0) {
-        const child = ghost.children[0];
-        ghost.remove(child);
-        if (child instanceof THREE.Mesh) {
-          child.geometry?.dispose();
-          if (child.material instanceof THREE.Material) child.material.dispose();
-        }
-      }
-    }
   }
 
   dispose(): void {
     this.clearMeshes();
     this.group.removeFromParent();
-    for (const ghost of this.wrapGroups) {
-      ghost.removeFromParent();
-    }
-    this.wrapGroups = [];
   }
 }

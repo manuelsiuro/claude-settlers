@@ -87,12 +87,11 @@ describe('Pathfinding', () => {
       expect(path[path.length - 1]).toEqual({ q: 5, r: 3 });
     });
 
-    it('should handle world wrapping for shorter paths', () => {
-      // On a 10x10 grid, going from q=0 to q=9 should be just 1 step via wrapping
+    it('should find long path without wrapping', () => {
+      // On a 10x10 grid, going from q=0 to q=9 takes 9 steps (no wrapping)
       const path = findPath(grid, { q: 0, r: 0 }, { q: 9, r: 0 });
       expect(path.length).toBeGreaterThan(0);
-      // The path should be short (wrapped) rather than going all the way across
-      expect(path.length).toBeLessThanOrEqual(3);
+      expect(path).toHaveLength(10); // 9 steps + start = 10 nodes
     });
 
     it('should respect maxSteps limit', () => {
@@ -116,10 +115,10 @@ describe('Pathfinding', () => {
       expect(hexDistance({ q: 0, r: 0 }, { q: 5, r: 0 }, grid)).toBe(5);
     });
 
-    it('should account for wrapping (shorter distance via wrap)', () => {
-      // On a 10x10 grid, (0,0) to (9,0) should be distance 1 via wrapping
+    it('should compute direct distance without wrapping', () => {
+      // On a 10x10 grid, (0,0) to (9,0) is distance 9 (no wrapping)
       const dist = hexDistance({ q: 0, r: 0 }, { q: 9, r: 0 }, grid);
-      expect(dist).toBe(1);
+      expect(dist).toBe(9);
     });
   });
 });

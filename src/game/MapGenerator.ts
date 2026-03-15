@@ -105,6 +105,19 @@ export function generateMap(config: MapConfig): HexGrid {
     grid.setTile(data.q, data.r, terrain, normalizedElevation, deposit);
   }
 
+  // Force outermost 2 rings of hexes to water (natural ocean boundary)
+  const borderWidth = 2;
+  for (const data of rawData) {
+    if (
+      data.q < borderWidth ||
+      data.r < borderWidth ||
+      data.q >= width - borderWidth ||
+      data.r >= height - borderWidth
+    ) {
+      grid.setTile(data.q, data.r, TerrainType.Water, 0);
+    }
+  }
+
   return grid;
 }
 

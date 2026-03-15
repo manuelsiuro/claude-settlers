@@ -125,9 +125,12 @@ export class SelectionController {
     }
 
     const grid = this.game.getGrid();
-    const wrapped = grid.wrap(coord.q, coord.r);
+    if (!grid.isInBounds(coord.q, coord.r)) {
+      this.deselect();
+      return;
+    }
     const gameState = this.game.getGameState();
-    const building = gameState.getBuildingAt(wrapped.q, wrapped.r);
+    const building = gameState.getBuildingAt(coord.q, coord.r);
 
     if (building) {
       this.select(building);

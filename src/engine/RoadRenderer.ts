@@ -42,7 +42,6 @@ const FLAG_RESOURCE_RADIUS = 0.18;
 export class RoadRenderer {
   private flagGroup: THREE.Group;
   private roadGroup: THREE.Group;
-  private wrapGroups: { flags: THREE.Group; roads: THREE.Group }[] = [];
   private flagMeshes: Map<string, THREE.Group> = new Map();
   private roadMeshes: Map<string, THREE.Mesh> = new Map();
   private flagResourceMeshes: Map<string, THREE.Group> = new Map();
@@ -63,32 +62,6 @@ export class RoadRenderer {
     this.grid = grid;
     scene.add(this.flagGroup);
     scene.add(this.roadGroup);
-
-    // World wrapping
-    const { wrapQ, wrapR } = grid.getWrapVectors();
-    const multipliers = [
-      { mq: -1, mr: 0 }, { mq: 1, mr: 0 },
-      { mq: 0, mr: -1 }, { mq: 0, mr: 1 },
-      { mq: -1, mr: -1 }, { mq: 1, mr: -1 },
-      { mq: -1, mr: 1 }, { mq: 1, mr: 1 },
-    ];
-
-    for (const { mq, mr } of multipliers) {
-      const flagGhost = new THREE.Group();
-      const roadGhost = new THREE.Group();
-      const offset = new THREE.Vector3(
-        mq * wrapQ.x + mr * wrapR.x,
-        0,
-        mq * wrapQ.z + mr * wrapR.z,
-      );
-      flagGhost.position.copy(offset);
-      roadGhost.position.copy(offset);
-      flagGhost.name = `flags_ghost_${mq}_${mr}`;
-      roadGhost.name = `roads_ghost_${mq}_${mr}`;
-      scene.add(flagGhost);
-      scene.add(roadGhost);
-      this.wrapGroups.push({ flags: flagGhost, roads: roadGhost });
-    }
   }
 
   /**
@@ -185,15 +158,6 @@ export class RoadRenderer {
       if (mesh.material instanceof THREE.MeshLambertMaterial) {
         mesh.material.color.setHex(color);
       }
-
-      // Update ghost clone materials
-      const meshName = `road_${road.id}`;
-      for (const { roads: ghost } of this.wrapGroups) {
-        const clone = ghost.children.find((c) => c.name === meshName);
-        if (clone instanceof THREE.Mesh && clone.material instanceof THREE.MeshLambertMaterial) {
-          clone.material.color.setHex(color);
-        }
-      }
     }
   }
 
@@ -229,13 +193,6 @@ export class RoadRenderer {
 
     this.flagGroup.add(group);
     this.flagMeshes.set(flag.id, group);
-
-    // Ghost clones
-    for (const { flags: ghost } of this.wrapGroups) {
-      const clone = group.clone();
-      clone.position.copy(group.position);
-      ghost.add(clone);
-    }
   }
 
   private removeFlag(id: string): void {
@@ -244,15 +201,6 @@ export class RoadRenderer {
       this.flagGroup.remove(mesh);
       this.disposeMesh(mesh);
       this.flagMeshes.delete(id);
-    }
-
-    // Remove from ghosts and dispose
-    for (const { flags: ghost } of this.wrapGroups) {
-      const child = ghost.children.find((c) => c.name === `flag_${id}`);
-      if (child) {
-        ghost.remove(child);
-        if (child instanceof THREE.Group) this.disposeMesh(child);
-      }
     }
   }
 
@@ -279,12 +227,6 @@ export class RoadRenderer {
 
     this.roadGroup.add(mesh);
     this.roadMeshes.set(road.id, mesh);
-
-    // Ghost clones
-    for (const { roads: ghost } of this.wrapGroups) {
-      const clone = mesh.clone();
-      ghost.add(clone);
-    }
   }
 
   private removeRoad(id: string): void {
@@ -297,17 +239,6 @@ export class RoadRenderer {
       }
       this.roadMeshes.delete(id);
       this.roadTrafficStates.delete(id);
-    }
-
-    for (const { roads: ghost } of this.wrapGroups) {
-      const child = ghost.children.find((c) => c.name === `road_${id}`);
-      if (child) {
-        ghost.remove(child);
-        if (child instanceof THREE.Mesh) {
-          child.geometry?.dispose();
-          if (child.material instanceof THREE.Material) child.material.dispose();
-        }
-      }
     }
   }
 
@@ -375,13 +306,6 @@ export class RoadRenderer {
 
     this.flagGroup.add(container);
     this.flagResourceMeshes.set(flag.id, container);
-
-    // Ghost clones
-    for (const { flags: ghost } of this.wrapGroups) {
-      const clone = container.clone();
-      clone.position.copy(container.position);
-      ghost.add(clone);
-    }
   }
 
   private removeFlagResources(flagId: string): void {
@@ -390,16 +314,6 @@ export class RoadRenderer {
       this.flagGroup.remove(container);
       this.disposeMesh(container);
       this.flagResourceMeshes.delete(flagId);
-    }
-
-    // Remove from ghosts
-    const name = `flag_resources_${flagId}`;
-    for (const { flags: ghost } of this.wrapGroups) {
-      const child = ghost.children.find((c) => c.name === name);
-      if (child) {
-        ghost.remove(child);
-        if (child instanceof THREE.Group) this.disposeMesh(child);
-      }
     }
   }
 
@@ -437,10 +351,5 @@ export class RoadRenderer {
 
     this.flagGroup.removeFromParent();
     this.roadGroup.removeFromParent();
-    for (const { flags, roads } of this.wrapGroups) {
-      flags.removeFromParent();
-      roads.removeFromParent();
-    }
-    this.wrapGroups = [];
   }
 }

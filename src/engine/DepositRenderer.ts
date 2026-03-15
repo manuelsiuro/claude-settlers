@@ -18,11 +18,10 @@ const FLAG_SIZE = 0.2;
 
 /**
  * Renders small flag markers on revealed deposit mountain tiles.
- * Color-coded by resource type. Supports world wrapping ghost copies.
+ * Color-coded by resource type.
  */
 export class DepositRenderer {
   private group: THREE.Group;
-  private wrapGroups: THREE.Group[] = [];
   private markers: Map<string, THREE.Group> = new Map();
 
   constructor() {
@@ -30,29 +29,10 @@ export class DepositRenderer {
     this.group.name = 'deposit_markers';
   }
 
-  /** Add to scene and set up world wrapping */
-  addToScene(scene: THREE.Scene, grid: HexGrid): void {
+  /** Add to scene */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  addToScene(scene: THREE.Scene, _grid: HexGrid): void {
     scene.add(this.group);
-
-    const { wrapQ, wrapR } = grid.getWrapVectors();
-    const multipliers = [
-      { mq: -1, mr: 0 }, { mq: 1, mr: 0 },
-      { mq: 0, mr: -1 }, { mq: 0, mr: 1 },
-      { mq: -1, mr: -1 }, { mq: 1, mr: -1 },
-      { mq: -1, mr: 1 }, { mq: 1, mr: 1 },
-    ];
-
-    for (const { mq, mr } of multipliers) {
-      const ghost = new THREE.Group();
-      ghost.position.set(
-        mq * wrapQ.x + mr * wrapR.x,
-        0,
-        mq * wrapQ.z + mr * wrapR.z,
-      );
-      ghost.name = `deposit_markers_ghost_${mq}_${mr}`;
-      scene.add(ghost);
-      this.wrapGroups.push(ghost);
-    }
   }
 
   /** Add a deposit marker at the given hex coordinate */
@@ -71,14 +51,6 @@ export class DepositRenderer {
 
     this.group.add(markerGroup);
     this.markers.set(key, markerGroup);
-
-    // Ghost copies for world wrapping
-    for (const ghost of this.wrapGroups) {
-      const clone = markerGroup.clone();
-      clone.position.copy(markerGroup.position);
-      clone.userData.depositKey = key;
-      ghost.add(clone);
-    }
   }
 
   /** Remove a deposit marker (when mine is placed) */
@@ -90,15 +62,6 @@ export class DepositRenderer {
     this.group.remove(marker);
     this.disposeGroup(marker);
     this.markers.delete(key);
-
-    // Remove from ghosts
-    for (const ghost of this.wrapGroups) {
-      const ghostChild = ghost.children.find((c) => c.userData.depositKey === key);
-      if (ghostChild) {
-        ghost.remove(ghostChild);
-        this.disposeGroup(ghostChild as THREE.Group);
-      }
-    }
   }
 
   private createMarkerMesh(color: number): THREE.Group {
@@ -138,19 +101,6 @@ export class DepositRenderer {
       this.disposeGroup(marker);
     }
     this.markers.clear();
-
     this.group.removeFromParent();
-    for (const ghost of this.wrapGroups) {
-      ghost.traverse((child) => {
-        if (child instanceof THREE.Mesh) {
-          child.geometry?.dispose();
-          if (child.material instanceof THREE.Material) {
-            child.material.dispose();
-          }
-        }
-      });
-      ghost.removeFromParent();
-    }
-    this.wrapGroups = [];
   }
 }

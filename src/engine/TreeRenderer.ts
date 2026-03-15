@@ -4,14 +4,6 @@ import type { TreeManager } from '../game/TreeManager';
 import { MapRenderer } from './MapRenderer';
 import { assetLoader } from './AssetLoader';
 
-/** World-wrap offset multipliers (8 neighbors) */
-const WRAP_MULTIPLIERS = [
-  { mq: -1, mr: 0 }, { mq: 1, mr: 0 },
-  { mq: 0, mr: -1 }, { mq: 0, mr: 1 },
-  { mq: -1, mr: -1 }, { mq: 1, mr: -1 },
-  { mq: -1, mr: 1 }, { mq: 1, mr: 1 },
-];
-
 /** Growth stage → visual scale multiplier */
 const GROWTH_SCALE: Record<string, number> = {
   sapling: 0.4,
@@ -34,7 +26,6 @@ interface SubMeshInfo {
 export class TreeRenderer {
   dirty = false;
   private instancedMeshes: THREE.InstancedMesh[] = [];
-  private ghostMeshes: THREE.InstancedMesh[] = [];
   private scene: THREE.Scene | null = null;
 
   addToScene(scene: THREE.Scene): void {
@@ -55,8 +46,6 @@ export class TreeRenderer {
 
     const trees = treeManager.getAllTrees();
     if (trees.length === 0) return;
-
-    const wrapOffsets = this.getWrapOffsets(grid);
 
     // Group trees by (modelType) → list of placement matrices
     const placementsByModel = new Map<string, THREE.Matrix4[]>();
@@ -102,14 +91,6 @@ export class TreeRenderer {
         this.computeInstancedBounds(instMesh);
         this.scene.add(instMesh);
         this.instancedMeshes.push(instMesh);
-
-        // Ghost copies for world wrapping
-        for (const offset of wrapOffsets) {
-          const ghost = instMesh.clone();
-          ghost.position.set(offset.x, 0, offset.z);
-          this.scene.add(ghost);
-          this.ghostMeshes.push(ghost);
-        }
       }
     }
   }
@@ -125,20 +106,6 @@ export class TreeRenderer {
       mesh.dispose();
     }
     this.instancedMeshes = [];
-
-    for (const ghost of this.ghostMeshes) {
-      ghost.removeFromParent();
-      ghost.dispose();
-    }
-    this.ghostMeshes = [];
-  }
-
-  private getWrapOffsets(grid: HexGrid): { x: number; z: number }[] {
-    const { wrapQ, wrapR } = grid.getWrapVectors();
-    return WRAP_MULTIPLIERS.map(({ mq, mr }) => ({
-      x: mq * wrapQ.x + mr * wrapR.x,
-      z: mq * wrapQ.z + mr * wrapR.z,
-    }));
   }
 
   private getSubMeshes(modelName: string): SubMeshInfo[] {

@@ -42,13 +42,19 @@ describe('Game Setup', () => {
       expect(waterFraction).toBeGreaterThan(0.25);
     });
 
-    it('should generate continent scenario with less water', () => {
+    it('should generate continent scenario with less water (interior)', () => {
       const balance = SCENARIO_TERRAIN_BALANCE[Scenario.Continent];
       const grid = generateMap({ width: 32, height: 32, seed: 123, terrainBalance: balance });
 
+      // Count only interior water (exclude border tiles forced to water)
       const tiles = grid.getAllTiles();
-      const waterCount = tiles.filter(t => t.terrain === TerrainType.Water).length;
-      const waterFraction = waterCount / tiles.length;
+      const borderWidth = 2;
+      const interiorTiles = tiles.filter(t =>
+        t.coord.q >= borderWidth && t.coord.r >= borderWidth &&
+        t.coord.q < 32 - borderWidth && t.coord.r < 32 - borderWidth
+      );
+      const waterCount = interiorTiles.filter(t => t.terrain === TerrainType.Water).length;
+      const waterFraction = waterCount / interiorTiles.length;
 
       expect(waterFraction).toBeLessThan(0.1);
     });
@@ -269,7 +275,7 @@ function getStartingPositions(w: number, h: number, n: number): { q: number; r: 
   }
 }
 
-/** Helper: spiral outward from target to place a Castle on grassland, with wrapping */
+/** Helper: spiral outward from target to place a Castle on grassland */
 function placeCastleNear(
   gs: GameState,
   targetQ: number,
@@ -282,8 +288,10 @@ function placeCastleNear(
     for (let dq = -radius; dq <= radius; dq++) {
       for (let dr = -radius; dr <= radius; dr++) {
         if (Math.abs(dq) + Math.abs(dr) + Math.abs(-dq - dr) > 2 * radius) continue;
-        const wrapped = grid.wrap(targetQ + dq, targetR + dr);
-        const result = gs.placeBuilding(BuildingType.Castle, wrapped, playerId);
+        const q = targetQ + dq;
+        const r = targetR + dr;
+        if (!grid.isInBounds(q, r)) continue;
+        const result = gs.placeBuilding(BuildingType.Castle, { q, r }, playerId);
         if (result.ok) return;
       }
     }

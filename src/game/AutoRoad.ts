@@ -95,14 +95,13 @@ function findNearestConnectedFlag(
  * Avoids water tiles.
  */
 function findHexPath(from: HexCoord, to: HexCoord, grid: HexGrid): HexCoord[] {
-  const startWrapped = grid.wrap(from.q, from.r);
-  const endWrapped = grid.wrap(to.q, to.r);
-  const endKey = HexGrid.key(endWrapped.q, endWrapped.r);
+  if (!grid.isInBounds(from.q, from.r) || !grid.isInBounds(to.q, to.r)) return [];
+  const endKey = HexGrid.key(to.q, to.r);
 
   const visited = new Set<string>();
   const parent = new Map<string, HexCoord>();
-  const queue: HexCoord[] = [startWrapped];
-  visited.add(HexGrid.key(startWrapped.q, startWrapped.r));
+  const queue: HexCoord[] = [from];
+  visited.add(HexGrid.key(from.q, from.r));
 
   while (queue.length > 0) {
     const current = queue.shift()!;

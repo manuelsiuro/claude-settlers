@@ -64,19 +64,19 @@ export class RoadNetwork {
 
   /** Place a flag at a hex coordinate. Returns the flag or null if invalid. */
   placeFlag(coord: HexCoord, playerId: number): Flag | null {
-    const wrapped = this.grid.wrap(coord.q, coord.r);
-    const key = HexGrid.key(wrapped.q, wrapped.r);
+    if (!this.grid.isInBounds(coord.q, coord.r)) return null;
+    const key = HexGrid.key(coord.q, coord.r);
 
     // Can't place two flags on same tile
     if (this.flagsByCoord.has(key)) return null;
 
     // Must be on a walkable tile
-    const tile = this.grid.getTile(wrapped.q, wrapped.r);
+    const tile = this.grid.getTile(coord.q, coord.r);
     if (!tile || tile.terrain === 'water') return null;
 
     const flag: Flag = {
       id: `flag_${nextFlagId++}`,
-      coord: wrapped,
+      coord: { q: coord.q, r: coord.r },
       playerId,
       goods: [],
       buildingId: null,
@@ -96,8 +96,8 @@ export class RoadNetwork {
 
   /** Get the flag at a hex coordinate */
   getFlagAt(q: number, r: number): Flag | undefined {
-    const wrapped = this.grid.wrap(q, r);
-    const key = HexGrid.key(wrapped.q, wrapped.r);
+    if (!this.grid.isInBounds(q, r)) return undefined;
+    const key = HexGrid.key(q, r);
     const flagId = this.flagsByCoord.get(key);
     if (!flagId) return undefined;
     return this.flags.get(flagId);

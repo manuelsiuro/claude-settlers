@@ -701,17 +701,19 @@ export class Game {
     }
   }
 
-  /** Spiral outward from target to place a Castle on grassland, wrapping across map edges */
+  /** Spiral outward from target to place a Castle on grassland */
   private placeCastleNear(targetQ: number, targetR: number, playerId: number): void {
     const maxRadius = 8;
     for (let radius = 0; radius <= maxRadius; radius++) {
       for (let dq = -radius; dq <= radius; dq++) {
         for (let dr = -radius; dr <= radius; dr++) {
           if (Math.abs(dq) + Math.abs(dr) + Math.abs(-dq - dr) > 2 * radius) continue;
-          const wrapped = this.grid.wrap(targetQ + dq, targetR + dr);
+          const q = targetQ + dq;
+          const r = targetR + dr;
+          if (!this.grid.isInBounds(q, r)) continue;
           const result = this.gameState.placeBuilding(
             BuildingType.Castle,
-            wrapped,
+            { q, r },
             playerId,
           );
           if (result.ok) {
