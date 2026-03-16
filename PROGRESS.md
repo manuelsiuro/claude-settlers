@@ -228,5 +228,8 @@
 
 All 17 tasks from the improvement plan are now complete. 569 tests passing, 0 errors. Build clean, lint clean.
 
+### Flag Streetlight System [DONE]
+- [DONE] Flag Light System — FlagLightSystem.ts: nighttime lantern glows atop flag poles (instanced emissive cubes with per-flag flicker), ground glow pools beneath flags (additive-blend radial gradient sprites), subtle warm emissive tint on active buildings. AtmosphereController extended with `nightness` field per preset (Dawn:0.3, Morning:0.0, Midday:0.0, GoldenHour:0.2, Evening:0.6, Night:1.0) and `onNightnessUpdate` callback with interpolation. PostProcessing.setBloomStrength() for dynamic night bloom boost (0.3→0.5). 2 instanced draw calls, zero PointLights. 595 tests passing — 2026-03-16
+
 ## Blockers
 _None._

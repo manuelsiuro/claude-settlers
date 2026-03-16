@@ -125,8 +125,10 @@ app.innerHTML = `
         </select>
         <label class="audio-slider-label">Time of Day</label>
         <select id="gfx-time" class="settings-select">
+          <option value="dawn">Dawn</option>
           <option value="morning">Morning</option>
           <option value="midday">Midday</option>
+          <option value="golden_hour">Golden Hour</option>
           <option value="evening">Evening</option>
           <option value="night">Night</option>
           <option value="auto">Auto-Cycle</option>

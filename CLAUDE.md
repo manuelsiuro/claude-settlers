@@ -55,6 +55,7 @@ These systems were added post-Phase 8 to bring the game closer to The Settlers' 
 - **Combat Animation State** (`src/game/CombatAnimationState.ts`): `ActiveDuel` interface with 5 phases: Approach (0.5s) → Clash × N (0.3s each) → Recoil (0.2s) → Result (0.8s) → Done.
 - **Economy Tracker** (`src/game/EconomyTracker.ts`): Rolling 300s window. `getProductionRate()`, `getConsumptionRate()`, `getNetBalance()`, `getBottlenecks()`. History snapshots for sparklines.
 - **Goods Distribution** (`src/game/GoodsDistribution.ts`): `GoodsDistributionSettings` with `resourcePriority` and `buildingImportance`. `getRoutingScore()` for composite routing. Serializable for save/load.
+- **Flag Light System** (`src/engine/FlagLightSystem.ts`): Nighttime streetlight system using flags as natural lantern positions. 3 layers: (1) emissive instanced cubes atop flag poles with per-flag flicker animation, (2) additive-blend ground glow sprites beneath flags illuminating road intersections, (3) subtle warm emissive tint on active buildings. Driven by `nightness` factor (0=day, 1=full night) from `AtmosphereController`. 2 extra draw calls via `InstancedMesh` (500 max instances each). Zero PointLights. Runs before `BuildingAnimator` so furnace glow overwrites the subtle tint for forge buildings.
 
 **Integration pattern**: All visual systems are instantiated in `Game` constructor, added to scene in `start()`, updated in the animate loop (after manager updates, before render), and disposed in `dispose()`.
 

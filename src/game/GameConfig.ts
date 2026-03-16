@@ -75,7 +75,7 @@ export interface GraphicsSettings {
   shadows: 'off' | 'blob_only' | 'low' | 'high';
   postProcessing: 'off' | 'color_only' | 'full';
   weather: 'none' | 'rain' | 'snow';
-  timeOfDay: 'morning' | 'midday' | 'evening' | 'night' | 'auto';
+  timeOfDay: 'dawn' | 'morning' | 'midday' | 'golden_hour' | 'evening' | 'night' | 'auto';
   fogOfWar: boolean;
 }
 

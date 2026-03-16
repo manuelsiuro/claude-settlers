@@ -57,6 +57,7 @@ import type { GoodsDistributionSettings } from '../game/GoodsDistribution';
 import { PerformanceMonitor } from './PerformanceMonitor';
 import { PostProcessing } from './PostProcessing';
 import { WeatherController } from './WeatherController';
+import { FlagLightSystem } from './FlagLightSystem';
 
 export const ShadowQuality = {
   Off: 'off',
@@ -124,6 +125,7 @@ export class Game {
   private performanceMonitor: PerformanceMonitor;
   private postProcessing: PostProcessing;
   private weatherController: WeatherController;
+  private flagLightSystem: FlagLightSystem;
   private aiPlayers: AIPlayer[] = [];
   private roadRenderer: RoadRenderer;
   private territoryRenderer: TerritoryRenderer;
@@ -163,14 +165,15 @@ export class Game {
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
-    this.renderer.toneMapping = THREE.NoToneMapping;
+    this.renderer.toneMapping = THREE.AgXToneMapping;
+    this.renderer.toneMappingExposure = 1.0;
     container.appendChild(this.renderer.domElement);
 
     // Scene with fog for atmospheric depth
     this.scene = new THREE.Scene();
-    //const fogColor = 0xc8dce8;
-    //this.scene.fog = new THREE.FogExp2(fogColor, 0.012);
-    //this.renderer.setClearColor(fogColor);
+    const fogColor = 0xc8dce8;
+    this.scene.fog = new THREE.FogExp2(fogColor, 0.010);
+    this.renderer.setClearColor(fogColor);
 
     // Isometric orthographic camera
     const aspect = this.width / this.height;
@@ -194,6 +197,7 @@ export class Game {
     this.directionalLight = new THREE.DirectionalLight(0xfff4e0, 1.2); // warm sunlight
     this.directionalLight.position.set(10, 20, 10);
     this.scene.add(this.directionalLight);
+    this.scene.add(this.directionalLight.target);
 
     // Atmosphere controller (time-of-day lighting presets)
     this.atmosphereController = new AtmosphereController(
@@ -260,7 +264,15 @@ export class Game {
     this.logisticsManager.setDistributionSettings(this.distributionSettings);
     this.performanceMonitor = new PerformanceMonitor();
     this.postProcessing = new PostProcessing(this.renderer, this.scene, this.camera);
+    this.atmosphereController.onColorGradingUpdate = (params) => {
+      this.postProcessing.setColorGradingParams(params);
+    };
     this.weatherController = new WeatherController();
+    this.flagLightSystem = new FlagLightSystem();
+    this.atmosphereController.onNightnessUpdate = (nightness) => {
+      this.flagLightSystem.setNightness(nightness);
+      this.postProcessing.setBloomStrength(0.3 + 0.2 * nightness);
+    };
     // Wire production events to economy tracker
     this.productionManager.onProductionComplete = (inputs, outputs) => {
       for (const input of inputs) {
@@ -442,6 +454,9 @@ export class Game {
     // Set up blob shadows
     this.blobShadowRenderer.addToScene(this.scene, this.grid);
 
+    // Set up flag light system (nighttime lanterns)
+    this.flagLightSystem.addToScene(this.scene);
+
     // Set up weather controller
     this.weatherController.addToScene(this.scene);
 
@@ -614,6 +629,13 @@ export class Game {
 
       // Visual systems (shadows, particles, animations, overlays)
       this.blobShadowRenderer.update(allBuildings, allUnits);
+      this.flagLightSystem.update(
+        deltaTime,
+        this.roadNetwork.getAllFlags(),
+        allBuildings,
+        this.grid,
+        (id) => this.buildingRenderer.getMesh(id),
+      );
       this.particleSystem.update(deltaTime, allBuildings, this.grid, this.frustum);
       this.buildingAnimator.update(
         deltaTime,
@@ -896,6 +918,7 @@ export class Game {
     this.combatRenderer.dispose();
     this.buildingStatusOverlay.dispose();
     this.buildingAnimator.dispose();
+    this.flagLightSystem.dispose();
     this.weatherController.dispose();
     this.particleSystem.dispose();
     this.treeRenderer.dispose();

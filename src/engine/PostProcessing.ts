@@ -155,6 +155,21 @@ export class PostProcessing {
     this.composer.setSize(width, height);
   }
 
+  /** Update color grading uniforms dynamically (called by AtmosphereController). */
+  setColorGradingParams(params: { warmTint: [number, number, number]; contrast: number; saturation: number }): void {
+    const uniforms = this.colorGradingPass.uniforms;
+    (uniforms['warmTint'].value as THREE.Vector3).set(params.warmTint[0], params.warmTint[1], params.warmTint[2]);
+    uniforms['contrast'].value = params.contrast;
+    uniforms['saturation'].value = params.saturation;
+  }
+
+  /** Adjust bloom strength dynamically (e.g. boost at night). */
+  setBloomStrength(strength: number): void {
+    if (this.bloomPass) {
+      this.bloomPass.strength = strength;
+    }
+  }
+
   /** Clean up all GPU resources. */
   dispose(): void {
     this.composer.dispose();
