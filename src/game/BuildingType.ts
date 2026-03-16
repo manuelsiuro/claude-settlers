@@ -39,6 +39,7 @@ export const BuildingType = {
 
   // Logistics
   Warehouse: 'warehouse',
+  Harbor: 'harbor',
 } as const;
 
 export type BuildingType = (typeof BuildingType)[keyof typeof BuildingType];
@@ -731,6 +732,30 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     visionRadius: 0,
     storageCapacity: 30,
     constructionTime: 30,
+  },
+
+  [BuildingType.Harbor]: {
+    type: BuildingType.Harbor,
+    label: 'Harbor',
+    description: 'Enables goods transport across water between harbors',
+    category: 'logistics',
+    tier: 2,
+    cost: [
+      { resource: ResourceType.Wood, amount: 4 },
+      { resource: ResourceType.Stone, amount: 3 },
+      { resource: ResourceType.Planks, amount: 2 },
+    ],
+    worker: '',
+    workerTool: '',
+    production: null,
+    allowedTerrain: [TerrainType.Grassland],
+    adjacentTerrain: TerrainType.Water,
+    harvestTerrain: null,
+    knightSlots: 0,
+    influenceRadius: 0,
+    visionRadius: 0,
+    storageCapacity: 8,
+    constructionTime: 40,
   },
 };
 

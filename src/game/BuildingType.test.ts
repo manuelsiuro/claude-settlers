@@ -11,8 +11,8 @@ import { TerrainType } from './TerrainType';
 describe('BuildingType', () => {
   it('should define all building types', () => {
     const types = Object.values(BuildingType);
-    // 1 core + 5 tier1 + 8 tier2 + 9 tier3 + 1 logistics = 24 values
-    expect(types.length).toBeGreaterThanOrEqual(24);
+    // 1 core + 5 tier1 + 8 tier2 + 9 tier3 + 2 logistics = 25 values
+    expect(types.length).toBeGreaterThanOrEqual(25);
   });
 
   it('should have unique string values for each type', () => {

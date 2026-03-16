@@ -226,6 +226,51 @@ export class HexGrid {
     return maxRadius;
   }
 
+  /**
+   * Check if two coordinates are connected by a contiguous water body.
+   * Finds water tiles adjacent to `startCoord`, then BFS through water tiles,
+   * returning true if any water tile adjacent to `endCoord` is reached.
+   */
+  findWaterConnection(startCoord: HexCoord, endCoord: HexCoord): boolean {
+    // Find water entry points adjacent to start
+    const startWater: HexCoord[] = [];
+    for (const n of this.getNeighbors(startCoord.q, startCoord.r)) {
+      if (n.terrain === TerrainType.Water) startWater.push(n.coord);
+    }
+    if (startWater.length === 0) return false;
+
+    // Find water tiles adjacent to end (our targets)
+    const endWaterKeys = new Set<string>();
+    for (const n of this.getNeighbors(endCoord.q, endCoord.r)) {
+      if (n.terrain === TerrainType.Water) endWaterKeys.add(HexGrid.key(n.coord.q, n.coord.r));
+    }
+    if (endWaterKeys.size === 0) return false;
+
+    // BFS through water tiles
+    const visited = new Set<string>();
+    const queue: HexCoord[] = [];
+    for (const wc of startWater) {
+      const k = HexGrid.key(wc.q, wc.r);
+      if (endWaterKeys.has(k)) return true;
+      visited.add(k);
+      queue.push(wc);
+    }
+
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      for (const n of this.getNeighbors(current.q, current.r)) {
+        if (n.terrain !== TerrainType.Water) continue;
+        const k = HexGrid.key(n.coord.q, n.coord.r);
+        if (visited.has(k)) continue;
+        visited.add(k);
+        if (endWaterKeys.has(k)) return true;
+        queue.push(n.coord);
+      }
+    }
+
+    return false;
+  }
+
   /** Total number of tiles */
   get size(): number {
     return this.tiles.size;

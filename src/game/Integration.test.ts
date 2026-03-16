@@ -28,6 +28,7 @@ import { WoodcutterManager } from './WoodcutterManager';
 import { ForesterManager } from './ForesterManager';
 import { UpgradeManager } from './UpgradeManager';
 import { FogOfWarManager } from './FogOfWarManager';
+import { HarborManager } from './HarborManager';
 import { serializeGame, deserializeGame } from './SaveLoad';
 import type { SaveData } from './SaveLoad';
 
@@ -1255,6 +1256,7 @@ describe('Integration: Save/Load Round-Trip', () => {
   let foresterManager: ForesterManager;
   let upgradeManager: UpgradeManager;
   let fogOfWarManager: FogOfWarManager;
+  let harborManager: HarborManager;
   let aiPlayer: AIPlayer;
 
   function createManagers() {
@@ -1274,6 +1276,7 @@ describe('Integration: Save/Load Round-Trip', () => {
       foresterManager,
       upgradeManager,
       fogOfWarManager,
+      harborManager,
     };
   }
 
@@ -1321,6 +1324,7 @@ describe('Integration: Save/Load Round-Trip', () => {
     foresterManager = new ForesterManager(gameState, treeManager);
     upgradeManager = new UpgradeManager(gameState);
     fogOfWarManager = new FogOfWarManager(gameState);
+    harborManager = new HarborManager(gameState, roadNetwork, grid);
 
     gameState.territoryCheck = (q, r, pid) => territoryManager.isOwnedBy(q, r, pid);
 
@@ -1434,6 +1438,7 @@ describe('Integration: Save/Load Round-Trip', () => {
         foresterManager: new ForesterManager(gs2, new TreeManager()),
         upgradeManager: new UpgradeManager(gs2),
         fogOfWarManager: new FogOfWarManager(gs2),
+        harborManager: new HarborManager(gs2, rn2, grid2),
       },
       [ai2],
     );
@@ -1526,6 +1531,7 @@ describe('Integration: Save/Load Round-Trip', () => {
         foresterManager: new ForesterManager(gs2, new TreeManager()),
         upgradeManager: new UpgradeManager(gs2),
         fogOfWarManager: new FogOfWarManager(gs2),
+        harborManager: new HarborManager(gs2, rn2, grid2),
       },
       [ai2],
     );
@@ -1602,6 +1608,7 @@ describe('Integration: Save/Load Round-Trip', () => {
         foresterManager: new ForesterManager(gs2, new TreeManager()),
         upgradeManager: new UpgradeManager(gs2),
         fogOfWarManager: new FogOfWarManager(gs2),
+        harborManager: new HarborManager(gs2, rn2, grid2),
       },
       [ai2],
     );

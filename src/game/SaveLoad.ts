@@ -24,12 +24,13 @@ import type { ForesterManager, ForesterPhase } from './ForesterManager';
 import type { UpgradeManager } from './UpgradeManager';
 import type { FogOfWarManager } from './FogOfWarManager';
 import type { AIPlayer } from './AIPlayer';
+import type { HarborManager, WaterRoute } from './HarborManager';
 import { TerrainType } from './TerrainType';
 import type { GoodsDistributionSettings } from './GoodsDistribution';
 import { serializeDistribution, deserializeDistribution } from './GoodsDistribution';
 
 /** Current save format version */
-const SAVE_VERSION = 6;
+const SAVE_VERSION = 7;
 
 /** localStorage key for auto-save */
 const STORAGE_KEY = 'feudal_realm_save';
@@ -139,6 +140,11 @@ export interface SaveData {
     elapsedTime?: number;
   };
 
+  // Harbor routes
+  harborManager?: {
+    waterRoutes: WaterRoute[];
+  };
+
   // Economy settings
   goodsDistribution?: ReturnType<typeof serializeDistribution>;
 
@@ -180,6 +186,7 @@ export function serializeGame(
     foresterManager: ForesterManager;
     upgradeManager: UpgradeManager;
     fogOfWarManager: FogOfWarManager;
+    harborManager: HarborManager;
   },
   aiPlayers: AIPlayer[],
   camera: { frustum: number; position: { x: number; y: number; z: number }; target: { x: number; y: number; z: number } },
@@ -247,6 +254,8 @@ export function serializeGame(
     deposits: { revealed, claimed },
     victoryManager: managers.victoryManager._getState(),
 
+    harborManager: managers.harborManager._getState(),
+
     goodsDistribution: distributionSettings ? serializeDistribution(distributionSettings) : undefined,
 
     aiPlayers: aiPlayers.map((ai) => ai._getState()),
@@ -282,6 +291,7 @@ export function deserializeGame(
     foresterManager: ForesterManager;
     upgradeManager: UpgradeManager;
     fogOfWarManager: FogOfWarManager;
+    harborManager: HarborManager;
   },
   aiPlayers: AIPlayer[],
 ): GoodsDistributionSettings | null {
@@ -332,6 +342,9 @@ export function deserializeGame(
   }
   if (data.fogOfWarManager) {
     managers.fogOfWarManager._loadState(data.fogOfWarManager);
+  }
+  if (data.harborManager) {
+    managers.harborManager._loadState(data.harborManager);
   }
 
   // Backward compat: patch buildings missing fields from older versions

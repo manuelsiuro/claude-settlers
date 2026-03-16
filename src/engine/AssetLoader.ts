@@ -44,6 +44,7 @@ const BUILDING_MODELS = [
   'blacksmith_armory',
   'barracks',
   'warehouse',
+  'harbor',
 ] as const;
 
 export type BuildingModelName = (typeof BUILDING_MODELS)[number];

@@ -43,6 +43,8 @@ export const BUILDING_SCALE: Record<string, number> = {
   [BuildingType.GuardHut]: 0.10,
   // Tall-narrow (50-55% fill)
   [BuildingType.Watchtower]: 0.09,
+  // Logistics
+  [BuildingType.Harbor]: 0.12,
 };
 
 const DEFAULT_BUILDING_SCALE = 0.15;

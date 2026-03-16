@@ -34,6 +34,8 @@ export interface Road {
   flagB: string; // Flag ID
   /** Unit ID of the transporter assigned to this road, or null */
   transporterId: string | null;
+  /** True for harbor water routes (not physical roads) */
+  virtual?: boolean;
 }
 
 let nextFlagId = 1;
@@ -244,6 +246,43 @@ export class RoadNetwork {
     this.adjacency.get(road.flagB)?.add(road.flagA);
 
     return !connected;
+  }
+
+  /**
+   * Create a virtual road between two flags, skipping the adjacency check.
+   * Used by HarborManager for water routes.
+   */
+  createVirtualRoad(flagAId: string, flagBId: string): Road | null {
+    if (flagAId === flagBId) return null;
+
+    const flagA = this.flags.get(flagAId);
+    const flagB = this.flags.get(flagBId);
+    if (!flagA || !flagB) return null;
+
+    const roadKey = this.makeRoadKey(flagAId, flagBId);
+    if (this.roadByFlags.has(roadKey)) return null;
+
+    const road: Road = {
+      id: `road_${nextRoadId++}`,
+      flagA: flagAId,
+      flagB: flagBId,
+      transporterId: null,
+      virtual: true,
+    };
+
+    this.roads.set(road.id, road);
+    this.roadByFlags.set(roadKey, road.id);
+    this.adjacency.get(flagAId)?.add(flagBId);
+    this.adjacency.get(flagBId)?.add(flagAId);
+
+    return road;
+  }
+
+  /** Remove a virtual road by ID. Returns true if found and removed. */
+  removeVirtualRoad(id: string): boolean {
+    const road = this.roads.get(id);
+    if (!road || !road.virtual) return false;
+    return this.removeRoad(id);
   }
 
   /** Remove a road */

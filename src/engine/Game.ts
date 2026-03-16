@@ -22,6 +22,7 @@ import { GeologistManager } from '../game/GeologistManager';
 import { TreeManager } from '../game/TreeManager';
 import { WoodcutterManager } from '../game/WoodcutterManager';
 import { ForesterManager } from '../game/ForesterManager';
+import { HarborManager } from '../game/HarborManager';
 import { DepositRenderer } from './DepositRenderer';
 import { TreeRenderer } from './TreeRenderer';
 import type { GameConfig, GraphicsSettings } from '../game/GameConfig';
@@ -95,6 +96,7 @@ export class Game {
   private roadNetwork: RoadNetwork;
   private transporterManager: TransporterManager;
   private logisticsManager: LogisticsManager;
+  private harborManager: HarborManager;
   private territoryManager: TerritoryManager;
   private knightManager: KnightManager;
   private combatManager: CombatManager;
@@ -221,6 +223,7 @@ export class Game {
     this.roadNetwork = new RoadNetwork(this.grid);
     this.transporterManager = new TransporterManager(this.gameState, this.roadNetwork);
     this.logisticsManager = new LogisticsManager(this.gameState, this.roadNetwork);
+    this.harborManager = new HarborManager(this.gameState, this.roadNetwork, this.grid);
     this.territoryManager = new TerritoryManager(this.gameState);
     this.knightManager = new KnightManager(this.gameState);
     this.combatManager = new CombatManager(this.gameState, this.knightManager);
@@ -471,6 +474,7 @@ export class Game {
           foresterManager: this.foresterManager,
           upgradeManager: this.upgradeManager,
           fogOfWarManager: this.fogOfWarManager,
+          harborManager: this.harborManager,
         },
         this.aiPlayers,
       );
@@ -588,6 +592,7 @@ export class Game {
       this.foresterManager.update(deltaTime);
       this.treeRenderer.sync(this.treeManager, this.grid);
       this.logisticsManager.update(deltaTime);
+      this.harborManager.update(deltaTime);
       this.transporterManager.update(deltaTime);
       this.knightManager.update(deltaTime);
       this.attackManager.update(deltaTime);
@@ -1147,6 +1152,7 @@ export class Game {
         foresterManager: this.foresterManager,
         upgradeManager: this.upgradeManager,
         fogOfWarManager: this.fogOfWarManager,
+        harborManager: this.harborManager,
       },
       this.aiPlayers,
       {

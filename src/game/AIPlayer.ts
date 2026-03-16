@@ -58,6 +58,7 @@ const ECONOMIC_BUILD_ORDER: BuildingType[] = [
   BuildingType.FishermanHut,
   BuildingType.Farm,
   BuildingType.Warehouse,
+  BuildingType.Harbor,             // water logistics (skipped if no water-adjacent hex)
   BuildingType.GeologistHut,
   BuildingType.Windmill,
   BuildingType.Bakery,
@@ -96,6 +97,7 @@ const BALANCED_BUILD_ORDER: BuildingType[] = [
   BuildingType.GeologistHut,       // prospect mountains for ore deposits
   BuildingType.IronMine,           // requires prospected iron deposit
   BuildingType.CoalMine,           // requires prospected coal deposit
+  BuildingType.Harbor,             // water logistics (skipped if no water-adjacent hex)
 
   // ── Tier 3: processing & military arms ─────────────────────────────────
   BuildingType.Windmill,

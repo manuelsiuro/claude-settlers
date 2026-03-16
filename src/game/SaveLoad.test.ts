@@ -19,6 +19,7 @@ import { WoodcutterManager } from './WoodcutterManager';
 import { ForesterManager } from './ForesterManager';
 import { UpgradeManager } from './UpgradeManager';
 import { FogOfWarManager } from './FogOfWarManager';
+import { HarborManager } from './HarborManager';
 import { AIPlayer } from './AIPlayer';
 import { BuildingType } from './BuildingType';
 import {
@@ -85,6 +86,7 @@ function createManagers(gameState: GameState, roadNetwork: RoadNetwork, territor
     foresterManager,
     upgradeManager: new UpgradeManager(gameState),
     fogOfWarManager: new FogOfWarManager(gameState),
+    harborManager: new HarborManager(gameState, roadNetwork, gameState.getGrid()),
   };
 }
 
@@ -121,7 +123,7 @@ describe('SaveLoad: round-trip serialization', () => {
       { frustum: 10, position: { x: 0, y: 20, z: 0 }, target: { x: 0, y: 0, z: 0 } },
     );
 
-    expect(data.version).toBe(6);
+    expect(data.version).toBe(7);
     expect(data.config).toEqual(testConfig);
     expect(data.buildings).toEqual([]);
     expect(data.units).toEqual([]);
@@ -538,7 +540,7 @@ describe('SaveLoad: round-trip serialization', () => {
     const json = JSON.stringify(data);
     const parsed = JSON.parse(json) as SaveData;
 
-    expect(parsed.version).toBe(6);
+    expect(parsed.version).toBe(7);
     expect(parsed.config.seed).toBe(42);
     expect(parsed.buildings.length).toBe(2);
     expect(parsed.units.length).toBe(1);

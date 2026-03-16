@@ -189,7 +189,7 @@ export class TransporterManager {
           state.targetFlagId = otherFlagId;
           state.carrying = currentFlag.goods.splice(goodIndex, 1)[0];
           unit.carryingResource = state.carrying.resource;
-          this.walkTo(unit, otherFlagId);
+          this.walkTo(unit, otherFlagId, state);
           continue;
         }
       }
@@ -202,7 +202,7 @@ export class TransporterManager {
           // Walk empty to other flag to pick up
           state.waitingAtFlagId = null;
           state.targetFlagId = otherFlagId;
-          this.walkTo(unit, otherFlagId);
+          this.walkTo(unit, otherFlagId, state);
           continue;
         }
       }
@@ -231,7 +231,7 @@ export class TransporterManager {
       state.carrying = currentFlag.goods.splice(goodIndex, 1)[0];
       unit.carryingResource = state.carrying.resource;
       state.targetFlagId = otherFlagId;
-      this.walkTo(unit, otherFlagId);
+      this.walkTo(unit, otherFlagId, state);
       return;
     }
 
@@ -242,7 +242,7 @@ export class TransporterManager {
       if (reverseGoodIndex >= 0) {
         // Walk empty to other flag to pick up
         state.targetFlagId = otherFlagId;
-        this.walkTo(unit, otherFlagId);
+        this.walkTo(unit, otherFlagId, state);
         return;
       }
     }
@@ -254,10 +254,21 @@ export class TransporterManager {
 
   /**
    * Walk the unit to a target flag (without picking up goods).
+   * For virtual roads (harbor routes), teleport directly to the destination.
    */
-  private walkTo(unit: Unit, targetFlagId: string): void {
+  private walkTo(unit: Unit, targetFlagId: string, state?: TransporterState): void {
     const targetFlag = this.roadNetwork.getFlag(targetFlagId);
     if (!targetFlag) return;
+
+    // Virtual roads (harbor water routes): teleport to destination
+    if (state) {
+      const road = this.roadNetwork.getRoad(state.roadId);
+      if (road?.virtual) {
+        setUnitPath(unit, [targetFlag.coord]);
+        unit.state = UnitState.WalkingToWork;
+        return;
+      }
+    }
 
     const path = findPath(this.gameState.getGrid(), unit.coord, targetFlag.coord);
     if (path.length > 0) {

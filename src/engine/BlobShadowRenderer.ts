@@ -16,6 +16,7 @@ const BUILDING_SHADOW_SIZE: Partial<Record<string, number>> = {
   [BuildingType.Barracks]: 0.8,
   [BuildingType.Watchtower]: 0.5,
   [BuildingType.Warehouse]: 0.7,
+  [BuildingType.Harbor]: 0.6,
 };
 const DEFAULT_BUILDING_SHADOW_SIZE = 0.45;
 
