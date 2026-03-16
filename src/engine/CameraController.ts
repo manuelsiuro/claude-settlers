@@ -4,7 +4,7 @@ import type { Game } from './Game';
 
 const PAN_SPEED = 0.02;
 const ZOOM_SPEED = 0.5;
-const MIN_FRUSTUM = 4;
+const MIN_FRUSTUM = 2;
 const TOUCH_PAN_SPEED = 0.03;
 
 interface TouchState {
