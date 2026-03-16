@@ -1,6 +1,6 @@
 # Forester's Hut — 3D Modeling Prompt
 
-Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Forester's Hut"** in a low-poly 3D style using software like Blender or Maya.
+Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Forester's Hut"** in a low-poly 3D style.
 
 The Forester's Hut is a **resource gathering building** — it employs a Forester who plants new saplings to ensure a renewable supply of trees. It should look like a nature-loving woodland cottage with a green pyramid roof, surrounded by young saplings and greenery.
 

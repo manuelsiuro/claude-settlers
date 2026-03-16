@@ -1,6 +1,6 @@
 # Slaughterhouse — 3D Modeling Prompt
 
-Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Slaughterhouse"** in a low-poly 3D style using software like Blender or Maya.
+Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Slaughterhouse"** in a low-poly 3D style.
 
 The Slaughterhouse is a **resource processing building** — it processes Pigs (from the Pig Farm) into Meat, which feeds Miners. The building should look utilitarian and somewhat imposing with its dark red/maroon color palette — clearly a working meat-processing facility.
 

@@ -1,6 +1,6 @@
 # Sawmill — 3D Modeling Prompt
 
-Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Sawmill"** in a low-poly 3D style using software like Blender or Maya.
+Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Sawmill"** in a low-poly 3D style.
 
 The Sawmill is a **resource processing building** — it converts Wood (Logs) into Planks. It is one of the most essential early-game buildings, enabling construction of advanced structures. Visually, it should feature an open-sided processing area where logs enter on one side and planks emerge from the other, with an animated saw blade.
 

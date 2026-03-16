@@ -1,6 +1,6 @@
 # Farm — 3D Modeling Prompt
 
-Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Farm"** in a low-poly 3D style using software like Blender or Maya.
+Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Farm"** in a low-poly 3D style.
 
 The Farm is a **resource gathering building** — it employs a Farmer who grows and harvests Grain. The Grain is used to feed the Windmill (for Flour) and the Pig Farm. The Farm should look like a rustic farmhouse with adjacent golden fields — a warm, pastoral scene.
 

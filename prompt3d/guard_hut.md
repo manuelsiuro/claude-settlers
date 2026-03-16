@@ -1,6 +1,6 @@
 # Guard Hut — 3D Modeling Prompt
 
-Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Guard Hut"** in a low-poly 3D style using software like Blender or Maya.
+Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Guard Hut"** in a low-poly 3D style.
 
 The Guard Hut is the **basic military outpost** — it expands the player's territory and houses 2–3 Knights. It requires Swords and Shields to recruit Knights. Smallest military building — compact, robust, and fortified with a distinctive red banner/roof cap.
 

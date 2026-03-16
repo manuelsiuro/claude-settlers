@@ -1,6 +1,6 @@
 # Coal Mine — 3D Modeling Prompt
 
-Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Coal Mine"** in a low-poly 3D style using software like Blender or Maya.
+Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Coal Mine"** in a low-poly 3D style.
 
 The Coal Mine is a **resource gathering building** — it employs a Miner who extracts Coal Ore from mountain deposits. Coal is a critical fuel used by the Iron Smelter, Blacksmith, Goldsmith, and Bakery. The structure shares the general mine layout but is identified by a distinctive black ore indicator.
 

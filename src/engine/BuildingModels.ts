@@ -4,22 +4,21 @@ import type { BuildingModelName } from './AssetLoader';
 /**
  * Maps each BuildingType to its GLTF model filename.
  * Shared between BuildingRenderer and PlacementController.
- * All 4 mine types share the same 'mine' model.
  */
 export const BUILDING_MODEL_MAP: Record<BuildingType, BuildingModelName> = {
   [BuildingType.Castle]: 'castle',
   [BuildingType.WoodcutterHut]: 'woodcutter_hut',
-  [BuildingType.ForesterHut]: 'forester_hut',
+  [BuildingType.ForesterHut]: 'foresters_hut',
   [BuildingType.Quarry]: 'quarry',
   [BuildingType.FishermanHut]: 'fisherman_hut',
   [BuildingType.GuardHut]: 'guard_hut',
   [BuildingType.Sawmill]: 'sawmill',
   [BuildingType.Farm]: 'farm',
   [BuildingType.GeologistHut]: 'geologist_hut',
-  [BuildingType.IronMine]: 'mine',
-  [BuildingType.CoalMine]: 'mine',
-  [BuildingType.GoldMine]: 'mine',
-  [BuildingType.StoneMine]: 'mine',
+  [BuildingType.IronMine]: 'iron_mine',
+  [BuildingType.CoalMine]: 'coal_mine',
+  [BuildingType.GoldMine]: 'gold_mine',
+  [BuildingType.StoneMine]: 'stone_mine',
   [BuildingType.Watchtower]: 'watchtower',
   [BuildingType.Windmill]: 'windmill',
   [BuildingType.Bakery]: 'bakery',

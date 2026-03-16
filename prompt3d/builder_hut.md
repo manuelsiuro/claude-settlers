@@ -1,6 +1,6 @@
 # Builder's Hut — 3D Modeling Prompt
 
-Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Builder's Hut"** in a low-poly 3D style using software like Blender or Maya.
+Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Builder's Hut"** in a low-poly 3D style.
 
 The Builder's Hut is a **logistics building** — it manages Builder serfs who construct and repair buildings. Builders require Hammers (Tools). The hut is very small and simple, surrounded by stacks of building materials (planks and stones) ready for the next construction job.
 

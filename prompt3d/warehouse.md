@@ -1,6 +1,6 @@
 # Warehouse / Storehouse — 3D Modeling Prompt
 
-Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Warehouse / Storehouse"** in a low-poly 3D style using software like Blender or Maya.
+Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Warehouse / Storehouse"** in a low-poly 3D style.
 
 The Warehouse (or Storehouse) is a **logistics building** — it provides centralized storage for surplus goods. Transporters pick up and drop off goods here. It should look like a large, utilitarian storage barn with multiple loading doors — the biggest civilian building after the Castle.
 

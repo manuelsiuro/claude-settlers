@@ -1,6 +1,6 @@
 # Barracks / Fortress — 3D Modeling Prompt
 
-Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Barracks / Fortress"** in a low-poly 3D style using software like Blender or Maya.
+Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Barracks / Fortress"** in a low-poly 3D style.
 
 The Barracks (or Fortress) is the **major military building** — it houses 10–15+ Knights, provides the largest territorial expansion, and is the most imposing military structure after the Castle. It should look like a smaller version of the Castle — a wide, fortified stronghold with optional corner towers and red flags.
 

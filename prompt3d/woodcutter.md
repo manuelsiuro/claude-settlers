@@ -1,6 +1,6 @@
 # Woodcutter's Hut — 3D Modeling Prompt
 
-Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Woodcutter's Hut"** in a low-poly 3D style using software like Blender or Maya.
+Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Woodcutter's Hut"** in a low-poly 3D style.
 
 The Woodcutter's Hut is a **resource gathering building** — it employs a Woodcutter who chops down nearby trees to produce Wood (Logs). It should look cozy, rustic, and small — a humble forest worker's dwelling surrounded by evidence of its trade.
 

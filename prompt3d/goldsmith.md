@@ -1,6 +1,6 @@
 # Goldsmith / Mint — 3D Modeling Prompt
 
-Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Goldsmith / Mint"** in a low-poly 3D style using software like Blender or Maya.
+Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Goldsmith / Mint"** in a low-poly 3D style.
 
 The Goldsmith (or Mint) is a **resource processing building** — it converts Gold Ore into Gold Bars using Coal as fuel. Gold Bars provide a global combat bonus to all Knights, making this a strategically important late-game building. The building should look refined and prosperous, with a prominent bright yellow accent symbolizing gold.
 

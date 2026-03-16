@@ -1,6 +1,6 @@
 # Harbor — 3D Modeling Prompt
 
-Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Harbor"** in a low-poly 3D style using software like Blender or Maya.
+Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Harbor"** in a low-poly 3D style.
 
 The Harbor is a **logistics building** — it facilitates transport of goods over water, extending the logistics network across seas and rivers. It features a long pier extending from land into water, a small dock building, and simple boats. Used on maps with significant water bodies.
 

@@ -7,30 +7,45 @@ import { BUILDING_MODEL_MAP } from './BuildingModels';
 import { MapRenderer } from './MapRenderer';
 import type { FogOfWarManager } from '../game/FogOfWarManager';
 
-/** Scale factors for building models to fit hex tiles nicely */
-const BUILDING_SCALE: Partial<Record<string, number>> = {
-  [BuildingType.Castle]: 1.2,
-  [BuildingType.Barracks]: 0.9,
-  [BuildingType.IronMine]: 2.5,
-  [BuildingType.CoalMine]: 2.5,
-  [BuildingType.GoldMine]: 2.5,
-  [BuildingType.StoneMine]: 2.5,
-  // Undersized models (raw footprint < 0.35)
-  [BuildingType.GoldsmithMint]: 2.0,
-  [BuildingType.GuardHut]: 1.8,
-  [BuildingType.IronSmelter]: 1.7,
-  [BuildingType.Bakery]: 1.7,
-  [BuildingType.GeologistHut]: 1.5,
-  [BuildingType.BlacksmithArmory]: 1.6,
-  [BuildingType.Watchtower]: 1.7,
-  // Mid-tier buildings slightly undersized (raw footprint 0.42–0.50)
-  [BuildingType.WoodcutterHut]: 1.15,
-  [BuildingType.ForesterHut]: 1.15,
-  [BuildingType.ToolmakerWorkshop]: 1.2,
-  [BuildingType.Slaughterhouse]: 1.2,
+/**
+ * Scale factors for building models to fit hex tiles.
+ * Computed from GLB bounding boxes: scale = (HEX_WIDTH * fillRatio) / max(bbox.x, bbox.z)
+ * HEX_WIDTH = sqrt(3) ≈ 1.732
+ */
+export const BUILDING_SCALE: Record<string, number> = {
+  // Large (85-90% fill)
+  [BuildingType.Castle]: 0.15,
+  [BuildingType.Barracks]: 0.12,
+  // Medium-large (75-80% fill)
+  [BuildingType.Farm]: 0.135,
+  [BuildingType.PigFarm]: 0.11,
+  [BuildingType.Warehouse]: 0.09,
+  // Medium (65-75% fill)
+  [BuildingType.Sawmill]: 0.17,
+  [BuildingType.Windmill]: 0.17,
+  [BuildingType.Bakery]: 0.21,
+  [BuildingType.Slaughterhouse]: 0.19,
+  [BuildingType.IronSmelter]: 0.12,
+  [BuildingType.ToolmakerWorkshop]: 0.23,
+  [BuildingType.GoldsmithMint]: 0.20,
+  [BuildingType.BlacksmithArmory]: 0.25,
+  // Medium-compact (60-65% fill)
+  [BuildingType.IronMine]: 0.09,
+  [BuildingType.CoalMine]: 0.10,
+  [BuildingType.GoldMine]: 0.09,
+  [BuildingType.StoneMine]: 0.10,
+  [BuildingType.Quarry]: 0.17,
+  // Small (50-60% fill)
+  [BuildingType.WoodcutterHut]: 0.29,
+  [BuildingType.ForesterHut]: 0.15,
+  [BuildingType.FishermanHut]: 0.09,
+  [BuildingType.GeologistHut]: 0.18,
+  [BuildingType.GuardHut]: 0.10,
+  // Tall-narrow (50-55% fill)
+  [BuildingType.Watchtower]: 0.09,
 };
 
-const DEFAULT_BUILDING_SCALE = 1.0;
+const DEFAULT_BUILDING_SCALE = 0.15;
 
 /**
  * Renders placed buildings on the hex map.

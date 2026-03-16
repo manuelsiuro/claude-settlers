@@ -1,6 +1,6 @@
 # Fisherman's Hut — 3D Modeling Prompt
 
-Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Fisherman's Hut"** in a low-poly 3D style using software like Blender or Maya.
+Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Fisherman's Hut"** in a low-poly 3D style.
 
 The Fisherman's Hut is a **resource gathering building** — it employs a Fisherman who catches Fish from adjacent water tiles. It must be built next to water. It should look like a charming coastal or lakeside cottage with a small pier extending toward the water. The blue palette sets it apart from other buildings.
 

@@ -8,6 +8,7 @@ import { BUILDING_DEFINITIONS } from '../game/BuildingType';
 import { getDistanceMultiplier, getDistanceRating } from '../game/ProductionManager';
 import { assetLoader } from './AssetLoader';
 import { BUILDING_MODEL_MAP } from './BuildingModels';
+import { BUILDING_SCALE } from './BuildingRenderer';
 import { MapRenderer } from './MapRenderer';
 
 const VALID_COLOR = 0x00ff00;
@@ -237,6 +238,8 @@ export class PlacementController {
     const modelName = BUILDING_MODEL_MAP[this.selectedType];
     if (modelName) {
       this.ghostMesh = assetLoader.getBuildingModel(modelName);
+      const scale = BUILDING_SCALE[this.selectedType] ?? 0.15;
+      this.ghostMesh.scale.setScalar(scale);
       this.ghostMesh.position.set(x, y, z);
       this.ghostMesh.traverse((child) => {
         if (child instanceof THREE.Mesh) {

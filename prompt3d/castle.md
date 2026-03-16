@@ -1,6 +1,6 @@
 # Castle — 3D Modeling Prompt
 
-Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Castle"** in a low-poly 3D style using software like Blender or Maya.
+Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Castle"** in a low-poly 3D style.
 
 The Castle is the **central hub** of the settlement — it is the player's starting building, the serf spawning point, and the initial resource storehouse. Its destruction means defeat. It should look imposing, fortified, and grand — the largest structure in the game. Think medieval keep surrounded by corner towers with red-capped roofs.
 

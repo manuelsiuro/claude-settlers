@@ -1,6 +1,6 @@
 # Stone Mine — 3D Modeling Prompt
 
-Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Stone Mine"** in a low-poly 3D style using software like Blender or Maya.
+Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Stone Mine"** in a low-poly 3D style.
 
 The Stone Mine is a **resource gathering building** — it employs a Miner who extracts Stone from deep mountain deposits (as opposed to the surface Quarry). It is differentiated from the Quarry by being a true mine shaft built into the mountainside. Its ore indicator is a light grey cube.
 

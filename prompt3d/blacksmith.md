@@ -1,6 +1,6 @@
 # Blacksmith / Armory — 3D Modeling Prompt
 
-Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Blacksmith / Armory"** in a low-poly 3D style using software like Blender or Maya.
+Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Blacksmith / Armory"** in a low-poly 3D style.
 
 The Blacksmith (or Armory) is a **resource processing building** — it forges Swords and Shields from Iron Bars and Coal (Planks may also be needed for shields). These weapons are delivered to military buildings to recruit Knights. The building should look dark, hot, and heavy — a place of fire and steel.
 

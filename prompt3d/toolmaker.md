@@ -1,6 +1,6 @@
 # Toolmaker's Workshop — 3D Modeling Prompt
 
-Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Toolmaker's Workshop"** in a low-poly 3D style using software like Blender or Maya.
+Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Toolmaker's Workshop"** in a low-poly 3D style.
 
 The Toolmaker's Workshop is a **resource processing building** — it crafts Tools (Axes, Pickaxes, Scythes, Hammers, Fishing Rods) from Iron Bars and Planks. Tools are essential for many worker professions. The building should look like a skilled craftsman's workshop, with an anvil and tools on display.
 

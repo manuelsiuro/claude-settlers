@@ -1,6 +1,6 @@
 # Watchtower — 3D Modeling Prompt
 
-Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Watchtower"** in a low-poly 3D style using software like Blender or Maya.
+Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Watchtower"** in a low-poly 3D style.
 
 The Watchtower is a **mid-tier military building** — it expands territory more than a Guard Hut and houses 5–7 Knights. It is tall and imposing, with a crenellated top and a red flag. The tallest military structure besides the Castle itself.
 

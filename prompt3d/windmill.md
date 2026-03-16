@@ -1,6 +1,6 @@
 # Windmill — 3D Modeling Prompt
 
-Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Windmill"** in a low-poly 3D style using software like Blender or Maya.
+Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Windmill"** in a low-poly 3D style.
 
 The Windmill is a **resource processing building** — it grinds Grain into Flour. The Flour is then sent to the Bakery to make Bread. The Windmill is one of the tallest and most visually distinctive buildings in the game, with its iconic rotating sails.
 

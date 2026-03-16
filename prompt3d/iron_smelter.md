@@ -1,6 +1,6 @@
 # Iron Smelter — 3D Modeling Prompt
 
-Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Iron Smelter"** in a low-poly 3D style using software like Blender or Maya.
+Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Iron Smelter"** in a low-poly 3D style.
 
 The Iron Smelter is a **resource processing building** — it converts Iron Ore into Iron Bars using Coal as fuel. Iron Bars are essential for making Tools (Toolmaker) and Weapons (Blacksmith). The building should look hot, industrial, and imposing, dominated by a tall furnace chimney with visible heat glow.
 

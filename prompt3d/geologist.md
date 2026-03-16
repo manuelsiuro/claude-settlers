@@ -1,6 +1,6 @@
 # Geologist's Hut — 3D Modeling Prompt
 
-Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Geologist's Hut"** in a low-poly 3D style using software like Blender or Maya.
+Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Geologist's Hut"** in a low-poly 3D style.
 
 The Geologist's Hut is a **resource gathering building** — it employs a Geologist who prospects mountain tiles to discover ore deposits (Iron, Coal, Gold, Stone). It is the smallest building in the game — a tiny surveyor's shack with a distinctive bright yellow marker cone. Think of a prospector's base camp.
 

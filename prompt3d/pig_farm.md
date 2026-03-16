@@ -1,6 +1,6 @@
 # Pig Farm — 3D Modeling Prompt
 
-Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Pig Farm"** in a low-poly 3D style using software like Blender or Maya.
+Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Pig Farm"** in a low-poly 3D style.
 
 The Pig Farm is a **resource processing building** — it raises Pigs using Grain as input. The Pigs are then sent to the Slaughterhouse to produce Meat. It should look like a rustic farm building with an enclosed pen containing cute low-poly pig shapes.
 

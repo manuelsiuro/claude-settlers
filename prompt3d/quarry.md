@@ -1,6 +1,6 @@
 # Quarry — 3D Modeling Prompt
 
-Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Quarry"** in a low-poly 3D style using software like Blender or Maya.
+Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Quarry"** in a low-poly 3D style.
 
 The Quarry is a **resource gathering building** — it employs a Stonemason who extracts Stone from surface deposits. It should look like a rough, open-fronted shelter built against a rocky outcrop, with stone blocks scattered nearby. The vibe is industrial, rugged, and utilitarian.
 

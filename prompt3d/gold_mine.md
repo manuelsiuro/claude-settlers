@@ -1,6 +1,6 @@
 # Gold Mine — 3D Modeling Prompt
 
-Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Gold Mine"** in a low-poly 3D style using software like Blender or Maya.
+Act as an expert 3D artist and instructor specializing in low-poly modeling and stylized game art. Your task is to provide a comprehensive, step-by-step guide on how to model a stylized **"Gold Mine"** in a low-poly 3D style.
 
 The Gold Mine is a **resource gathering building** — it employs a Miner who extracts Gold Ore from rare mountain deposits. Gold Ore is processed by the Goldsmith into Gold Bars, which provide a global combat bonus to all Knights. The Gold Mine shares the general mine layout but features a distinctive yellow/gold ore indicator sphere.
 
