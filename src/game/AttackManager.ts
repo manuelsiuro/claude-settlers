@@ -4,6 +4,7 @@ import type { Building } from './Building';
 import type { GameState } from './GameState';
 import type { CombatManager } from './CombatManager';
 import type { TerritoryManager } from './TerritoryManager';
+import type { DuelAnimationManager } from './DuelAnimationManager';
 import type { Unit } from './Unit';
 import { UnitState, setUnitPath, clearUnitPath } from './Unit';
 import { UnitType } from './UnitType';
@@ -34,6 +35,8 @@ export class AttackManager {
   private gameState: GameState;
   private combatManager: CombatManager;
   private territoryManager: TerritoryManager;
+  private duelAnimationManager: DuelAnimationManager | null;
+  private getWorldY: ((q: number, r: number) => number) | null;
 
   /** Active attack orders */
   private attacks: AttackOrder[] = [];
@@ -51,10 +54,14 @@ export class AttackManager {
     gameState: GameState,
     combatManager: CombatManager,
     territoryManager: TerritoryManager,
+    duelAnimationManager?: DuelAnimationManager,
+    getWorldY?: (q: number, r: number) => number,
   ) {
     this.gameState = gameState;
     this.combatManager = combatManager;
     this.territoryManager = territoryManager;
+    this.duelAnimationManager = duelAnimationManager ?? null;
+    this.getWorldY = getWorldY ?? null;
   }
 
   /** Serialization: get internal state for save */
@@ -123,7 +130,24 @@ export class AttackManager {
    * Update attack orders each frame.
    * Checks for arrivals and processes combat.
    */
-  update(): void {
+  update(deltaTime = 0): void {
+    // Process completed duel animations first
+    if (this.duelAnimationManager) {
+      const completed = this.duelAnimationManager.update(deltaTime);
+      for (const { attackerId, result } of completed) {
+        this.combatManager.applyDuelResult(result);
+
+        // If the attacker lost, remove the attack order
+        if (result.loserId === attackerId) {
+          const idx = this.attacks.findIndex((a) => a.knightId === attackerId);
+          if (idx !== -1) {
+            this.attacks.splice(idx, 1);
+          }
+        }
+        // If defender lost, attack continues to next defender on next tick
+      }
+    }
+
     const toRemove: number[] = [];
 
     for (let i = 0; i < this.attacks.length; i++) {
@@ -146,16 +170,38 @@ export class AttackManager {
       }
 
       // Check if knight has arrived (WalkingToWork → path complete)
-      if (knight.state === UnitState.Working || this.hasArrived(knight)) {
-        if (knight.state !== UnitState.Working) {
+      if (knight.state === UnitState.Working || knight.state === UnitState.Fighting || this.hasArrived(knight)) {
+        if (knight.state !== UnitState.Working && knight.state !== UnitState.Fighting) {
           clearUnitPath(knight);
           knight.state = UnitState.Working;
+        }
+
+        // If knight is currently in a duel animation, wait
+        if (this.duelAnimationManager && this.duelAnimationManager.isInDuel(attack.knightId)) {
+          continue;
         }
 
         // Fight the next defender
         const defenderIds = [...target.knightIds];
         if (defenderIds.length > 0) {
           const defenderId = defenderIds[0];
+
+          // Animated path: start duel animation
+          if (this.duelAnimationManager && this.getWorldY) {
+            const started = this.duelAnimationManager.startDuel(
+              attack.knightId,
+              defenderId,
+              this.combatManager,
+              this.gameState,
+              this.getWorldY,
+            );
+            if (!started) {
+              toRemove.push(i);
+            }
+            continue;
+          }
+
+          // Instant path (tests / no animation manager)
           const result = this.combatManager.resolveDuel(attack.knightId, defenderId);
 
           if (!result) {

@@ -15,6 +15,7 @@ import { TerritoryManager } from '../game/TerritoryManager';
 import { KnightManager } from '../game/KnightManager';
 import { CombatManager } from '../game/CombatManager';
 import { AttackManager } from '../game/AttackManager';
+import { DuelAnimationManager } from '../game/DuelAnimationManager';
 import { VictoryManager } from '../game/VictoryManager';
 import { AIPlayer } from '../game/AIPlayer';
 import { GeologistManager } from '../game/GeologistManager';
@@ -98,6 +99,7 @@ export class Game {
   private knightManager: KnightManager;
   private combatManager: CombatManager;
   private attackManager: AttackManager;
+  private duelAnimationManager: DuelAnimationManager;
   private victoryManager: VictoryManager;
   private geologistManager: GeologistManager;
   private treeManager: TreeManager;
@@ -222,7 +224,17 @@ export class Game {
     this.territoryManager = new TerritoryManager(this.gameState);
     this.knightManager = new KnightManager(this.gameState);
     this.combatManager = new CombatManager(this.gameState, this.knightManager);
-    this.attackManager = new AttackManager(this.gameState, this.combatManager, this.territoryManager);
+    this.duelAnimationManager = new DuelAnimationManager();
+    this.attackManager = new AttackManager(
+      this.gameState,
+      this.combatManager,
+      this.territoryManager,
+      this.duelAnimationManager,
+      (q, r) => {
+        const tile = this.grid.getTile(q, r);
+        return tile ? MapRenderer.getTileY(tile) : 0;
+      },
+    );
     const playerIds = Array.from({ length: this.config.numPlayers }, (_, i) => i + 1);
     this.victoryManager = new VictoryManager(this.gameState, this.territoryManager, playerIds);
     this.geologistManager = new GeologistManager(this.gameState);
@@ -578,7 +590,7 @@ export class Game {
       this.logisticsManager.update(deltaTime);
       this.transporterManager.update(deltaTime);
       this.knightManager.update(deltaTime);
-      this.attackManager.update();
+      this.attackManager.update(deltaTime);
       this.combatManager.cleanupStaleData();
       this.victoryManager.update(deltaTime);
       for (const ai of this.aiPlayers) {
@@ -611,7 +623,7 @@ export class Game {
       );
       this.combatRenderer.update(
         deltaTime,
-        [],
+        this.duelAnimationManager.getActiveDuels(),
         (id) => this.unitRenderer.getMesh(id),
       );
       this.productionChainOverlay.update(deltaTime);

@@ -59,12 +59,10 @@ export class CombatManager {
   }
 
   /**
-   * Resolve a 1v1 duel between two knights.
-   * The knight with higher strength has a higher probability of winning.
-   * The loser is removed from the game.
-   * The winner may gain a rank.
+   * Pre-compute the outcome of a 1v1 duel without applying side effects.
+   * Returns the result (winner/loser/rankUp) or null if invalid.
    */
-  resolveDuel(attackerId: string, defenderId: string): DuelResult | null {
+  preComputeDuel(attackerId: string, defenderId: string): DuelResult | null {
     const attacker = this.gameState.getUnit(attackerId);
     const defender = this.gameState.getUnit(defenderId);
 
@@ -91,14 +89,37 @@ export class CombatManager {
     const winnerPlayerId = winner.playerId;
     const loserPlayerId = loser.playerId;
 
-    // Remove loser
-    this.removeCombatant(loserId);
+    // Check if winner would rank up (peek at current wins)
+    const currentWins = this.combatWins.get(winnerId) ?? 0;
+    const rankUp = currentWins + 1 >= CombatManager.WINS_PER_RANK && winner.knightRank < 5;
 
-    // Award win and check rank up
-    const rankUp = this.awardWin(winner);
+    return { winnerId, loserId, winnerPlayerId, loserPlayerId, rankUp };
+  }
 
-    const result: DuelResult = { winnerId, loserId, winnerPlayerId, loserPlayerId, rankUp };
+  /**
+   * Apply a pre-computed duel result: remove loser, award win to winner.
+   */
+  applyDuelResult(result: DuelResult): void {
+    this.removeCombatant(result.loserId);
+
+    const winner = this.gameState.getUnit(result.winnerId);
+    if (winner) {
+      this.awardWin(winner);
+    }
+
     this.onDuelResolved?.(result);
+  }
+
+  /**
+   * Resolve a 1v1 duel between two knights.
+   * The knight with higher strength has a higher probability of winning.
+   * The loser is removed from the game.
+   * The winner may gain a rank.
+   */
+  resolveDuel(attackerId: string, defenderId: string): DuelResult | null {
+    const result = this.preComputeDuel(attackerId, defenderId);
+    if (!result) return null;
+    this.applyDuelResult(result);
     return result;
   }
 

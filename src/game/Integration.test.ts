@@ -12,6 +12,7 @@ import { TerritoryManager } from './TerritoryManager';
 import { KnightManager } from './KnightManager';
 import { CombatManager } from './CombatManager';
 import { AttackManager } from './AttackManager';
+import { DuelAnimationManager } from './DuelAnimationManager';
 import { VictoryManager, VictoryCondition } from './VictoryManager';
 import { AIPlayer } from './AIPlayer';
 import { BuildingType, BUILDING_DEFINITIONS } from './BuildingType';
@@ -1737,5 +1738,143 @@ describe('Integration: Performance Benchmark', () => {
     // Verify game state is still sane after benchmark
     expect(gameState.getAllBuildings().length).toBeGreaterThan(0);
     expect(gameState.getAllUnits().length).toBeGreaterThan(0);
+  });
+});
+
+describe('Integration: Animated Combat Duels', () => {
+  let grid: HexGrid;
+  let gameState: GameState;
+  let knightManager: KnightManager;
+  let combatManager: CombatManager;
+  let territoryManager: TerritoryManager;
+  let duelAnimationManager: DuelAnimationManager;
+  let attackManager: AttackManager;
+
+  beforeEach(() => {
+    resetBuildingIdCounter();
+    resetUnitIdCounter();
+    grid = new HexGrid(20, 20);
+    for (let q = 0; q < 20; q++) {
+      for (let r = 0; r < 20; r++) {
+        grid.setTile(q, r, TerrainType.Grassland);
+      }
+    }
+    gameState = new GameState(grid);
+    knightManager = new KnightManager(gameState);
+    combatManager = new CombatManager(gameState, knightManager);
+    territoryManager = new TerritoryManager(gameState);
+    duelAnimationManager = new DuelAnimationManager();
+    attackManager = new AttackManager(
+      gameState,
+      combatManager,
+      territoryManager,
+      duelAnimationManager,
+      () => 0, // flat world
+    );
+  });
+
+  it('should animate combat and capture building after duel completes', () => {
+    // Place military buildings for two players
+    const hut1 = gameState.placeBuilding(BuildingType.GuardHut, { q: 5, r: 5 }, 1);
+    const hut2 = gameState.placeBuilding(BuildingType.GuardHut, { q: 8, r: 5 }, 2);
+    expect(hut1.ok && hut2.ok).toBe(true);
+    if (!hut1.ok || !hut2.ok) return;
+    hut1.building.state = BuildingState.Active;
+    hut2.building.state = BuildingState.Active;
+
+    // Recruit knights
+    addToInventory(hut1.building.inputInventory, ResourceType.Swords, 1);
+    addToInventory(hut1.building.inputInventory, ResourceType.Shields, 1);
+    addToInventory(hut2.building.inputInventory, ResourceType.Swords, 1);
+    addToInventory(hut2.building.inputInventory, ResourceType.Shields, 1);
+    knightManager.update(2);
+
+    const attackerKnightId = hut1.building.knightIds[0];
+    const defenderKnightId = hut2.building.knightIds[0];
+    expect(attackerKnightId).toBeDefined();
+    expect(defenderKnightId).toBeDefined();
+
+    // Force attacker to win
+    combatManager.random = () => 0.01;
+
+    // Order attack
+    const ordered = attackManager.orderAttack(attackerKnightId, hut2.building.id);
+    expect(ordered).toBe(true);
+
+    // Simulate arrival
+    const attacker = gameState.getUnit(attackerKnightId)!;
+    attacker.coord = { q: 8, r: 5 };
+    attacker.pathIndex = attacker.path.length - 1;
+
+    // First update: knight arrives, duel animation starts
+    attackManager.update(0.016);
+
+    // Duel should be active
+    expect(duelAnimationManager.getActiveDuels()).toHaveLength(1);
+    expect(duelAnimationManager.isInDuel(attackerKnightId)).toBe(true);
+    expect(attacker.state).toBe(UnitState.Fighting);
+
+    // Defender should still exist (not yet resolved)
+    expect(gameState.getUnit(defenderKnightId)).toBeDefined();
+
+    // Simulate several frames — not enough to complete
+    attackManager.update(0.5);
+    expect(duelAnimationManager.getActiveDuels().length).toBeGreaterThanOrEqual(0);
+
+    // Simulate enough time to finish the animation (~3s to be safe)
+    attackManager.update(3.0);
+
+    // Duel animation should be done
+    expect(duelAnimationManager.getActiveDuels()).toHaveLength(0);
+
+    // Defender should be removed (attacker won)
+    expect(gameState.getUnit(defenderKnightId)).toBeUndefined();
+    expect(hut2.building.knightIds).not.toContain(defenderKnightId);
+
+    // One more update: no defenders left → capture
+    attackManager.update(0.016);
+
+    expect(hut2.building.playerId).toBe(1);
+    expect(hut2.building.knightIds).toContain(attackerKnightId);
+  });
+
+  it('should handle attacker losing an animated duel', () => {
+    const hut1 = gameState.placeBuilding(BuildingType.GuardHut, { q: 5, r: 5 }, 1);
+    const hut2 = gameState.placeBuilding(BuildingType.GuardHut, { q: 8, r: 5 }, 2);
+    if (!hut1.ok || !hut2.ok) return;
+    hut1.building.state = BuildingState.Active;
+    hut2.building.state = BuildingState.Active;
+
+    addToInventory(hut1.building.inputInventory, ResourceType.Swords, 1);
+    addToInventory(hut1.building.inputInventory, ResourceType.Shields, 1);
+    addToInventory(hut2.building.inputInventory, ResourceType.Swords, 1);
+    addToInventory(hut2.building.inputInventory, ResourceType.Shields, 1);
+    knightManager.update(2);
+
+    const attackerKnightId = hut1.building.knightIds[0];
+
+    // Force attacker to lose
+    combatManager.random = () => 0.99;
+
+    attackManager.orderAttack(attackerKnightId, hut2.building.id);
+
+    // Simulate arrival
+    const attacker = gameState.getUnit(attackerKnightId)!;
+    attacker.coord = { q: 8, r: 5 };
+    attacker.pathIndex = attacker.path.length - 1;
+
+    // Start duel
+    attackManager.update(0.016);
+    expect(duelAnimationManager.getActiveDuels()).toHaveLength(1);
+
+    // Complete animation
+    attackManager.update(3.0);
+
+    // Attacker should be dead
+    expect(gameState.getUnit(attackerKnightId)).toBeUndefined();
+
+    // Building stays with player 2
+    expect(hut2.building.playerId).toBe(2);
+    expect(attackManager.getActiveAttackCount()).toBe(0);
   });
 });
