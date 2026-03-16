@@ -27,12 +27,12 @@ const SEASONAL_COLORS: Record<Season, Partial<Record<TerrainType, number[]>>> = 
   spring: {
     // Brighter greens with a hint of yellow
     [TerrainType.Grassland]: [0x88ff22, 0xa0f060, 0x44c020],
-    [TerrainType.Forest]: [0x1a8c1a, 0x4e7a30, 0x3a6e28],
+    [TerrainType.Forest]: [0x2a9c2a, 0x5e8a40, 0x4a7e38],
   },
   summer: {
     // Original / default palette
     [TerrainType.Grassland]: [0x7cfc00, 0x90ee90, 0x228b22],
-    [TerrainType.Forest]: [0x006400, 0x3b5323, 0x2e4a1e],
+    [TerrainType.Forest]: [0x1a7a2a, 0x4e7a3a, 0x3a6a2e],
   },
   autumn: {
     // Orange/brown/red tones for forest, golden grassland
@@ -68,7 +68,7 @@ const STATIC_COLORS: Partial<Record<TerrainType, number[]>> = {
  */
 export const TERRAIN_GROUND_COLORS: Record<TerrainType, number[]> = {
   [TerrainType.Grassland]: [0x7cfc00, 0x90ee90, 0x228b22],
-  [TerrainType.Forest]: [0x006400, 0x3b5323, 0x2e4a1e],
+  [TerrainType.Forest]: [0x1a7a2a, 0x4e7a3a, 0x3a6a2e],
   [TerrainType.Mountain]: [0x808080, 0xa9a9a9, 0x5d5d5d],
   [TerrainType.Water]: [0x0000ff, 0xadd8e6, 0x40e0d0],
   [TerrainType.Desert]: [0xf4a460, 0xd2b48c, 0xf5f5dc],
@@ -90,7 +90,7 @@ export function getTerrainColor(terrain: TerrainType, q: number, r: number): num
 /** Seasonal foliage colors for trees (single representative color per season). */
 const TREE_SEASON_COLORS: Record<Season, number> = {
   spring: 0x3da83d,  // Fresh bright green
-  summer: 0x006400,  // Deep green (matches original forest base)
+  summer: 0x1a7a2a,  // Medium green (matches forest base)
   autumn: 0xcc5500,  // Burnt orange
   winter: 0x9aa89a,  // Muted grey-green (bare / frost)
 };

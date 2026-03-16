@@ -5,7 +5,6 @@ import { TerrainType } from '../game/TerrainType';
 import { getTerrainColor } from './TerrainColors';
 import { createRng } from '../game/noise';
 import { assetLoader } from './AssetLoader';
-import { createWaterMaterial, registerWaterMaterial, unregisterWaterMaterial } from './WaterShader';
 
 /** Decoration placement data (no Three.js objects) */
 interface DecorationPlacement {
@@ -35,7 +34,6 @@ export class MapRenderer {
   private instancedMeshes: THREE.InstancedMesh[] = [];
   /** Materials we created (and must dispose). Excludes shared materials from AssetLoader. */
   private ownedMaterials: THREE.Material[] = [];
-  private waterMaterial: THREE.ShaderMaterial | null = null;
 
   constructor() {
     // no-op
@@ -181,12 +179,11 @@ export class MapRenderer {
       this.instancedMeshes.push(mesh);
     }
 
-    // Water tiles: 1 InstancedMesh with water ShaderMaterial
+    // Water tiles: 1 InstancedMesh with flat blue material
     if (waterEntries.length > 0) {
-      this.waterMaterial = createWaterMaterial();
-      this.ownedMaterials.push(this.waterMaterial);
-      registerWaterMaterial(this.waterMaterial);
-      const waterMesh = new THREE.InstancedMesh(hexGeo, this.waterMaterial, waterEntries.length);
+      const waterMat = new THREE.MeshLambertMaterial({ color: 0x3399cc, transparent: true, opacity: 0.85 });
+      this.ownedMaterials.push(waterMat);
+      const waterMesh = new THREE.InstancedMesh(hexGeo, waterMat, waterEntries.length);
 
       for (let i = 0; i < waterEntries.length; i++) {
         matrix.identity().setPosition(waterEntries[i].x, waterEntries[i].y, waterEntries[i].z);
@@ -239,22 +236,8 @@ export class MapRenderer {
       if (subMeshes.length === 0) continue;
 
       for (const sub of subMeshes) {
-        // Determine material: special handling for water_waves (needs transparency override)
-        let mat: THREE.Material;
-        if (modelName === 'water_waves') {
-          const stdMat = sub.material as THREE.MeshStandardMaterial;
-          const isLight = stdMat.color && stdMat.color.r > 0.7;
-          mat = new THREE.MeshLambertMaterial({
-            color: isLight ? 0xd8f0ff : 0x60c8d8,
-            transparent: true,
-            opacity: isLight ? 0.5 : 0.35,
-            side: THREE.DoubleSide,
-          });
-          this.ownedMaterials.push(mat);
-        } else {
-          // Use original material from AssetLoader (shared, NOT owned by us)
-          mat = sub.material;
-        }
+        // Use original material from AssetLoader (shared, NOT owned by us)
+        const mat = sub.material;
 
         const count = instanceMatrices.length;
         const instMesh = new THREE.InstancedMesh(sub.geometry, mat, count);
@@ -328,11 +311,6 @@ export class MapRenderer {
     }
     this.ownedMaterials = [];
 
-    // Unregister water material from the animation loop
-    if (this.waterMaterial) {
-      unregisterWaterMaterial(this.waterMaterial);
-      this.waterMaterial = null;
-    }
   }
 }
 
@@ -344,7 +322,7 @@ function getDecorationPlacements(tile: HexTile): DecorationPlacement[] {
     case TerrainType.Mountain: return getMountainPlacements(tile);
     case TerrainType.Desert: return getDesertPlacements(tile);
     case TerrainType.Grassland: return getGrasslandPlacements(tile);
-    case TerrainType.Water: return getWaterPlacements(tile);
+    case TerrainType.Water: return [];
     default: return [];
   }
 }
@@ -440,16 +418,3 @@ function getGrasslandPlacements(tile: HexTile): DecorationPlacement[] {
   }
 }
 
-function getWaterPlacements(tile: HexTile): DecorationPlacement[] {
-  const rng = createRng(tile.coord.q * 5000 + tile.coord.r);
-  if (rng() > 0.4) return [];
-
-  const wScale = 0.7 + rng() * 0.4;
-  return [{
-    modelName: 'water_waves',
-    localX: 0, localZ: 0,
-    localY: 0.03,
-    rotationY: rng() * Math.PI * 2,
-    scaleX: wScale, scaleY: wScale, scaleZ: wScale,
-  }];
-}

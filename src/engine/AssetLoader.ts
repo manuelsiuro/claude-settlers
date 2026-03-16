@@ -135,6 +135,20 @@ export class AssetLoader {
     throw new Error(`Failed to load ${url}`); // unreachable
   }
 
+  /** Normalize PBR materials on loaded GLTF models for consistent appearance. */
+  private normalizeGLTFMaterials(group: THREE.Group): void {
+    group.traverse((child) => {
+      if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshStandardMaterial) {
+        // Clamp metalness — stylized low-poly models shouldn't be highly metallic
+        if (child.material.metalness > 0.5) {
+          child.material.metalness = 0.3;
+        }
+        // Ensure minimum roughness to prevent harsh reflections
+        child.material.roughness = Math.max(child.material.roughness, 0.5);
+      }
+    });
+  }
+
   /** Load a batch of models from a directory. Logs warnings for failed loads. */
   private async loadModels(names: readonly string[], directory: string): Promise<void> {
     const promises = names.map(async (name) => {
@@ -142,6 +156,7 @@ export class AssetLoader {
       try {
         const group = await this.loadWithRetry(path);
         group.name = name;
+        this.normalizeGLTFMaterials(group);
         this.models.set(name, group);
       } catch (err) {
         console.warn(`Failed to load model "${path}":`, err);

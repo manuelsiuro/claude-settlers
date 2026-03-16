@@ -16,8 +16,8 @@ for (let i = 0; i < 6; i++) {
 /**
  * Renders fog of war overlay on the hex map.
  *
- * - Unexplored hexes: nearly opaque black (opacity 0.95)
- * - Explored hexes: dimmed dark overlay (opacity 0.4)
+ * - Unexplored hexes: dark blue-grey tint (opacity 0.70)
+ * - Explored hexes: subtle blue-grey tint (opacity 0.25)
  * - Visible hexes: no overlay rendered
  *
  * Uses merged geometry (same pattern as TerritoryRenderer).
@@ -101,12 +101,12 @@ export class FogOfWarRenderer {
     }
 
     if (unexploredVerts.length > 0) {
-      this.unexploredMesh = this.createMergedMesh(unexploredVerts, 0x000000, 0.92);
+      this.unexploredMesh = this.createMergedMesh(unexploredVerts, 0x1a2030, 0.70);
       this.group.add(this.unexploredMesh);
     }
 
     if (exploredVerts.length > 0) {
-      this.exploredMesh = this.createMergedMesh(exploredVerts, 0x111111, 0.45);
+      this.exploredMesh = this.createMergedMesh(exploredVerts, 0x2a3040, 0.25);
       this.group.add(this.exploredMesh);
     }
   }

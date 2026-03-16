@@ -158,13 +158,15 @@ export class Game {
     // Renderer
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+    this.renderer.toneMapping = THREE.NoToneMapping;
     container.appendChild(this.renderer.domElement);
 
     // Scene with fog for atmospheric depth
     this.scene = new THREE.Scene();
-    const fogColor = 0xc8dce8;
-    this.scene.fog = new THREE.FogExp2(fogColor, 0.012);
-    this.renderer.setClearColor(fogColor);
+    //const fogColor = 0xc8dce8;
+    //this.scene.fog = new THREE.FogExp2(fogColor, 0.012);
+    //this.renderer.setClearColor(fogColor);
 
     // Isometric orthographic camera
     const aspect = this.width / this.height;
@@ -180,12 +182,12 @@ export class Game {
     // Lighting — hemisphere for natural sky/ground color + directional for sun
     const hemiLight = new THREE.HemisphereLight(
       0x87ceeb, // sky color (light blue)
-      0x4a7c3f, // ground color (earthy green)
-      0.7
+      0x6a9c5f, // ground color (earthy green)
+      1.0
     );
     this.scene.add(hemiLight);
 
-    this.directionalLight = new THREE.DirectionalLight(0xfff4e0, 0.9); // warm sunlight
+    this.directionalLight = new THREE.DirectionalLight(0xfff4e0, 1.2); // warm sunlight
     this.directionalLight.position.set(10, 20, 10);
     this.scene.add(this.directionalLight);
 
@@ -194,6 +196,10 @@ export class Game {
       hemiLight, this.directionalLight,
       this.scene.fog as THREE.FogExp2, this.renderer,
     );
+    this.atmosphereController.onPresetChanged = () => this.setupEnvironment();
+
+    // Generate procedural environment map from scene lights for PBR materials
+    this.setupEnvironment();
 
     // Grid, game state, and renderers (map built after assets load)
     const terrainBalance = SCENARIO_TERRAIN_BALANCE[this.config.scenario];
@@ -842,6 +848,21 @@ export class Game {
     }
   }
 
+  /** Generate a procedural environment map from the scene's lights for PBR ambient lighting. */
+  private setupEnvironment(): void {
+    const pmremGenerator = new THREE.PMREMGenerator(this.renderer);
+    pmremGenerator.compileEquirectangularShader();
+
+    // Dispose previous env map if regenerating
+    if (this.scene.environment) {
+      this.scene.environment.dispose();
+    }
+
+    // Generate environment from scene lights (no HDRI file needed)
+    this.scene.environment = pmremGenerator.fromScene(this.scene, 0, 0.1, 100).texture;
+    pmremGenerator.dispose();
+  }
+
   dispose(): void {
     if (this.animationId !== null) {
       cancelAnimationFrame(this.animationId);
@@ -868,6 +889,10 @@ export class Game {
     this.buildingRenderer.dispose();
     this.mapRenderer.dispose();
     this.postProcessing.dispose();
+    if (this.scene.environment) {
+      this.scene.environment.dispose();
+      this.scene.environment = null;
+    }
     this.renderer.dispose();
     this.renderer.domElement.remove();
 

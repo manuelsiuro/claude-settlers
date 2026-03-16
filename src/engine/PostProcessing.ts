@@ -17,8 +17,8 @@ const ColorGradingShader = {
   name: 'ColorGradingShader',
   uniforms: {
     tDiffuse: { value: null as THREE.Texture | null },
-    warmTint: { value: new THREE.Vector3(1.05, 1.0, 0.92) },
-    contrast: { value: 1.15 },
+    warmTint: { value: new THREE.Vector3(1.02, 1.0, 0.96) },
+    contrast: { value: 1.08 },
     saturation: { value: 1.1 },
   },
   vertexShader: /* glsl */ `

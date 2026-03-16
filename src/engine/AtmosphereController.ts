@@ -22,26 +22,26 @@ interface Preset {
 const PRESETS: Record<TimeOfDay, Preset> = {
   [TimeOfDay.Morning]: {
     skyColor: 0xffd4a0,
-    groundColor: 0x5a7c3f,
-    hemiIntensity: 0.6,
+    groundColor: 0x7a9c5f,
+    hemiIntensity: 0.7,
     sunColor: 0xffcc88,
-    sunIntensity: 0.7,
+    sunIntensity: 0.8,
     fogColor: 0xe8d4c0,
     clearColor: 0xe8d4c0,
   },
   [TimeOfDay.Midday]: {
     skyColor: 0x87ceeb,
-    groundColor: 0x4a7c3f,
-    hemiIntensity: 0.7,
+    groundColor: 0x6a9c5f,
+    hemiIntensity: 1.0,
     sunColor: 0xfff4e0,
-    sunIntensity: 0.9,
+    sunIntensity: 1.2,
     fogColor: 0xc8dce8,
     clearColor: 0xc8dce8,
   },
   [TimeOfDay.Evening]: {
     skyColor: 0xff8844,
-    groundColor: 0x3a5c2f,
-    hemiIntensity: 0.5,
+    groundColor: 0x5a7c4f,
+    hemiIntensity: 0.6,
     sunColor: 0xff6622,
     sunIntensity: 0.6,
     fogColor: 0xd4a088,
@@ -50,7 +50,7 @@ const PRESETS: Record<TimeOfDay, Preset> = {
   [TimeOfDay.Night]: {
     skyColor: 0x1a1a3e,
     groundColor: 0x0a1a0a,
-    hemiIntensity: 0.2,
+    hemiIntensity: 0.25,
     sunColor: 0x6688cc,
     sunIntensity: 0.3,
     fogColor: 0x1a1a2e,
@@ -79,7 +79,7 @@ const TRANSITION_DURATION = 30;
 export class AtmosphereController {
   private hemiLight: THREE.HemisphereLight;
   private dirLight: THREE.DirectionalLight;
-  private fog: THREE.FogExp2;
+  private fog: THREE.FogExp2 | null;
   private renderer: THREE.WebGLRenderer;
 
   private currentPreset: TimeOfDay = TimeOfDay.Midday;
@@ -88,10 +88,13 @@ export class AtmosphereController {
   private cycleTimer = 0;
   private autoCycle = false;
 
+  /** Callback fired when the active preset changes (for envMap regeneration) */
+  onPresetChanged: (() => void) | null = null;
+
   constructor(
     hemiLight: THREE.HemisphereLight,
     dirLight: THREE.DirectionalLight,
-    fog: THREE.FogExp2,
+    fog: THREE.FogExp2 | null,
     renderer: THREE.WebGLRenderer,
   ) {
     this.hemiLight = hemiLight;
@@ -106,6 +109,7 @@ export class AtmosphereController {
     this.targetPreset = preset;
     this.transitionProgress = 1;
     this.applyPreset(PRESETS[preset]);
+    this.onPresetChanged?.();
   }
 
   /** Enable/disable auto-cycling through presets */
@@ -146,6 +150,7 @@ export class AtmosphereController {
 
       if (this.transitionProgress >= 1) {
         this.currentPreset = this.targetPreset;
+        this.onPresetChanged?.();
       }
     }
   }
@@ -156,7 +161,7 @@ export class AtmosphereController {
     this.hemiLight.intensity = p.hemiIntensity;
     this.dirLight.color.setHex(p.sunColor);
     this.dirLight.intensity = p.sunIntensity;
-    this.fog.color.setHex(p.fogColor);
+    this.fog?.color.setHex(p.fogColor);
     this.renderer.setClearColor(p.clearColor);
   }
 
@@ -177,7 +182,7 @@ export class AtmosphereController {
     this.dirLight.intensity = from.sunIntensity + (to.sunIntensity - from.sunIntensity) * t;
 
     c.setHex(from.fogColor).lerp(new THREE.Color(to.fogColor), t);
-    this.fog.color.copy(c);
+    this.fog?.color.copy(c);
 
     c.setHex(from.clearColor).lerp(new THREE.Color(to.clearColor), t);
     this.renderer.setClearColor(c);
