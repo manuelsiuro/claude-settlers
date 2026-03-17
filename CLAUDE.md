@@ -39,72 +39,59 @@ All design specs live in `docs/`:
 - **Goods distribution**: per-resource priority (1-5) and per-building importance (1-5) control routing scores. `LogisticsManager` uses composite `importance × priority / distance` when deciding where to send output goods.
 - **Economy tracking**: `EconomyTracker` maintains a rolling 5-minute window of production/consumption events, providing per-resource rates, net balance, and bottleneck detection.
 
-### Visual & Animation Systems (Polish Phase)
+### Visual & Animation Systems
 
-These systems were added post-Phase 8 to bring the game closer to The Settlers' visual richness:
+`src/engine/` contains 18+ renderers and visual systems (particles, building animations, tree sway shader, combat renderer, overlays, flag lights, atmosphere, post-processing, etc.). All follow the same integration pattern: instantiated in `Game` constructor, added to scene in `start()`, updated in the animate loop (after manager updates, before render), and disposed in `dispose()`. Read the source files for implementation details, or use the `feudal-new-renderer` skill when adding new ones.
 
-- **Particle System** (`src/engine/ParticleSystem.ts`): Pool-based `THREE.Points` renderer (single draw call per effect type, 800 particle budget). 6 effect types: chimney smoke, forge sparks, sawmill wood chips, construction dust, tree debris, completion flash. Emitters auto-bind to buildings based on state. Custom GLSL vertex/fragment shaders with soft circle falloff and additive blending.
-- **Building Animator** (`src/engine/BuildingAnimator.ts`): Per-frame sub-mesh animation. Windmill sails rotate at 2.0 rad/s when producing. Furnace emissive glow pulses on Smelter/Blacksmith/Bakery/Goldsmith. Sawmill blade oscillates. Construction opacity ramps 30%→100%. Planned buildings render at 20% opacity. Completion glow (2s green emissive). Destruction animation (scale collapse + tilt + fade over 1s).
-- **Tree Sway Shader** (`src/engine/TreeSwayShader.ts`): GPU-driven wind animation via custom `ShaderMaterial`. Per-instance phase offset from world position. Vertex displacement above Y=0.2 threshold. Zero CPU cost. Follows `WaterShader.ts` pattern.
-- **Combat Renderer** (`src/engine/CombatRenderer.ts`): Visual effects during duels — approach interpolation, clash swing rotation, recoil bounce, winner scale pulse, loser fall+fade. Attack warning rings (pulsing red, 5Hz). Capture banner animation.
-- **Building Status Overlay** (`src/engine/BuildingStatusOverlay.ts`): `THREE.Sprite` with cached `CanvasTexture` (5 status types). Priority: no-worker (red X) > missing-inputs (amber hourglass) > storage-full (orange warning) > producing (green check) > construction (blue hammer). Updates every 500ms.
-- **Production Chain Overlay** (`src/engine/ProductionChainOverlay.ts`): On building selection, draws dashed lines to upstream (blue) and downstream (orange) buildings. `LineDashedMaterial` with cone arrows. Max 10 connections.
-- **Tooltip Controller** (`src/engine/TooltipController.ts`): Mousemove → hex raycast → building lookup → tooltip popup. Shows name, status, worker, production %, inventory. Mobile: 500ms long-press. Throttled to 100ms.
-- **Player Colors** (`src/engine/PlayerColors.ts`): Shared `PLAYER_COLORS` (blue/red/green/yellow) used by TerritoryRenderer, Minimap, UnitRenderer, CombatRenderer.
-- **Knight Visuals** (in `src/engine/UnitRenderer.ts`): Faction color tinting (40% lerp toward player color). Gold `ConeGeometry` rank chevrons on shoulder (1-5). `Fighting` unit state with aggressive animation.
-- **Combat Animation State** (`src/game/CombatAnimationState.ts`): `ActiveDuel` interface with 5 phases: Approach (0.5s) → Clash × N (0.3s each) → Recoil (0.2s) → Result (0.8s) → Done.
-- **Economy Tracker** (`src/game/EconomyTracker.ts`): Rolling 300s window. `getProductionRate()`, `getConsumptionRate()`, `getNetBalance()`, `getBottlenecks()`. History snapshots for sparklines.
-- **Goods Distribution** (`src/game/GoodsDistribution.ts`): `GoodsDistributionSettings` with `resourcePriority` and `buildingImportance`. `getRoutingScore()` for composite routing. Serializable for save/load.
-- **Flag Light System** (`src/engine/FlagLightSystem.ts`): Nighttime streetlight system using flags as natural lantern positions. 3 layers: (1) emissive instanced cubes atop flag poles with per-flag flicker animation, (2) additive-blend ground glow sprites beneath flags illuminating road intersections, (3) subtle warm emissive tint on active buildings. Driven by `nightness` factor (0=day, 1=full night) from `AtmosphereController`. 2 extra draw calls via `InstancedMesh` (500 max instances each). Zero PointLights. Runs before `BuildingAnimator` so furnace glow overwrites the subtle tint for forge buildings.
+### MCP Integrations
 
-**Integration pattern**: All visual systems are instantiated in `Game` constructor, added to scene in `start()`, updated in the animate loop (after manager updates, before render), and disposed in `dispose()`.
+- **Blender MCP** (`.mcp.json`): Primary 3D asset creation tool. See `feudal-3d-asset-pipeline` skill for the full workflow.
+- **Chrome DevTools MCP** (`.mcp.json`): Browser testing and visual verification. See `feudal-game-debug` skill for debugging workflows.
 
-### Distance-Based Production
+## Skills Reference
 
-Gathering buildings (Woodcutter, Quarry, Fisherman, Farm, mines) scale production time by distance to their harvest terrain:
-- `harvestTerrain` field on `BuildingDefinition`
-- Distance computed via BFS at placement time
-- Multiplier: `min(3.0, 1.0 + max(0, dist-1) * 0.25)`
-- Placement preview: ghost mesh colored green/orange/red by distance rating
-- Processing/military/logistics buildings are unaffected
+30 specialized skills in `.claude/skills/` provide focused guidance for common tasks. Skills auto-load based on context or can be invoked manually with `/<skill-name>`.
 
-### Blender MCP Integration — Primary 3D Asset Pipeline
+### Three.js Reference Skills (10)
 
-A Blender MCP server is configured (`.mcp.json`) providing direct access to Blender for creating **all** 3D models used in the game. This is the primary asset creation tool.
+General Three.js knowledge — `threejs-fundamentals`, `threejs-animation`, `threejs-geometry`, `threejs-interaction`, `threejs-lighting`, `threejs-loaders`, `threejs-materials`, `threejs-postprocessing`, `threejs-shaders`, `threejs-textures`.
 
-**Workflow for every 3D asset:**
-1. Read the relevant design doc (`docs/buildings.md`, `docs/units.md`, `docs/resources.md`, `docs/terrains.md`) for colors, style, and proportions
-2. Use `mcp__blender__execute_blender_code` to create the model in Blender via Python scripts
-3. Use `mcp__blender__get_viewport_screenshot` to visually verify the model
-4. Export as GLTF/GLB to `public/models/<category>/<name>.glb` (e.g., `public/models/terrain/tree_deciduous.glb`)
-5. Load in Three.js using GLTFLoader
+### Code Architecture & Refactoring Skills (10)
 
-**Available capabilities:**
-- **Execute Blender code** (`mcp__blender__execute_blender_code`): run Python scripts to create/modify 3D models programmatically
-- **Scene inspection**: get scene info, object info, and viewport screenshots
-- **Asset sourcing**: search/download assets from Polyhaven and Sketchfab
-- **AI model generation**: generate 3D models via Hyper3D (text or image input) and Hunyuan3D
+| Skill | Use When |
+|-------|----------|
+| `safe-refactoring` | Before any structural change (auto-loaded, not user-invocable) |
+| `code-quality-audit` | Periodic code health review (`/code-quality-audit`, user-invocable only) |
+| `introduce-event-bus` | Adding cross-cutting events or decoupling callback-wired managers |
+| `refactor-god-class` | Decomposing Game.ts (750+ lines) or AIPlayer.ts (557 lines) |
+| `dependency-injection` | Adding managers or improving testability with mock injection |
+| `extract-data-files` | Moving data out of BuildingType.ts (770 lines) or AI build orders |
+| `decouple-ui` | Adding UI features, testing UI, or reducing main.ts coupling |
+| `saveload-migration` | Adding fields to SaveData or changing serialized state shape |
+| `expand-test-coverage` | Writing tests for engine/ or ui/ layers (currently minimal/zero coverage) |
+| `profile-performance` | FPS drops, memory growth, or mobile optimization |
 
-**Model guidelines:**
-- Use a stylized low-poly aesthetic — keep vertex counts low for mobile performance
-- Bake colors into vertex colors or use simple solid-color materials (no heavy textures)
-- Organize models: `public/models/terrain/`, `public/models/buildings/`, `public/models/units/`, `public/models/resources/`
-- Each model should be self-contained with materials embedded in the GLB file
+### Game Domain Skills (10)
 
-### Chrome DevTools MCP Integration
+| Skill | Use When |
+|-------|----------|
+| `feudal-new-building` | Adding a building type (13-step checklist across 8+ files) |
+| `feudal-new-unit` | Adding a serf profession or military unit (9-step checklist) |
+| `feudal-production-chain` | Designing resource flows: source → processing → consumer |
+| `feudal-game-balance` | Tuning constants (production times, costs, speeds, combat, AI) |
+| `feudal-new-manager` | Creating a game manager with update loop, save/load, Game.ts integration |
+| `feudal-new-renderer` | Creating a Three.js renderer with performance guidelines |
+| `feudal-3d-asset-pipeline` | Blender MCP → GLTF export → AssetLoader → renderer (8-step workflow) |
+| `feudal-game-debug` | Diagnosing production stops, stuck resources, missing workers via Chrome MCP |
+| `feudal-map-generation` | Extending terrain types, scenarios, deposits, or generation balance |
+| `feudal-expansion` | Orchestrating expansion features from `docs/expansion.md` (5 phases) |
 
-A Chrome DevTools MCP server is configured (`.mcp.json`) providing direct browser access for testing and visual verification. Key capabilities:
+### Skill Design Conventions
 
-- **`take_screenshot`**: capture the rendered game — verify 3D scene, UI, and layout visually after every change
-- **`take_snapshot`**: accessibility tree snapshot — verify UI structure and element presence
-- **`navigate_page` / `new_page`**: open the dev server URL to test the running app
-- **`evaluate_script`**: execute JS in the page — assert game state (scene objects, renderer, FPS)
-- **`list_console_messages`**: catch runtime errors, Three.js warnings, failed resource loads
-- **`emulate`**: test mobile viewports, dark mode, CPU throttling, network conditions
-- **`performance_start_trace` / `lighthouse_audit`**: measure Core Web Vitals and run accessibility/SEO audits
-- **`take_memory_snapshot`**: detect memory leaks in the render loop
-
-This replaces manual browser checking — Claude can now fully self-verify both logic and visuals.
+- Each skill is a self-contained `SKILL.md` under 500 lines in `.claude/skills/<name>/`
+- Skills reference actual file paths, class names, and codebase patterns
+- Game domain skills cross-reference each other (e.g., `feudal-expansion` delegates to `feudal-new-building`)
+- Architecture skills follow the `safe-refactoring` protocol for incremental, verified changes
 
 ## Development Workflow
 
@@ -123,100 +110,13 @@ This project uses `PROGRESS.md` at the repo root as the single source of truth f
 
 ### Development Phases
 
-Each phase must be fully working and tested before moving to the next. Within each phase, work task-by-task — complete one before starting another.
+Phases 1–9 are all complete. See `PROGRESS.md` for current status and `git log` for history. Next work is expansion features from `docs/expansion.md` — use the `feudal-expansion` skill.
 
-#### Phase 1: Project Scaffolding
-- Initialize project (Vite + TypeScript + Three.js + Tailwind CSS v4)
-- Basic renderer setup (isometric camera, resize handling, render loop)
-- Mobile-responsive canvas and UI shell
-- Dev server, build, and lint configuration
+### Verification
 
-#### Phase 2: Terrain & Map System
-- Hex/tile grid system with water-bordered edges
-- Terrain type rendering (grassland, forest, mountain, water, desert) per `docs/terrains.md`
-- Map generation from seed
-- Camera controls (pan, zoom) for desktop and touch
+**After every task:** `npm run build && npm run lint && npm run test`
 
-#### Phase 3: Buildings & Placement
-- Building data model (costs, inputs, outputs, worker types) from `docs/game.md`
-- Building 3D models per `docs/buildings.md`
-- Placement system with terrain validation
-
-#### Phase 4: Units & AI
-- Base serf model + profession variants per `docs/units.md`
-- Serf spawning from Castle, auto-assignment to jobs
-- Pathfinding on the road/flag network
-- Unit animation (walk cycles, work cycles)
-
-#### Phase 5: Resource & Logistics System
-- Resource data model (all 17 types) per `docs/resources.md`
-- Resource 3D models
-- Flag placement and road network
-- Transporter logic (pick up → carry → deliver between flags)
-- Construction process (builder + resources → building over time)
-- Production chains: building inputs/outputs, processing timers
-- Storage system (building inventory, warehouses)
-
-#### Phase 6: Territory & Military
-- Territory influence system (military buildings project borders)
-- Guard Hut / Watchtower / Barracks with knight slots
-- Knight recruitment (serf + sword + shield → knight)
-- Knight ranks, gold bonus
-- Attack orders and 1v1 combat resolution
-- Building capture logic
-
-#### Phase 7: Economy & UI
-- Construction menu (Tailwind CSS)
-- Building info panels (status, inventory, workers)
-- Global statistics panel (resources, population, military)
-- Goods distribution/priority settings
-- Minimap
-- Alerts and notifications
-
-#### Phase 8: Polish & Multiplayer Foundation
-- AI opponent (basic)
-- Map scenarios / random generation with seeds
-- Performance optimization (instancing, LOD, culling)
-- Sound effects and music
-- Save/load system
-- Win/defeat conditions
-
-#### Phase 9: Visual Richness & Strategic UX (Polish Phase)
-- Particle system (smoke, sparks, dust, debris, completion flash)
-- Building animations (windmill sails, furnace glow, sawmill blade, construction opacity, destruction)
-- Tree wind sway shader (GPU-driven)
-- Player colors (shared module), knight faction coloring + rank chevrons
-- Combat animation system (5-phase duels, attack warnings, capture banners)
-- Goods distribution priority routing
-- Building hover tooltips (desktop + mobile long-press)
-- Building status icon overlay (5 status types)
-- Economy tracker (production/consumption rates, bottleneck detection)
-- Production chain visualization (upstream/downstream dashed lines)
-- Minimap enhancements (unit dots, construction indicators)
-- Pathfinding binary heap optimization
-
-### Verification & Testing Strategy
-
-Every task must be verified through a combination of these methods:
-
-**Build & logic (run after every task):**
-- `npm run build` — TypeScript compilation, no errors
-- `npm run lint` — no lint violations
-- `npm run test` — Vitest unit tests for all game logic (resource chains, combat math, pathfinding, territory, production timers, etc.)
-
-**Visual verification via Chrome MCP (run after any rendering/UI change):**
-1. Start dev server: `npm run dev` (background)
-2. `navigate_page` to `http://localhost:5173`
-3. `take_screenshot` — verify the 3D scene renders correctly
-4. `take_snapshot` — check the accessibility tree for UI elements
-5. `list_console_messages` — ensure no runtime errors or warnings
-6. `evaluate_script` — run JS assertions in the page (e.g., check scene.children.length, renderer state)
-7. `emulate` — test mobile viewport sizes and touch responsiveness
-
-**Performance checks (run at phase milestones):**
-- `performance_start_trace` / `performance_stop_trace` — measure Core Web Vitals (LCP, INP, CLS)
-- `lighthouse_audit` — accessibility, SEO, best practices
-- `take_memory_snapshot` — check for memory leaks in the render loop
+**After rendering/UI changes:** Use Chrome DevTools MCP — `take_screenshot`, `list_console_messages`, `evaluate_script`. See `feudal-game-debug` skill for details.
 
 **Rule: never skip `build` + `test` + `take_screenshot` before marking a visual task as done.**
 
