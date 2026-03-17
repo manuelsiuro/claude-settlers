@@ -1879,6 +1879,116 @@ html[data-theme="night"] .priority-slider-storage { accent-color: #42a5f5; }
   font-size: 0.8125rem;
 }
 
+/* Building importance controls inside resource priority cards */
+.priority-building-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 0 2px;
+  margin-top: 4px;
+  border-top: 1px solid var(--color-outline-soft);
+  cursor: pointer;
+  font-size: 0.75rem;
+  color: var(--color-on-surface-variant);
+  user-select: none;
+}
+
+.priority-building-toggle:hover {
+  color: var(--color-on-surface);
+}
+
+.priority-building-chevron {
+  display: inline-flex;
+  align-items: center;
+  transition: transform 0.2s ease;
+}
+
+.priority-building-chevron svg {
+  width: 16px;
+  height: 16px;
+}
+
+.priority-building-toggle.expanded .priority-building-chevron {
+  transform: rotate(90deg);
+}
+
+.priority-building-list {
+  display: none;
+  padding: 2px 0 0 4px;
+}
+
+.priority-building-list.expanded {
+  display: block;
+}
+
+.priority-building-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 3px 0;
+}
+
+.priority-building-name-col {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.priority-building-name {
+  font-size: 0.75rem;
+  color: var(--color-on-surface);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.priority-building-hint {
+  font-size: 0.625rem;
+  color: var(--color-on-surface-variant);
+  font-style: italic;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.priority-importance-dots {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.priority-importance-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid #FF8F00;
+  background: transparent;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.priority-importance-dot:hover {
+  border-color: #FFA000;
+}
+
+.priority-importance-dot.filled {
+  background: #FF8F00;
+}
+
+html[data-theme="night"] .priority-importance-dot {
+  border-color: #FFB74D;
+}
+
+html[data-theme="night"] .priority-importance-dot:hover {
+  border-color: #FFCC80;
+}
+
+html[data-theme="night"] .priority-importance-dot.filled {
+  background: #FFB74D;
+}
+
 /* ============================================================
    Tooltip
    ============================================================ */

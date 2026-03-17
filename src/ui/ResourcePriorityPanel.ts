@@ -4,9 +4,14 @@ import {
   getResourceCategoryWeights,
   setResourceCategoryWeights,
   createDefaultDistribution,
+  getBuildingImportance,
+  setBuildingImportance,
 } from '../game/GoodsDistribution';
 import type { CategoryWeights } from '../game/GoodsDistribution';
-import { resourceIcon } from './icons';
+import { BuildingState } from '../game/Building';
+import type { Building } from '../game/Building';
+import { BUILDING_DEFINITIONS } from '../game/BuildingType';
+import { resourceIcon, icon } from './icons';
 
 /** All resource types in display order */
 const ALL_RESOURCES: ResourceType[] = [
@@ -25,9 +30,59 @@ const CATEGORY_META: Record<keyof CategoryWeights, { label: string; colorClass: 
   storage: { label: 'Storage', colorClass: 'priority-cat-storage' },
 };
 
+interface ConsumingBuilding {
+  building: Building;
+  label: string;
+  otherInputs: ResourceType[];
+}
+
+/** Get human player's active buildings that consume a given resource */
+function getConsumingBuildings(game: Game, resource: ResourceType): ConsumingBuilding[] {
+  const humanId = game.getHumanPlayerId();
+  const allBuildings = game.getGameState().getBuildingsByPlayer(humanId);
+  const active = allBuildings.filter(b => b.state === BuildingState.Active);
+
+  // Group by type to generate instance labels
+  const byType = new Map<string, Building[]>();
+  for (const b of active) {
+    const def = BUILDING_DEFINITIONS[b.type];
+    if (!def.production?.inputs.some(inp => inp.resource === resource)) continue;
+    const arr = byType.get(b.type) ?? [];
+    arr.push(b);
+    byType.set(b.type, arr);
+  }
+
+  const result: ConsumingBuilding[] = [];
+  for (const [type, buildings] of byType) {
+    const def = BUILDING_DEFINITIONS[type as keyof typeof BUILDING_DEFINITIONS];
+    const otherInputs = def.production!.inputs
+      .filter(inp => inp.resource !== resource)
+      .map(inp => inp.resource);
+
+    for (let i = 0; i < buildings.length; i++) {
+      const label = buildings.length > 1
+        ? `${def.label} #${i + 1}`
+        : def.label;
+      result.push({ building: buildings[i], label, otherInputs });
+    }
+  }
+  return result;
+}
+
+/** Generate importance dots HTML for a building */
+function renderImportanceDots(buildingId: string, importance: number): string {
+  let dots = '';
+  for (let i = 1; i <= 5; i++) {
+    const filled = i <= importance ? ' filled' : '';
+    dots += `<span class="priority-importance-dot${filled}" data-building-id="${buildingId}" data-importance="${i}"></span>`;
+  }
+  return `<span class="priority-importance-dots">${dots}</span>`;
+}
+
 /**
  * Render the resource priority panel content.
- * Shows sliders for production/construction/storage weights per resource.
+ * Shows sliders for production/construction/storage weights per resource,
+ * plus collapsible building importance controls.
  */
 export function renderPriorityPanel(contentEl: HTMLElement, game: Game): void {
   const settings = game.getDistributionSettings();
@@ -76,6 +131,29 @@ export function renderPriorityPanel(contentEl: HTMLElement, game: Game): void {
       </div>`;
     }
 
+    // Building importance section
+    const consumers = getConsumingBuildings(game, r);
+    if (consumers.length > 0) {
+      html += `<div class="priority-building-toggle" data-resource-toggle="${r}">
+        <span class="priority-building-chevron">${icon('chevron_right', 'priority-chevron-icon')}</span>
+        <span>Target Buildings (${consumers.length})</span>
+      </div>
+      <div class="priority-building-list" data-resource-list="${r}">`;
+
+      for (const c of consumers) {
+        const imp = getBuildingImportance(settings, c.building.id);
+        html += `<div class="priority-building-row">
+          <div class="priority-building-name-col">
+            <span class="priority-building-name">${c.label}</span>
+            ${c.otherInputs.length > 0 ? `<span class="priority-building-hint">also uses: ${c.otherInputs.map(r2 => RESOURCE_PROPERTIES[r2].label).join(', ')}</span>` : ''}
+          </div>
+          ${renderImportanceDots(c.building.id, imp)}
+        </div>`;
+      }
+
+      html += `</div>`;
+    }
+
     html += `</div>`;
   }
 
@@ -83,7 +161,7 @@ export function renderPriorityPanel(contentEl: HTMLElement, game: Game): void {
 
   contentEl.innerHTML = html;
 
-  // Attach event listeners
+  // Attach slider event listeners
   const cards = contentEl.querySelectorAll<HTMLElement>('.priority-resource-card');
   for (const card of cards) {
     const resource = card.dataset.resource as ResourceType;
@@ -143,11 +221,42 @@ export function renderPriorityPanel(contentEl: HTMLElement, game: Game): void {
     }
   }
 
+  // Building toggle expand/collapse
+  const toggles = contentEl.querySelectorAll<HTMLElement>('.priority-building-toggle');
+  for (const toggle of toggles) {
+    toggle.addEventListener('click', () => {
+      const res = toggle.dataset.resourceToggle!;
+      const list = contentEl.querySelector<HTMLElement>(`[data-resource-list="${res}"]`);
+      if (!list) return;
+      const expanded = list.classList.toggle('expanded');
+      toggle.classList.toggle('expanded', expanded);
+    });
+  }
+
+  // Building importance dot clicks (event delegation)
+  contentEl.addEventListener('click', (e) => {
+    const dot = (e.target as HTMLElement).closest<HTMLElement>('.priority-importance-dot');
+    if (!dot) return;
+    const buildingId = dot.dataset.buildingId!;
+    const importance = Number(dot.dataset.importance);
+
+    setBuildingImportance(settings, buildingId, importance);
+    game.setDistributionSettings(settings);
+
+    // Update all dot rows for this building across all resource cards
+    const allDots = contentEl.querySelectorAll<HTMLElement>(`.priority-importance-dot[data-building-id="${buildingId}"]`);
+    for (const d of allDots) {
+      const val = Number(d.dataset.importance);
+      d.classList.toggle('filled', val <= importance);
+    }
+  });
+
   // Reset button
   const resetBtn = contentEl.querySelector('.priority-reset-btn');
   resetBtn?.addEventListener('click', () => {
     const defaults = createDefaultDistribution();
     settings.resourceCategoryWeights = defaults.resourceCategoryWeights;
+    settings.buildingImportance = new Map();
     game.setDistributionSettings(settings);
     renderPriorityPanel(contentEl, game);
   });
