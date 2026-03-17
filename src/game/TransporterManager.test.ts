@@ -306,4 +306,117 @@ describe('TransporterManager', () => {
       expect(stoneAtF2.length).toBe(1);
     });
   });
+
+  describe('stranded goods delivery', () => {
+    it('should deliver goods stranded at their destination flag', () => {
+      const f1 = roadNetwork.placeFlag({ q: 4, r: 4 }, 1)!;
+      const f2 = roadNetwork.placeFlag({ q: 5, r: 4 }, 1)!;
+      roadNetwork.connectFlags(f1.id, f2.id);
+
+      // Set up f2 as having a building
+      const buildResult = gameState.placeBuilding(BuildingType.Sawmill, { q: 5, r: 4 }, 1);
+      if (!buildResult.ok) throw new Error('Failed to place building');
+      f2.buildingId = buildResult.building.id;
+      buildResult.building.state = 'active';
+
+      // Simulate stranded good: good at f2 with destinationFlagId === f2.id
+      f2.goods.push({ resource: ResourceType.Wood, destinationFlagId: f2.id });
+
+      tick(1.1);
+
+      // Good should be delivered to the building's input inventory
+      expect(buildResult.building.inputInventory[ResourceType.Wood]).toBe(1);
+      expect(f2.goods.filter(g => g.destinationFlagId === f2.id)).toHaveLength(0);
+    });
+
+    it('should not deliver stranded goods if building input is full', () => {
+      const f1 = roadNetwork.placeFlag({ q: 4, r: 4 }, 1)!;
+      const f2 = roadNetwork.placeFlag({ q: 5, r: 4 }, 1)!;
+      roadNetwork.connectFlags(f1.id, f2.id);
+
+      const buildResult = gameState.placeBuilding(BuildingType.Sawmill, { q: 5, r: 4 }, 1);
+      if (!buildResult.ok) throw new Error('Failed to place building');
+      f2.buildingId = buildResult.building.id;
+      buildResult.building.state = 'active';
+
+      // Fill the input inventory to capacity
+      buildResult.building.inputInventory[ResourceType.Wood] = 100;
+
+      // Stranded good at f2
+      f2.goods.push({ resource: ResourceType.Wood, destinationFlagId: f2.id });
+
+      tick(1.1);
+
+      // Phase 2 discards the stranded good since building is at per-resource cap
+      // (Sawmill input is 1 Wood, cap = 1*2 = 2, 100 >= 2 → discard)
+      expect(f2.goods.filter(g => g.destinationFlagId === f2.id)).toHaveLength(0);
+    });
+
+    it('should deliver up to per-resource cap for production buildings', () => {
+      const f1 = roadNetwork.placeFlag({ q: 4, r: 4 }, 1)!;
+      const f2 = roadNetwork.placeFlag({ q: 5, r: 4 }, 1)!;
+      roadNetwork.connectFlags(f1.id, f2.id);
+
+      const buildResult = gameState.placeBuilding(BuildingType.Sawmill, { q: 5, r: 4 }, 1);
+      if (!buildResult.ok) throw new Error('Failed to place building');
+      f2.buildingId = buildResult.building.id;
+      buildResult.building.state = 'active';
+
+      // Sawmill needs 1 Wood per cycle → per-resource cap = 1*2 = 2
+      // 5 stranded Wood goods
+      for (let i = 0; i < 5; i++) {
+        f2.goods.push({ resource: ResourceType.Wood, destinationFlagId: f2.id });
+      }
+
+      tick(1.1);
+
+      // Should deliver 2 (per-resource cap) and discard 3 (surplus)
+      expect(buildResult.building.inputInventory[ResourceType.Wood]).toBe(2);
+      expect(f2.goods.filter(g => g.destinationFlagId === f2.id)).toHaveLength(0);
+    });
+
+    it('should not deliver invalid resource types and discard them', () => {
+      const f1 = roadNetwork.placeFlag({ q: 4, r: 4 }, 1)!;
+      const f2 = roadNetwork.placeFlag({ q: 5, r: 4 }, 1)!;
+      roadNetwork.connectFlags(f1.id, f2.id);
+
+      // Sawmill only accepts Wood
+      const buildResult = gameState.placeBuilding(BuildingType.Sawmill, { q: 5, r: 4 }, 1);
+      if (!buildResult.ok) throw new Error('Failed to place building');
+      f2.buildingId = buildResult.building.id;
+      buildResult.building.state = 'active';
+
+      // Strand Stone at Sawmill — not a valid input
+      f2.goods.push({ resource: ResourceType.Stone, destinationFlagId: f2.id });
+
+      tick(1.1);
+
+      // Phase 2 should discard Stone since it's not a valid input
+      expect(f2.goods.filter(g => g.destinationFlagId === f2.id)).toHaveLength(0);
+      expect(buildResult.building.inputInventory[ResourceType.Stone] ?? 0).toBe(0);
+    });
+
+    it('should deliver multiple stranded goods if space allows', () => {
+      const f1 = roadNetwork.placeFlag({ q: 4, r: 4 }, 1)!;
+      const f2 = roadNetwork.placeFlag({ q: 5, r: 4 }, 1)!;
+      roadNetwork.connectFlags(f1.id, f2.id);
+
+      // Castle accepts all resources (non-production building)
+      const buildResult = gameState.placeBuilding(BuildingType.Castle, { q: 5, r: 4 }, 1);
+      if (!buildResult.ok) throw new Error('Failed to place building');
+      f2.buildingId = buildResult.building.id;
+      buildResult.building.state = 'active';
+
+      // 3 stranded goods
+      f2.goods.push({ resource: ResourceType.Wood, destinationFlagId: f2.id });
+      f2.goods.push({ resource: ResourceType.Wood, destinationFlagId: f2.id });
+      f2.goods.push({ resource: ResourceType.Wood, destinationFlagId: f2.id });
+
+      tick(1.1);
+
+      // Castle has no per-resource production cap — accepts all
+      expect(buildResult.building.inputInventory[ResourceType.Wood]).toBe(3);
+      expect(f2.goods.filter(g => g.destinationFlagId === f2.id)).toHaveLength(0);
+    });
+  });
 });

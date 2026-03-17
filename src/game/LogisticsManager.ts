@@ -51,12 +51,60 @@ export class LogisticsManager {
   }
 
   update(deltaTime: number): void {
+    this.cleanupCongestedFlags();
     this.routingCooldown -= deltaTime;
     if (this.routingCooldown > 0) return;
     this.routingCooldown = LogisticsManager.ROUTING_INTERVAL;
 
     this.ensureBuildingFlags();
     this.routeOutputGoods();
+  }
+
+  /**
+   * Drain flags that have overflowed past MAX_FLAG_GOODS.
+   * Uses priority-based multi-pass removal:
+   *   Pass 1: orphan goods (no valid destination flag)
+   *   Pass 2: storage-bound goods (Castle/Warehouse — redundant surplus)
+   *   Pass 3: stranded goods (destinationFlagId === flag.id — will never be picked up)
+   *   Pass 4: any remaining excess
+   */
+  private cleanupCongestedFlags(): void {
+    for (const flag of this.roadNetwork.getAllFlags()) {
+      if (flag.goods.length <= LogisticsManager.MAX_FLAG_GOODS) continue;
+      let excess = flag.goods.length - LogisticsManager.MAX_FLAG_GOODS;
+
+      // Pass 1: Remove orphan goods (no valid destination)
+      for (let i = flag.goods.length - 1; i >= 0 && excess > 0; i--) {
+        if (!this.roadNetwork.getFlag(flag.goods[i].destinationFlagId)) {
+          flag.goods.splice(i, 1); excess--;
+        }
+      }
+      if (excess <= 0) continue;
+
+      // Pass 2: Remove storage-bound goods
+      for (let i = flag.goods.length - 1; i >= 0 && excess > 0; i--) {
+        const df = this.roadNetwork.getFlag(flag.goods[i].destinationFlagId);
+        if (!df?.buildingId) continue;
+        const db = this.gameState.getBuilding(df.buildingId);
+        if (db && this.isStorageBuilding(db.type)) {
+          flag.goods.splice(i, 1); excess--;
+        }
+      }
+      if (excess <= 0) continue;
+
+      // Pass 3: Remove stranded goods (destinationFlagId === flag.id)
+      for (let i = flag.goods.length - 1; i >= 0 && excess > 0; i--) {
+        if (flag.goods[i].destinationFlagId === flag.id) {
+          flag.goods.splice(i, 1); excess--;
+        }
+      }
+      if (excess <= 0) continue;
+
+      // Pass 4: Remove any remaining excess
+      for (let i = flag.goods.length - 1; i >= 0 && excess > 0; i--) {
+        flag.goods.splice(i, 1); excess--;
+      }
+    }
   }
 
   /**
@@ -181,11 +229,26 @@ export class LogisticsManager {
         if (flag.goods.length >= LogisticsManager.MAX_FLAG_GOODS) break;
 
         const resourceType = resource as ResourceType;
+
+        // Per-resource cap: no single resource can monopolize more than a quarter of flag slots
+        const sameResourceCount = flag.goods.filter(g => g.resource === resourceType).length;
+        if (sameResourceCount >= Math.ceil(LogisticsManager.MAX_FLAG_GOODS / 4)) continue;
+
         const budgetEntry = budgetMap?.get(resourceType);
 
         // Find a destination building that needs this resource
         const destFlagId = this.findDestination(flag.id, resourceType, budgetEntry);
         if (!destFlagId) continue;
+
+        // Reserve upper half of flag capacity for production-bound goods:
+        // when flag is ≥50% full, block storage-bound goods so production goods can flow
+        if (flag.goods.length >= Math.floor(LogisticsManager.MAX_FLAG_GOODS / 2)) {
+          const destFlag = this.roadNetwork.getFlag(destFlagId);
+          if (destFlag?.buildingId) {
+            const destBldg = this.gameState.getBuilding(destFlag.buildingId);
+            if (destBldg && this.isStorageBuilding(destBldg.type)) continue;
+          }
+        }
 
         // Move one unit from outputInventory to flag
         building.outputInventory[resourceType] = amount - 1;
@@ -238,11 +301,18 @@ export class LogisticsManager {
         if (!hasInputSpace(building)) continue;
 
         // Don't over-supply: cap at 2x the per-cycle amount
+        // Count both inventory AND goods already pending at the destination flag
         const currentAmount = building.inputInventory[resource] ?? 0;
-        if (currentAmount >= inputSpec.amount * 2) continue;
-
         const destFlag = this.roadNetwork.getFlagAt(building.coord.q, building.coord.r);
         if (!destFlag || destFlag.id === sourceFlagId) continue;
+
+        let pendingAtFlag = 0;
+        for (const g of destFlag.goods) {
+          if (g.resource === resource && g.destinationFlagId === destFlag.id) {
+            pendingAtFlag++;
+          }
+        }
+        if (currentAmount + pendingAtFlag >= inputSpec.amount * 2) continue;
 
         const route = this.roadNetwork.findRoute(sourceFlagId, destFlag.id);
         if (route.length === 0) continue;

@@ -417,9 +417,185 @@ describe('LogisticsManager', () => {
       }
 
       // Demand is only 2, so budget = 10 - 2 = 8
-      // Up to 8 should route to Sawmill (limited by flag capacity of 8)
+      // Per-resource cap limits one resource to ceil(8/4)=2 on a flag
       const routedToSawmill = f1.goods.filter(g => g.destinationFlagId === f3.id).length;
-      expect(routedToSawmill).toBeGreaterThanOrEqual(6); // Most should route to production
+      expect(routedToSawmill).toBeGreaterThanOrEqual(1); // Production gets routed (capped at 2 per-resource on flag)
+    });
+  });
+
+  describe('per-resource flag cap', () => {
+    it('should not allow one resource to fill more than a quarter of flag slots', () => {
+      const castle = gameState.placeBuilding(BuildingType.Castle, { q: 4, r: 4 }, 1);
+      const sawmill = gameState.placeBuilding(BuildingType.Sawmill, { q: 8, r: 4 }, 1);
+      if (!castle.ok || !sawmill.ok) throw new Error('Failed to place buildings');
+
+      castle.building.state = BuildingState.Active;
+      sawmill.building.state = BuildingState.Active;
+      castle.building.outputInventory[ResourceType.Wood] = 20;
+
+      logistics.update(1.0); // Creates flags
+
+      const f1 = roadNetwork.getFlagAt(4, 4)!;
+      const f2 = roadNetwork.placeFlag({ q: 5, r: 4 }, 1)!;
+      const f3 = roadNetwork.placeFlag({ q: 6, r: 4 }, 1)!;
+      const f4 = roadNetwork.placeFlag({ q: 7, r: 4 }, 1)!;
+      const f5 = roadNetwork.getFlagAt(8, 4)!;
+      roadNetwork.connectFlags(f1.id, f2.id);
+      roadNetwork.connectFlags(f2.id, f3.id);
+      roadNetwork.connectFlags(f3.id, f4.id);
+      roadNetwork.connectFlags(f4.id, f5.id);
+
+      for (let i = 0; i < 10; i++) logistics.update(1.0);
+
+      // No single resource should have more than ceil(8/4)=2 goods on the flag
+      const woodCount = f1.goods.filter(g => g.resource === ResourceType.Wood).length;
+      expect(woodCount).toBeLessThanOrEqual(2);
+    });
+  });
+
+  describe('congested flag cleanup', () => {
+    it('should remove excess storage-bound goods from overflowed flags', () => {
+      const castle = gameState.placeBuilding(BuildingType.Castle, { q: 4, r: 4 }, 1);
+      if (!castle.ok) throw new Error('Failed to place building');
+      castle.building.state = BuildingState.Active;
+
+      logistics.update(1.0); // Creates flags
+
+      const f1 = roadNetwork.placeFlag({ q: 6, r: 4 }, 1)!;
+      const f2 = roadNetwork.getFlagAt(4, 4)!;
+      roadNetwork.connectFlags(f1.id, f2.id);
+
+      // Manually overflow the flag with 15 goods all heading to Castle
+      for (let i = 0; i < 15; i++) {
+        f1.goods.push({ resource: ResourceType.Wood, destinationFlagId: f2.id });
+      }
+      expect(f1.goods.length).toBe(15);
+
+      logistics.update(0.1); // Triggers cleanupCongestedFlags
+
+      // Should be reduced to MAX_FLAG_GOODS (8)
+      expect(f1.goods.length).toBeLessThanOrEqual(8);
+    });
+
+    it('should not remove production-bound goods during cleanup', () => {
+      const castle = gameState.placeBuilding(BuildingType.Castle, { q: 4, r: 4 }, 1);
+      const sawmill = gameState.placeBuilding(BuildingType.Sawmill, { q: 8, r: 4 }, 1);
+      if (!castle.ok || !sawmill.ok) throw new Error('Failed to place buildings');
+      castle.building.state = BuildingState.Active;
+      sawmill.building.state = BuildingState.Active;
+
+      logistics.update(1.0); // Creates flags
+
+      const f1 = roadNetwork.placeFlag({ q: 6, r: 4 }, 1)!;
+      const fCastle = roadNetwork.getFlagAt(4, 4)!;
+      const fSawmill = roadNetwork.getFlagAt(8, 4)!;
+      roadNetwork.connectFlags(f1.id, fCastle.id);
+      roadNetwork.connectFlags(f1.id, fSawmill.id);
+
+      // 5 goods to Castle (storage) + 5 goods to Sawmill (production) = 10 overflow
+      for (let i = 0; i < 5; i++) {
+        f1.goods.push({ resource: ResourceType.Wood, destinationFlagId: fCastle.id });
+      }
+      for (let i = 0; i < 5; i++) {
+        f1.goods.push({ resource: ResourceType.Wood, destinationFlagId: fSawmill.id });
+      }
+
+      logistics.update(0.1);
+
+      // Production goods should all survive — only storage goods get dropped
+      const productionGoods = f1.goods.filter(g => g.destinationFlagId === fSawmill.id);
+      expect(productionGoods).toHaveLength(5);
+    });
+
+    it('should remove orphan goods (no valid destination) first', () => {
+      const f1 = roadNetwork.placeFlag({ q: 4, r: 4 }, 1)!;
+
+      // 6 goods to a non-existent flag + 4 normal goods
+      for (let i = 0; i < 6; i++) {
+        f1.goods.push({ resource: ResourceType.Wood, destinationFlagId: 'flag_nonexistent' });
+      }
+      for (let i = 0; i < 4; i++) {
+        f1.goods.push({ resource: ResourceType.Stone, destinationFlagId: f1.id });
+      }
+      expect(f1.goods.length).toBe(10);
+
+      logistics.update(0.1);
+
+      // Orphan goods removed first (2 excess), stranded goods survive
+      expect(f1.goods.length).toBeLessThanOrEqual(8);
+      const strandedGoods = f1.goods.filter(g => g.destinationFlagId === f1.id);
+      expect(strandedGoods).toHaveLength(4); // All stranded goods preserved
+    });
+
+    it('should remove stranded goods in pass 3 when storage-bound removal is insufficient', () => {
+      const f1 = roadNetwork.placeFlag({ q: 4, r: 4 }, 1)!;
+
+      // 5 stranded + 7 other = 12 total (4 excess)
+      for (let i = 0; i < 5; i++) {
+        f1.goods.push({ resource: ResourceType.Wood, destinationFlagId: f1.id });
+      }
+      for (let i = 0; i < 7; i++) {
+        f1.goods.push({ resource: ResourceType.Stone, destinationFlagId: 'flag_nonexistent' });
+      }
+
+      logistics.update(0.1);
+
+      // Pass 1 removes orphans (enough to clear all excess), stranded goods stay
+      expect(f1.goods.length).toBeLessThanOrEqual(8);
+    });
+
+    it('should fall through to pass 4 and remove any excess as last resort', () => {
+      const sawmill = gameState.placeBuilding(BuildingType.Sawmill, { q: 6, r: 4 }, 1);
+      if (!sawmill.ok) throw new Error('Failed to place building');
+      sawmill.building.state = BuildingState.Active;
+
+      logistics.update(1.0); // Creates flags
+
+      const f1 = roadNetwork.placeFlag({ q: 4, r: 4 }, 1)!;
+      const fSawmill = roadNetwork.getFlagAt(6, 4)!;
+      roadNetwork.connectFlags(f1.id, fSawmill.id);
+
+      // 12 production-bound goods (no orphan, no storage, no stranded)
+      for (let i = 0; i < 12; i++) {
+        f1.goods.push({ resource: ResourceType.Wood, destinationFlagId: fSawmill.id });
+      }
+
+      logistics.update(0.1);
+
+      // Pass 4 removes remaining excess
+      expect(f1.goods.length).toBeLessThanOrEqual(8);
+    });
+  });
+
+  describe('over-supply with pending flag goods', () => {
+    it('should count goods at destination flag when checking over-supply', () => {
+      const woodcutter = gameState.placeBuilding(BuildingType.WoodcutterHut, { q: 4, r: 4 }, 1);
+      const sawmill = gameState.placeBuilding(BuildingType.Sawmill, { q: 6, r: 4 }, 1);
+      if (!woodcutter.ok || !sawmill.ok) throw new Error('Failed to place buildings');
+
+      woodcutter.building.state = BuildingState.Active;
+      sawmill.building.state = BuildingState.Active;
+
+      // Sawmill has 1 Wood in inventory — Sawmill input is 1 per cycle, so 2x cap = 2
+      sawmill.building.inputInventory[ResourceType.Wood] = 1;
+      woodcutter.building.outputInventory[ResourceType.Wood] = 3;
+
+      logistics.update(1.0); // Creates flags
+
+      const f1 = roadNetwork.getFlagAt(4, 4)!;
+      const f2 = roadNetwork.placeFlag({ q: 5, r: 4 }, 1)!;
+      const f3 = roadNetwork.getFlagAt(6, 4)!;
+      roadNetwork.connectFlags(f1.id, f2.id);
+      roadNetwork.connectFlags(f2.id, f3.id);
+
+      // Already 1 Wood pending at the sawmill's flag
+      f3.goods.push({ resource: ResourceType.Wood, destinationFlagId: f3.id });
+
+      logistics.update(1.0);
+
+      // 1 in inventory + 1 pending at flag = 2 >= 2x cap => should NOT route more
+      const routedToSawmill = f1.goods.filter(g => g.destinationFlagId === f3.id).length;
+      expect(routedToSawmill).toBe(0);
     });
   });
 });

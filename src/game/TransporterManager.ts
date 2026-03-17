@@ -5,6 +5,7 @@ import { UnitState, setUnitPath, clearUnitPath } from './Unit';
 import { UnitType } from './UnitType';
 import { findPath } from './Pathfinding';
 import { hasInputSpace } from './Building';
+import { BUILDING_DEFINITIONS } from './BuildingType';
 
 /**
  * Transporter state machine within a road segment.
@@ -71,10 +72,113 @@ export class TransporterManager {
   }
 
   update(deltaTime: number): void {
+    this.deliverStrandedGoods();
     this.spawnTransporters(deltaTime);
     this.handleArrivals();
     this.handleIdleTransporters();
     this.cleanupOrphans();
+    this.rebalanceBlockedInputs(); // After all deliveries to avoid oscillation
+  }
+
+  /**
+   * Deliver goods that are stranded at their destination flag.
+   * This happens when deliverToBuilding() fails (building input full) and pushes
+   * the good back onto the flag with destinationFlagId still pointing to that flag.
+   * No transporter will ever pick these up because findRoute returns length 1.
+   *
+   * Phase 1: Deliver with per-resource caps (inputSpec.amount * 2) to prevent
+   *   one resource from hogging all input capacity.
+   * Phase 2: Discard surplus stranded goods that will never be accepted.
+   */
+  private deliverStrandedGoods(): void {
+    for (const flag of this.roadNetwork.getAllFlags()) {
+      if (!flag.buildingId || flag.goods.length === 0) continue;
+      const building = this.gameState.getBuilding(flag.buildingId);
+      if (!building) continue;
+
+      const def = BUILDING_DEFINITIONS[building.type];
+      const hasInputs = def.production != null && def.production.inputs.length > 0;
+
+      // Phase 1: Deliver stranded goods respecting per-resource caps
+      for (let i = flag.goods.length - 1; i >= 0; i--) {
+        const good = flag.goods[i];
+        if (good.destinationFlagId !== flag.id) continue;
+        if (!hasInputSpace(building)) continue;
+
+        if (hasInputs) {
+          const inputSpec = def.production!.inputs.find(inp => inp.resource === good.resource);
+          if (!inputSpec) continue; // Not a valid input — Phase 2 will discard
+          const current = building.inputInventory[good.resource] ?? 0;
+          if (current >= inputSpec.amount * 2) continue; // At per-resource cap
+        }
+
+        const current = building.inputInventory[good.resource] ?? 0;
+        building.inputInventory[good.resource] = current + 1;
+        flag.goods.splice(i, 1);
+      }
+
+      // Phase 2: Discard surplus stranded goods that will never be accepted
+      for (let i = flag.goods.length - 1; i >= 0; i--) {
+        const good = flag.goods[i];
+        if (good.destinationFlagId !== flag.id) continue;
+
+        if (hasInputs) {
+          const inputSpec = def.production!.inputs.find(inp => inp.resource === good.resource);
+          const current = building.inputInventory[good.resource] ?? 0;
+          if (!inputSpec || current >= inputSpec.amount * 2) {
+            flag.goods.splice(i, 1); // Surplus — discard
+          }
+        } else if (!hasInputSpace(building) && flag.goods.length > TransporterManager.MAX_FLAG_GOODS) {
+          flag.goods.splice(i, 1); // Non-production, congested — discard
+        }
+      }
+    }
+  }
+
+  private static MAX_FLAG_GOODS = 8;
+
+  /**
+   * Fix multi-input buildings where one resource hogs all capacity,
+   * blocking delivery of other required inputs (permanent deadlock).
+   * Evicts excess of the oversupplied resource to make room.
+   */
+  private rebalanceBlockedInputs(): void {
+    for (const building of this.gameState.getAllBuildings()) {
+      if (building.state !== 'active') continue;
+      const def = BUILDING_DEFINITIONS[building.type];
+      if (!def.production || def.production.inputs.length < 2) continue;
+      if (!building.hasWorker) continue;
+
+      // Check if input is full
+      if (hasInputSpace(building)) continue;
+
+      // Check if any required input is at 0 while another is over-supplied
+      let hasZero = false;
+      let maxExcess = 0;
+      let excessResource: string | null = null;
+
+      for (const inp of def.production.inputs) {
+        const amount = building.inputInventory[inp.resource] ?? 0;
+        if (amount === 0) {
+          hasZero = true;
+        } else if (amount > inp.amount * 2) {
+          if (amount > maxExcess) {
+            maxExcess = amount;
+            excessResource = inp.resource;
+          }
+        }
+      }
+
+      if (!hasZero || !excessResource) continue;
+
+      // Evict half of the excess resource to make room
+      const inputSpec = def.production.inputs.find(i => i.resource === excessResource)!;
+      const evictAmount = Math.max(1, maxExcess - inputSpec.amount);
+      building.inputInventory[excessResource as keyof typeof building.inputInventory] = maxExcess - evictAmount;
+      if (building.inputInventory[excessResource as keyof typeof building.inputInventory] === 0) {
+        delete building.inputInventory[excessResource as keyof typeof building.inputInventory];
+      }
+    }
   }
 
   /**
