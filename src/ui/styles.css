@@ -1115,6 +1115,37 @@ html[data-theme="night"] .state-destroyed {
 }
 
 /* ============================================================
+   Day/Night Cycle Widget
+   ============================================================ */
+.cycle-widget {
+  position: fixed;
+  right: 8px;
+  z-index: var(--z-minimap);
+  background: rgba(0,0,0,0.5);
+  border-radius: 10px;
+  padding: 4px 4px 2px;
+  pointer-events: none;
+  backdrop-filter: blur(4px);
+  transition: opacity 0.3s ease;
+}
+.cycle-widget.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+.cycle-widget-label {
+  text-align: center;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: rgba(255,255,255,0.75);
+  padding: 1px 0 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ============================================================
    Game Over Overlay
    ============================================================ */
 .game-over-overlay {
@@ -1398,6 +1429,17 @@ html[data-theme="night"] .state-destroyed {
     width: 120px;
     top: 48px;
     right: 4px;
+  }
+
+  .cycle-widget {
+    right: 4px;
+  }
+  .cycle-widget canvas {
+    width: 64px !important;
+    height: 35px !important;
+  }
+  .cycle-widget-label {
+    font-size: 8px;
   }
 
   .game-over-card {

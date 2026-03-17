@@ -17,6 +17,15 @@ export interface ColorGradingParams {
   saturation: number;
 }
 
+export interface CycleState {
+  sunAngle: number;
+  nightness: number;
+  phase: TimeOfDay;
+  targetPhase: TimeOfDay;
+  phaseProgress: number;
+  transitioning: boolean;
+}
+
 interface Preset {
   skyColor: number;
   groundColor: number;
@@ -154,6 +163,9 @@ export class AtmosphereController {
   private cycleTimer = 0;
   private autoCycle = false;
 
+  private _currentSunAngle = 85;
+  private _currentNightness = 0;
+
   // Reusable color objects to avoid per-frame allocations
   private readonly _colorA = new THREE.Color();
   private readonly _colorB = new THREE.Color();
@@ -202,6 +214,18 @@ export class AtmosphereController {
     return this.currentPreset;
   }
 
+  /** Returns interpolated cycle state for UI consumption */
+  getCycleState(): CycleState {
+    return {
+      sunAngle: this._currentSunAngle,
+      nightness: this._currentNightness,
+      phase: this.currentPreset,
+      targetPhase: this.targetPreset,
+      phaseProgress: this.cycleTimer / PRESET_DURATION,
+      transitioning: this.transitionProgress < 1,
+    };
+  }
+
   /** Update each frame. Handles transitions and auto-cycling. */
   update(deltaTime: number): void {
     if (this.autoCycle) {
@@ -243,6 +267,8 @@ export class AtmosphereController {
     }
     this.renderer.setClearColor(p.clearColor);
     this.renderer.toneMappingExposure = p.exposure;
+    this._currentSunAngle = p.sunAngle;
+    this._currentNightness = p.nightness;
     this.applySunPosition(p.sunAngle);
     this.onColorGradingUpdate?.(p.colorGrading);
     this.onNightnessUpdate?.(p.nightness);
@@ -284,6 +310,7 @@ export class AtmosphereController {
       toAngle += 360;
     }
     const angle = fromAngle + (toAngle - fromAngle) * t;
+    this._currentSunAngle = angle % 360;
     this.applySunPosition(angle);
 
     // Interpolate color grading params
@@ -300,6 +327,7 @@ export class AtmosphereController {
 
     // Interpolate nightness
     const nightness = from.nightness + (to.nightness - from.nightness) * t;
+    this._currentNightness = nightness;
     this.onNightnessUpdate?.(nightness);
   }
 

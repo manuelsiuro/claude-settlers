@@ -33,6 +33,7 @@ import {
   stopInfoPanelUpdates,
   hideInfoPanelElement,
 } from './ui/InfoPanel';
+import { initDayCycleWidget, disposeDayCycleWidget } from './ui/DayCycleWidget';
 import {
   initStatsPanel,
   showStatsPanel,
@@ -371,6 +372,7 @@ initSetupScreen(startGame);
 // ============================================================
 async function startGame(config: Partial<GameConfig>, savedData?: SaveData): Promise<void> {
   // Clean up any active UI state from the previous game
+  disposeDayCycleWidget();
   stopInfoPanelUpdates();
   stopStatsPanelUpdates();
   stopBuildPanelUpdates();
@@ -495,6 +497,7 @@ async function startGame(config: Partial<GameConfig>, savedData?: SaveData): Pro
 
   const minimapContainer = document.getElementById('minimap-container')!;
   currentMinimap = new Minimap(game, minimapContainer);
+  initDayCycleWidget(getGame, minimapContainer);
 
   populateBuildPanel();
 }
