@@ -1,6 +1,7 @@
 import type { Game } from '../engine/Game';
 import { audioManager } from '../engine/AudioManager';
 import { showSnackbar } from './Snackbar';
+import { showTechTreePanel } from './TechTreePanel';
 import { saveToLocalStorage, downloadSave } from '../game/SaveLoad';
 import { loadSettings, saveSettings } from '../game/SettingsStorage';
 import type { GraphicsSettings } from '../game/GameConfig';
@@ -71,6 +72,8 @@ export function initAppBar(
         handleLoadFromFile();
       } else if (headline === 'Download Save') {
         handleDownloadSave();
+      } else if (headline === 'Tech Tree') {
+        showTechTreePanel();
       } else {
         showSnackbar(`${headline} — coming soon`);
       }

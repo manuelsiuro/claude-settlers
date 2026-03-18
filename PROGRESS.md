@@ -256,5 +256,14 @@ All 17 tasks from the improvement plan are now complete. 569 tests passing, 0 er
   - **Fix 4** (LogisticsManager `cleanupCongestedFlags`): Rewritten with 4-pass priority removal (orphan → storage-bound → stranded → any) to handle all overflow types.
   - 607 tests passing, build clean, lint clean.
 
+### Tech Tree Draggable Nodes [DONE]
+- [DONE] Draggable node cards in Tech Tree panel — 2026-03-18
+  - **Problem**: Full `innerHTML` rebuild on every hover event reset any moved positions and prevented interactive graph untangling.
+  - **Refactor**: Separated position state (`nodePositions` Map) from rendering. Hover now uses DOM class toggling (`applyHoverHighlight()`) instead of full `render()`. SVG edges tagged with `data-from`/`data-to` and midpoints with `data-edge-mid` for incremental updates.
+  - **Drag**: Pointer events (`pointerdown`/`pointermove`/`pointerup`) with `setPointerCapture()` for unified mouse+touch. 5px threshold distinguishes click from drag. `updateEdgesForNode()` recomputes only connected Bezier paths during drag. Canvas auto-grows when nodes dragged beyond bounds.
+  - **State lifecycle**: Positions reset on filter change and panel open. Preserved across hover events. Document-level listeners cleaned up on panel close.
+  - **CSS**: `.techtree-node` cursor changed to `grab`. New `.techtree-node-dragging` class (grabbing cursor, z-index:10, no transition, elevated shadow).
+  - 2 files changed (`TechTreePanel.ts`, `styles.css`), 607 tests passing, build clean, lint clean.
+
 ## Blockers
 _None._

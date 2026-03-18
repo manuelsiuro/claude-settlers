@@ -47,6 +47,7 @@ import {
   hideStatsPanelElement,
 } from './ui/StatsPanel';
 import { initDemolishDialog } from './ui/DemolishDialog';
+import { initTechTreePanel } from './ui/TechTreePanel';
 import { generateQrSvg } from './ui/QrCode';
 
 // ============================================================
@@ -84,6 +85,7 @@ app.innerHTML = `
       <li data-headline="Statistics">${icon('bar_chart')} Statistics</li>
       <li data-headline="Resource Priority">${icon('tune')} Resource Priority</li>
       <li data-headline="Minimap">${icon('map')} Minimap</li>
+      <li data-headline="Tech Tree">${icon('account_tree')} Tech Tree</li>
       <div class="nav-drawer-divider"></div>
       <div class="nav-drawer-section-label">Data</div>
       <li data-headline="Save Game">${icon('save')} Save Game</li>
@@ -198,6 +200,9 @@ app.innerHTML = `
     <button class="build-toolbar-tab" data-panel="priority" title="Priority">
       ${icon('tune')}<span class="build-toolbar-label">Priority</span>
     </button>
+    <button class="build-toolbar-tab" data-panel="techtree" title="Tech Tree">
+      ${icon('account_tree')}<span class="build-toolbar-label">Tech Tree</span>
+    </button>
   </div>
 
   <!-- Stats FAB (mobile only) -->
@@ -231,6 +236,9 @@ app.innerHTML = `
     </div>
     <div id="info-panel-content" class="info-panel-content"></div>
   </div>
+
+  <!-- Tech Tree Overlay -->
+  <div id="techtree-overlay" class="techtree-overlay hidden"></div>
 
   <!-- Statistics Panel (tabbed: resources, pop, buildings, military, economy, priority) -->
   <div id="stats-panel" class="stats-panel hidden">
@@ -433,6 +441,7 @@ initAppBar(
   () => handleLoadFromFile(startGame),
 );
 
+initTechTreePanel();
 initSetupScreen(startGame);
 
 // Initialize settings UI from persisted values

@@ -2661,3 +2661,239 @@ html[data-theme="night"] .priority-importance-dot.filled {
     max-width: none;
   }
 }
+
+/* ============================================================
+   Tech Tree Panel
+   ============================================================ */
+.techtree-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+
+.techtree-overlay.hidden {
+  display: none;
+}
+
+.techtree-panel {
+  position: relative;
+  background: var(--color-surface);
+  color: var(--color-on-surface);
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 32px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.techtree-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-outline-variant);
+  flex-shrink: 0;
+}
+
+.techtree-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-on-surface);
+}
+
+.techtree-title svg {
+  width: 20px;
+  height: 20px;
+}
+
+.techtree-filters {
+  display: flex;
+  gap: 6px;
+  padding: 8px 16px;
+  overflow-x: auto;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--color-outline-variant);
+}
+
+.techtree-filter-btn {
+  padding: 4px 12px;
+  border: 1px solid var(--color-pill-border);
+  border-radius: 16px;
+  background: var(--color-pill-bg);
+  color: var(--color-on-surface-variant);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.techtree-filter-btn:hover {
+  background: var(--color-icon-btn-hover);
+}
+
+.techtree-filter-active {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  border-color: var(--color-primary);
+}
+
+.techtree-filter-active:hover {
+  background: var(--color-primary);
+}
+
+.techtree-viewport {
+  flex: 1;
+  overflow: auto;
+  touch-action: pan-x pan-y;
+  min-height: 300px;
+}
+
+.techtree-canvas {
+  position: relative;
+}
+
+.techtree-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+.techtree-node {
+  position: absolute;
+  width: 160px;
+  border-radius: 12px;
+  background: var(--color-card-bg);
+  border: 2px solid var(--color-card-border);
+  box-shadow: var(--color-card-shadow);
+  cursor: grab;
+  transition: border-color 0.2s, opacity 0.2s, box-shadow 0.2s;
+  padding: 8px 10px;
+  box-sizing: border-box;
+}
+
+.techtree-node-dragging {
+  cursor: grabbing;
+  z-index: 10;
+  transition: none;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+.techtree-node:hover {
+  box-shadow: var(--color-card-shadow-hover);
+}
+
+.techtree-node-highlight {
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 12px rgba(26, 115, 232, 0.3);
+}
+
+.techtree-node-dimmed {
+  opacity: 0.2;
+}
+
+.techtree-edge-dimmed {
+  opacity: 0.1;
+}
+
+.techtree-edge-highlight {
+  opacity: 1;
+}
+
+.techtree-node-name {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.techtree-node-cat {
+  font-size: 0.625rem;
+  color: var(--color-on-surface-faint);
+  margin-top: 1px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.techtree-recipe {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.techtree-arrow {
+  font-size: 0.75rem;
+  color: var(--color-on-surface-faint);
+  margin: 0 2px;
+}
+
+/* Detail popover */
+.techtree-detail {
+  position: absolute;
+  z-index: 10;
+  background: var(--color-surface);
+  border: 1px solid var(--color-card-border);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  padding: 12px 14px;
+  width: 240px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.techtree-detail-title {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.techtree-detail-desc {
+  font-size: 0.75rem;
+  color: var(--color-on-surface-variant);
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+.techtree-detail-row {
+  font-size: 0.75rem;
+  padding: 2px 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  line-height: 1.5;
+}
+
+.techtree-detail-row strong {
+  color: var(--color-on-surface);
+}
+
+/* Responsive: mobile fills screen */
+@media (max-width: 768px) {
+  .techtree-panel {
+    max-width: 100vw;
+    max-height: 100vh;
+    border-radius: 0;
+    width: 100vw;
+    height: 100vh;
+  }
+
+  .techtree-node {
+    width: 130px;
+  }
+}

@@ -7,6 +7,7 @@ import { RESOURCE_PROPERTIES, ResourceType } from '../game/ResourceType';
 import { UNIT_DEFINITIONS, UnitType } from '../game/UnitType';
 import { renderEconomySection, drawEconomySparklines } from './EconomyPanel';
 import { renderPriorityHTML, attachPriorityListeners } from './ResourcePriorityPanel';
+import { showTechTreePanel } from './TechTreePanel';
 import { PanelUpdater } from './PanelUpdater';
 
 let statsPanel: HTMLElement;
@@ -68,6 +69,11 @@ export function initStatsPanel(
     const panel = tab.dataset.panel;
     if (!panel) return; // data-category tabs handled by BuildPanel
     audioManager.play('ui_click');
+
+    if (panel === 'techtree') {
+      showTechTreePanel();
+      return;
+    }
 
     if (!statsPanel.classList.contains('hidden') && activeStatsTab === panel) {
       // Toggle off
