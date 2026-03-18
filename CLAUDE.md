@@ -43,6 +43,14 @@ All design specs live in `docs/`:
 
 `src/engine/` contains 18+ renderers and visual systems (particles, building animations, tree sway shader, combat renderer, overlays, flag lights, atmosphere, post-processing, etc.). All follow the same integration pattern: instantiated in `Game` constructor, added to scene in `start()`, updated in the animate loop (after manager updates, before render), and disposed in `dispose()`. Read the source files for implementation details, or use the `feudal-new-renderer` skill when adding new ones.
 
+### UI Panel Update Pattern
+
+Live-updating panels (`InfoPanel`, `StatsPanel`, `BuildPanel`) use `PanelUpdater` (`src/ui/PanelUpdater.ts`) for flicker-free DOM updates. Instead of rebuilding `innerHTML` every tick, each panel computes a **structure key** (fingerprint of which sections/rows exist) and calls `updater.update(key, renderHTML, updateValues)`:
+- **Structure key changed** → full `innerHTML` rebuild with scroll position preservation
+- **Structure key same** → targeted patches via `data-field` attributes using `setText`/`setWidth`/`setClass`
+
+New panels should follow this pattern: add `data-field="..."` to dynamic elements in the HTML template, create a structure key function, and create a value updater function.
+
 ### MCP Integrations
 
 - **Blender MCP** (`.mcp.json`): Primary 3D asset creation tool. See `feudal-3d-asset-pipeline` skill for the full workflow.

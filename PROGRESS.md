@@ -231,8 +231,21 @@ All 17 tasks from the improvement plan are now complete. 569 tests passing, 0 er
 ### Flag Streetlight System [DONE]
 - [DONE] Flag Light System — FlagLightSystem.ts: nighttime lantern glows atop flag poles (instanced emissive cubes with per-flag flicker), ground glow pools beneath flags (additive-blend radial gradient sprites), subtle warm emissive tint on active buildings. AtmosphereController extended with `nightness` field per preset (Dawn:0.3, Morning:0.0, Midday:0.0, GoldenHour:0.2, Evening:0.6, Night:1.0) and `onNightnessUpdate` callback with interpolation. PostProcessing.setBloomStrength() for dynamic night bloom boost (0.3→0.5). 2 instanced draw calls, zero PointLights. 595 tests passing — 2026-03-16
 
+### Building Demolish UI [DONE]
+- [DONE] Add building demolish UI with confirmation dialog and resource refund — 2026-03-17
+
 ### Building Priority Controls in Resource Priority Panel [DONE]
 - [DONE] Per-building importance UI — Collapsible "Target Buildings (N)" section under each resource card in the Resource Priority Panel. Shows human player's active buildings that consume that resource, with 5 tappable amber dots (22px, touch-friendly) for importance 1-5. Multi-instance buildings labeled "#1", "#2". "Also uses" hint for multi-input buildings. Importance is global per-building (changing from one card updates all cards for that building). Reset clears importance. Night mode color variants. 3 files changed: icons.ts (+chevron_right), ResourcePriorityPanel.ts (+115 lines: getConsumingBuildings, renderImportanceDots, toggle/dot event handling), styles.css (+110 lines). Backend already complete in GoodsDistribution.ts. 607 tests passing — 2026-03-17
+
+### Panel Flickering Fix [DONE]
+- [DONE] Fix panel flickering with PanelUpdater dual-path rendering — 2026-03-18
+  - **Root cause**: InfoPanel (500ms), StatsPanel (1000ms), BuildPanel (1000ms) all rebuilt entire DOM via `innerHTML` every tick, destroying and recreating all DOM nodes regardless of what actually changed. Caused visible flickering, scroll position loss, CSS transition re-triggers, and broken hover/focus states.
+  - **Fix**: Created shared `PanelUpdater` class (`src/ui/PanelUpdater.ts`, ~60 lines) with dual-path rendering: compares a structure key each tick — full rebuild only when panel structure changes (rare), targeted value patches via `data-field` attributes otherwise (common). Scroll position preserved on full rebuilds.
+  - **InfoPanel**: `getInfoStructureKey` captures building state, construction resources, production progress visibility, geologist phase, knight count, inventory keys, upgrade states. `updateInfoValues` patches ~25 data-field elements (progress bars, amounts, capacity, upgrade status).
+  - **StatsPanel**: `getStatsStructureKey` captures unit types, building types, constructing flag, knight presence, economy active resources, bottleneck count. `updateStatsValues` patches ~30 fields. Sparklines only redrawn on full rebuilds via `afterRebuild` callback.
+  - **BuildPanel**: Structure key is just `buildFilterCategory`. `updateBuildValues` toggles affordability classes on building buttons and cost pills.
+  - **EconomyPanel**: Added `data-field` attributes to rate spans and bottleneck alert for targeted patching by StatsPanel.
+  - 5 files changed (1 new), 607 tests passing, build clean, lint clean.
 
 ### Logistics Deadlock Fix [DONE]
 - [DONE] Fix game stuck state caused by Castle flag monopolization — 2026-03-17
