@@ -19,16 +19,16 @@ export const BUILDING_SCALE: Record<string, number> = {
   // Medium-large (75-80% fill)
   [BuildingType.Farm]: 0.135,
   [BuildingType.PigFarm]: 0.11,
-  [BuildingType.Warehouse]: 0.09,
+  [BuildingType.Warehouse]: 0.12,
   // Medium (65-75% fill)
   [BuildingType.Sawmill]: 0.17,
   [BuildingType.Windmill]: 0.17,
   [BuildingType.Bakery]: 0.21,
-  [BuildingType.Slaughterhouse]: 0.19,
+  [BuildingType.Slaughterhouse]: 0.16,
   [BuildingType.IronSmelter]: 0.12,
   [BuildingType.ToolmakerWorkshop]: 0.23,
-  [BuildingType.GoldsmithMint]: 0.20,
-  [BuildingType.BlacksmithArmory]: 0.25,
+  [BuildingType.GoldsmithMint]: 0.16,
+  [BuildingType.BlacksmithArmory]: 0.22,
   // Medium-compact (60-65% fill)
   [BuildingType.IronMine]: 0.09,
   [BuildingType.CoalMine]: 0.10,
@@ -38,9 +38,9 @@ export const BUILDING_SCALE: Record<string, number> = {
   // Small (50-60% fill)
   [BuildingType.WoodcutterHut]: 0.29,
   [BuildingType.ForesterHut]: 0.15,
-  [BuildingType.FishermanHut]: 0.09,
+  [BuildingType.FishermanHut]: 0.20,
   [BuildingType.GeologistHut]: 0.18,
-  [BuildingType.GuardHut]: 0.10,
+  [BuildingType.GuardHut]: 0.13,
   // Tall-narrow (50-55% fill)
   [BuildingType.Watchtower]: 0.09,
   // Logistics

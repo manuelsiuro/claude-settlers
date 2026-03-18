@@ -13,7 +13,7 @@ import { getPlayerColor } from './PlayerColors';
 import type { FogOfWarManager } from '../game/FogOfWarManager';
 
 /** Scale for unit models (units are small relative to buildings) */
-const UNIT_SCALE = 0.6;
+const UNIT_SCALE = 0.25;
 
 /** Work animation: bob amplitude and speed */
 const WORK_BOB_AMPLITUDE = 0.03;

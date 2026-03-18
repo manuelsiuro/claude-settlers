@@ -378,7 +378,7 @@ function getDesertPlacements(tile: HexTile): DecorationPlacement[] {
   if (rng() > 0.65) {
     const angle = rng() * Math.PI * 2;
     const dist = rng() * 0.4;
-    const cScale = 1.5 + rng() * 0.7;
+    const cScale = 0.5 + rng() * 0.4;
     placements.push({
       modelName: 'cactus',
       localX: Math.cos(angle) * dist,
