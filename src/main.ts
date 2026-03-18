@@ -9,6 +9,11 @@ import type { SaveData } from './game/SaveLoad';
 import { loadSettings } from './game/SettingsStorage';
 import './ui/styles.css';
 
+// Register service worker for PWA installability
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+
 // UI modules
 import { initSnackbar, showSnackbar } from './ui/Snackbar';
 import { wireNotifications } from './ui/NotificationWiring';
@@ -44,6 +49,7 @@ import {
   hideStatsPanelElement,
 } from './ui/StatsPanel';
 import { initDemolishDialog } from './ui/DemolishDialog';
+import { generateQrSvg } from './ui/QrCode';
 
 // ============================================================
 // Theme initialization (before DOM to avoid FOUC)
@@ -324,6 +330,14 @@ app.innerHTML = `
       <button id="setup-continue-btn" class="btn-outlined setup-start-btn hidden" style="margin-top:8px;">
         Continue Saved Game
       </button>
+      ${__NETWORK_URL__ ? `
+      <div class="setup-qr-section">
+        <div class="setup-qr-divider"></div>
+        <div class="setup-qr-label">Scan to play on mobile</div>
+        <div class="setup-qr-code">${generateQrSvg(__NETWORK_URL__, 3, 2)}</div>
+        <div class="setup-qr-url">${__NETWORK_URL__}</div>
+      </div>
+      ` : ''}
     </div>
   </div>
 `;

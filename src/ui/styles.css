@@ -365,6 +365,15 @@ html, body {
   z-index: 10;
 }
 
+@supports (padding-top: env(safe-area-inset-top)) {
+  .app-bar {
+    padding-top: env(safe-area-inset-top);
+  }
+  #build-fab {
+    bottom: calc(24px + env(safe-area-inset-bottom));
+  }
+}
+
 .app-title {
   margin-left: 8px;
   font-size: 1.125rem;
@@ -1420,6 +1429,55 @@ html[data-theme="night"] .state-destroyed {
 @keyframes scaleIn {
   from { transform: scale(0.9); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
+}
+
+.setup-qr-section {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.setup-qr-divider {
+  width: 40px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-on-surface-faint), transparent);
+  margin: 0 auto 12px;
+}
+
+.setup-qr-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-on-surface-faint);
+  margin-bottom: 8px;
+}
+
+.setup-qr-code {
+  display: inline-block;
+  padding: 8px;
+  background: #ffffff;
+  border-radius: 8px;
+  border: 1px solid var(--color-outline-soft);
+  line-height: 0;
+}
+
+.setup-qr-code svg {
+  width: 100px;
+  height: 100px;
+}
+
+.setup-qr-url {
+  font-size: 0.625rem;
+  color: var(--color-on-surface-faint);
+  margin-top: 6px;
+  font-family: monospace;
+  word-break: break-all;
+}
+
+@media (max-width: 768px) {
+  .setup-qr-section {
+    display: none;
+  }
 }
 
 /* Mobile: bottom sheet panels */
