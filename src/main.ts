@@ -43,6 +43,7 @@ import {
   closePriorityPanel,
   hideStatsPanelElement,
 } from './ui/StatsPanel';
+import { initDemolishDialog } from './ui/DemolishDialog';
 
 // ============================================================
 // Theme initialization (before DOM to avoid FOUC)
@@ -233,6 +234,18 @@ app.innerHTML = `
     </div>
   </div>
 
+  <!-- Demolish Confirmation Dialog -->
+  <div id="demolish-overlay" class="demolish-overlay hidden">
+    <div class="demolish-card">
+      <h3 class="demolish-title">Demolish Building?</h3>
+      <div id="demolish-content"></div>
+      <div class="demolish-actions">
+        <button id="demolish-cancel-btn" class="btn-outlined">Cancel</button>
+        <button id="demolish-confirm-btn" class="btn-filled demolish-confirm-btn">Demolish</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Game Over Overlay -->
   <div id="game-over-overlay" class="game-over-overlay hidden">
     <div class="game-over-card">
@@ -336,6 +349,7 @@ initSnackbar();
 // Init panels — each needs cross-references to close the others
 initStatsPanel(getGame, closeBuildPanel, closeInfoPanel);
 initInfoPanel(getGame, closeBuildPanel, closeStatsPanel, closePriorityPanel);
+initDemolishDialog(getGame);
 initBuildPanel(getGame, closeInfoPanel, closeStatsPanel, closePriorityPanel);
 initGameOverScreen(getGame, stopInfoPanelUpdates, stopStatsPanelUpdates, stopBuildPanelUpdates);
 

@@ -1076,6 +1076,39 @@ html[data-theme="night"] .state-destroyed {
   outline-offset: 2px;
 }
 
+/* Demolish button in info panel */
+.info-demolish-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 12px;
+  border: 2px solid #c62828;
+  border-radius: 8px;
+  background: transparent;
+  color: #c62828;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.info-demolish-btn:hover {
+  background: #c62828;
+  color: #fff;
+}
+
+.info-demolish-btn:active {
+  background: #b71c1c;
+  color: #fff;
+}
+
+.info-demolish-btn:focus-visible {
+  outline: 2px solid #c62828;
+  outline-offset: 2px;
+}
+
 /* ============================================================
    Statistics Panel
    ============================================================ */
@@ -2032,4 +2065,91 @@ html[data-theme="night"] .priority-importance-dot.filled {
   pointer-events: none;
   box-shadow: 0 2px 8px rgba(0,0,0,0.4);
   backdrop-filter: blur(4px);
+}
+
+/* ============================================================
+   Demolish Confirmation Dialog
+   ============================================================ */
+.demolish-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: var(--z-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+
+.demolish-overlay.hidden {
+  display: none;
+}
+
+.demolish-card {
+  background: var(--color-surface);
+  color: var(--color-on-surface);
+  border-radius: 16px;
+  padding: 24px;
+  min-width: 280px;
+  max-width: 360px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.demolish-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0 0 12px;
+}
+
+.demolish-building-name {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+
+.demolish-refund-label {
+  font-size: 0.8125rem;
+  color: var(--color-on-surface-variant);
+  margin: 0 0 6px;
+}
+
+.demolish-refund-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  font-size: 0.8125rem;
+}
+
+.demolish-refund-amount {
+  margin-left: auto;
+  font-weight: 600;
+}
+
+.demolish-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.demolish-confirm-btn {
+  background: #c62828 !important;
+  border-color: #c62828 !important;
+}
+
+.demolish-confirm-btn:hover {
+  background: #b71c1c !important;
+  border-color: #b71c1c !important;
+}
+
+@media (max-width: 480px) {
+  .demolish-card {
+    min-width: 0;
+    width: calc(100% - 32px);
+    max-width: none;
+  }
 }

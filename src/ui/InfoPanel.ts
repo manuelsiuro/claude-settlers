@@ -15,6 +15,7 @@ import {
   canUpgrade,
 } from '../game/BuildingUpgrade';
 import { startAttackTargeting, isAttackModeActive } from './BuildPanel';
+import { showDemolishConfirm } from './DemolishDialog';
 
 let infoPanel: HTMLElement;
 let infoPanelTitle: HTMLElement;
@@ -70,6 +71,12 @@ export function initInfoPanel(
         const building = getGame().getGameState().getBuilding(cancelBtn.dataset.buildingId);
         if (building) renderInfoPanel(building);
       }
+    }
+
+    const demolishBtn = (e.target as HTMLElement).closest('.info-demolish-btn') as HTMLElement | null;
+    if (demolishBtn?.dataset.buildingId) {
+      const building = getGame().getGameState().getBuilding(demolishBtn.dataset.buildingId);
+      if (building) showDemolishConfirm(building);
     }
   });
 }
@@ -414,6 +421,15 @@ function renderInfoPanel(building: Building): void {
       }
     }
     html += '</div>';
+  }
+
+  // Demolish button (non-Castle, human player only)
+  if (building.type !== BuildingType.Castle && building.playerId === getGame().getHumanPlayerId()) {
+    html += `<div class="info-section">
+      <button class="info-demolish-btn" data-building-id="${building.id}">
+        ${icon('delete')} Demolish
+      </button>
+    </div>`;
   }
 
   // Position

@@ -145,6 +145,11 @@ export class BuildingRenderer {
     return this.buildingMeshes.get(buildingId);
   }
 
+  /** Remove building from internal map without disposing (animator handles scene removal) */
+  forgetBuilding(buildingId: string): void {
+    this.buildingMeshes.delete(buildingId);
+  }
+
   /** Enable or disable castShadow on all building meshes */
   setCastShadow(enabled: boolean): void {
     for (const group of this.buildingMeshes.values()) {
