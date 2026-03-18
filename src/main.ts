@@ -324,18 +324,22 @@ app.innerHTML = `
             <option value="3">3 Players</option>
             <option value="4">4 Players</option>
           </select>
+          <div id="setup-player-colors" class="setup-player-colors">
+            <span class="setup-color-dot setup-color-you" style="background:#4488ff;" title="Player 1 (You)"></span>
+          </div>
         </div>
       </div>
 
       <div class="setup-options-row">
         <div class="setup-field">
-          <label class="setup-field-label" for="setup-scenario">Scenario</label>
-          <select id="setup-scenario">
-            <option value="default" selected title="Balanced terrain mix">Default</option>
-            <option value="island" title="More water, land masses surrounded by sea">Island</option>
-            <option value="continent" title="Mostly land, little water">Continent</option>
-            <option value="archipelago" title="Many small islands, lots of water">Archipelago</option>
+          <label class="setup-field-label" for="setup-landscape">Landscape</label>
+          <select id="setup-landscape">
+            <option value="default" selected>Default</option>
+            <option value="island">Island</option>
+            <option value="continent">Continent</option>
+            <option value="archipelago">Archipelago</option>
           </select>
+          <div id="setup-landscape-desc" class="setup-field-desc">Balanced mix of all terrain types</div>
         </div>
 
         <div class="setup-field">
@@ -345,6 +349,36 @@ app.innerHTML = `
             <option value="normal" selected>Normal</option>
             <option value="hard">Hard</option>
           </select>
+          <div id="setup-difficulty-desc" class="setup-field-desc">Balanced AI with mixed economy and military</div>
+        </div>
+      </div>
+
+      <div class="setup-section-toggle" id="setup-victory-toggle">
+        <span class="setup-section-icon">${icon('trophy')}</span>
+        <span class="setup-section-label">Victory Conditions</span>
+        <span class="setup-section-chevron" id="setup-victory-chevron">${icon('chevron_right')}</span>
+      </div>
+      <div id="setup-victory-list" class="setup-victory-list">
+        <div class="setup-victory-item">
+          <span class="setup-victory-icon">${icon('skull')}</span>
+          <div>
+            <div class="setup-victory-name">Elimination</div>
+            <div class="setup-victory-desc">Destroy all enemy castles — last player standing wins</div>
+          </div>
+        </div>
+        <div class="setup-victory-item">
+          <span class="setup-victory-icon">${icon('map')}</span>
+          <div>
+            <div class="setup-victory-name">Domination</div>
+            <div class="setup-victory-desc">Control 75%+ of all claimable land</div>
+          </div>
+        </div>
+        <div class="setup-victory-item">
+          <span class="setup-victory-icon">${icon('crown')}</span>
+          <div>
+            <div class="setup-victory-name">Economic</div>
+            <div class="setup-victory-desc">Accumulate 50+ gold bars across your buildings</div>
+          </div>
         </div>
       </div>
 

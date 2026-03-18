@@ -1798,6 +1798,129 @@ html[data-theme="night"] .state-destroyed {
   word-break: break-all;
 }
 
+.setup-field-desc {
+  font-size: 0.6875rem;
+  color: var(--color-on-surface-faint);
+  margin-top: 4px;
+  line-height: 1.35;
+  min-height: 1.2em;
+}
+
+.setup-player-colors {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-top: 6px;
+}
+
+.setup-color-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.25);
+  display: inline-block;
+}
+
+.setup-section-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  margin-top: 16px;
+  border-radius: 8px;
+  background: var(--color-surface-container);
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+}
+
+.setup-section-toggle:hover {
+  background: var(--color-surface-container-highest);
+}
+
+.setup-section-icon {
+  color: var(--color-medieval-gold);
+  display: inline-flex;
+  align-items: center;
+}
+
+.setup-section-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.setup-section-label {
+  flex: 1;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-on-surface-muted);
+}
+
+.setup-section-chevron {
+  display: inline-flex;
+  align-items: center;
+  color: var(--color-on-surface-faint);
+  transition: transform 0.2s ease;
+}
+
+.setup-section-chevron svg {
+  width: 18px;
+  height: 18px;
+}
+
+.setup-section-toggle.expanded .setup-section-chevron {
+  transform: rotate(90deg);
+}
+
+.setup-victory-list {
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 0 0;
+}
+
+.setup-victory-list.expanded {
+  display: flex;
+}
+
+.setup-victory-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: var(--color-surface-container);
+}
+
+.setup-victory-icon {
+  color: var(--color-medieval-gold);
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.setup-victory-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.setup-victory-name {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-on-surface);
+  line-height: 1.3;
+}
+
+.setup-victory-desc {
+  font-size: 0.6875rem;
+  color: var(--color-on-surface-faint);
+  line-height: 1.35;
+  margin-top: 2px;
+}
+
 @media (max-width: 768px) {
   .setup-qr-section {
     display: none;
