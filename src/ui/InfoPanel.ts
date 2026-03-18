@@ -27,18 +27,15 @@ let updater: PanelUpdater;
 let getGame: () => Game;
 let closeBuildPanelFn: () => void;
 let closeStatsPanelFn: () => void;
-let closePriorityPanelFn: () => void;
 
 export function initInfoPanel(
   getGameFn: () => Game,
   closeBuildPanel: () => void,
   closeStatsPanel: () => void,
-  closePriorityPanel: () => void,
 ): void {
   getGame = getGameFn;
   closeBuildPanelFn = closeBuildPanel;
   closeStatsPanelFn = closeStatsPanel;
-  closePriorityPanelFn = closePriorityPanel;
 
   infoPanel = document.getElementById('info-panel')!;
   infoPanelTitle = document.getElementById('info-panel-title')!;
@@ -702,7 +699,6 @@ export function showInfoPanel(building: Building): void {
   // Close other panels when info panel opens
   closeBuildPanelFn();
   closeStatsPanelFn();
-  closePriorityPanelFn();
 
   // Start live updates (every 500ms)
   stopInfoPanelUpdates();

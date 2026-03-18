@@ -125,6 +125,8 @@ html[data-theme="night"] {
   --z-placement-bar: 15;
   --z-panels: 20;
   --z-fab: 25;
+  --z-toolbar: 26;
+  --z-tooltip: 30;
   --z-game-over: 2500;
   --z-setup: 2600;
 }
@@ -369,8 +371,11 @@ html, body {
   .app-bar {
     padding-top: env(safe-area-inset-top);
   }
-  #build-fab {
+  .build-fab {
     bottom: calc(24px + env(safe-area-inset-bottom));
+  }
+  .build-toolbar {
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
   }
 }
 
@@ -383,12 +388,42 @@ html, body {
   color: var(--color-medieval-brown);
 }
 
-.app-bar-group {
+/* ============================================================
+   Floating Game Controls Bar (below minimap)
+   ============================================================ */
+.game-controls-bar {
+  position: fixed;
+  right: 8px;
+  z-index: var(--z-minimap);
   display: inline-flex;
   align-items: center;
-  background: var(--color-overlay-bg);
-  border-radius: 9999px;
-  padding: 0 2px;
+  background: rgba(0,0,0,0.5);
+  border-radius: 10px;
+  padding: 2px 4px;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+.game-controls-bar .icon-btn {
+  width: 32px;
+  height: 32px;
+  color: rgba(255,255,255,0.85);
+}
+.game-controls-bar .icon-btn:hover {
+  background: rgba(255,255,255,0.15);
+}
+.game-controls-bar .icon-btn svg {
+  width: 18px;
+  height: 18px;
+}
+.game-controls-bar .speed-label {
+  color: rgba(255,255,255,0.85);
+  font-size: 0.6875rem;
+  margin-right: 2px;
+}
+.game-controls-divider {
+  width: 1px;
+  height: 20px;
+  background: rgba(255,255,255,0.2);
   margin: 0 2px;
 }
 
@@ -432,6 +467,95 @@ html, body {
 /* ============================================================
    Build Panel
    ============================================================ */
+/* Stats FAB (mobile only) */
+.stats-fab {
+  position: fixed;
+  bottom: 88px;
+  right: 24px;
+  z-index: var(--z-fab);
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+.stats-fab svg { width: 20px; height: 20px; }
+@media (min-width: 769px) {
+  .stats-fab { display: none !important; }
+}
+
+/* Build FAB (mobile only) */
+.build-fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: var(--z-fab);
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.25);
+}
+
+/* Desktop: hide FABs, show toolbar */
+@media (min-width: 769px) {
+  .build-fab { display: none !important; }
+}
+
+/* Build Toolbar (desktop bottom bar) */
+.build-toolbar {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px 8px;
+  background: var(--color-surface);
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -2px 12px rgba(0,0,0,0.1);
+  z-index: var(--z-toolbar);
+}
+
+/* Mobile: hide toolbar */
+@media (max-width: 768px) {
+  .build-toolbar { display: none !important; }
+}
+
+.build-toolbar-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 14px;
+  border-radius: 12px;
+  border: none;
+  background: transparent;
+  color: var(--color-on-surface-variant);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.build-toolbar-tab svg { width: 22px; height: 22px; }
+.build-toolbar-tab:hover { background: var(--color-icon-btn-hover); }
+.build-toolbar-tab-active {
+  background: var(--color-primary-container);
+  color: var(--color-primary);
+}
+.build-toolbar-label {
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.build-toolbar-divider {
+  width: 1px;
+  height: 28px;
+  background: var(--color-outline-variant);
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
+/* Build Panel */
 .build-panel {
   position: fixed;
   bottom: 88px;
@@ -448,6 +572,18 @@ html, body {
   flex-direction: column;
 }
 
+/* Desktop: wide centered panel above toolbar */
+@media (min-width: 769px) {
+  .build-panel {
+    bottom: 60px;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    width: min(680px, calc(100vw - 32px));
+    max-height: 55vh;
+  }
+}
+
 .build-panel.hidden {
   display: none;
 }
@@ -459,11 +595,28 @@ html, body {
   padding: 12px 16px 8px;
   border-bottom: 1px solid var(--color-outline-variant);
 }
+@media (min-width: 769px) {
+  .build-panel-header { display: none; }
+}
 
 .build-panel-title {
   font-size: 1.125rem;
   font-weight: 600;
   color: var(--color-on-surface);
+}
+
+/* Sticky category tabs (mobile only, inside panel) */
+.build-panel-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-outline-variant);
+  flex-shrink: 0;
+}
+/* Desktop: tabs not needed (toolbar serves as tabs) */
+@media (min-width: 769px) {
+  .build-panel-tabs { display: none; }
 }
 
 .build-panel-content {
@@ -473,6 +626,7 @@ html, body {
   background: var(--color-surface-dim);
 }
 
+/* Category tabs (used inside mobile panel tabs container) */
 .build-category-tabs {
   display: flex;
   gap: 4px;
@@ -499,70 +653,168 @@ html, body {
   border-color: var(--color-primary);
 }
 
-.build-tier {
-  margin-bottom: 8px;
+/* Build Grid (tile layout) */
+.build-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+@media (max-width: 768px) {
+  .build-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
-.build-tier-label {
+.build-grid-tier-label {
+  grid-column: 1 / -1;
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--color-on-surface-variant);
-  padding: 8px 8px 4px;
+  padding: 8px 4px 2px;
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-.build-item {
+/* Compact tile */
+.build-tile {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  width: 100%;
-  min-height: 48px;
-  padding: 10px 14px;
-  margin: 4px 0;
+  align-items: center;
+  text-align: center;
+  padding: 10px 6px 8px;
   border: 1px solid var(--color-card-border);
-  border-left: 3px solid transparent;
   border-radius: 10px;
   background: var(--color-card-bg);
   box-shadow: var(--color-card-shadow);
   cursor: pointer;
-  text-align: left;
-  transition: background 0.15s, box-shadow 0.2s, transform 0.2s;
+  transition: background 0.15s, box-shadow 0.2s, transform 0.15s;
 }
-
-.build-item:hover {
+.build-tile:hover {
   box-shadow: var(--color-card-shadow-hover);
   transform: translateY(-1px);
 }
-
-.build-item:active {
+.build-tile:active {
   background: var(--color-surface-container-highest);
   transform: translateY(0);
 }
-
-.build-item:focus-visible {
+.build-tile:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: -2px;
 }
+.build-tile-disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.build-tile-disabled:hover {
+  box-shadow: var(--color-card-shadow);
+  transform: none;
+}
 
-.build-item-name {
-  font-size: 0.875rem;
+.build-tile-name {
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--color-on-surface);
+  line-height: 1.3;
+  margin-bottom: 4px;
 }
 
-.build-item-desc {
-  font-size: 0.6875rem;
+.build-tile-cost {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 3px;
+  flex-wrap: wrap;
+  font-size: 0.625rem;
+}
+
+/* Expanded detail row (mobile tap-to-expand) */
+.build-tile-expanded {
+  grid-column: 1 / -1;
+  border: 2px solid var(--color-primary);
+  border-radius: 12px;
+  background: var(--color-card-bg);
+  padding: 12px;
+  text-align: left;
+}
+.build-tile-expanded-name {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--color-on-surface);
+  margin-bottom: 4px;
+}
+.build-tile-expanded-desc {
+  font-size: 0.75rem;
   color: var(--color-on-surface-faint);
   line-height: 1.4;
-  margin-top: 2px;
+  margin-bottom: 8px;
+}
+.build-tile-expanded .build-item-section {
+  margin-top: 6px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: var(--color-pill-bg);
+  border: 1px solid var(--color-pill-border);
+  width: 100%;
+}
+.build-tile-place-btn {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 8px;
+  border: none;
+  border-radius: 8px;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.build-tile-place-btn:hover { opacity: 0.9; }
+.build-tile-place-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
-/* Labeled sub-sections inside build cards */
+/* Build Tooltip (desktop hover) */
+.build-tooltip {
+  position: fixed;
+  z-index: var(--z-tooltip);
+  max-width: 280px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--color-surface);
+  color: var(--color-on-surface);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+  pointer-events: none;
+  display: none;
+  font-size: 0.75rem;
+}
+@media (max-width: 768px) {
+  .build-tooltip { display: none !important; }
+}
+.build-tooltip-name {
+  font-size: 0.875rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.build-tooltip-desc {
+  color: var(--color-on-surface-faint);
+  line-height: 1.4;
+  margin-bottom: 6px;
+}
+.build-tooltip .build-item-section {
+  margin-top: 6px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: var(--color-pill-bg);
+  border: 1px solid var(--color-pill-border);
+}
+
+/* Legacy build-item styles (kept for expanded detail + tooltip reuse) */
 .build-item-section {
   margin-top: 6px;
   padding: 6px 8px;
@@ -758,6 +1010,11 @@ html[data-theme="night"] .cost-short {
 
 .placement-bar.hidden {
   display: none;
+}
+@media (max-width: 768px) {
+  .placement-bar {
+    padding-right: 96px;
+  }
 }
 
 .placement-distance {
@@ -1137,8 +1394,75 @@ html[data-theme="night"] .state-destroyed {
   flex-direction: column;
 }
 
+/* Desktop: wide centered panel above toolbar (matches build panel) */
+@media (min-width: 769px) {
+  .stats-panel {
+    top: auto;
+    bottom: 60px;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    width: min(680px, calc(100vw - 32px));
+    max-height: 55vh;
+  }
+}
+
 .stats-panel.hidden {
   display: none;
+}
+
+.stats-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px 8px;
+  border-bottom: 1px solid var(--color-outline-variant);
+}
+@media (min-width: 769px) {
+  .stats-panel-header { display: none; }
+}
+
+.stats-panel-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-on-surface);
+}
+
+.stats-panel-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--color-outline-variant);
+  flex-shrink: 0;
+  overflow-x: auto;
+  background: var(--color-surface);
+}
+
+.stats-tab {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--color-on-surface-variant);
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+.stats-tab svg { width: 16px; height: 16px; }
+.stats-tab:hover { background: var(--color-icon-btn-hover); }
+.stats-tab-active {
+  background: var(--color-primary-container);
+  color: var(--color-primary);
+}
+.stats-tab-count {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 0.6875rem;
 }
 
 /* ============================================================
@@ -1493,10 +1817,10 @@ html[data-theme="night"] .state-destroyed {
     top: auto !important;
     width: 100% !important;
     max-width: 100% !important;
-    max-height: 50vh;
+    max-height: 55vh;
     border-radius: 16px 16px 0 0;
-    overflow-y: auto;
-    transform: translateY(0);
+    overflow: hidden;
+    transform: translateY(0) translateX(0) !important;
     transition: transform 0.3s ease;
   }
 
@@ -1533,6 +1857,10 @@ html[data-theme="night"] .state-destroyed {
     font-size: 8px;
   }
 
+  .game-controls-bar {
+    right: 4px;
+  }
+
   .game-over-card {
     min-width: auto;
     max-width: calc(100vw - 32px);
@@ -1557,9 +1885,8 @@ html[data-theme="night"] .state-destroyed {
     grid-template-columns: 1fr;
   }
 
-  .build-item {
-    padding: 8px 10px;
-    margin: 3px 0;
+  .build-tile {
+    padding: 8px 4px 6px;
   }
 
   .info-section {

@@ -93,7 +93,6 @@ export function initAppBar(
   const muteBtn = document.getElementById('mute-btn')!;
   const muteIconOn = document.getElementById('mute-icon-on')!;
   const muteIconOff = document.getElementById('mute-icon-off')!;
-  const musicBtn = document.getElementById('music-btn')!;
   const volMaster = document.getElementById('vol-master') as HTMLInputElement;
   const volSfx = document.getElementById('vol-sfx') as HTMLInputElement;
   const volMusic = document.getElementById('vol-music') as HTMLInputElement;
@@ -103,25 +102,10 @@ export function initAppBar(
     muteIconOff.classList.toggle('hidden', !audioManager.muted);
   }
 
-  function updateMusicUI(): void {
-    musicBtn.style.opacity = audioManager.isMusicPlaying ? '1' : '0.5';
-  }
-
   muteBtn.addEventListener('click', () => {
     audioManager.muted = !audioManager.muted;
     updateMuteUI();
-    updateMusicUI();
     persistCurrentSettings();
-  });
-
-  musicBtn.addEventListener('click', () => {
-    if (audioManager.muted) return;
-    if (audioManager.isMusicPlaying) {
-      audioManager.stopMusic();
-    } else {
-      audioManager.startMusic();
-    }
-    updateMusicUI();
   });
 
   function persistCurrentSettings(): void {
@@ -263,5 +247,49 @@ export function initAppBar(
       console.error('Download save failed:', err);
       showSnackbar('Failed to download save', 'error');
     }
+  }
+}
+
+let controlsBarObserver: ResizeObserver | null = null;
+let controlsBarMutationObserver: MutationObserver | null = null;
+
+function positionControlsBar(
+  bar: HTMLElement,
+  minimapContainer: HTMLElement,
+): void {
+  // Find the cycle widget (positioned below minimap)
+  const cycleWidget = document.querySelector('.cycle-widget') as HTMLElement | null;
+  const cycleVisible = cycleWidget && !cycleWidget.classList.contains('hidden');
+
+  let bottomRef: number;
+  if (cycleVisible) {
+    bottomRef = cycleWidget.getBoundingClientRect().bottom;
+  } else {
+    bottomRef = minimapContainer.getBoundingClientRect().bottom;
+  }
+  bar.style.top = `${bottomRef + 4}px`;
+}
+
+/** Set up dynamic positioning of the floating game controls bar below the minimap/cycle widget */
+export function setupGameControlsPosition(minimapContainer: HTMLElement): void {
+  // Clean up previous observers
+  controlsBarObserver?.disconnect();
+  controlsBarMutationObserver?.disconnect();
+
+  const bar = document.getElementById('game-controls-bar');
+  if (!bar) return;
+
+  const reposition = () => positionControlsBar(bar, minimapContainer);
+  reposition();
+
+  // Reposition when minimap resizes
+  controlsBarObserver = new ResizeObserver(reposition);
+  controlsBarObserver.observe(minimapContainer);
+
+  // Watch for cycle widget visibility changes (class changes)
+  controlsBarMutationObserver = new MutationObserver(reposition);
+  const cycleWidget = document.querySelector('.cycle-widget');
+  if (cycleWidget) {
+    controlsBarMutationObserver.observe(cycleWidget, { attributes: true, attributeFilter: ['class'] });
   }
 }

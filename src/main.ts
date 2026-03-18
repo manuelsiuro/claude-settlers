@@ -19,7 +19,7 @@ import { initSnackbar, showSnackbar } from './ui/Snackbar';
 import { wireNotifications } from './ui/NotificationWiring';
 import { initGameOverScreen, showGameOver } from './ui/GameOverScreen';
 import { initSetupScreen, handleLoadFromFile } from './ui/SetupScreen';
-import { initAppBar, updatePauseSpeedUI } from './ui/AppBar';
+import { initAppBar, updatePauseSpeedUI, setupGameControlsPosition } from './ui/AppBar';
 import {
   initBuildPanel,
   toggleBuildPanel,
@@ -44,8 +44,6 @@ import {
   showStatsPanel,
   closeStatsPanel,
   stopStatsPanelUpdates,
-  showPriorityPanel,
-  closePriorityPanel,
   hideStatsPanelElement,
 } from './ui/StatsPanel';
 import { initDemolishDialog } from './ui/DemolishDialog';
@@ -154,22 +152,6 @@ app.innerHTML = `
     <header class="app-bar" id="app-bar">
       <button class="icon-btn" id="menu-btn" title="Menu">${icon('menu')}</button>
       <span class="app-title">${icon('crown', 'app-title-crown')} Feudal Realm Manager</span>
-      <div style="flex:1"></div>
-      <div class="app-bar-group">
-        <button class="icon-btn" id="pause-btn" title="Pause / Resume (Space)">
-          <span id="pause-icon">${icon('pause')}</span>
-          <span id="play-icon" class="hidden">${icon('play_arrow')}</span>
-        </button>
-        <button class="icon-btn" id="speed-btn" title="Game speed">${icon('fast_forward')}</button>
-        <span id="speed-label" class="speed-label">1x</span>
-      </div>
-      <div class="app-bar-group">
-        <button class="icon-btn" id="mute-btn" title="Toggle sound">
-          <span id="mute-icon-on">${icon('volume_up')}</span>
-          <span id="mute-icon-off" class="hidden">${icon('volume_off')}</span>
-        </button>
-        <button class="icon-btn" id="music-btn" title="Toggle music" style="opacity:0.5">${icon('music_note')}</button>
-      </div>
     </header>
     <div id="game-container"></div>
   </div>
@@ -177,8 +159,54 @@ app.innerHTML = `
   <!-- Minimap -->
   <div id="minimap-container" class="minimap-container"></div>
 
-  <!-- Build FAB -->
-  <button id="build-fab" class="btn-filled" style="position:fixed;bottom:24px;right:24px;z-index:var(--z-fab);width:56px;height:56px;border-radius:16px;box-shadow:0 3px 12px rgba(0,0,0,0.25);">
+  <!-- Floating Game Controls (below minimap) -->
+  <div id="game-controls-bar" class="game-controls-bar">
+    <button class="icon-btn" id="pause-btn" title="Pause / Resume (Space)">
+      <span id="pause-icon">${icon('pause')}</span>
+      <span id="play-icon" class="hidden">${icon('play_arrow')}</span>
+    </button>
+    <button class="icon-btn" id="speed-btn" title="Game speed">${icon('fast_forward')}</button>
+    <span id="speed-label" class="speed-label">1x</span>
+    <div class="game-controls-divider"></div>
+    <button class="icon-btn" id="mute-btn" title="Toggle sound">
+      <span id="mute-icon-on">${icon('volume_up')}</span>
+      <span id="mute-icon-off" class="hidden">${icon('volume_off')}</span>
+    </button>
+  </div>
+
+  <!-- Build Toolbar (desktop only) -->
+  <div id="build-toolbar" class="build-toolbar">
+    <button class="build-toolbar-tab" data-category="all" title="All">
+      ${icon('construction')}<span class="build-toolbar-label">All</span>
+    </button>
+    <button class="build-toolbar-tab" data-category="gathering" title="Economy">
+      ${icon('hammer')}<span class="build-toolbar-label">Economy</span>
+    </button>
+    <button class="build-toolbar-tab" data-category="processing" title="Processing">
+      ${icon('settings')}<span class="build-toolbar-label">Processing</span>
+    </button>
+    <button class="build-toolbar-tab" data-category="military" title="Military">
+      ${icon('shield_icon')}<span class="build-toolbar-label">Military</span>
+    </button>
+    <button class="build-toolbar-tab" data-category="logistics" title="Logistics">
+      ${icon('warehouse')}<span class="build-toolbar-label">Logistics</span>
+    </button>
+    <div class="build-toolbar-divider"></div>
+    <button class="build-toolbar-tab" data-panel="stats" title="Statistics">
+      ${icon('bar_chart')}<span class="build-toolbar-label">Stats</span>
+    </button>
+    <button class="build-toolbar-tab" data-panel="priority" title="Priority">
+      ${icon('tune')}<span class="build-toolbar-label">Priority</span>
+    </button>
+  </div>
+
+  <!-- Stats FAB (mobile only) -->
+  <button id="stats-fab" class="btn-filled stats-fab">
+    ${icon('bar_chart')}
+  </button>
+
+  <!-- Build FAB (mobile only) -->
+  <button id="build-fab" class="btn-filled build-fab">
     ${icon('construction')}
   </button>
 
@@ -188,8 +216,12 @@ app.innerHTML = `
       <span class="build-panel-title">Build</span>
       <button class="icon-btn" id="build-close-btn">${icon('close')}</button>
     </div>
+    <div id="build-panel-tabs" class="build-panel-tabs"></div>
     <div id="build-panel-content" class="build-panel-content"></div>
   </div>
+
+  <!-- Build Tooltip (desktop hover) -->
+  <div id="build-tooltip" class="build-tooltip"></div>
 
   <!-- Building Info Panel (shown when a building is selected) -->
   <div id="info-panel" class="info-panel hidden">
@@ -200,22 +232,14 @@ app.innerHTML = `
     <div id="info-panel-content" class="info-panel-content"></div>
   </div>
 
-  <!-- Statistics Panel -->
+  <!-- Statistics Panel (tabbed: resources, pop, buildings, military, economy, priority) -->
   <div id="stats-panel" class="stats-panel hidden">
-    <div class="info-panel-header">
-      <span class="info-panel-title">Statistics</span>
+    <div class="stats-panel-header">
+      <span class="stats-panel-title">Statistics</span>
       <button class="icon-btn" id="stats-close-btn">${icon('close')}</button>
     </div>
+    <div id="stats-panel-tabs" class="stats-panel-tabs"></div>
     <div id="stats-panel-content" class="info-panel-content"></div>
-  </div>
-
-  <!-- Resource Priority Panel -->
-  <div id="priority-panel" class="stats-panel hidden">
-    <div class="info-panel-header">
-      <span class="info-panel-title">Resource Priority</span>
-      <button class="icon-btn" id="priority-close-btn">${icon('close')}</button>
-    </div>
-    <div id="priority-panel-content" class="info-panel-content"></div>
   </div>
 
   <!-- Placement Info Bar -->
@@ -362,16 +386,16 @@ initSnackbar();
 
 // Init panels — each needs cross-references to close the others
 initStatsPanel(getGame, closeBuildPanel, closeInfoPanel);
-initInfoPanel(getGame, closeBuildPanel, closeStatsPanel, closePriorityPanel);
+initInfoPanel(getGame, closeBuildPanel, closeStatsPanel);
 initDemolishDialog(getGame);
-initBuildPanel(getGame, closeInfoPanel, closeStatsPanel, closePriorityPanel);
+initBuildPanel(getGame, closeInfoPanel, closeStatsPanel);
 initGameOverScreen(getGame, stopInfoPanelUpdates, stopStatsPanelUpdates, stopBuildPanelUpdates);
 
 initAppBar(
   () => game,
   toggleBuildPanel,
   showStatsPanel,
-  () => showPriorityPanel(game),
+  () => showStatsPanel('priority'),
   () => handleLoadFromFile(startGame),
 );
 
@@ -526,6 +550,7 @@ async function startGame(config: Partial<GameConfig>, savedData?: SaveData): Pro
   const minimapContainer = document.getElementById('minimap-container')!;
   currentMinimap = new Minimap(game, minimapContainer);
   initDayCycleWidget(getGame, minimapContainer);
+  setupGameControlsPosition(minimapContainer);
 
   populateBuildPanel();
 }

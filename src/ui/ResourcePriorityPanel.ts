@@ -79,12 +79,8 @@ function renderImportanceDots(buildingId: string, importance: number): string {
   return `<span class="priority-importance-dots">${dots}</span>`;
 }
 
-/**
- * Render the resource priority panel content.
- * Shows sliders for production/construction/storage weights per resource,
- * plus collapsible building importance controls.
- */
-export function renderPriorityPanel(contentEl: HTMLElement, game: Game): void {
+/** Returns HTML string for the priority panel (no DOM mutation) */
+export function renderPriorityHTML(game: Game): string {
   const settings = game.getDistributionSettings();
 
   // Show resources that have economy activity or non-default weights
@@ -159,7 +155,12 @@ export function renderPriorityPanel(contentEl: HTMLElement, game: Game): void {
 
   html += `<button class="btn-outlined priority-reset-btn">Reset to Defaults</button>`;
 
-  contentEl.innerHTML = html;
+  return html;
+}
+
+/** Attaches event listeners to already-rendered priority content */
+export function attachPriorityListeners(contentEl: HTMLElement, game: Game): void {
+  const settings = game.getDistributionSettings();
 
   // Attach slider event listeners
   const cards = contentEl.querySelectorAll<HTMLElement>('.priority-resource-card');
@@ -258,6 +259,13 @@ export function renderPriorityPanel(contentEl: HTMLElement, game: Game): void {
     settings.resourceCategoryWeights = defaults.resourceCategoryWeights;
     settings.buildingImportance = new Map();
     game.setDistributionSettings(settings);
-    renderPriorityPanel(contentEl, game);
+    contentEl.innerHTML = renderPriorityHTML(game);
+    attachPriorityListeners(contentEl, game);
   });
+}
+
+/** Legacy wrapper: sets innerHTML + attaches listeners */
+export function renderPriorityPanel(contentEl: HTMLElement, game: Game): void {
+  contentEl.innerHTML = renderPriorityHTML(game);
+  attachPriorityListeners(contentEl, game);
 }
