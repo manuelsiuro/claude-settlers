@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { logger } from '../util/Logger';
 
 /** All terrain model names that must be loaded */
 const TERRAIN_MODELS = [
@@ -160,7 +161,7 @@ export class AssetLoader {
         this.normalizeGLTFMaterials(group);
         this.models.set(name, group);
       } catch (err) {
-        console.warn(`Failed to load model "${path}":`, err);
+        logger.warn(`Failed to load model "${path}":`, err);
       }
     });
 

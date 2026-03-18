@@ -8,6 +8,7 @@ import type { GameConfig } from './GameConfig';
 import type { VictoryResult } from './VictoryManager';
 import type { GameState } from './GameState';
 import type { RoadNetwork } from './RoadNetwork';
+import { logger } from '../util/Logger';
 import type { ConstructionManager } from './ConstructionManager';
 import type { TransporterManager } from './TransporterManager';
 import type { UnitManager } from './UnitManager';
@@ -407,7 +408,7 @@ export function saveToLocalStorage(data: SaveData): void {
     const json = JSON.stringify(data);
     localStorage.setItem(STORAGE_KEY, json);
   } catch (err) {
-    console.warn('Failed to save game to localStorage:', err);
+    logger.warn('Failed to save game to localStorage:', err);
     throw new Error('Save failed: storage quota exceeded or unavailable');
   }
 }
@@ -421,12 +422,12 @@ export function loadFromLocalStorage(): SaveData | null {
     if (!json) return null;
     const data = JSON.parse(json) as SaveData;
     if (data.version < 3 || data.version > SAVE_VERSION) {
-      console.warn(`Save version mismatch: expected ${SAVE_VERSION}, got ${data.version}`);
+      logger.warn(`Save version mismatch: expected ${SAVE_VERSION}, got ${data.version}`);
       return null;
     }
     return data;
   } catch (err) {
-    console.warn('Failed to load game from localStorage:', err);
+    logger.warn('Failed to load game from localStorage:', err);
     return null;
   }
 }
@@ -478,13 +479,13 @@ export function loadFromFile(): Promise<SaveData | null> {
         const text = await file.text();
         const data = JSON.parse(text) as SaveData;
         if (data.version < 3 || data.version > SAVE_VERSION) {
-          console.warn(`Save version mismatch: expected ${SAVE_VERSION}, got ${data.version}`);
+          logger.warn(`Save version mismatch: expected ${SAVE_VERSION}, got ${data.version}`);
           resolve(null);
           return;
         }
         resolve(data);
       } catch (err) {
-        console.warn('Failed to parse save file:', err);
+        logger.warn('Failed to parse save file:', err);
         resolve(null);
       }
     };

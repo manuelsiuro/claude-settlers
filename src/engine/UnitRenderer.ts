@@ -8,6 +8,7 @@ import { assetLoader } from './AssetLoader';
 import type { ResourceModelName } from './AssetLoader';
 import { UNIT_MODEL_MAP } from './UnitModels';
 import { MapRenderer } from './MapRenderer';
+import { logger } from '../util/Logger';
 import { getPlayerColor } from './PlayerColors';
 import type { FogOfWarManager } from '../game/FogOfWarManager';
 
@@ -74,7 +75,7 @@ export class UnitRenderer {
       mesh = assetLoader.getUnitModel(modelName);
     } catch {
       // Model not loaded — skip silently rather than crashing
-      console.warn(`Unit model not found: ${modelName}, skipping unit ${unit.id}`);
+      logger.warn(`Unit model not found: ${modelName}, skipping unit ${unit.id}`);
       return;
     }
     mesh.scale.setScalar(UNIT_SCALE);

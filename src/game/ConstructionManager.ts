@@ -8,6 +8,7 @@ import {
   getInventoryAmount,
 } from './Building';
 import { BUILDING_DEFINITIONS } from './BuildingType';
+import { logger } from '../util/Logger';
 import type { GameState } from './GameState';
 import type { Unit } from './Unit';
 import { UnitState, setUnitPath } from './Unit';
@@ -140,7 +141,7 @@ export class ConstructionManager {
         setUnitPath(builder, path);
         builder.state = UnitState.WalkingToWork;
       } else {
-        console.warn(
+        logger.warn(
           `[ConstructionManager] No path to building ${building.id} at (${building.coord.q},${building.coord.r})`,
         );
         this.gameState.unassignWorker(builder.id);

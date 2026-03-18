@@ -14,6 +14,7 @@ let placementBar: HTMLElement;
 let placementLabel: HTMLElement;
 let placementDistanceEl: HTMLElement;
 let buildPanelUpdateInterval: ReturnType<typeof setInterval> | null = null;
+let keydownHandler: ((e: KeyboardEvent) => void) | null = null;
 let updater: PanelUpdater;
 
 /** Current build panel filter category */
@@ -89,7 +90,7 @@ export function initBuildPanel(
   });
 
   // Building hotkeys (only when build panel is open)
-  document.addEventListener('keydown', (e) => {
+  keydownHandler = (e: KeyboardEvent) => {
     if (buildPanel.classList.contains('hidden')) return;
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
     const HOTKEYS: Record<string, BuildingType> = {
@@ -109,7 +110,8 @@ export function initBuildPanel(
         startPlacement(type);
       }
     }
-  });
+  };
+  document.addEventListener('keydown', keydownHandler);
 }
 
 /** Get total available resources across Castle + Warehouses for the human player */
@@ -326,6 +328,15 @@ export function stopBuildPanelUpdates(): void {
   if (buildPanelUpdateInterval !== null) {
     clearInterval(buildPanelUpdateInterval);
     buildPanelUpdateInterval = null;
+  }
+}
+
+/** Clean up BuildPanel event listeners and update interval */
+export function disposeBuildPanel(): void {
+  stopBuildPanelUpdates();
+  if (keydownHandler) {
+    document.removeEventListener('keydown', keydownHandler);
+    keydownHandler = null;
   }
 }
 

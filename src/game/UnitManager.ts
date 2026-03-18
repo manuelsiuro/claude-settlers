@@ -6,6 +6,7 @@ import { UnitState, setUnitPath, clearUnitPath } from './Unit';
 import { UNIT_DEFINITIONS, WORKER_TO_UNIT_TYPE, UnitType } from './UnitType';
 import { findPath } from './Pathfinding';
 import { getMaxWorkers } from './BuildingUpgrade';
+import { logger } from '../util/Logger';
 
 /**
  * Manages unit spawning, job assignment, and movement updates.
@@ -116,7 +117,7 @@ export class UnitManager {
         setUnitPath(unit, path);
         unit.state = UnitState.WalkingToWork;
       } else {
-        console.warn(
+        logger.warn(
           `[UnitManager] No path from Castle (${castle.coord.q},${castle.coord.r}) to ${def.label} (${building.coord.q},${building.coord.r}) — unit ${unit.id} stays idle`,
         );
         unit.state = UnitState.Idle;
@@ -239,7 +240,7 @@ export class UnitManager {
   sendHome(unit: Unit): void {
     const castle = this.gameState.findCastle(unit.playerId);
     if (!castle) {
-      console.warn(`[UnitManager] No castle found for player ${unit.playerId} — unit ${unit.id} cannot go home`);
+      logger.warn(`[UnitManager] No castle found for player ${unit.playerId} — unit ${unit.id} cannot go home`);
       this.gameState.unassignWorker(unit.id);
       unit.state = UnitState.Idle;
       return;
@@ -256,7 +257,7 @@ export class UnitManager {
       setUnitPath(unit, path);
       unit.state = UnitState.WalkingHome;
     } else {
-      console.warn(
+      logger.warn(
         `[UnitManager] No path from unit ${unit.id} (${unit.coord.q},${unit.coord.r}) to Castle — unit stays idle`,
       );
       unit.state = UnitState.Idle;

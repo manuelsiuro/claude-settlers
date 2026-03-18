@@ -1,6 +1,6 @@
 import { BuildingType, BUILDING_DEFINITIONS } from './BuildingType';
 import type { BuildingDefinition } from './BuildingType';
-import type { ResourceType } from './ResourceType';
+import { ResourceType } from './ResourceType';
 import type { HexCoord } from './HexGrid';
 import { getEffectiveStorageCapacity } from './BuildingUpgrade';
 
@@ -199,13 +199,25 @@ export function getInventoryAmount(
  * Provides enough to build basic Tier 1 buildings and get the economy started.
  */
 export const CASTLE_STARTING_RESOURCES: { resource: ResourceType; amount: number }[] = [
-  { resource: 'wood' as ResourceType, amount: 12 },
-  { resource: 'stone' as ResourceType, amount: 8 },
-  { resource: 'planks' as ResourceType, amount: 6 },
-  { resource: 'tools' as ResourceType, amount: 4 },
-  { resource: 'fish' as ResourceType, amount: 4 },
-  { resource: 'bread' as ResourceType, amount: 4 },
+  { resource: ResourceType.Wood, amount: 12 },
+  { resource: ResourceType.Stone, amount: 8 },
+  { resource: ResourceType.Planks, amount: 6 },
+  { resource: ResourceType.Tools, amount: 4 },
+  { resource: ResourceType.Fish, amount: 4 },
+  { resource: ResourceType.Bread, amount: 4 },
 ];
+
+// DEBUG: Uncomment to start with abundant resources for testing
+// export const DEBUG_CASTLE_STARTING_RESOURCES: { resource: ResourceType; amount: number }[] = [
+//   { resource: ResourceType.Wood, amount: 50 },
+//   { resource: ResourceType.Stone, amount: 50 },
+//   { resource: ResourceType.Planks, amount: 50 },
+//   { resource: ResourceType.Tools, amount: 50 },
+//   { resource: ResourceType.Fish, amount: 50 },
+//   { resource: ResourceType.IronBars, amount: 50 },
+//   { resource: ResourceType.Swords, amount: 50 },
+//   { resource: ResourceType.Shields, amount: 50 },
+// ];
 
 /** Initialize a Castle building with starting resources */
 export function initializeCastleResources(castle: Building): void {
