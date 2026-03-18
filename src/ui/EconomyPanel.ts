@@ -19,7 +19,7 @@ export function renderEconomySection(tracker: EconomyTracker): string {
   // Bottleneck alert
   if (bottlenecks.length > 0) {
     const names = bottlenecks.map(r => RESOURCE_PROPERTIES[r].label).join(', ');
-    html += `<div class="economy-bottleneck-alert">Shortages: ${names}</div>`;
+    html += `<div class="economy-bottleneck-alert" data-field="econ-bottleneck">Shortages: ${names}</div>`;
   }
 
   // Per-resource rates
@@ -29,8 +29,8 @@ export function renderEconomySection(tracker: EconomyTracker): string {
     const net = tracker.getNetBalance(r);
     const props = RESOURCE_PROPERTIES[r];
 
-    const prodStr = prod > 0 ? `<span class="economy-rate-positive">+${prod.toFixed(1)}</span>` : '';
-    const consStr = cons > 0 ? `<span class="economy-rate-negative">-${cons.toFixed(1)}</span>` : '';
+    const prodStr = prod > 0 ? `<span class="economy-rate-positive" data-field="econ-${r}-prod">+${prod.toFixed(1)}</span>` : '';
+    const consStr = cons > 0 ? `<span class="economy-rate-negative" data-field="econ-${r}-cons">-${cons.toFixed(1)}</span>` : '';
     const netClass = net >= 0 ? 'economy-net-positive' : 'economy-net-negative';
     const netSign = net >= 0 ? '+' : '';
 
@@ -38,7 +38,7 @@ export function renderEconomySection(tracker: EconomyTracker): string {
       <span class="info-resource-name">${resourceIcon(r)} ${props.label}</span>
       <span style="display:flex;align-items:center;gap:6px;">
         ${prodStr}${consStr}
-        <span class="${netClass}">${netSign}${net.toFixed(1)}</span>
+        <span class="${netClass}" data-field="econ-${r}-net">${netSign}${net.toFixed(1)}</span>
         <canvas class="economy-sparkline" data-resource="${r}" width="60" height="20"></canvas>
       </span>
     </div>`;

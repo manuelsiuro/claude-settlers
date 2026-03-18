@@ -16,11 +16,13 @@ import {
 } from '../game/BuildingUpgrade';
 import { startAttackTargeting, isAttackModeActive } from './BuildPanel';
 import { showDemolishConfirm } from './DemolishDialog';
+import { PanelUpdater } from './PanelUpdater';
 
 let infoPanel: HTMLElement;
 let infoPanelTitle: HTMLElement;
 let infoPanelContent: HTMLElement;
 let infoPanelUpdateInterval: ReturnType<typeof setInterval> | null = null;
+let updater: PanelUpdater;
 
 let getGame: () => Game;
 let closeBuildPanelFn: () => void;
@@ -41,6 +43,7 @@ export function initInfoPanel(
   infoPanel = document.getElementById('info-panel')!;
   infoPanelTitle = document.getElementById('info-panel-title')!;
   infoPanelContent = document.getElementById('info-panel-content')!;
+  updater = new PanelUpdater(infoPanelContent);
   const infoCloseBtn = document.getElementById('info-close-btn')!;
 
   infoCloseBtn.addEventListener('click', closeInfoPanel);
@@ -60,7 +63,14 @@ export function initInfoPanel(
       );
       if (ok) {
         const building = getGame().getGameState().getBuilding(upgradeBtn.dataset.buildingId);
-        if (building) renderInfoPanel(building);
+        if (building) {
+          updater.reset();
+          updater.update(
+            getInfoStructureKey(building),
+            () => generateInfoHTML(building),
+            () => updateInfoValues(building),
+          );
+        }
       }
     }
 
@@ -69,7 +79,14 @@ export function initInfoPanel(
       const cancelled = getGame().getUpgradeManager().cancelUpgrade(cancelBtn.dataset.buildingId);
       if (cancelled) {
         const building = getGame().getGameState().getBuilding(cancelBtn.dataset.buildingId);
-        if (building) renderInfoPanel(building);
+        if (building) {
+          updater.reset();
+          updater.update(
+            getInfoStructureKey(building),
+            () => generateInfoHTML(building),
+            () => updateInfoValues(building),
+          );
+        }
       }
     }
 
@@ -81,8 +98,8 @@ export function initInfoPanel(
   });
 }
 
-/** Format an inventory as HTML list */
-function formatInventory(inventory: ResourceInventory): string {
+/** Format an inventory as HTML list with data-field attributes */
+function formatInventory(inventory: ResourceInventory, fieldPrefix: string): string {
   const entries = Object.entries(inventory).filter(
     ([, amount]) => amount !== undefined && amount > 0,
   );
@@ -92,7 +109,7 @@ function formatInventory(inventory: ResourceInventory): string {
       const props = RESOURCE_PROPERTIES[resource as ResourceType];
       return `<div class="info-resource-row">
         <span class="info-resource-name">${resourceIcon(resource)} ${props?.label ?? resource}</span>
-        <span class="info-resource-amount">${amount}</span>
+        <span class="info-resource-amount" data-field="${fieldPrefix}-${resource}">${amount}</span>
       </div>`;
     })
     .join('');
@@ -114,8 +131,74 @@ function getStateDisplay(state: BuildingState): { label: string; cssClass: strin
   }
 }
 
-/** Build the info panel HTML for a building */
-function renderInfoPanel(building: Building): void {
+/** Get a structure key fingerprint for the building's panel layout */
+function getInfoStructureKey(building: Building): string {
+  const def = BUILDING_DEFINITIONS[building.type];
+  const parts: string[] = [String(building.state)];
+
+  // Construction remaining resource keys
+  if (building.state === BuildingState.Planned || building.state === BuildingState.UnderConstruction) {
+    const remainingKeys = def.cost
+      .filter((c) => (building.constructionDelivered[c.resource] ?? 0) < c.amount)
+      .map((c) => c.resource)
+      .join(',');
+    parts.push('cr:' + remainingKeys);
+  }
+
+  // Production progress bar visibility
+  if (def.production && building.state === BuildingState.Active) {
+    parts.push('pp:' + (building.hasWorker && building.productionProgress > 0 ? '1' : '0'));
+  }
+
+  // Geologist prospecting phase (determines progress bar)
+  if (building.type === BuildingType.GeologistHut && building.state === BuildingState.Active) {
+    const ws = getGame().getGeologistManager().getWorkState(building.id);
+    parts.push('gp:' + (ws?.phase === 'prospecting' ? '1' : '0'));
+  }
+
+  // Knight count (determines number of knight rows + attack button)
+  if (def.knightSlots > 0) {
+    parts.push('k:' + building.knightIds.length);
+  }
+
+  // Inventory resource keys present
+  const inKeys = Object.entries(building.inputInventory)
+    .filter(([, v]) => v !== undefined && v > 0)
+    .map(([k]) => k).sort().join(',');
+  const outKeys = Object.entries(building.outputInventory)
+    .filter(([, v]) => v !== undefined && v > 0)
+    .map(([k]) => k).sort().join(',');
+  parts.push('i:' + inKeys, 'o:' + outKeys);
+
+  // Upgrade states per axis
+  const upgradeSpec = BUILDING_UPGRADES[building.type];
+  if (upgradeSpec && building.state === BuildingState.Active) {
+    for (const axis of [UpgradeAxis.Storage, UpgradeAxis.Production, UpgradeAxis.Workers]) {
+      const config = upgradeSpec[axis];
+      if (!config) continue;
+      const level = building.upgradeLevels?.[axis] ?? 0;
+      let uState = 'idle';
+      if (building.activeUpgrade?.axis === axis) {
+        const cost = getUpgradeCost(building.type, axis, level);
+        const allDelivered = cost ? cost.every((c) => {
+          const delivered = getInventoryAmount(building.activeUpgrade!.resourcesDelivered, c.resource);
+          return delivered >= c.amount;
+        }) : true;
+        uState = allDelivered ? 'bld' : 'gth';
+      } else if (level >= config.maxLevel) {
+        uState = 'max';
+      } else if (canUpgrade(building, axis)) {
+        uState = 'can';
+      }
+      parts.push(`u${axis}:${level}:${uState}`);
+    }
+  }
+
+  return parts.join('|');
+}
+
+/** Generate the info panel HTML string for a building */
+function generateInfoHTML(building: Building): string {
   const def = BUILDING_DEFINITIONS[building.type];
   const stateDisplay = getStateDisplay(building.state);
 
@@ -125,7 +208,7 @@ function renderInfoPanel(building: Building): void {
   html += `<div class="info-section">
     <div class="info-row">
       <span class="info-label">Status</span>
-      <span class="info-value ${stateDisplay.cssClass}">${stateDisplay.label}</span>
+      <span class="info-value ${stateDisplay.cssClass}" data-field="status-label">${stateDisplay.label}</span>
     </div>`;
 
   // Construction progress
@@ -136,10 +219,10 @@ function renderInfoPanel(building: Building): void {
     const pct = Math.round(building.constructionProgress * 100);
     html += `<div class="info-row">
       <span class="info-label">Construction</span>
-      <span class="info-value">${pct}%</span>
+      <span class="info-value" data-field="const-pct">${pct}%</span>
     </div>
     <div class="info-progress-bar">
-      <div class="info-progress-fill" style="width:${pct}%"></div>
+      <div class="info-progress-fill" data-field="const-bar" style="width:${pct}%"></div>
     </div>`;
 
     // Remaining construction resources
@@ -156,7 +239,7 @@ function renderInfoPanel(building: Building): void {
         const props = RESOURCE_PROPERTIES[r.resource];
         html += `<div class="info-resource-row">
           <span class="info-resource-name">${resourceIcon(r.resource)} ${props.label}</span>
-          <span class="info-resource-amount">${r.delivered} / ${r.needed}</span>
+          <span class="info-resource-amount" data-field="const-res-${r.resource}">${r.delivered} / ${r.needed}</span>
         </div>`;
       }
     }
@@ -174,7 +257,7 @@ function renderInfoPanel(building: Building): void {
       <div class="info-section-label">${icon('people')} ${sectionLabel}</div>
       <div class="info-row">
         <span class="info-label">${def.worker}</span>
-        <span class="info-value ${assignedCount >= maxW ? 'state-active' : 'state-planned'}">${assignedCount}/${maxW}</span>
+        <span class="info-value ${assignedCount >= maxW ? 'state-active' : 'state-planned'}" data-field="worker-count">${assignedCount}/${maxW}</span>
       </div>`;
     if (def.workerTool) {
       const toolProps = RESOURCE_PROPERTIES[def.workerTool];
@@ -227,26 +310,26 @@ function renderInfoPanel(building: Building): void {
       const pct = Math.round(building.productionProgress * 100);
       html += `<div class="info-row" style="margin-top:8px">
         <span class="info-label">Progress</span>
-        <span class="info-value">${pct}%</span>
+        <span class="info-value" data-field="prod-pct">${pct}%</span>
       </div>
       <div class="info-progress-bar">
-        <div class="info-progress-fill ${progressColor}" style="width:${pct}%"></div>
+        <div class="info-progress-fill ${progressColor}" data-field="prod-bar" style="width:${pct}%"></div>
       </div>`;
     }
 
     html += `<div class="info-row">
       <span class="info-label">Cycle Time</span>
-      <span class="info-value"${rating ? ` style="color:${rating.color}"` : ''}>${effectiveTime.toFixed(1)}s</span>
+      <span class="info-value" data-field="cycle-time"${rating ? ` style="color:${rating.color}"` : ''}>${effectiveTime.toFixed(1)}s</span>
     </div>`;
     if (rating) {
       const efficiency = Math.round((1 / multiplier) * 100);
       html += `<div class="info-row">
         <span class="info-label">Efficiency</span>
-        <span class="info-value" style="color:${rating.color}">${efficiency}%</span>
+        <span class="info-value" data-field="efficiency" style="color:${rating.color}">${efficiency}%</span>
       </div>
       <div class="info-row">
         <span class="info-label">Resource Distance</span>
-        <span class="info-value" style="color:${rating.color}">${building.resourceDistance} tile${building.resourceDistance !== 1 ? 's' : ''}</span>
+        <span class="info-value" data-field="res-distance" style="color:${rating.color}">${building.resourceDistance} tile${building.resourceDistance !== 1 ? 's' : ''}</span>
       </div>`;
     }
     html += '</div>';
@@ -269,11 +352,11 @@ function renderInfoPanel(building: Building): void {
       <div class="info-section-label">${icon('hammer')} Prospecting</div>
       <div class="info-row">
         <span class="info-label">Status</span>
-        <span class="info-value">${phaseLabel}</span>
+        <span class="info-value" data-field="geo-phase">${phaseLabel}</span>
       </div>
       <div class="info-row">
         <span class="info-label">Tiles prospected</span>
-        <span class="info-value">${prospectedCount}</span>
+        <span class="info-value" data-field="geo-count">${prospectedCount}</span>
       </div>`;
 
     if (ws && ws.phase === 'prospecting') {
@@ -282,8 +365,8 @@ function renderInfoPanel(building: Building): void {
         <span class="info-label">Progress</span>
         <span class="info-value">
           <div style="display:inline-block;width:60px;height:8px;background:#444;border-radius:4px;vertical-align:middle;overflow:hidden">
-            <div style="width:${pct}%;height:100%;background:#4caf50;border-radius:4px"></div>
-          </div> ${pct}%
+            <div data-field="geo-bar" style="width:${pct}%;height:100%;background:#4caf50;border-radius:4px"></div>
+          </div> <span data-field="geo-pct">${pct}%</span>
         </span>
       </div>`;
     }
@@ -297,17 +380,17 @@ function renderInfoPanel(building: Building): void {
       <div class="info-section-label">${icon('shield_icon')} Knights</div>
       <div class="info-row">
         <span class="info-label">Stationed</span>
-        <span class="info-value">${building.knightIds.length} / ${def.knightSlots}</span>
+        <span class="info-value" data-field="knight-stationed">${building.knightIds.length} / ${def.knightSlots}</span>
       </div>`;
 
     if (building.knightIds.length > 0) {
       const gameState = getGame().getGameState();
-      for (const knightId of building.knightIds) {
-        const knight = gameState.getUnit(knightId);
+      for (let i = 0; i < building.knightIds.length; i++) {
+        const knight = gameState.getUnit(building.knightIds[i]);
         if (knight) {
           html += `<div class="info-resource-row">
             <span class="info-resource-name">Knight</span>
-            <span class="info-resource-amount">Rank ${knight.knightRank}</span>
+            <span class="info-resource-amount" data-field="knight-${i}-rank">Rank ${knight.knightRank}</span>
           </div>`;
         }
       }
@@ -330,11 +413,11 @@ function renderInfoPanel(building: Building): void {
     html += `<div class="info-section-label">${icon('warehouse')} Inventory</div>`;
     if (hasInputs) {
       html += '<div class="info-subsection-label">Input</div>';
-      html += formatInventory(building.inputInventory);
+      html += formatInventory(building.inputInventory, 'inv-in');
     }
     if (hasOutputs) {
       html += '<div class="info-subsection-label">Output</div>';
-      html += formatInventory(building.outputInventory);
+      html += formatInventory(building.outputInventory, 'inv-out');
     }
     const effectiveCap = getEffectiveStorageCapacity(building);
     const isStorage = building.type === BuildingType.Castle || building.type === BuildingType.Warehouse;
@@ -346,10 +429,10 @@ function renderInfoPanel(building: Building): void {
     html += `<div class="capacity-bar-wrapper">
       <div class="capacity-bar-label">
         <span class="info-label">Capacity</span>
-        <span class="info-value">${totalUsed} / ${effectiveCap}</span>
+        <span class="info-value" data-field="capacity-used">${totalUsed} / ${effectiveCap}</span>
       </div>
       <div class="capacity-bar-track">
-        <div class="capacity-bar-fill ${barClass}" style="width:${pct}%"></div>
+        <div class="capacity-bar-fill ${barClass}" data-field="capacity-bar" style="width:${pct}%"></div>
       </div>
     </div>`;
     html += '</div>';
@@ -386,7 +469,7 @@ function renderInfoPanel(building: Building): void {
 
       html += `<div class="info-row">
         <span class="info-label">${label} Lv.${currentLevel}</span>
-        <span class="info-value">${effectText}</span>
+        <span class="info-value" data-field="upgrade-${axis}-effect">${effectText}</span>
       </div>`;
 
       if (building.activeUpgrade?.axis === axis) {
@@ -401,11 +484,11 @@ function renderInfoPanel(building: Building): void {
             const delivered = getInventoryAmount(building.activeUpgrade!.resourcesDelivered, c.resource);
             return `${delivered}/${c.amount} ${RESOURCE_PROPERTIES[c.resource].label}`;
           });
-          html += `<div class="info-row"><span class="info-label">Gathering</span><span class="info-value">${gatherParts.join(', ')}</span></div>`;
+          html += `<div class="info-row"><span class="info-label">Gathering</span><span class="info-value" data-field="upgrade-gather">${gatherParts.join(', ')}</span></div>`;
         } else {
           const pct = Math.round((building.activeUpgrade.constructionProgress ?? 0) * 100);
-          html += `<div class="info-progress-bar"><div class="info-progress-fill info-progress-upgrade" style="width: ${pct}%"></div></div>`;
-          html += `<div class="info-row"><span class="info-label">Building...</span><span class="info-value">${pct}%</span></div>`;
+          html += `<div class="info-progress-bar"><div class="info-progress-fill info-progress-upgrade" data-field="upgrade-const-bar" style="width: ${pct}%"></div></div>`;
+          html += `<div class="info-row"><span class="info-label">Building...</span><span class="info-value" data-field="upgrade-const-pct">${pct}%</span></div>`;
         }
         html += `<button class="info-upgrade-cancel-btn" data-building-id="${building.id}">Cancel Upgrade</button>`;
       } else if (canUpgrade(building, axis)) {
@@ -414,7 +497,7 @@ function renderInfoPanel(building: Building): void {
           const castle = getGame().getGameState().findCastle(building.playerId);
           const canAffordUpgrade = castle ? cost.every((c) => getInventoryAmount(castle.outputInventory, c.resource) >= c.amount) : false;
           const costStr = cost.map((c) => `${c.amount} ${RESOURCE_PROPERTIES[c.resource].label}`).join(', ');
-          html += `<button class="info-upgrade-btn" data-building-id="${building.id}" data-axis="${axis}"${canAffordUpgrade ? '' : ' disabled'}>Upgrade (${costStr})</button>`;
+          html += `<button class="info-upgrade-btn" data-field="upgrade-btn-${axis}" data-building-id="${building.id}" data-axis="${axis}"${canAffordUpgrade ? '' : ' disabled'}>Upgrade (${costStr})</button>`;
         }
       } else if (currentLevel >= config.maxLevel) {
         html += `<div class="info-row"><span class="info-label"></span><span class="info-value" style="color: #4caf50;">MAX</span></div>`;
@@ -440,14 +523,180 @@ function renderInfoPanel(building: Building): void {
     </div>
   </div>`;
 
-  infoPanelContent.innerHTML = html;
+  return html;
+}
+
+/** Update dynamic values without rebuilding DOM */
+function updateInfoValues(building: Building): void {
+  const def = BUILDING_DEFINITIONS[building.type];
+
+  // Construction progress
+  if (building.state === BuildingState.Planned || building.state === BuildingState.UnderConstruction) {
+    const pct = Math.round(building.constructionProgress * 100);
+    updater.setText('const-pct', `${pct}%`);
+    updater.setWidth('const-bar', `${pct}%`);
+    for (const c of def.cost) {
+      const delivered = building.constructionDelivered[c.resource] ?? 0;
+      if (delivered < c.amount) {
+        updater.setText(`const-res-${c.resource}`, `${delivered} / ${c.amount}`);
+      }
+    }
+  }
+
+  // Worker count
+  if (def.worker) {
+    const gameState = getGame().getGameState();
+    const primaryWorker = gameState.getWorkerForBuilding(building.id);
+    const maxW = getMaxWorkers(building);
+    const assignedCount = (primaryWorker ? 1 : 0) + (building.extraWorkerIds ?? []).filter((id) => gameState.getUnit(id)).length;
+    updater.setText('worker-count', `${assignedCount}/${maxW}`);
+    updater.setClass('worker-count', `info-value ${assignedCount >= maxW ? 'state-active' : 'state-planned'}`);
+  }
+
+  // Production
+  if (def.production && building.state === BuildingState.Active) {
+    if (building.hasWorker && building.productionProgress > 0) {
+      const multiplier = def.harvestTerrain ? getDistanceMultiplier(building.resourceDistance) : 1;
+      const progressColor = def.harvestTerrain
+        ? (multiplier <= 1.5 ? 'info-progress-perfect' : multiplier <= 2.0 ? 'info-progress-medium' : 'info-progress-poor')
+        : 'info-progress-production';
+      const pct = Math.round(building.productionProgress * 100);
+      updater.setText('prod-pct', `${pct}%`);
+      updater.setWidth('prod-bar', `${pct}%`);
+      updater.setClass('prod-bar', `info-progress-fill ${progressColor}`);
+    }
+
+    const multiplier = def.harvestTerrain ? getDistanceMultiplier(building.resourceDistance) : 1;
+    const speedMult = getProductionSpeedMultiplier(building);
+    const effectiveTime = def.production.productionTime * multiplier * speedMult;
+    updater.setText('cycle-time', `${effectiveTime.toFixed(1)}s`);
+
+    if (def.harvestTerrain) {
+      const efficiency = Math.round((1 / multiplier) * 100);
+      updater.setText('efficiency', `${efficiency}%`);
+      updater.setText('res-distance', `${building.resourceDistance} tile${building.resourceDistance !== 1 ? 's' : ''}`);
+    }
+  }
+
+  // Geologist
+  if (building.type === BuildingType.GeologistHut && building.state === BuildingState.Active) {
+    const geoMgr = getGame().getGeologistManager();
+    const ws = geoMgr.getWorkState(building.id);
+    const phaseLabels: Record<string, string> = {
+      idle_at_hut: 'Idle',
+      walking_to_prospect: 'Walking to site',
+      prospecting: 'Prospecting',
+      walking_to_hut: 'Returning',
+    };
+    updater.setText('geo-phase', ws ? phaseLabels[ws.phase] ?? ws.phase : 'Idle');
+    updater.setText('geo-count', `${ws ? ws.prospectedCount : 0}`);
+    if (ws && ws.phase === 'prospecting') {
+      const pct = Math.min(Math.round(ws.prospectProgress * 100), 100);
+      updater.setWidth('geo-bar', `${pct}%`);
+      updater.setText('geo-pct', `${pct}%`);
+    }
+  }
+
+  // Knights
+  if (def.knightSlots > 0) {
+    updater.setText('knight-stationed', `${building.knightIds.length} / ${def.knightSlots}`);
+    const gameState = getGame().getGameState();
+    for (let i = 0; i < building.knightIds.length; i++) {
+      const knight = gameState.getUnit(building.knightIds[i]);
+      if (knight) {
+        updater.setText(`knight-${i}-rank`, `Rank ${knight.knightRank}`);
+      }
+    }
+  }
+
+  // Inventory amounts
+  for (const [resource, amount] of Object.entries(building.inputInventory)) {
+    if (amount !== undefined && amount > 0) {
+      updater.setText(`inv-in-${resource}`, `${amount}`);
+    }
+  }
+  for (const [resource, amount] of Object.entries(building.outputInventory)) {
+    if (amount !== undefined && amount > 0) {
+      updater.setText(`inv-out-${resource}`, `${amount}`);
+    }
+  }
+
+  // Capacity
+  const hasInventory = Object.values(building.inputInventory).some((v) => v !== undefined && v > 0)
+    || Object.values(building.outputInventory).some((v) => v !== undefined && v > 0);
+  if (hasInventory) {
+    const effectiveCap = getEffectiveStorageCapacity(building);
+    const isStorage = building.type === BuildingType.Castle || building.type === BuildingType.Warehouse;
+    const totalUsed = isStorage
+      ? getInventoryTotal(building.inputInventory) + getInventoryTotal(building.outputInventory)
+      : getInventoryTotal(building.outputInventory);
+    const pct = effectiveCap > 0 ? Math.min(100, Math.round((totalUsed / effectiveCap) * 100)) : 0;
+    const barClass = pct > 85 ? 'capacity-bar-red' : pct > 60 ? 'capacity-bar-amber' : 'capacity-bar-green';
+    updater.setText('capacity-used', `${totalUsed} / ${effectiveCap}`);
+    updater.setWidth('capacity-bar', `${pct}%`);
+    updater.setClass('capacity-bar', `capacity-bar-fill ${barClass}`);
+  }
+
+  // Upgrades
+  const upgradeSpec = BUILDING_UPGRADES[building.type];
+  if (upgradeSpec && building.state === BuildingState.Active && building.playerId === getGame().getHumanPlayerId()) {
+    for (const axis of [UpgradeAxis.Storage, UpgradeAxis.Production, UpgradeAxis.Workers]) {
+      const config = upgradeSpec[axis];
+      if (!config) continue;
+      const currentLevel = building.upgradeLevels?.[axis] ?? 0;
+
+      let effectText = '';
+      if (axis === UpgradeAxis.Storage) {
+        effectText = `${getEffectiveStorageCapacity(building)} cap`;
+      } else if (axis === UpgradeAxis.Production) {
+        const mult = getProductionSpeedMultiplier(building);
+        effectText = mult < 1 ? `${Math.round((1 / mult - 1) * 100)}% faster` : 'Normal';
+      } else if (axis === UpgradeAxis.Workers) {
+        effectText = `${getMaxWorkers(building)} worker${getMaxWorkers(building) > 1 ? 's' : ''}`;
+      }
+      updater.setText(`upgrade-${axis}-effect`, effectText);
+
+      if (building.activeUpgrade?.axis === axis) {
+        const cost = getUpgradeCost(building.type, axis, currentLevel);
+        const allDelivered = cost ? cost.every((c) => {
+          const delivered = getInventoryAmount(building.activeUpgrade!.resourcesDelivered, c.resource);
+          return delivered >= c.amount;
+        }) : true;
+
+        if (!allDelivered && cost) {
+          const gatherParts = cost.map((c) => {
+            const delivered = getInventoryAmount(building.activeUpgrade!.resourcesDelivered, c.resource);
+            return `${delivered}/${c.amount} ${RESOURCE_PROPERTIES[c.resource].label}`;
+          });
+          updater.setText('upgrade-gather', gatherParts.join(', '));
+        } else {
+          const pct = Math.round((building.activeUpgrade.constructionProgress ?? 0) * 100);
+          updater.setWidth('upgrade-const-bar', `${pct}%`);
+          updater.setText('upgrade-const-pct', `${pct}%`);
+        }
+      } else if (canUpgrade(building, axis)) {
+        const cost = getUpgradeCost(building.type, axis, currentLevel);
+        if (cost) {
+          const castle = getGame().getGameState().findCastle(building.playerId);
+          const canAffordUpgrade = castle ? cost.every((c) => getInventoryAmount(castle.outputInventory, c.resource) >= c.amount) : false;
+          const btn = infoPanelContent.querySelector(`[data-field="upgrade-btn-${axis}"]`) as HTMLButtonElement | null;
+          if (btn) btn.disabled = !canAffordUpgrade;
+        }
+      }
+    }
+  }
 }
 
 /** Show the info panel for a building and start live updates */
 export function showInfoPanel(building: Building): void {
   const def = BUILDING_DEFINITIONS[building.type];
   infoPanelTitle.textContent = def.label;
-  renderInfoPanel(building);
+  updater.reset();
+  updater.update(
+    getInfoStructureKey(building),
+    () => generateInfoHTML(building),
+    () => updateInfoValues(building),
+  );
   infoPanel.classList.remove('hidden');
 
   // Close other panels when info panel opens
@@ -460,7 +709,11 @@ export function showInfoPanel(building: Building): void {
   infoPanelUpdateInterval = setInterval(() => {
     const current = getGame().getGameState().getBuilding(building.id);
     if (current) {
-      renderInfoPanel(current);
+      updater.update(
+        getInfoStructureKey(current),
+        () => generateInfoHTML(current),
+        () => updateInfoValues(current),
+      );
     } else {
       closeInfoPanel();
     }
@@ -470,6 +723,7 @@ export function showInfoPanel(building: Building): void {
 export function closeInfoPanel(): void {
   infoPanel.classList.add('hidden');
   stopInfoPanelUpdates();
+  updater.reset();
   if (!isAttackModeActive()) {
     const selection = getGame().getSelectionController();
     if (selection?.selected) {

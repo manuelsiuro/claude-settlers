@@ -6,6 +6,7 @@ import { BuildingState } from '../game/Building';
 import { RESOURCE_PROPERTIES, ResourceType } from '../game/ResourceType';
 import { resourceIcon } from './icons';
 import { showSnackbar } from './Snackbar';
+import { PanelUpdater } from './PanelUpdater';
 
 let buildPanel: HTMLElement;
 let buildContent: HTMLElement;
@@ -13,6 +14,7 @@ let placementBar: HTMLElement;
 let placementLabel: HTMLElement;
 let placementDistanceEl: HTMLElement;
 let buildPanelUpdateInterval: ReturnType<typeof setInterval> | null = null;
+let updater: PanelUpdater;
 
 /** Current build panel filter category */
 let buildFilterCategory: string = 'all';
@@ -42,6 +44,7 @@ export function initBuildPanel(
 
   buildPanel = document.getElementById('build-panel')!;
   buildContent = document.getElementById('build-panel-content')!;
+  updater = new PanelUpdater(buildContent);
   placementBar = document.getElementById('placement-bar')!;
   placementLabel = document.getElementById('placement-label')!;
   placementDistanceEl = document.getElementById('placement-distance')!;
@@ -138,7 +141,7 @@ function canAfford(
   return true;
 }
 
-/** Format cost with availability coloring */
+/** Format cost with availability coloring and data-field attributes */
 function formatCostWithAvailability(
   def: BuildingDefinition,
   available: Partial<Record<ResourceType, number>>,
@@ -149,7 +152,7 @@ function formatCostWithAvailability(
       const have = available[c.resource] ?? 0;
       const ok = have >= c.amount;
       const cssClass = ok ? 'cost-pill cost-pill-ok' : 'cost-pill cost-pill-short';
-      return `<span class="${cssClass}">${resourceIcon(c.resource)} ${RESOURCE_PROPERTIES[c.resource].label} ${c.amount}</span>`;
+      return `<span class="${cssClass}" data-field="cost-${def.type}-${c.resource}">${resourceIcon(c.resource)} ${RESOURCE_PROPERTIES[c.resource].label} ${c.amount}</span>`;
     })
     .join(' ');
 }
@@ -178,8 +181,13 @@ function formatProductionSummary(def: BuildingDefinition): string {
   </div>`;
 }
 
-/** Build the building menu HTML organized by tier */
-export function populateBuildPanel(): void {
+/** Get a structure key for the build panel layout */
+function getBuildStructureKey(): string {
+  return buildFilterCategory;
+}
+
+/** Generate the build panel HTML string */
+function generateBuildHTML(): string {
   const tiers = [
     { tier: 1, label: 'Basic' },
     { tier: 2, label: 'Advanced' },
@@ -236,11 +244,10 @@ export function populateBuildPanel(): void {
     html += `<div class="build-tier" data-tier="${tier}"><div class="build-tier-label"><span class="tier-badge tier-badge-${tier}">${tier}</span> ${label}</div>`;
     for (const def of buildings) {
       const affordable = canAfford(def, available);
-      const disabledClass = affordable ? '' : 'build-item-disabled';
       const prodSummary = formatProductionSummary(def);
       const milInfo = def.knightSlots > 0 ? `<span class="build-item-military">${def.knightSlots} knight slots \u00b7 range ${def.influenceRadius}</span>` : '';
       html += `
-        <button class="build-item ${disabledClass}" data-building-type="${def.type}">
+        <button class="${affordable ? 'build-item' : 'build-item build-item-disabled'}" data-field="build-${def.type}" data-building-type="${def.type}">
           <span class="build-item-name">${def.label}</span>
           <span class="build-item-desc">${def.description}</span>
           <div class="build-item-section">
@@ -260,7 +267,37 @@ export function populateBuildPanel(): void {
     }
     html += '</div>';
   }
-  buildContent.innerHTML = html;
+  return html;
+}
+
+/** Update affordability classes without rebuilding DOM */
+function updateBuildValues(): void {
+  const available = getPlayerResources();
+  const tiers = [1, 2, 3];
+  for (const tier of tiers) {
+    const buildings = getBuildingsByTier(tier).filter((def) => {
+      if (buildFilterCategory === 'all') return true;
+      return def.category === buildFilterCategory;
+    });
+    for (const def of buildings) {
+      const affordable = canAfford(def, available);
+      updater.setClass(`build-${def.type}`, affordable ? 'build-item' : 'build-item build-item-disabled');
+      for (const c of def.cost) {
+        const have = available[c.resource] ?? 0;
+        const ok = have >= c.amount;
+        updater.setClass(`cost-${def.type}-${c.resource}`, ok ? 'cost-pill cost-pill-ok' : 'cost-pill cost-pill-short');
+      }
+    }
+  }
+}
+
+/** Build the building menu HTML organized by tier */
+export function populateBuildPanel(): void {
+  updater.update(
+    getBuildStructureKey(),
+    () => generateBuildHTML(),
+    () => updateBuildValues(),
+  );
 }
 
 /** Open/close the build panel */
@@ -269,6 +306,7 @@ export function toggleBuildPanel(): void {
   buildPanel.classList.toggle('hidden');
   if (wasHidden) {
     cancelAttackTargeting();
+    updater.reset();
     populateBuildPanel();
     closeInfoPanelFn();
     closeStatsPanelFn();
@@ -281,6 +319,7 @@ export function toggleBuildPanel(): void {
 export function closeBuildPanel(): void {
   buildPanel.classList.add('hidden');
   stopBuildPanelUpdates();
+  updater.reset();
 }
 
 export function stopBuildPanelUpdates(): void {
