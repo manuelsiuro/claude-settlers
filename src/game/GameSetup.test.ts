@@ -115,11 +115,9 @@ describe('Game Setup', () => {
       expect(castle1!.playerId).toBe(1);
       expect(castle2!.playerId).toBe(2);
 
-      // Measure toroidal distance — should be well separated
-      const toroidalDist = HexGrid.hexDistanceWrapped(
-        castle1!.coord, castle2!.coord, w, h,
-      );
-      expect(toroidalDist).toBeGreaterThan(8);
+      // Measure distance — should be well separated
+      const dist = HexGrid.hexDistance(castle1!.coord, castle2!.coord);
+      expect(dist).toBeGreaterThan(8);
     });
 
     it('should place castles for 4 players in 2x2 grid pattern', () => {
@@ -149,13 +147,11 @@ describe('Game Setup', () => {
         expect(castle!.playerId).toBe(i);
       }
 
-      // All pairs should have good toroidal separation
+      // All pairs should have good separation
       const castles = [1, 2, 3, 4].map(id => gs.findCastle(id)!);
       for (let i = 0; i < castles.length; i++) {
         for (let j = i + 1; j < castles.length; j++) {
-          const dist = HexGrid.hexDistanceWrapped(
-            castles[i].coord, castles[j].coord, w, h,
-          );
+          const dist = HexGrid.hexDistance(castles[i].coord, castles[j].coord);
           expect(dist).toBeGreaterThan(6);
         }
       }
@@ -219,7 +215,7 @@ describe('Game Setup', () => {
         const halfMap = Math.floor(Math.min(w, h) / 2);
 
         for (const tile of territory) {
-          const dist = HexGrid.hexDistanceWrapped(castle.coord, tile, w, h);
+          const dist = HexGrid.hexDistance(castle.coord, tile);
           expect(dist).toBeLessThanOrEqual(halfMap);
         }
       }
@@ -241,7 +237,7 @@ describe('Game Setup', () => {
       // No territory tile should be more than 5 hexes from the castle
       const maxSafeRadius = Math.floor(Math.min(w, h) / 4) - 1; // 5
       for (const tile of territory) {
-        const dist = HexGrid.hexDistanceWrapped(castle.coord, tile, w, h);
+        const dist = HexGrid.hexDistance(castle.coord, tile);
         expect(dist).toBeLessThanOrEqual(maxSafeRadius);
       }
     });

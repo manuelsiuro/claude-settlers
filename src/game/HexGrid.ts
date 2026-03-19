@@ -123,14 +123,6 @@ export class HexGrid {
   }
 
   /**
-   * @deprecated World wrapping has been removed. Use isInBounds() instead.
-   * Returns coords clamped to bounds for backwards compatibility.
-   */
-  wrap(q: number, r: number): HexCoord {
-    return { q, r };
-  }
-
-  /**
    * Convert axial hex coord to world position (pointy-top).
    *   x = sqrt(3) * (q + r/2) * size
    *   z = 3/2 * r * size
@@ -168,11 +160,6 @@ export class HexGrid {
     return { q: rq, r: rr };
   }
 
-  /** @deprecated World wrapping removed. Returns zero vectors. */
-  getWrapVectors(): { wrapQ: { x: number; z: number }; wrapR: { x: number; z: number } } {
-    return { wrapQ: { x: 0, z: 0 }, wrapR: { x: 0, z: 0 } };
-  }
-
   /**
    * Standard axial hex distance between two coordinates.
    * Uses the cube-coordinate max formula.
@@ -181,14 +168,6 @@ export class HexGrid {
     const dq = a.q - b.q;
     const dr = a.r - b.r;
     return Math.max(Math.abs(dq), Math.abs(dr), Math.abs(dq + dr));
-  }
-
-  /**
-   * @deprecated World wrapping removed. Use hexDistance() instead.
-   */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  static hexDistanceWrapped(a: HexCoord, b: HexCoord, _width: number, _height: number): number {
-    return HexGrid.hexDistance(a, b);
   }
 
   /**

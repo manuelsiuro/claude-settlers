@@ -104,20 +104,20 @@ describe('Pathfinding', () => {
 
   describe('hexDistance', () => {
     it('should return 0 for same position', () => {
-      expect(hexDistance({ q: 3, r: 3 }, { q: 3, r: 3 }, grid)).toBe(0);
+      expect(hexDistance({ q: 3, r: 3 }, { q: 3, r: 3 })).toBe(0);
     });
 
     it('should return 1 for adjacent hexes', () => {
-      expect(hexDistance({ q: 3, r: 3 }, { q: 4, r: 3 }, grid)).toBe(1);
+      expect(hexDistance({ q: 3, r: 3 }, { q: 4, r: 3 })).toBe(1);
     });
 
     it('should return correct distance for straight line', () => {
-      expect(hexDistance({ q: 0, r: 0 }, { q: 5, r: 0 }, grid)).toBe(5);
+      expect(hexDistance({ q: 0, r: 0 }, { q: 5, r: 0 })).toBe(5);
     });
 
     it('should compute direct distance without wrapping', () => {
       // On a 10x10 grid, (0,0) to (9,0) is distance 9 (no wrapping)
-      const dist = hexDistance({ q: 0, r: 0 }, { q: 9, r: 0 }, grid);
+      const dist = hexDistance({ q: 0, r: 0 }, { q: 9, r: 0 });
       expect(dist).toBe(9);
     });
   });

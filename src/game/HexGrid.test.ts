@@ -92,25 +92,6 @@ describe('HexGrid.hexDistance', () => {
   });
 });
 
-describe('HexGrid.hexDistanceWrapped (deprecated, delegates to hexDistance)', () => {
-  it('should return same as hexDistance', () => {
-    const dist = HexGrid.hexDistanceWrapped({ q: 5, r: 5 }, { q: 10, r: 5 }, 32, 32);
-    expect(dist).toBe(HexGrid.hexDistance({ q: 5, r: 5 }, { q: 10, r: 5 }));
-  });
-
-  it('should return 0 for same coordinate', () => {
-    expect(HexGrid.hexDistanceWrapped({ q: 5, r: 5 }, { q: 5, r: 5 }, 32, 32)).toBe(0);
-  });
-
-  it('should be symmetric', () => {
-    const a = { q: 4, r: 4 };
-    const b = { q: 27, r: 27 };
-    const d1 = HexGrid.hexDistanceWrapped(a, b, 32, 32);
-    const d2 = HexGrid.hexDistanceWrapped(b, a, 32, 32);
-    expect(d1).toBe(d2);
-  });
-});
-
 describe('HexGrid.findNearestTerrain', () => {
   it('should return 0 if the building tile matches', () => {
     const grid = new HexGrid(10, 10);

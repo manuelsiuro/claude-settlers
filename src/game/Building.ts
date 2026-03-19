@@ -228,19 +228,6 @@ export const CASTLE_STARTING_RESOURCES: { resource: ResourceType; amount: number
   { resource: ResourceType.Crucible, amount: 1 },
 ];
 
-// DEBUG: Uncomment to start with abundant resources for testing
-// import { TOOL_TYPES } from './ResourceType';
-// export const DEBUG_CASTLE_STARTING_RESOURCES: { resource: ResourceType; amount: number }[] = [
-//   { resource: ResourceType.Wood, amount: 50 },
-//   { resource: ResourceType.Stone, amount: 50 },
-//   { resource: ResourceType.Planks, amount: 50 },
-//   { resource: ResourceType.Fish, amount: 50 },
-//   { resource: ResourceType.IronBars, amount: 50 },
-//   { resource: ResourceType.Swords, amount: 50 },
-//   { resource: ResourceType.Shields, amount: 50 },
-//   ...TOOL_TYPES.map(t => ({ resource: t, amount: 50 })),
-// ];
-
 /** Initialize a Castle building with starting resources */
 export function initializeCastleResources(castle: Building): void {
   for (const { resource, amount } of CASTLE_STARTING_RESOURCES) {

@@ -96,8 +96,7 @@ export function findPath(
  * Hex distance heuristic for A*.
  * Simple cube distance (no wrapping).
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function hexDistance(a: HexCoord, b: HexCoord, _grid?: HexGrid): number {
+export function hexDistance(a: HexCoord, b: HexCoord): number {
   return cubeDistance(a, b);
 }
 
