@@ -8,6 +8,8 @@ import type { AttackManager } from './AttackManager';
 import type { KnightManager } from './KnightManager';
 import type { UpgradeManager } from './UpgradeManager';
 import { Difficulty } from './GameConfig';
+import { DIFFICULTY_CONFIGS, MAX_HEX_RETRIES } from './data/aiBuildOrders';
+import type { DifficultyConfig } from './data/aiBuildOrders';
 import { UnitType } from './UnitType';
 import { UnitState } from './Unit';
 import type { ResourceType } from './ResourceType';
@@ -22,102 +24,6 @@ import type { RoadNetwork } from './RoadNetwork';
 
 /** Callback to render a newly placed building. */
 export type BuildingPlacedCallback = (building: Building, grid: HexGrid) => void;
-
-// ─── Strategy Templates ─────────────────────────────────────────────────────
-
-/**
- * Aggressive: Fewer economy buildings, earlier military, attacks at build step 8.
- */
-const AGGRESSIVE_BUILD_ORDER: BuildingType[] = [
-  BuildingType.WoodcutterHut,
-  BuildingType.ForesterHut,
-  BuildingType.Quarry,
-  BuildingType.Sawmill,
-  BuildingType.GuardHut,
-  BuildingType.GuardHut,
-  BuildingType.FishermanHut,
-  BuildingType.Farm,
-  BuildingType.IronMine,
-  BuildingType.CoalMine,
-  BuildingType.IronSmelter,
-  BuildingType.BlacksmithArmory,
-  BuildingType.Barracks,
-  BuildingType.Barracks,
-  BuildingType.Watchtower,
-];
-
-/**
- * Economic: Full production chains, delayed military, attacks at build step 16+.
- */
-const ECONOMIC_BUILD_ORDER: BuildingType[] = [
-  BuildingType.WoodcutterHut,
-  BuildingType.ForesterHut,
-  BuildingType.WoodcutterHut,
-  BuildingType.Quarry,
-  BuildingType.Sawmill,
-  BuildingType.FishermanHut,
-  BuildingType.Farm,
-  BuildingType.Warehouse,
-  BuildingType.Harbor,             // water logistics (skipped if no water-adjacent hex)
-  BuildingType.GeologistHut,
-  BuildingType.Windmill,
-  BuildingType.Bakery,
-  BuildingType.IronMine,
-  BuildingType.CoalMine,
-  BuildingType.IronSmelter,
-  BuildingType.ToolmakerWorkshop,
-  BuildingType.GuardHut,
-  BuildingType.BlacksmithArmory,
-  BuildingType.GoldMine,
-  BuildingType.GoldsmithMint,
-  BuildingType.Barracks,
-  BuildingType.Watchtower,
-];
-
-/**
- * Balanced: Default build order with a mix of economy and military.
- * Mountain-specific buildings (GeologistHut, IronMine, CoalMine, GoldMine) will be
- * skipped automatically if no mountain tiles exist in the AI's territory.
- * FishermanHut will be skipped if no water-adjacent tiles are available.
- */
-const BALANCED_BUILD_ORDER: BuildingType[] = [
-  // ── Tier 1: basic economy ───────────────────────────────────────────────
-  BuildingType.WoodcutterHut,
-  BuildingType.ForesterHut,
-  BuildingType.WoodcutterHut,
-  BuildingType.Quarry,
-  BuildingType.Sawmill,
-  BuildingType.FishermanHut,       // skipped if no water-adjacent hex in territory
-  BuildingType.GuardHut,           // placed at border to expand territory
-
-  // ── Tier 2: food & resource extraction ─────────────────────────────────
-  BuildingType.Farm,
-  BuildingType.GuardHut,           // border expansion
-  BuildingType.Warehouse,          // overflow storage before mining chain saturates Castle
-  BuildingType.GeologistHut,       // prospect mountains for ore deposits
-  BuildingType.IronMine,           // requires prospected iron deposit
-  BuildingType.CoalMine,           // requires prospected coal deposit
-  BuildingType.Harbor,             // water logistics (skipped if no water-adjacent hex)
-
-  // ── Tier 3: processing & military arms ─────────────────────────────────
-  BuildingType.Windmill,
-  BuildingType.Bakery,
-  BuildingType.GuardHut,           // border expansion
-  BuildingType.IronSmelter,
-  BuildingType.ToolmakerWorkshop,
-  BuildingType.BlacksmithArmory,
-  BuildingType.Barracks,           // placed at border for max influence
-  BuildingType.Watchtower,         // border
-
-  // ── Late game: gold economy + extra military ────────────────────────────
-  BuildingType.GoldMine,           // requires prospected gold deposit
-  BuildingType.GoldsmithMint,
-  BuildingType.Barracks,
-  BuildingType.Barracks,
-];
-
-/** Consecutive "no valid hex" ticks before a building is skipped. */
-const MAX_HEX_RETRIES = 3;
 
 /**
  * Heuristic AI controller for a non-human player.
@@ -144,12 +50,10 @@ export class AIPlayer {
   private readonly upgradeManager: UpgradeManager;
   private readonly roadNetwork: RoadNetwork;
   private readonly onBuildingPlaced: BuildingPlacedCallback;
+  private readonly config: DifficultyConfig;
 
   /** Strategy-specific build order (selected based on difficulty). */
   private readonly buildOrder: BuildingType[];
-
-  /** Build order step at which the AI will begin attacking. */
-  private readonly attackThreshold: number;
 
   /** Current position in the build order */
   private buildOrderIndex = 0;
@@ -189,26 +93,10 @@ export class AIPlayer {
     this.roadNetwork = roadNetwork;
     this.onBuildingPlaced = onBuildingPlaced;
 
-    // Select strategy template and attack threshold based on difficulty
-    switch (difficulty) {
-      case Difficulty.Easy:
-        this.buildOrder = ECONOMIC_BUILD_ORDER;
-        this.attackThreshold = 16;
-        this.decisionInterval = 10.0;
-        this.attackInterval = 20.0;
-        break;
-      case Difficulty.Hard:
-        this.buildOrder = AGGRESSIVE_BUILD_ORDER;
-        this.attackThreshold = 8;
-        this.decisionInterval = 2.5;
-        this.attackInterval = 8.0;
-        break;
-      default: // Normal
-        this.buildOrder = BALANCED_BUILD_ORDER;
-        this.attackThreshold = 12;
-        this.decisionInterval = 5.0;
-        this.attackInterval = 15.0;
-    }
+    this.config = DIFFICULTY_CONFIGS[difficulty];
+    this.buildOrder = this.config.buildOrder;
+    this.decisionInterval = this.config.decisionInterval;
+    this.attackInterval = this.config.attackInterval;
 
     // Stagger initial decision so multiple AIs don't all act on the same tick.
     // Uses a deterministic offset based on playerId to avoid random seeding issues in tests.
@@ -223,8 +111,8 @@ export class AIPlayer {
     if (this.decisionCooldown <= 0) {
       this.decisionCooldown = this.decisionInterval;
 
-      // Easy difficulty: skip 30% of decision ticks randomly
-      if (this.difficulty !== Difficulty.Easy || Math.random() >= 0.3) {
+      // Some difficulties skip a fraction of decision ticks
+      if (this.config.skipChance === 0 || Math.random() >= this.config.skipChance) {
         this.tryBuildNext();
         this.manageToolQueue();
         // Only try upgrades once economy is established
@@ -301,7 +189,7 @@ export class AIPlayer {
    * strategy's attack threshold). Hard difficulty sends up to 2 knights per attack.
    */
   private tryAttack(): void {
-    if (this.buildOrderIndex < this.attackThreshold) return;
+    if (this.buildOrderIndex < this.config.attackThreshold) return;
 
     const availableKnights = this.getAvailableKnights();
     if (availableKnights.length === 0) return;
@@ -330,8 +218,7 @@ export class AIPlayer {
         this.knightManager.getKnightStrength(a.id),
     );
 
-    // Hard difficulty sends up to 2 knights per attack; others send 1
-    const knightsToSend = this.difficulty === Difficulty.Hard ? 2 : 1;
+    const knightsToSend = this.config.knightsPerAttack;
     for (let i = 0; i < Math.min(knightsToSend, availableKnights.length); i++) {
       this.attackManager.orderAttack(availableKnights[i].id, target.id);
     }
