@@ -1,6 +1,7 @@
 import { HexGrid } from './HexGrid';
 import type { HexCoord } from './HexGrid';
 import { TerrainType } from './TerrainType';
+import { TERRAIN_PROPERTIES } from './TerrainType';
 
 /** Terrain types that units can walk on */
 const WALKABLE_TERRAIN: Set<string> = new Set([
@@ -74,8 +75,8 @@ export function findPath(
       if (closedSet.has(nKey)) continue;
       if (!WALKABLE_TERRAIN.has(neighborTile.terrain)) continue;
 
-      // Movement cost: 1 for all walkable terrain (could be weighted later)
-      const tentativeG = currentG + 1;
+      // Movement cost weighted by terrain type
+      const tentativeG = currentG + TERRAIN_PROPERTIES[neighborTile.terrain].movementCost;
       const existingG = gScore.get(nKey) ?? Infinity;
 
       if (tentativeG < existingG) {

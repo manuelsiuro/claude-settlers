@@ -26,12 +26,14 @@ import type { UpgradeManager } from './UpgradeManager';
 import type { FogOfWarManager } from './FogOfWarManager';
 import type { AIPlayer } from './AIPlayer';
 import type { HarborManager, WaterRoute } from './HarborManager';
+import type { FeedingManager } from './FeedingManager';
+import type { MoraleManager } from './MoraleManager';
 import { TerrainType } from './TerrainType';
 import type { GoodsDistributionSettings } from './GoodsDistribution';
 import { serializeDistribution, deserializeDistribution } from './GoodsDistribution';
 
 /** Current save format version */
-const SAVE_VERSION = 9;
+const SAVE_VERSION = 10;
 
 /** localStorage key for auto-save */
 const STORAGE_KEY = 'feudal_realm_save';
@@ -146,6 +148,15 @@ export interface SaveData {
     waterRoutes: WaterRoute[];
   };
 
+  // Expansion managers
+  feedingManager?: {
+    feedingCooldown: number;
+  };
+  moraleManager?: {
+    drinkEvents: [number, { drinkType: string; timestamp: number }[]][];
+    elapsedTime: number;
+  };
+
   // Economy settings
   goodsDistribution?: ReturnType<typeof serializeDistribution>;
 
@@ -188,6 +199,8 @@ export function serializeGame(
     upgradeManager: UpgradeManager;
     fogOfWarManager: FogOfWarManager;
     harborManager: HarborManager;
+    feedingManager: FeedingManager;
+    moraleManager: MoraleManager;
   },
   aiPlayers: AIPlayer[],
   camera: { frustum: number; position: { x: number; y: number; z: number }; target: { x: number; y: number; z: number } },
@@ -257,6 +270,9 @@ export function serializeGame(
 
     harborManager: managers.harborManager._getState(),
 
+    feedingManager: managers.feedingManager._getState(),
+    moraleManager: managers.moraleManager._getState(),
+
     goodsDistribution: distributionSettings ? serializeDistribution(distributionSettings) : undefined,
 
     aiPlayers: aiPlayers.map((ai) => ai._getState()),
@@ -293,6 +309,8 @@ export function deserializeGame(
     upgradeManager: UpgradeManager;
     fogOfWarManager: FogOfWarManager;
     harborManager: HarborManager;
+    feedingManager: FeedingManager;
+    moraleManager: MoraleManager;
   },
   aiPlayers: AIPlayer[],
 ): GoodsDistributionSettings | null {
@@ -347,6 +365,12 @@ export function deserializeGame(
   if (data.harborManager) {
     managers.harborManager._loadState(data.harborManager);
   }
+  if (data.feedingManager) {
+    managers.feedingManager._loadState(data.feedingManager);
+  }
+  if (data.moraleManager) {
+    managers.moraleManager._loadState(data.moraleManager);
+  }
 
   // Backward compat: patch buildings missing fields from older versions
   for (const b of data.buildings) {
@@ -375,6 +399,10 @@ export function deserializeGame(
     // v9: patch units missing pendingDismissal field
     if ((u as unknown as Record<string, unknown>).pendingDismissal === undefined) {
       (u as unknown as Record<string, unknown>).pendingDismissal = false;
+    }
+    // v10: patch units missing satiation field
+    if ((u as unknown as Record<string, unknown>).satiation === undefined) {
+      (u as unknown as Record<string, unknown>).satiation = 1.0;
     }
   }
 

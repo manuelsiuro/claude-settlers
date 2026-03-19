@@ -45,6 +45,36 @@ export const BuildingType = {
   SmallHouse: 'small_house',
   MediumHouse: 'medium_house',
   LargeHouse: 'large_house',
+
+  // Expansion: Food & Farming
+  Well: 'well',
+  Orchard: 'orchard',
+  Vineyard: 'vineyard',
+  Winery: 'winery',
+  Brewery: 'brewery',
+  DairyFarm: 'dairy_farm',
+  CheeseMakerBuilding: 'cheese_maker_building',
+  Hayfield: 'hayfield',
+
+  // Expansion: Crafting & Animals
+  Tannery: 'tannery',
+  WeaversHut: 'weavers_hut',
+  CharcoalBurner: 'charcoal_burner',
+  FletchersWorkshop: 'fletchers_workshop',
+  SiegeWorkshop: 'siege_workshop',
+  Stable: 'stable',
+  CattleRanch: 'cattle_ranch',
+  SheepFarm: 'sheep_farm',
+  Butchery: 'butchery',
+
+  // Expansion: Military
+  Fortress: 'fortress',
+  ArcheryRange: 'archery_range',
+  TorchTower: 'torch_tower',
+
+  // Expansion: Special
+  InnTavern: 'inn_tavern',
+  Market: 'market',
 } as const;
 
 export type BuildingType = (typeof BuildingType)[keyof typeof BuildingType];

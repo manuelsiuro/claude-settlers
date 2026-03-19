@@ -24,5 +24,28 @@ export const UNIT_MODEL_MAP: Record<UnitType, UnitModelName> = {
   [UnitType.Goldsmith]: 'goldsmith',
   [UnitType.Toolmaker]: 'toolmaker',
   [UnitType.Blacksmith]: 'blacksmith',
+  // Expansion: civilian workers
+  [UnitType.Orchardist]: 'orchardist',
+  [UnitType.Vintner]: 'vintner',
+  [UnitType.Winemaker]: 'winemaker',
+  [UnitType.Brewer]: 'brewer',
+  [UnitType.Dairymaid]: 'dairymaid',
+  [UnitType.CheeseMaker]: 'cheese_maker',
+  [UnitType.Tanner]: 'tanner',
+  [UnitType.Weaver]: 'weaver',
+  [UnitType.CharcoalBurner]: 'charcoal_burner_unit',
+  [UnitType.Fletcher]: 'fletcher',
+  [UnitType.Engineer]: 'engineer',
+  [UnitType.Stablehand]: 'stablehand',
+  [UnitType.Rancher]: 'rancher',
+  [UnitType.Shepherd]: 'shepherd',
+  // Military
   [UnitType.Knight]: 'knight',
+  [UnitType.Archer]: 'archer',
+  [UnitType.Cavalry]: 'cavalry',
+  [UnitType.SiegeOperator]: 'siege_operator',
+  [UnitType.Scout]: 'scout',
+  // Transport
+  [UnitType.Donkey]: 'donkey',
+  [UnitType.HorseTransport]: 'horse_transport',
 };

@@ -50,6 +50,8 @@ export interface Unit {
   carriedTool: ResourceType | null;
   /** When true, unit will be removed from GameState after arriving home */
   pendingDismissal: boolean;
+  /** Satiation level 0.0–1.0 (1.0 = fully fed) */
+  satiation: number;
 }
 
 let nextUnitId = 1;
@@ -76,6 +78,7 @@ export function createUnit(
     knightRank: 1,
     carriedTool: null,
     pendingDismissal: false,
+    satiation: 1.0,
   };
 }
 

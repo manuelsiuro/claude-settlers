@@ -64,6 +64,8 @@ import type { ColorGradingParams } from './AtmosphereController';
 import { FlagLightSystem } from './FlagLightSystem';
 import { WorkAreaRenderer } from './WorkAreaRenderer';
 import { PopulationManager } from '../game/PopulationManager';
+import { FeedingManager } from '../game/FeedingManager';
+import { MoraleManager } from '../game/MoraleManager';
 
 export const ShadowQuality = {
   Off: 'off',
@@ -137,6 +139,8 @@ export class Game {
   private flagLightSystem: FlagLightSystem;
   private workAreaRenderer: WorkAreaRenderer;
   private populationManager: PopulationManager;
+  private feedingManager: FeedingManager;
+  private moraleManager: MoraleManager;
   private aiPlayers: AIPlayer[] = [];
   private roadRenderer: RoadRenderer;
   private territoryRenderer: TerritoryRenderer;
@@ -168,6 +172,9 @@ export class Game {
 
   /** Whether the game is paused */
   private _paused = false;
+
+  /** Current nightness level 0.0–1.0 from atmosphere controller */
+  private currentNightness = 0;
 
   /** Notification callback — subscribe to receive game event alerts */
   onNotification: ((notification: GameNotification) => void) | null = null;
@@ -237,6 +244,8 @@ export class Game {
     });
     this.gameState = new GameState(this.grid);
     this.populationManager = new PopulationManager(this.gameState);
+    this.feedingManager = new FeedingManager(this.gameState);
+    this.moraleManager = new MoraleManager(this.gameState);
     this.mapRenderer = new MapRenderer();
     this.buildingRenderer = new BuildingRenderer();
     this.unitRenderer = new UnitRenderer();
@@ -293,6 +302,7 @@ export class Game {
     this.flagLightSystem = new FlagLightSystem();
     this.workAreaRenderer = new WorkAreaRenderer();
     this.atmosphereController.onNightnessUpdate = (nightness) => {
+      this.currentNightness = nightness;
       this.flagLightSystem.setNightness(nightness);
       this.postProcessing.setBloomStrength(0.3 + 0.2 * nightness);
     };
@@ -539,6 +549,8 @@ export class Game {
           upgradeManager: this.upgradeManager,
           fogOfWarManager: this.fogOfWarManager,
           harborManager: this.harborManager,
+          feedingManager: this.feedingManager,
+          moraleManager: this.moraleManager,
         },
         this.aiPlayers,
       );
@@ -684,6 +696,8 @@ export class Game {
       for (const ai of this.aiPlayers) {
         ai.update(deltaTime);
       }
+      this.feedingManager.update(deltaTime);
+      this.moraleManager.update(deltaTime);
       this.economyTracker.update(deltaTime);
       this.roadRenderer.sync(this.roadNetwork, (id) => this.gameState.getUnit(id));
       this.territoryRenderer.sync(this.territoryManager);
@@ -1102,6 +1116,14 @@ export class Game {
     return this.unitManager;
   }
 
+  getFeedingManager(): FeedingManager {
+    return this.feedingManager;
+  }
+
+  getMoraleManager(): MoraleManager {
+    return this.moraleManager;
+  }
+
   getGameState(): GameState {
     return this.gameState;
   }
@@ -1132,6 +1154,11 @@ export class Game {
 
   getHumanPlayerId(): number {
     return this.humanPlayerId;
+  }
+
+  /** Get current nightness level 0.0–1.0 */
+  getNightness(): number {
+    return this.currentNightness;
   }
 
   getVictoryManager(): VictoryManager {
@@ -1324,6 +1351,8 @@ export class Game {
         upgradeManager: this.upgradeManager,
         fogOfWarManager: this.fogOfWarManager,
         harborManager: this.harborManager,
+        feedingManager: this.feedingManager,
+        moraleManager: this.moraleManager,
       },
       this.aiPlayers,
       {

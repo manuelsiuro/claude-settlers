@@ -1,6 +1,6 @@
 # Project Progress
 
-## Current Phase: Expansion Features — Population Management Complete
+## Current Phase: Expansion Features — Phase A+B Complete, Phase C-G Remaining
 
 ## Task Board
 
@@ -102,6 +102,17 @@
 ### Post-Phase 8: Gameplay Enhancements
 - [DONE] Distance-based production cycles — Gathering buildings (WoodcutterHut, Quarry, FishermanHut, Farm, mines) now scale production time by distance to their harvest terrain. Formula: `effectiveTime = baseTime * min(3.0, 1.0 + max(0, dist-1) * 0.25)`. BFS with world wrapping finds nearest matching terrain. Placement preview: ghost mesh colored green/orange/red by distance rating, placement bar shows "Distance: X tiles — Rating". Info panel: effective cycle time (colored), efficiency %, resource distance for gathering buildings. Progress bar color matches rating. Processing/military/logistics buildings unaffected. 17 new tests (HexGrid.hexDistance, findNearestTerrain with wrapping, distance multiplier formula, distance-scaled production, processing buildings ignore distance). 426 tests passing — 2026-03-12.
 - [DONE] Building scale coherence audit & fix — Analyzed all 24 GLB model bounding boxes. 7 buildings had effective footprints under 0.40 (GoldsmithMint 0.24, GuardHut 0.26, IronSmelter 0.29, Bakery 0.29, GeologistHut 0.30, BlacksmithArmory 0.32, Watchtower 0.32). Added per-building scale factors (1.5–2.0×) targeting 0.45–0.55 effective footprint range. Additionally scaled 4 mid-tier buildings slightly undersized (WoodcutterHut 1.15×, ForesterHut 1.15×, ToolmakerWorkshop 1.2×, Slaughterhouse 1.2×) and removed incorrect 0.9× downscale on Warehouse. Single-file change in BuildingRenderer.ts BUILDING_SCALE map. 439 tests passing — 2026-03-12.
+
+### Expansion Phase A+B: Foundation + Core Mechanics [DONE]
+- [DONE] A1: Terrain-weighted pathfinding — `findPath()` now uses `TERRAIN_PROPERTIES[].movementCost` (Grassland:1.0, Forest:1.5, Mountain:3.0, Desert:2.0). 2 new pathfinding tests — 2026-03-19
+- [DONE] A2: Unit satiation field — `satiation: number` on Unit interface (default 1.0), `satiationValue` and `isDrink` on ResourceProperties, food values (Fish:0.40, Bread:0.60, Meat:0.80, Fruit:0.35, Cheese:0.55, Wine:0.30, Beer:0.25) — 2026-03-19
+- [DONE] A3: Night gameplay hook — `currentNightness` stored from AtmosphereController callback, `getNightness()` public getter — 2026-03-19
+- [DONE] A4: 17 new resource types — Raw (Grapes, Fruit, WaterBarrel, Milk, Hay, Wool, RawLeather), Processed (Wine, Beer, Cheese, Cloth, WorkedLeather, Arrows, Bow, SiegeRam), Animals (Cattle, Horses). Total: 44 resources — 2026-03-19
+- [DONE] A5: 20 new unit types — 14 civilian (Orchardist, Vintner, Winemaker, Brewer, Dairymaid, CheeseMaker, Tanner, Weaver, CharcoalBurner, Fletcher, Engineer, Stablehand, Rancher, Shepherd), 4 military (Archer, Cavalry, SiegeOperator, Scout), 2 transport (Donkey, HorseTransport). Total: 39 units — 2026-03-19
+- [DONE] A6: 22 new building types — Food (Well, Orchard, Vineyard, Winery, Brewery, DairyFarm, CheeseMaker, Hayfield), Crafting (Tannery, WeaversHut, CharcoalBurner, FletchersWorkshop, SiegeWorkshop, Stable, CattleRanch, SheepFarm, Butchery), Military (Fortress, ArcheryRange, TorchTower), Special (InnTavern, Market). Full production recipes. Total: 49 buildings — 2026-03-19
+- [DONE] B1: FeedingManager — satiation decay (base 0.005/s, 1.2x working, 0.5x garrisoned), periodic feeding from Castle/Warehouse (5s interval), hunger multiplier helpers. 8 tests — 2026-03-19
+- [DONE] B4: MoraleManager — rolling 5-min drink event window, getMorale() = base(0.5) + variety + volume + gold, production/combat multipliers. 9 tests — 2026-03-19
+- Save version bumped to 10, backward compat for satiation field. AssetLoader, BuildingModels, UnitModels, BuildingRenderer all updated with new types. Balance constants for hunger/night/morale added. 637 tests passing.
 
 ## Completed
 - **2026-03-19**: Population Management System — 10 phases. PopulationManager (stateless query), spawn gating on UnitManager/TransporterManager/ConstructionManager, 3 housing buildings (Small/Medium/Large House), HUD population counter with color states, Housing build tab, enhanced Stats Population tab, AI reactive housing, difficulty-based starting resources, save/load v9, 3 Blender house models. 1 new file, 27 modified, 3 GLB assets. 615 tests passing.

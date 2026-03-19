@@ -21,6 +21,8 @@ import { UpgradeManager } from './UpgradeManager';
 import { FogOfWarManager } from './FogOfWarManager';
 import { HarborManager } from './HarborManager';
 import { PopulationManager } from './PopulationManager';
+import { FeedingManager } from './FeedingManager';
+import { MoraleManager } from './MoraleManager';
 import { AIPlayer } from './AIPlayer';
 import { BuildingType } from './BuildingType';
 import {
@@ -89,6 +91,8 @@ function createManagers(gameState: GameState, roadNetwork: RoadNetwork, territor
     upgradeManager: new UpgradeManager(gameState),
     fogOfWarManager: new FogOfWarManager(gameState),
     harborManager: new HarborManager(gameState, roadNetwork, gameState.getGrid()),
+    feedingManager: new FeedingManager(gameState),
+    moraleManager: new MoraleManager(gameState),
   };
 }
 
@@ -125,7 +129,7 @@ describe('SaveLoad: round-trip serialization', () => {
       { frustum: 10, position: { x: 0, y: 20, z: 0 }, target: { x: 0, y: 0, z: 0 } },
     );
 
-    expect(data.version).toBe(9);
+    expect(data.version).toBe(10);
     expect(data.config).toEqual(testConfig);
     expect(data.buildings).toEqual([]);
     expect(data.units).toEqual([]);
@@ -542,7 +546,7 @@ describe('SaveLoad: round-trip serialization', () => {
     const json = JSON.stringify(data);
     const parsed = JSON.parse(json) as SaveData;
 
-    expect(parsed.version).toBe(9);
+    expect(parsed.version).toBe(10);
     expect(parsed.config.seed).toBe(42);
     expect(parsed.buildings.length).toBe(2);
     expect(parsed.units.length).toBe(1);
