@@ -5,6 +5,7 @@ import type { GameState } from './GameState';
 import type { ResourceType } from './ResourceType';
 import { UnitState } from './Unit';
 import { getProductionSpeedMultiplier } from './BuildingUpgrade';
+import { NIGHT_PRODUCTION_SLOWDOWN } from './data/balanceConstants';
 
 /** Compute the distance multiplier for gathering buildings */
 export function getDistanceMultiplier(distance: number): number {
@@ -34,8 +35,14 @@ export function getDistanceRating(multiplier: number): { label: string; color: s
 export class ProductionManager {
   private gameState: GameState;
 
+  /** Current nightness level 0.0–1.0 (set by Game each frame) */
+  nightness = 0;
+
+  /** Light mitigation factor 0.0–1.0 per building ID (from TorchTower proximity) */
+  lightMitigation: Map<string, number> = new Map();
+
   /** Optional callback fired when production completes (for economy tracking) */
-  onProductionComplete: ((inputs: { resource: ResourceType; amount: number }[], outputs: { resource: ResourceType; amount: number }[]) => void) | null = null;
+  onProductionComplete: ((inputs: { resource: ResourceType; amount: number }[], outputs: { resource: ResourceType; amount: number }[], building: Building) => void) | null = null;
 
   constructor(gameState: GameState) {
     this.gameState = gameState;
@@ -75,7 +82,14 @@ export class ProductionManager {
       // Advance production (gathering buildings scale by distance, upgrades scale speed)
       const distMultiplier = def.harvestTerrain ? getDistanceMultiplier(building.resourceDistance) : 1;
       const speedMultiplier = getProductionSpeedMultiplier(building);
-      const rate = activeWorkers / (def.production.productionTime * distMultiplier * speedMultiplier);
+
+      // Night penalty: production slows by up to NIGHT_PRODUCTION_SLOWDOWN at full night
+      // TorchTower light mitigation reduces this penalty
+      const mitigation = this.lightMitigation.get(building.id) ?? 0;
+      const effectiveNightness = this.nightness * (1 - mitigation);
+      const nightSlowdown = 1 / (1 - effectiveNightness * NIGHT_PRODUCTION_SLOWDOWN);
+
+      const rate = activeWorkers / (def.production.productionTime * distMultiplier * speedMultiplier * nightSlowdown);
       building.productionProgress += rate * deltaTime;
 
       // Production cycle complete
@@ -119,7 +133,7 @@ export class ProductionManager {
       building.outputInventory[output.resource as ResourceType] = current + output.amount;
     }
 
-    // Notify economy tracker
-    this.onProductionComplete?.(def.production.inputs, def.production.outputs);
+    // Notify economy tracker and other listeners
+    this.onProductionComplete?.(def.production.inputs, def.production.outputs, building);
   }
 }

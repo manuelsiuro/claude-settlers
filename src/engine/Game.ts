@@ -306,13 +306,21 @@ export class Game {
       this.flagLightSystem.setNightness(nightness);
       this.postProcessing.setBloomStrength(0.3 + 0.2 * nightness);
     };
-    // Wire production events to economy tracker
-    const trackProduction = (inputs: { resource: ResourceType; amount: number }[], outputs: { resource: ResourceType; amount: number }[]) => {
+    // Wire production events to economy tracker and morale system
+    const trackProduction = (inputs: { resource: ResourceType; amount: number }[], outputs: { resource: ResourceType; amount: number }[], building?: import('../game/Building').Building) => {
       for (const input of inputs) {
         this.economyTracker.recordConsumption(input.resource, input.amount);
       }
       for (const output of outputs) {
         this.economyTracker.recordProduction(output.resource, output.amount);
+      }
+      // InnTavern consumes drinks → record for morale
+      if (building?.type === BuildingType.InnTavern) {
+        for (const input of inputs) {
+          if (RESOURCE_PROPERTIES[input.resource].isDrink) {
+            this.moraleManager.recordDrinkServed(building.playerId, input.resource);
+          }
+        }
       }
     };
     this.productionManager.onProductionComplete = trackProduction;
@@ -676,6 +684,10 @@ export class Game {
       }
 
       this.territoryManager.update();
+      // Pass nightness to managers for day/night gameplay effects
+      this.unitManager.nightness = this.currentNightness;
+      this.productionManager.nightness = this.currentNightness;
+      this.updateLightMitigation();
       this.unitManager.update(deltaTime);
       this.constructionManager.update(deltaTime);
       this.upgradeManager.update(deltaTime);
@@ -1324,6 +1336,35 @@ export class Game {
   }
 
   /** Serialize the full game state for save/load */
+  /**
+   * Compute TorchTower light mitigation for nearby buildings.
+   * Buildings within TORCH_TOWER_LIGHT_RADIUS of an active TorchTower
+   * get 50% reduction in night penalties.
+   */
+  private updateLightMitigation(): void {
+    this.productionManager.lightMitigation.clear();
+    if (this.currentNightness <= 0) return;
+
+    const allBuildings = this.gameState.getAllBuildings();
+    const torchTowers = allBuildings.filter(
+      b => b.type === BuildingType.TorchTower && b.state === BuildingState.Active,
+    );
+    if (torchTowers.length === 0) return;
+
+    const LIGHT_RADIUS = 5; // TORCH_TOWER_LIGHT_RADIUS from balanceConstants
+    for (const building of allBuildings) {
+      if (building.state !== BuildingState.Active) continue;
+      for (const tower of torchTowers) {
+        if (tower.playerId !== building.playerId) continue;
+        const dist = HexGrid.hexDistance(building.coord, tower.coord);
+        if (dist <= LIGHT_RADIUS) {
+          this.productionManager.lightMitigation.set(building.id, 0.5);
+          break;
+        }
+      }
+    }
+  }
+
   serialize(): SaveData {
     // Compute camera target (point the camera is looking at)
     const target = new THREE.Vector3();
