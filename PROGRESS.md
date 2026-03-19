@@ -265,5 +265,10 @@ All 17 tasks from the improvement plan are now complete. 569 tests passing, 0 er
   - **CSS**: `.techtree-node` cursor changed to `grab`. New `.techtree-node-dragging` class (grabbing cursor, z-index:10, no transition, elevated shadow).
   - 2 files changed (`TechTreePanel.ts`, `styles.css`), 607 tests passing, build clean, lint clean.
 
+### Weather Effects Overhaul [DONE]
+- [DONE] GPU-driven weather shaders — WeatherController rewritten with custom vertex/fragment shaders for rain (elongated streaks, wind drift, ground splash rings) and snow (organic multi-sine drift, size variation, twinkling alpha pulse). Camera-relative spawning via uCamPos uniform. ShaderTimeManager integration for uTime. Smooth fade transitions (2s) between weather states. — 2026-03-19
+- [DONE] Weather atmosphere overlay — Rain/snow modulate fog density, sun intensity, exposure, and color grading (saturation reduction + cool tint shift) proportional to transition opacity. Base values cached and restored each frame before atmosphere update. — 2026-03-19
+- [DONE] Auto weather scheduling — When time-of-day is "Auto" and weather is "None", WeatherController auto-schedules random weather events. State machine: 90–240s gap → pick rain/snow (nightness > 0.5: 60% snow, else 80% rain) → 60–180s duration → fade out → repeat. Manual weather selection disables auto-scheduling. Game.ts passes nightness from AtmosphereController each frame. — 2026-03-19
+
 ## Blockers
 _None._

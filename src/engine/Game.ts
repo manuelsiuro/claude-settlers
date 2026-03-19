@@ -57,6 +57,7 @@ import type { GoodsDistributionSettings } from '../game/GoodsDistribution';
 import { PerformanceMonitor } from './PerformanceMonitor';
 import { PostProcessing } from './PostProcessing';
 import { WeatherController } from './WeatherController';
+import type { ColorGradingParams } from './AtmosphereController';
 import { FlagLightSystem } from './FlagLightSystem';
 
 export const ShadowQuality = {
@@ -138,6 +139,13 @@ export class Game {
   private frustum = 10;
   private directionalLight: THREE.DirectionalLight;
   private config: GameConfig;
+
+  /** Cached base color grading params from AtmosphereController (before weather overlay) */
+  private baseColorGrading: ColorGradingParams = { warmTint: [1.02, 1.0, 0.96], contrast: 1.08, saturation: 1.1 };
+  /** Cached base atmosphere values for weather overlay */
+  private baseFogDensity = 0.008;
+  private baseSunIntensity = 1.2;
+  private baseExposure = 1.0;
 
   /** Current shadow quality setting (default: BlobOnly — matches original behavior) */
   private _shadowQuality: ShadowQuality = ShadowQuality.BlobOnly;
@@ -265,7 +273,9 @@ export class Game {
     this.performanceMonitor = new PerformanceMonitor();
     this.postProcessing = new PostProcessing(this.renderer, this.scene, this.camera);
     this.atmosphereController.onColorGradingUpdate = (params) => {
-      this.postProcessing.setColorGradingParams(params);
+      // Cache base params; weather overlay is applied per-frame in animate loop
+      this.baseColorGrading = { ...params, warmTint: [...params.warmTint] };
+      this.applyColorGradingWithWeather(params);
     };
     this.weatherController = new WeatherController();
     this.flagLightSystem = new FlagLightSystem();
@@ -582,8 +592,26 @@ export class Game {
       const elapsed = clock.getElapsedTime();
       shaderTimeManager.update(elapsed);
 
+      // Restore base atmosphere values before atmosphere update
+      // (removes any weather overlay applied on the previous frame)
+      if (this.scene.fog instanceof THREE.FogExp2) {
+        this.scene.fog.density = this.baseFogDensity;
+      }
+      this.directionalLight.intensity = this.baseSunIntensity;
+      this.renderer.toneMappingExposure = this.baseExposure;
+
       // Atmosphere always updates (even paused) for smooth transitions
       this.atmosphereController.update(rawDelta);
+
+      // Snapshot clean base values (atmosphere may have changed them during a transition)
+      if (this.scene.fog instanceof THREE.FogExp2) {
+        this.baseFogDensity = this.scene.fog.density;
+      }
+      this.baseSunIntensity = this.directionalLight.intensity;
+      this.baseExposure = this.renderer.toneMappingExposure;
+
+      // Pass nightness to weather controller for rain vs snow selection
+      this.weatherController.setNightness(this.atmosphereController.getCycleState().nightness);
 
       // Scale delta by game speed; zero when paused
       const deltaTime = this._paused ? 0 : rawDelta * this._gameSpeed;
@@ -654,7 +682,24 @@ export class Game {
         (id) => this.unitRenderer.getMesh(id),
       );
       this.productionChainOverlay.update(deltaTime);
-      this.weatherController.update(rawDelta, this.camera.position);
+      this.weatherController.update(rawDelta, this.camera.position, this.frustum);
+
+      // Apply weather atmosphere overlay
+      const wt = this.weatherController.getWeatherType();
+      const t = this.weatherController.getTransitionOpacity();
+      if (t > 0 && wt !== 'none') {
+        const isRain = wt === 'rain';
+        // Fog density increase
+        if (this.scene.fog instanceof THREE.FogExp2) {
+          this.scene.fog.density = this.baseFogDensity + (isRain ? 0.005 : 0.003) * t;
+        }
+        // Sun intensity reduction
+        this.directionalLight.intensity = this.baseSunIntensity * (1 - (isRain ? 0.3 : 0.15) * t);
+        // Exposure reduction
+        this.renderer.toneMappingExposure = this.baseExposure * (1 - (isRain ? 0.1 : 0.05) * t);
+        // Color grading overlay (saturation reduction + cool tint shift)
+        this.applyColorGradingWithWeather(this.baseColorGrading);
+      }
 
       this.postProcessing.render();
     };
@@ -902,6 +947,32 @@ export class Game {
     pmremGenerator.dispose();
   }
 
+  /** Apply color grading with weather overlay multipliers */
+  private applyColorGradingWithWeather(base: ColorGradingParams): void {
+    const wt = this.weatherController.getWeatherType();
+    const t = this.weatherController.getTransitionOpacity();
+
+    if (t <= 0 || wt === 'none') {
+      this.postProcessing.setColorGradingParams(base);
+      return;
+    }
+
+    const isRain = wt === 'rain';
+    const satMul = 1 - (isRain ? 0.15 : 0.08) * t;
+    // Cool tint shift: rain shifts toward blue, snow toward white (reduce warm)
+    const tintShift = isRain ? -0.06 * t : -0.03 * t;
+
+    this.postProcessing.setColorGradingParams({
+      warmTint: [
+        base.warmTint[0] + tintShift, // reduce red warmth
+        base.warmTint[1],
+        base.warmTint[2] - tintShift, // boost blue coolness
+      ],
+      contrast: base.contrast,
+      saturation: base.saturation * satMul,
+    });
+  }
+
   dispose(): void {
     if (this.animationId !== null) {
       cancelAnimationFrame(this.animationId);
@@ -1118,7 +1189,16 @@ export class Game {
   applyGraphicsSettings(settings: GraphicsSettings): void {
     this.setShadowQuality(settings.shadows as ShadowQuality);
     this.postProcessing.setMode(settings.postProcessing);
-    this.weatherController.setWeather(settings.weather as 'none' | 'rain' | 'snow');
+    if (settings.weather !== 'none') {
+      // User picked explicit weather — disable auto, apply it
+      this.weatherController.setWeather(settings.weather as 'none' | 'rain' | 'snow');
+    } else if (settings.timeOfDay === 'auto') {
+      // Auto time + no explicit weather → enable auto weather scheduling
+      this.weatherController.setAutoSchedule(true);
+    } else {
+      // Manual time + no weather → just set none (disables auto via setWeather)
+      this.weatherController.setWeather('none');
+    }
 
     // Fog of war
     this.fogOfWarRenderer.setEnabled(settings.fogOfWar);
