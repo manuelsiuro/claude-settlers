@@ -4,9 +4,10 @@ import { GameState } from './GameState';
 import { HexGrid } from './HexGrid';
 import { TerrainType } from './TerrainType';
 import { BuildingType } from './BuildingType';
-import { BuildingState, resetBuildingIdCounter } from './Building';
+import { BuildingState, resetBuildingIdCounter, addToInventory } from './Building';
 import { UnitState, resetUnitIdCounter } from './Unit';
 import { UnitType } from './UnitType';
+import { TOOL_TYPES } from './ResourceType';
 
 describe('UnitManager', () => {
   let grid: HexGrid;
@@ -34,6 +35,10 @@ describe('UnitManager', () => {
   function placeCastle() {
     const result = gameState.placeBuilding(BuildingType.Castle, { q: 8, r: 8 }, 1);
     if (!result.ok) throw new Error('Failed to place castle');
+    // Stock Castle with tools so workers can be spawned
+    for (const t of TOOL_TYPES) {
+      addToInventory(result.building.outputInventory, t, 10);
+    }
     return result.building;
   }
 

@@ -101,6 +101,15 @@ export class BuildingRenderer {
     const scale = BUILDING_SCALE[building.type] ?? DEFAULT_BUILDING_SCALE;
     mesh.scale.setScalar(scale);
 
+    // Clone materials so each building instance has its own copy.
+    // Without this, BuildingAnimator's setOpacity/setEmissive on one building
+    // (e.g., during demolition or construction) would affect ALL buildings of the same type.
+    mesh.traverse((child) => {
+      if (child instanceof THREE.Mesh && child.material instanceof THREE.Material) {
+        child.material = child.material.clone();
+      }
+    });
+
     // Position on hex tile
     const { x, z } = HexGrid.hexToWorld(building.coord.q, building.coord.r);
     const tile = grid.getTile(building.coord.q, building.coord.r);
@@ -166,13 +175,15 @@ export class BuildingRenderer {
     return this.buildingMeshes;
   }
 
+  /**
+   * Dispose cloned materials for a building mesh.
+   * Geometry is still shared with AssetLoader originals so we do NOT dispose it.
+   * Materials were cloned per-building in addBuilding(), so they're safe to dispose.
+   */
   private disposeMesh(group: THREE.Group): void {
     group.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        child.geometry?.dispose();
-        if (child.material instanceof THREE.Material) {
-          child.material.dispose();
-        }
+      if (child instanceof THREE.Mesh && child.material instanceof THREE.Material) {
+        child.material.dispose();
       }
     });
   }

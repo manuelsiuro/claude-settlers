@@ -72,13 +72,15 @@ function getScaledCost(tier: number, level: number): { resource: ResourceType; a
 }
 
 /**
- * Worker upgrade cost — Planks + Stone + Tools scaling, Iron at level 4+, Gold at level 7+
+ * Worker upgrade cost — Planks + Stone + building-specific tool scaling, Iron at level 4+, Gold at level 7+
  */
-function getWorkerCost(level: number): { resource: ResourceType; amount: number }[] {
+function getWorkerCost(level: number, workerTool?: ResourceType | ''): { resource: ResourceType; amount: number }[] {
   const cost: { resource: ResourceType; amount: number }[] = [];
   cost.push({ resource: ResourceType.Planks, amount: 2 + level });
   cost.push({ resource: ResourceType.Stone, amount: 1 + Math.ceil(level / 2) });
-  cost.push({ resource: ResourceType.Tools, amount: Math.ceil(level / 2) });
+  if (workerTool) {
+    cost.push({ resource: workerTool, amount: Math.ceil(level / 2) });
+  }
   if (level >= 4) {
     cost.push({ resource: ResourceType.IronBars, amount: Math.ceil((level - 3) / 2) });
   }
@@ -133,7 +135,7 @@ function buildUpgradeRegistry(): Partial<Record<BuildingType, BuildingUpgradeSpe
       const levels: UpgradeLevelConfig[] = [];
       for (let lv = 1; lv <= MAX_LEVEL; lv++) {
         levels.push({
-          cost: getWorkerCost(lv),
+          cost: getWorkerCost(lv, def.workerTool),
           value: workerValue(lv),
         });
       }

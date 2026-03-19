@@ -1,5 +1,5 @@
 import { BUILDING_DEFINITIONS } from './BuildingType';
-import { BuildingState } from './Building';
+import { BuildingState, addToInventory, removeFromInventory, getInventoryAmount } from './Building';
 import { GameState } from './GameState';
 import type { Unit } from './Unit';
 import { UnitState, setUnitPath, clearUnitPath } from './Unit';
@@ -15,6 +15,10 @@ import { logger } from '../util/Logger';
 export class UnitManager {
   private gameState: GameState;
   private spawnCooldown = 0;
+  private gameTime = 0;
+
+  /** Optional callback when a building starts waiting for a tool */
+  onBuildingWaitingForTool: ((building: import('./Building').Building) => void) | null = null;
 
   /** Minimum seconds between serf spawns */
   private static SPAWN_INTERVAL = 2.0;
@@ -24,13 +28,14 @@ export class UnitManager {
   }
 
   /** Serialization: get internal state for save */
-  _getState(): { spawnCooldown: number } {
-    return { spawnCooldown: this.spawnCooldown };
+  _getState(): { spawnCooldown: number; gameTime: number } {
+    return { spawnCooldown: this.spawnCooldown, gameTime: this.gameTime };
   }
 
   /** Serialization: restore internal state from save */
-  _loadState(state: { spawnCooldown: number }): void {
+  _loadState(state: { spawnCooldown: number; gameTime?: number }): void {
     this.spawnCooldown = state.spawnCooldown;
+    this.gameTime = state.gameTime ?? 0;
   }
 
   /**
@@ -38,6 +43,7 @@ export class UnitManager {
    * Handles: orphan checks, spawning, assignment, movement progression.
    */
   update(deltaTime: number): void {
+    this.gameTime += deltaTime;
     this.updateOrphanedUnits();
     this.updateSpawning(deltaTime);
     this.updateMovement(deltaTime);
@@ -100,8 +106,34 @@ export class UnitManager {
       const unitType = WORKER_TO_UNIT_TYPE[def.worker];
       if (!unitType) continue;
 
+      // Check tool requirement from unit definition
+      const unitDef = UNIT_DEFINITIONS[unitType];
+      const requiredTool = unitDef.requiredTool;
+
+      if (requiredTool) {
+        const available = getInventoryAmount(castle.outputInventory, requiredTool);
+        if (available <= 0) {
+          // Tool not available — mark building as waiting
+          if (!building.waitingForTool) {
+            building.waitingForTool = requiredTool;
+            building.waitingForToolSince = this.gameTime;
+            this.onBuildingWaitingForTool?.(building);
+          }
+          continue;
+        }
+        // Consume tool from Castle
+        removeFromInventory(castle.outputInventory, requiredTool, 1);
+      }
+
+      // Clear waiting state since we have the tool
+      building.waitingForTool = null;
+      building.waitingForToolSince = null;
+
       // Spawn the serf at the Castle
       const unit = this.gameState.spawnUnit(unitType, { ...castle.coord }, playerId);
+      if (requiredTool) {
+        unit.carriedTool = requiredTool;
+      }
 
       // Assign to building via reverse index
       this.gameState.assignWorkerToBuilding(unit.id, building.id);
@@ -122,6 +154,11 @@ export class UnitManager {
         );
         unit.state = UnitState.Idle;
         this.gameState.unassignWorker(unit.id);
+        // Return tool to Castle if spawn failed
+        if (requiredTool) {
+          addToInventory(castle.outputInventory, requiredTool, 1);
+          unit.carriedTool = null;
+        }
       }
 
       spawned = true;
@@ -149,7 +186,19 @@ export class UnitManager {
         const unitType = WORKER_TO_UNIT_TYPE[def.worker];
         if (!unitType) continue;
 
+        // Check tool requirement for extra workers too
+        const unitDef = UNIT_DEFINITIONS[unitType];
+        const requiredTool = unitDef.requiredTool;
+        if (requiredTool) {
+          const available = getInventoryAmount(castle.outputInventory, requiredTool);
+          if (available <= 0) continue;
+          removeFromInventory(castle.outputInventory, requiredTool, 1);
+        }
+
         const extra = this.gameState.spawnUnit(unitType, { ...castle.coord }, playerId);
+        if (requiredTool) {
+          extra.carriedTool = requiredTool;
+        }
         extra.assignedBuildingId = building.id;
         building.extraWorkerIds.push(extra.id);
 
@@ -162,6 +211,10 @@ export class UnitManager {
           extra.assignedBuildingId = null;
           building.extraWorkerIds.pop();
           this.gameState.removeUnit(extra.id);
+          // Return tool if spawn failed
+          if (requiredTool) {
+            addToInventory(castle.outputInventory, requiredTool, 1);
+          }
         }
         spawned = true;
       }
@@ -229,6 +282,14 @@ export class UnitManager {
           clearUnitPath(unit);
           unit.state = UnitState.Idle;
           this.gameState.unassignWorker(unit.id);
+          // Return carried tool to Castle
+          if (unit.carriedTool) {
+            const castle = this.gameState.findCastle(unit.playerId);
+            if (castle) {
+              addToInventory(castle.outputInventory, unit.carriedTool, 1);
+            }
+            unit.carriedTool = null;
+          }
         }
       }
     }

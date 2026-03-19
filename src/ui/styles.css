@@ -465,6 +465,171 @@ html, body {
 }
 
 /* ============================================================
+   Tool Alert Bar
+   ============================================================ */
+.tool-alert-bar {
+  position: fixed;
+  top: 56px;
+  left: 12px;
+  z-index: var(--z-panel);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  pointer-events: auto;
+}
+
+.tool-alert-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 16px;
+  background: rgba(255, 152, 0, 0.12);
+  border: 1px solid rgba(255, 152, 0, 0.3);
+  color: var(--color-on-surface);
+  font-size: 12px;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+  white-space: nowrap;
+}
+
+.tool-alert-chip:hover {
+  background: rgba(255, 152, 0, 0.22);
+  transform: translateX(2px);
+}
+
+.tool-alert-text {
+  font-weight: 500;
+}
+
+.tool-alert-status-producing,
+.tool-alert-status-queued,
+.tool-alert-status-idle {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.tool-alert-status-producing { background: #22c55e; }
+.tool-alert-status-queued { background: #f59e0b; }
+.tool-alert-status-idle { background: #ef4444; }
+
+.tool-alert-overflow {
+  color: var(--color-on-surface-variant);
+  cursor: default;
+}
+
+.tool-waiting-alert {
+  background: rgba(255, 152, 0, 0.08);
+  border-left: 3px solid #e65100;
+  padding: 8px 12px;
+  margin: 4px 0;
+  border-radius: 4px;
+}
+
+@media (max-width: 768px) {
+  .tool-alert-bar {
+    top: auto;
+    bottom: 150px;
+    left: 8px;
+  }
+  .tool-alert-chip {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+}
+
+/* ============================================================
+   Capacity Alert Bar
+   ============================================================ */
+.capacity-alert-bar {
+  position: fixed;
+  top: 56px;
+  left: 220px;
+  z-index: var(--z-panel);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  pointer-events: auto;
+}
+
+.capacity-alert-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 16px;
+  color: var(--color-on-surface);
+  font-size: 12px;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+  white-space: nowrap;
+}
+
+.capacity-alert-chip:hover {
+  transform: translateX(2px);
+}
+
+.capacity-alert-output_full {
+  background: rgba(244, 67, 54, 0.12);
+  border: 1px solid rgba(244, 67, 54, 0.3);
+}
+.capacity-alert-output_full:hover {
+  background: rgba(244, 67, 54, 0.22);
+}
+
+.capacity-alert-input_full,
+.capacity-alert-near_full {
+  background: rgba(255, 152, 0, 0.12);
+  border: 1px solid rgba(255, 152, 0, 0.3);
+}
+.capacity-alert-input_full:hover,
+.capacity-alert-near_full:hover {
+  background: rgba(255, 152, 0, 0.22);
+}
+
+.capacity-alert-text {
+  font-weight: 500;
+}
+
+.capacity-alert-icon {
+  flex-shrink: 0;
+}
+.capacity-alert-output_full .capacity-alert-icon { color: #f44336; }
+.capacity-alert-input_full .capacity-alert-icon,
+.capacity-alert-near_full .capacity-alert-icon { color: #ff9800; }
+
+.capacity-alert-status-critical,
+.capacity-alert-status-warning {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.capacity-alert-status-critical { background: #f44336; }
+.capacity-alert-status-warning { background: #ff9800; }
+
+.capacity-alert-overflow {
+  color: var(--color-on-surface-variant);
+  cursor: default;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+@media (max-width: 768px) {
+  .capacity-alert-bar {
+    top: auto;
+    bottom: 150px;
+    left: 8px;
+  }
+  .capacity-alert-chip {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+}
+
+/* ============================================================
    Build Panel
    ============================================================ */
 /* Stats FAB (mobile only) */

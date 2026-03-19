@@ -45,34 +45,26 @@ describe('UnitDefinition', () => {
     }
   });
 
-  it('tool-requiring professions should have tools as required tool', () => {
+  it('tool-requiring professions should have specific tool types', () => {
+    // All professions except Transporter, Toolmaker, Miller, and Knight need tools
     const toolUsers = [
-      UnitType.Builder,
-      UnitType.Woodcutter,
-      UnitType.Stonemason,
-      UnitType.Miner,
-      UnitType.Farmer,
-      UnitType.Fisherman,
+      UnitType.Builder, UnitType.Woodcutter, UnitType.Stonemason,
+      UnitType.Miner, UnitType.Farmer, UnitType.Fisherman,
+      UnitType.Forester, UnitType.Geologist, UnitType.SawmillWorker,
+      UnitType.Baker, UnitType.PigFarmer, UnitType.Butcher,
+      UnitType.SmelterWorker, UnitType.Goldsmith, UnitType.Blacksmith,
     ];
     for (const type of toolUsers) {
-      expect(UNIT_DEFINITIONS[type].requiredTool).toBe('tools');
+      expect(UNIT_DEFINITIONS[type].requiredTool).not.toBeNull();
+      expect(typeof UNIT_DEFINITIONS[type].requiredTool).toBe('string');
     }
   });
 
   it('non-tool professions should have null required tool', () => {
     const noTool = [
       UnitType.Transporter,
-      UnitType.Forester,
-      UnitType.Geologist,
-      UnitType.SawmillWorker,
       UnitType.Miller,
-      UnitType.Baker,
-      UnitType.PigFarmer,
-      UnitType.Butcher,
-      UnitType.SmelterWorker,
-      UnitType.Goldsmith,
       UnitType.Toolmaker,
-      UnitType.Blacksmith,
       UnitType.Knight,
     ];
     for (const type of noTool) {

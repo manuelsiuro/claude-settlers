@@ -33,7 +33,7 @@ export const UnitType = {
   type: UnitType.NewUnit,
   label: 'New Unit',
   category: 'civilian',  // or 'military'
-  requiredTool: ResourceType.Tools, // or null if no tool needed
+  requiredTool: ResourceType.Axe, // specific tool type (see TOOL_TYPES), or null if no tool needed
   moveSpeed: 1.5,  // units per second (Transporter: 2.0, Knight: 1.8, most workers: 1.5)
 },
 ```

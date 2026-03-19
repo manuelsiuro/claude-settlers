@@ -1,5 +1,5 @@
 import { BuildingType, BUILDING_DEFINITIONS } from './BuildingType';
-import { BuildingState, getInventoryTotal } from './Building';
+import { BuildingState, getInventoryTotal, getInventoryAmount } from './Building';
 import type { Building } from './Building';
 import type { HexGrid, HexCoord } from './HexGrid';
 import type { GameState } from './GameState';
@@ -226,6 +226,7 @@ export class AIPlayer {
       // Easy difficulty: skip 30% of decision ticks randomly
       if (this.difficulty !== Difficulty.Easy || Math.random() >= 0.3) {
         this.tryBuildNext();
+        this.manageToolQueue();
         // Only try upgrades once economy is established
         if (this.buildOrderIndex > 8) {
           this.tryUpgrade();
@@ -523,6 +524,60 @@ export class AIPlayer {
    */
   _setBuildOrderIndex(index: number): void {
     this.buildOrderIndex = Math.max(0, Math.min(index, this.buildOrder.length));
+  }
+
+  /**
+   * Manage tool production queue at AI Toolmaker buildings.
+   * Looks ahead in build order and queues tools needed by upcoming buildings.
+   * Also prioritizes tools for buildings currently waiting.
+   */
+  private manageToolQueue(): void {
+    const buildings = this.gameState.getBuildingsByPlayer(this.playerId);
+    const castle = this.gameState.findCastle(this.playerId);
+    if (!castle) return;
+
+    // Find active Toolmaker buildings
+    const toolmakers = buildings.filter(b => b.toolQueue !== undefined && b.state === BuildingState.Active);
+    if (toolmakers.length === 0) return;
+
+    // Count tools needed: from buildings waiting + upcoming build order
+    const needed = new Map<ResourceType, number>();
+
+    // Buildings currently waiting for tools get priority
+    for (const b of buildings) {
+      if (b.waitingForTool) {
+        needed.set(b.waitingForTool, (needed.get(b.waitingForTool) ?? 0) + 1);
+      }
+    }
+
+    // Look ahead 5 buildings in build order
+    const lookahead = Math.min(this.buildOrderIndex + 5, this.buildOrder.length);
+    for (let i = this.buildOrderIndex; i < lookahead; i++) {
+      const type = this.buildOrder[i];
+      const def = BUILDING_DEFINITIONS[type];
+      if (!def.workerTool) continue;
+      const tool = def.workerTool;
+      needed.set(tool, (needed.get(tool) ?? 0) + 1);
+    }
+
+    // Subtract tools already in Castle stock + already queued
+    for (const [tool, count] of needed) {
+      const inStock = getInventoryAmount(castle.outputInventory, tool);
+      let queued = 0;
+      for (const tm of toolmakers) {
+        const entry = tm.toolQueue?.find(e => e.toolType === tool);
+        queued += entry?.count ?? 0;
+      }
+      const deficit = count - inStock - queued;
+      if (deficit > 0 && toolmakers.length > 0) {
+        // Queue deficit at the first active Toolmaker
+        const tm = toolmakers[0];
+        const entry = tm.toolQueue?.find(e => e.toolType === tool);
+        if (entry) {
+          entry.count += deficit;
+        }
+      }
+    }
   }
 
   /** Serialization: get internal state for save */

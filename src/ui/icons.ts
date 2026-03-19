@@ -28,6 +28,7 @@ const svgs: Record<string, string> = {
   sun: '<path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58a.996.996 0 0 0-1.41 0 .996.996 0 0 0 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37a.996.996 0 0 0-1.41 0 .996.996 0 0 0 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0a.996.996 0 0 0 0-1.41l-1.06-1.06zm1.06-10.96a.996.996 0 0 0 0-1.41.996.996 0 0 0-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36a.996.996 0 0 0 0-1.41.996.996 0 0 0-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/>',
   moon: '<path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/>',
   tune: '<path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/>',
+  warning: '<path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>',
   chevron_right: '<path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>',
   delete: '<path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>',
   account_tree: '<path d="M22 11V3h-7v3H9V3H2v8h7V8h2v10h4v3h7v-8h-7v3h-2V8h2v3z"/>',
@@ -93,9 +94,49 @@ const resourceIcons: Record<string, { color: string; path: string }> = {
     color: '#FFD700',
     path: 'M4 11h8L10 5H6z', // Trapezoid ingot
   },
-  tools: {
+  axe: {
+    color: '#795548',
+    path: 'M8 3v10M5 4l3 2 3-2', // Axe head + handle
+  },
+  pickaxe: {
+    color: '#78909C',
+    path: 'M8 12L4 4M8 12l4-8M8 12v2', // Pickaxe head
+  },
+  saw: {
+    color: '#A1887F',
+    path: 'M3 8h10M4 6l2 2-2 2M7 6l2 2-2 2M10 6l2 2-2 2', // Saw teeth
+  },
+  scythe: {
+    color: '#8D6E63',
+    path: 'M8 12V3M4 4c0 3 4 4 4 4', // Curved blade + handle
+  },
+  fishing_rod: {
+    color: '#5D4037',
+    path: 'M4 3l4 6v4M8 13l1 1', // Rod + line
+  },
+  hammer_tool: {
     color: '#795548',
     path: 'M6 3v7l2 2v1H7v-1L5 10V3z', // Hammer
+  },
+  shovel: {
+    color: '#6D4C41',
+    path: 'M8 3v8M6 11c0 2 4 2 4 0', // Handle + scoop
+  },
+  rolling_pin: {
+    color: '#BCAAA4',
+    path: 'M4 8h8M5 6v4M11 6v4', // Rolling pin
+  },
+  cleaver: {
+    color: '#90A4AE',
+    path: 'M5 3h4v8H5zM7 11v2', // Blade + handle
+  },
+  crucible: {
+    color: '#FF8F00',
+    path: 'M4 4h8l-1 7H5zM6 11v2M10 11v2', // Cup shape
+  },
+  tongs: {
+    color: '#546E7A',
+    path: 'M5 3l3 5-3 5M11 3l-3 5 3 5', // Crossed tongs
   },
   swords: {
     color: '#90A4AE',

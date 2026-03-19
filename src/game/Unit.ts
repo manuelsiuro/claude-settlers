@@ -46,6 +46,8 @@ export interface Unit {
   carryingResource: ResourceType | null;
   /** Knight rank 1-5 (only meaningful for Knight type) */
   knightRank: number;
+  /** Tool consumed at spawn, returned to Castle when dismissed (null if none) */
+  carriedTool: ResourceType | null;
 }
 
 let nextUnitId = 1;
@@ -70,6 +72,7 @@ export function createUnit(
     moveProgress: 0,
     carryingResource: null,
     knightRank: 1,
+    carriedTool: null,
   };
 }
 

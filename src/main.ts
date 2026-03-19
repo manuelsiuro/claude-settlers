@@ -17,6 +17,8 @@ if ('serviceWorker' in navigator) {
 // UI modules
 import { initSnackbar, showSnackbar } from './ui/Snackbar';
 import { wireNotifications } from './ui/NotificationWiring';
+import { initToolAlertBar, disposeToolAlertBar } from './ui/ToolAlertBar';
+import { initCapacityAlertBar, disposeCapacityAlertBar } from './ui/CapacityAlertBar';
 import { initGameOverScreen, showGameOver } from './ui/GameOverScreen';
 import { initSetupScreen, handleLoadFromFile } from './ui/SetupScreen';
 import { initAppBar, updatePauseSpeedUI, setupGameControlsPosition } from './ui/AppBar';
@@ -263,6 +265,12 @@ app.innerHTML = `
   <!-- Snackbar -->
   <div id="snackbar" class="snackbar"></div>
 
+  <!-- Tool Alert Bar -->
+  <div id="tool-alert-bar" class="tool-alert-bar"></div>
+
+  <!-- Capacity Alert Bar -->
+  <div id="capacity-alert-bar" class="capacity-alert-bar"></div>
+
   <!-- Pause Overlay -->
   <div id="pause-overlay" class="pause-overlay hidden">
     <div class="pause-card">
@@ -487,6 +495,8 @@ async function startGame(config: Partial<GameConfig>, savedData?: SaveData): Pro
   currentMinimap?.dispose();
   currentMinimap = undefined;
   if (game) {
+    disposeToolAlertBar();
+    disposeCapacityAlertBar();
     game.dispose();
   }
 
@@ -494,6 +504,8 @@ async function startGame(config: Partial<GameConfig>, savedData?: SaveData): Pro
   (window as unknown as Record<string, unknown>).__game = game;
 
   wireNotifications(game, showGameOver, updatePauseSpeedUI);
+  initToolAlertBar(getGame);
+  initCapacityAlertBar(getGame);
   updatePauseSpeedUI(false, 1);
 
   // Dispose previous tooltip controller

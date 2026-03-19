@@ -72,7 +72,18 @@ function setupAI(
   addToInventory(result.building.outputInventory, ResourceType.Wood, 30);
   addToInventory(result.building.outputInventory, ResourceType.Stone, 20);
   addToInventory(result.building.outputInventory, ResourceType.Planks, 20);
-  addToInventory(result.building.outputInventory, ResourceType.Tools, 10);
+  // Add individual tools for AI workers
+  addToInventory(result.building.outputInventory, ResourceType.Axe, 5);
+  addToInventory(result.building.outputInventory, ResourceType.Pickaxe, 5);
+  addToInventory(result.building.outputInventory, ResourceType.Saw, 3);
+  addToInventory(result.building.outputInventory, ResourceType.Scythe, 3);
+  addToInventory(result.building.outputInventory, ResourceType.FishingRod, 3);
+  addToInventory(result.building.outputInventory, ResourceType.Hammer, 5);
+  addToInventory(result.building.outputInventory, ResourceType.Shovel, 3);
+  addToInventory(result.building.outputInventory, ResourceType.Crucible, 3);
+  addToInventory(result.building.outputInventory, ResourceType.RollingPin, 3);
+  addToInventory(result.building.outputInventory, ResourceType.Cleaver, 3);
+  addToInventory(result.building.outputInventory, ResourceType.Tongs, 3);
   territoryManager.markDirty(); // ensure territory is recalculated after Castle placement
   territoryManager.update();
 

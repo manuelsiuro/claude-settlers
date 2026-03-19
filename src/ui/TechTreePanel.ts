@@ -1,5 +1,5 @@
 import { BUILDING_DEFINITIONS, type BuildingDefinition } from '../game/BuildingType';
-import { RESOURCE_PROPERTIES, type ResourceType } from '../game/ResourceType';
+import { RESOURCE_PROPERTIES, TOOL_TYPES, type ResourceType } from '../game/ResourceType';
 import { icon, resourceIcon } from './icons';
 import { audioManager } from '../engine/AudioManager';
 
@@ -112,6 +112,17 @@ function buildProducerMap(defs: Record<string, BuildingDefinition>): Map<string,
 function buildGraph(): { nodes: TechTreeNode[]; edges: TechTreeEdge[] } {
   const defs = BUILDING_DEFINITIONS as Record<string, BuildingDefinition>;
   const producerMap = buildProducerMap(defs);
+
+  // Register dynamic-output buildings (inputs but no outputs) as producers for all tool types
+  for (const [type, def] of Object.entries(defs)) {
+    if (def.production && def.production.inputs.length > 0 && def.production.outputs.length === 0) {
+      for (const toolType of TOOL_TYPES) {
+        const list = producerMap.get(toolType) ?? [];
+        list.push(type);
+        producerMap.set(toolType, list);
+      }
+    }
+  }
 
   // Create nodes
   const nodes: TechTreeNode[] = [];

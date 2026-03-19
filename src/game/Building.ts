@@ -60,6 +60,14 @@ export interface Building {
   extraWorkerIds: string[];
   /** Whether production is paused (building remains active but doesn't produce) */
   productionPaused: boolean;
+  /** Which tool this building is waiting for (null if not waiting) */
+  waitingForTool: ResourceType | null;
+  /** Game-time timestamp when the building started waiting for a tool (for FIFO ordering) */
+  waitingForToolSince: number | null;
+  /** Tool production queue (Toolmaker buildings only) */
+  toolQueue: { toolType: ResourceType; count: number }[] | undefined;
+  /** Currently producing tool type (Toolmaker buildings only) */
+  currentToolProduction: ResourceType | null;
 }
 
 let nextBuildingId = 1;
@@ -90,6 +98,10 @@ export function createBuilding(
     activeUpgrade: null,
     extraWorkerIds: [],
     productionPaused: false,
+    waitingForTool: null,
+    waitingForToolSince: null,
+    toolQueue: undefined,
+    currentToolProduction: null,
   };
 }
 
@@ -202,21 +214,31 @@ export const CASTLE_STARTING_RESOURCES: { resource: ResourceType; amount: number
   { resource: ResourceType.Wood, amount: 12 },
   { resource: ResourceType.Stone, amount: 8 },
   { resource: ResourceType.Planks, amount: 6 },
-  { resource: ResourceType.Tools, amount: 4 },
   { resource: ResourceType.Fish, amount: 4 },
   { resource: ResourceType.Bread, amount: 4 },
+  { resource: ResourceType.IronBars, amount: 8 },
+  // Individual tools for bootstrapping
+  { resource: ResourceType.Axe, amount: 2 },
+  { resource: ResourceType.Pickaxe, amount: 2 },
+  { resource: ResourceType.Saw, amount: 1 },
+  { resource: ResourceType.Scythe, amount: 1 },
+  { resource: ResourceType.FishingRod, amount: 1 },
+  { resource: ResourceType.Hammer, amount: 2 },
+  { resource: ResourceType.Shovel, amount: 1 },
+  { resource: ResourceType.Crucible, amount: 1 },
 ];
 
 // DEBUG: Uncomment to start with abundant resources for testing
+// import { TOOL_TYPES } from './ResourceType';
 // export const DEBUG_CASTLE_STARTING_RESOURCES: { resource: ResourceType; amount: number }[] = [
 //   { resource: ResourceType.Wood, amount: 50 },
 //   { resource: ResourceType.Stone, amount: 50 },
 //   { resource: ResourceType.Planks, amount: 50 },
-//   { resource: ResourceType.Tools, amount: 50 },
 //   { resource: ResourceType.Fish, amount: 50 },
 //   { resource: ResourceType.IronBars, amount: 50 },
 //   { resource: ResourceType.Swords, amount: 50 },
 //   { resource: ResourceType.Shields, amount: 50 },
+//   ...TOOL_TYPES.map(t => ({ resource: t, amount: 50 })),
 // ];
 
 /** Initialize a Castle building with starting resources */

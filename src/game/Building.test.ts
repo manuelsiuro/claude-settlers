@@ -240,11 +240,12 @@ describe('Building', () => {
       const castle = createBuilding(BuildingType.Castle, { q: 0, r: 0 }, 1);
       initializeCastleResources(castle);
 
-      // Should have wood, stone, planks, tools
+      // Should have wood, stone, planks, and individual tools
       expect(getInventoryAmount(castle.outputInventory, ResourceType.Wood)).toBeGreaterThan(0);
       expect(getInventoryAmount(castle.outputInventory, ResourceType.Stone)).toBeGreaterThan(0);
       expect(getInventoryAmount(castle.outputInventory, ResourceType.Planks)).toBeGreaterThan(0);
-      expect(getInventoryAmount(castle.outputInventory, ResourceType.Tools)).toBeGreaterThan(0);
+      expect(getInventoryAmount(castle.outputInventory, ResourceType.Axe)).toBeGreaterThan(0);
+      expect(getInventoryAmount(castle.outputInventory, ResourceType.Hammer)).toBeGreaterThan(0);
     });
   });
 });

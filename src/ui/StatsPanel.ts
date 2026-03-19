@@ -3,7 +3,7 @@ import { audioManager } from '../engine/AudioManager';
 import { icon, resourceIcon } from './icons';
 import { BuildingType, BUILDING_DEFINITIONS } from '../game/BuildingType';
 import { BuildingState } from '../game/Building';
-import { RESOURCE_PROPERTIES, ResourceType } from '../game/ResourceType';
+import { RESOURCE_PROPERTIES, ResourceType, TOOL_TYPES } from '../game/ResourceType';
 import { UNIT_DEFINITIONS, UnitType } from '../game/UnitType';
 import { renderEconomySection, drawEconomySparklines } from './EconomyPanel';
 import { renderPriorityHTML, attachPriorityListeners } from './ResourcePriorityPanel';
@@ -232,7 +232,8 @@ const RAW_RESOURCES = [
 const PROCESSED_RESOURCES = [
   ResourceType.Planks, ResourceType.Flour, ResourceType.Bread,
   ResourceType.Meat, ResourceType.IronBars, ResourceType.GoldBars,
-  ResourceType.Tools, ResourceType.Swords, ResourceType.Shields,
+  ResourceType.Swords, ResourceType.Shields,
+  ...TOOL_TYPES,
 ];
 const ALL_RESOURCES = [...RAW_RESOURCES, ...PROCESSED_RESOURCES];
 

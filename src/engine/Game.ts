@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { HexGrid } from '../game/HexGrid';
 import { generateMap } from '../game/MapGenerator';
 import { BuildingType } from '../game/BuildingType';
+import { RESOURCE_PROPERTIES } from '../game/ResourceType';
+import type { ResourceType } from '../game/ResourceType';
 import { initializeCastleResources, transferStorageInputs } from '../game/Building';
 import { BuildingState } from '../game/Building';
 import { GameState } from '../game/GameState';
@@ -54,6 +56,7 @@ import { BlobShadowRenderer } from './BlobShadowRenderer';
 import { AtmosphereController } from './AtmosphereController';
 import { createDefaultDistribution } from '../game/GoodsDistribution';
 import type { GoodsDistributionSettings } from '../game/GoodsDistribution';
+import { ToolProductionManager } from '../game/ToolProductionManager';
 import { PerformanceMonitor } from './PerformanceMonitor';
 import { PostProcessing } from './PostProcessing';
 import { WeatherController } from './WeatherController';
@@ -75,6 +78,7 @@ export type GameNotificationType =
   | 'building_captured'
   | 'building_destroyed'
   | 'combat_result'
+  | 'tool_waiting'
   | 'victory'
   | 'defeat';
 
@@ -118,6 +122,7 @@ export class Game {
   private productionChainOverlay: ProductionChainOverlay;
   private economyTracker: EconomyTracker;
   private upgradeManager: UpgradeManager;
+  private toolProductionManager: ToolProductionManager;
   private fogOfWarManager: FogOfWarManager;
   private fogOfWarRenderer: FogOfWarRenderer;
   private blobShadowRenderer: BlobShadowRenderer;
@@ -265,6 +270,7 @@ export class Game {
     this.productionChainOverlay = new ProductionChainOverlay();
     this.economyTracker = new EconomyTracker();
     this.upgradeManager = new UpgradeManager(this.gameState);
+    this.toolProductionManager = new ToolProductionManager(this.gameState);
     this.fogOfWarManager = new FogOfWarManager(this.gameState);
     this.fogOfWarRenderer = new FogOfWarRenderer();
     this.blobShadowRenderer = new BlobShadowRenderer();
@@ -284,7 +290,7 @@ export class Game {
       this.postProcessing.setBloomStrength(0.3 + 0.2 * nightness);
     };
     // Wire production events to economy tracker
-    this.productionManager.onProductionComplete = (inputs, outputs) => {
+    const trackProduction = (inputs: { resource: ResourceType; amount: number }[], outputs: { resource: ResourceType; amount: number }[]) => {
       for (const input of inputs) {
         this.economyTracker.recordConsumption(input.resource, input.amount);
       }
@@ -292,6 +298,8 @@ export class Game {
         this.economyTracker.recordProduction(output.resource, output.amount);
       }
     };
+    this.productionManager.onProductionComplete = trackProduction;
+    this.toolProductionManager.onProductionComplete = trackProduction;
     this.victoryManager.onVictory = (result) => {
       const conditionLabels: Record<string, string> = {
         elimination: 'All enemies defeated',
@@ -320,11 +328,24 @@ export class Game {
       const tile = this.grid.getTile(building.coord.q, building.coord.r);
       const y = tile ? MapRenderer.getTileY(tile) : 0;
       this.particleSystem.emitBurst(x, y + 0.3, z, ParticleEffect.CompletionFlash, 20);
+      // Initialize tool queue for dynamic-output buildings (e.g., Toolmaker)
+      this.toolProductionManager.initializeQueue(building);
       if (building.playerId === this.humanPlayerId) {
         const def = BUILDING_DEFINITIONS[building.type];
         this.onNotification?.({ type: 'building_complete', message: `${def.label} construction complete` });
       }
     };
+    // Wire tool-waiting notifications
+    const notifyToolWaiting = (building: import('../game/Building').Building) => {
+      if (building.playerId !== this.humanPlayerId) return;
+      if (!building.waitingForTool) return;
+      const def = BUILDING_DEFINITIONS[building.type];
+      const toolLabel = RESOURCE_PROPERTIES[building.waitingForTool].label;
+      this.onNotification?.({ type: 'tool_waiting', message: `${def.label} needs a ${toolLabel}` });
+    };
+    this.unitManager.onBuildingWaitingForTool = notifyToolWaiting;
+    this.constructionManager.onBuildingWaitingForTool = notifyToolWaiting;
+
     this.gameState.territoryCheck = (q, r, playerId) => this.territoryManager.isOwnedBy(q, r, playerId);
     this.gameState.onBuildingRemoved = (building) => {
       this.territoryManager.markDirty();
@@ -629,6 +650,7 @@ export class Game {
       this.constructionManager.update(deltaTime);
       this.upgradeManager.update(deltaTime);
       this.productionManager.update(deltaTime);
+      this.toolProductionManager.update(deltaTime);
       this.geologistManager.update(deltaTime);
       this.treeManager.update(deltaTime);
       this.woodcutterManager.update(deltaTime);
@@ -1154,6 +1176,14 @@ export class Game {
 
   getUpgradeManager(): UpgradeManager {
     return this.upgradeManager;
+  }
+
+  getToolProductionManager(): ToolProductionManager {
+    return this.toolProductionManager;
+  }
+
+  getCameraController(): CameraController | null {
+    return this.cameraController;
   }
 
   getEconomyTracker(): EconomyTracker {

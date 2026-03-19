@@ -12,7 +12,7 @@ import { logger } from '../util/Logger';
 import type { GameState } from './GameState';
 import type { Unit } from './Unit';
 import { UnitState, setUnitPath } from './Unit';
-import { UnitType } from './UnitType';
+import { UnitType, UNIT_DEFINITIONS } from './UnitType';
 import { findPath } from './Pathfinding';
 
 /**
@@ -119,8 +119,13 @@ export class ConstructionManager {
    * Spawn builder units for buildings that are UnderConstruction but have no builder.
    * Handles all players — each player's Castle spawns their own builders.
    */
+  /** Optional callback when a building starts waiting for a builder tool */
+  onBuildingWaitingForTool: ((building: Building) => void) | null = null;
+
   private spawnBuilders(): void {
     const buildings = this.gameState.getAllBuildings();
+    // Read builder tool requirement from unit data
+    const builderTool = UNIT_DEFINITIONS[UnitType.Builder].requiredTool;
 
     for (const building of buildings) {
       if (building.state !== BuildingState.UnderConstruction) continue;
@@ -130,8 +135,29 @@ export class ConstructionManager {
       const castle = this.gameState.findCastle(building.playerId);
       if (!castle) continue;
 
+      // Check tool availability for the builder
+      if (builderTool) {
+        const available = getInventoryAmount(castle.outputInventory, builderTool);
+        if (available <= 0) {
+          if (!building.waitingForTool) {
+            building.waitingForTool = builderTool;
+            building.waitingForToolSince = Date.now();
+            this.onBuildingWaitingForTool?.(building);
+          }
+          continue;
+        }
+        removeFromInventory(castle.outputInventory, builderTool, 1);
+      }
+
+      // Clear waiting state
+      building.waitingForTool = null;
+      building.waitingForToolSince = null;
+
       // Spawn a builder at the Castle
       const builder = this.gameState.spawnUnit(UnitType.Builder, { ...castle.coord }, building.playerId);
+      if (builderTool) {
+        builder.carriedTool = builderTool;
+      }
       this.gameState.assignWorkerToBuilding(builder.id, building.id);
       this.builderAssignments.set(building.id, builder.id);
 
@@ -147,6 +173,10 @@ export class ConstructionManager {
         this.gameState.unassignWorker(builder.id);
         this.gameState.removeUnit(builder.id);
         this.builderAssignments.delete(building.id);
+        // Return tool
+        if (builderTool) {
+          addToInventory(castle.outputInventory, builderTool, 1);
+        }
       }
     }
   }

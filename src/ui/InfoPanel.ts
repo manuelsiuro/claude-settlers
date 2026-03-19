@@ -3,7 +3,7 @@ import { icon, resourceIcon } from './icons';
 import { BuildingType, BUILDING_DEFINITIONS } from '../game/BuildingType';
 import { BuildingState, getInventoryAmount, getInventoryTotal } from '../game/Building';
 import type { Building, ResourceInventory } from '../game/Building';
-import { RESOURCE_PROPERTIES, ResourceType } from '../game/ResourceType';
+import { RESOURCE_PROPERTIES, ResourceType, TOOL_TYPES } from '../game/ResourceType';
 import { getDistanceMultiplier, getDistanceRating } from '../game/ProductionManager';
 import {
   BUILDING_UPGRADES,
@@ -27,6 +27,12 @@ let updater: PanelUpdater;
 let getGame: () => Game;
 let closeBuildPanelFn: () => void;
 let closeStatsPanelFn: () => void;
+let selectedBuildingId: string | null = null;
+
+function getSelectedBuilding(): Building | undefined {
+  if (!selectedBuildingId) return undefined;
+  return getGame().getGameState().getBuilding(selectedBuildingId);
+}
 
 export function initInfoPanel(
   getGameFn: () => Game,
@@ -92,6 +98,19 @@ export function initInfoPanel(
       const building = getGame().getGameState().getBuilding(demolishBtn.dataset.buildingId);
       if (building) showDemolishConfirm(building);
     }
+
+    // Tool queue +/- buttons
+    const toolqBtn = (e.target as HTMLElement).closest('.toolq-btn') as HTMLElement | null;
+    if (toolqBtn?.dataset.tool && toolqBtn?.dataset.delta) {
+      const selectedBuilding = getSelectedBuilding();
+      if (selectedBuilding) {
+        const toolType = toolqBtn.dataset.tool as ResourceType;
+        const delta = parseInt(toolqBtn.dataset.delta, 10);
+        getGame().getToolProductionManager().adjustQueue(selectedBuilding.id, toolType, delta);
+        // Force structure rebuild to update counts
+        updater.reset();
+      }
+    }
   });
 }
 
@@ -142,8 +161,8 @@ function getInfoStructureKey(building: Building): string {
     parts.push('cr:' + remainingKeys);
   }
 
-  // Production progress bar visibility
-  if (def.production && building.state === BuildingState.Active) {
+  // Production progress bar visibility (skip for toolQueue buildings — Tool Queue section handles it)
+  if (def.production && building.state === BuildingState.Active && building.toolQueue === undefined) {
     parts.push('pp:' + (building.hasWorker && building.productionProgress > 0 ? '1' : '0'));
   }
 
@@ -189,6 +208,18 @@ function getInfoStructureKey(building: Building): string {
       }
       parts.push(`u${axis}:${level}:${uState}`);
     }
+  }
+
+  // Tool waiting state
+  if (building.waitingForTool) {
+    parts.push('tw:' + building.waitingForTool);
+  }
+
+  // Tool queue state (structure changes when current production or non-zero counts change)
+  if (building.toolQueue !== undefined) {
+    const curTool = building.currentToolProduction ?? 'none';
+    const nonZero = building.toolQueue.filter(e => e.count > 0).map(e => e.toolType).join(',');
+    parts.push(`tq:${curTool}:${nonZero}`);
   }
 
   return parts.join('|');
@@ -243,6 +274,55 @@ function generateInfoHTML(building: Building): string {
   }
   html += '</div>';
 
+  // Tool waiting alert
+  if (building.waitingForTool && building.state === BuildingState.Active) {
+    const toolLabel = RESOURCE_PROPERTIES[building.waitingForTool].label;
+    const castle = getGame().getGameState().findCastle(building.playerId);
+    const castleStock = castle ? getInventoryAmount(castle.outputInventory, building.waitingForTool) : 0;
+
+    // Check tool production status across player's Toolmakers
+    let toolStatus = 'Not queued';
+    let statusClass = 'tool-alert-status-idle';
+    const playerBuildings = getGame().getGameState().getBuildingsByPlayer(building.playerId);
+    for (const b of playerBuildings) {
+      if (b.toolQueue === undefined) continue;
+      if (b.currentToolProduction === building.waitingForTool) {
+        toolStatus = 'In production';
+        statusClass = 'tool-alert-status-producing';
+        break;
+      }
+      const entry = b.toolQueue.find(e => e.toolType === building.waitingForTool);
+      if (entry && entry.count > 0 && statusClass !== 'tool-alert-status-producing') {
+        toolStatus = 'Queued';
+        statusClass = 'tool-alert-status-queued';
+      }
+    }
+
+    html += `<div class="tool-waiting-alert">
+      <div style="font-weight:600;color:#e65100;margin-bottom:4px">⚠ Waiting for tool</div>
+      <div class="info-row">
+        <span class="info-label">Required</span>
+        <span class="info-value" data-field="tool-wait-name">${resourceIcon(building.waitingForTool)} ${toolLabel}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Tool status</span>
+        <span class="info-value" data-field="tool-wait-status"><span class="${statusClass}"></span> ${toolStatus}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Castle stock</span>
+        <span class="info-value" data-field="tool-wait-stock">${castleStock}</span>
+      </div>
+    </div>`;
+  }
+
+  // Tool waiting alert for construction buildings
+  if (building.waitingForTool && building.state === BuildingState.UnderConstruction) {
+    const toolLabel = RESOURCE_PROPERTIES[building.waitingForTool].label;
+    html += `<div class="tool-waiting-alert">
+      <div style="font-weight:600;color:#e65100;margin-bottom:4px">⚠ Builder needs ${toolLabel}</div>
+    </div>`;
+  }
+
   // Worker info
   if (def.worker) {
     const gameState = getGame().getGameState();
@@ -266,8 +346,8 @@ function generateInfoHTML(building: Building): string {
     html += '</div>';
   }
 
-  // Production info
-  if (def.production && building.state === BuildingState.Active) {
+  // Production info (skip for toolQueue buildings — Tool Queue section handles display)
+  if (def.production && building.state === BuildingState.Active && building.toolQueue === undefined) {
     html += `<div class="info-section">
       <div class="info-section-label">${icon('hammer')} Production</div>`;
 
@@ -329,6 +409,68 @@ function generateInfoHTML(building: Building): string {
         <span class="info-value" data-field="res-distance" style="color:${rating.color}">${building.resourceDistance} tile${building.resourceDistance !== 1 ? 's' : ''}</span>
       </div>`;
     }
+    html += '</div>';
+  }
+
+  // Tool production queue (for buildings with dynamic outputs like Toolmaker)
+  if (building.toolQueue !== undefined && building.state === BuildingState.Active) {
+    html += `<div class="info-section">
+      <div class="info-section-label">${icon('hammer')} Tool Queue</div>`;
+
+    // Currently producing
+    if (building.currentToolProduction) {
+      const curLabel = RESOURCE_PROPERTIES[building.currentToolProduction].label;
+      const pct = Math.round(building.productionProgress * 100);
+      html += `<div class="info-row">
+        <span class="info-label">Now Making</span>
+        <span class="info-value" data-field="tq-current">${resourceIcon(building.currentToolProduction)} ${curLabel}</span>
+      </div>
+      <div class="info-progress-bar">
+        <div class="info-progress-fill info-progress-production" data-field="tq-bar" style="width:${pct}%"></div>
+      </div>`;
+    } else {
+      html += `<div class="info-row">
+        <span class="info-label">Status</span>
+        <span class="info-value" data-field="tq-current">Idle</span>
+      </div>`;
+    }
+
+    // Queue list — iterate TOOL_TYPES to auto-discover
+    html += '<div class="info-subsection-label" style="margin-top:8px">Queue</div>';
+    let totalQueued = 0;
+    for (const t of TOOL_TYPES) {
+      const entry = building.toolQueue.find(e => e.toolType === t);
+      const count = entry?.count ?? 0;
+      totalQueued += count;
+      const toolLabel = RESOURCE_PROPERTIES[t].label;
+      html += `<div class="info-resource-row" style="align-items:center">
+        <span class="info-resource-name">${resourceIcon(t)} ${toolLabel}</span>
+        <span style="display:flex;align-items:center;gap:4px">
+          <button class="toolq-btn btn-text" data-tool="${t}" data-delta="-1" style="width:28px;height:28px;padding:0;min-width:28px;font-size:16px;line-height:1">−</button>
+          <span class="info-resource-amount" data-field="toolq-${t}" style="min-width:20px;text-align:center">${count}</span>
+          <button class="toolq-btn btn-text" data-tool="${t}" data-delta="1" style="width:28px;height:28px;padding:0;min-width:28px;font-size:16px;line-height:1">+</button>
+        </span>
+      </div>`;
+    }
+    html += `<div class="info-row" style="margin-top:4px;border-top:1px solid var(--color-outline-variant);padding-top:4px">
+      <span class="info-label">Total Queued</span>
+      <span class="info-value" data-field="tq-total">${totalQueued}</span>
+    </div>`;
+
+    // Cycle time and output destination
+    if (def.production) {
+      const speedMult = getProductionSpeedMultiplier(building);
+      const effectiveTime = def.production.productionTime * speedMult;
+      html += `<div class="info-row">
+        <span class="info-label">Cycle Time</span>
+        <span class="info-value" data-field="tq-cycle-time">${effectiveTime.toFixed(1)}s</span>
+      </div>`;
+    }
+    html += `<div class="info-row">
+      <span class="info-label">Output</span>
+      <span class="info-value">→ Castle (via logistics)</span>
+    </div>`;
+
     html += '</div>';
   }
 
@@ -417,10 +559,7 @@ function generateInfoHTML(building: Building): string {
       html += formatInventory(building.outputInventory, 'inv-out');
     }
     const effectiveCap = getEffectiveStorageCapacity(building);
-    const isStorage = building.type === BuildingType.Castle || building.type === BuildingType.Warehouse;
-    const totalUsed = isStorage
-      ? getInventoryTotal(building.inputInventory) + getInventoryTotal(building.outputInventory)
-      : getInventoryTotal(building.outputInventory);
+    const totalUsed = getInventoryTotal(building.inputInventory) + getInventoryTotal(building.outputInventory);
     const pct = effectiveCap > 0 ? Math.min(100, Math.round((totalUsed / effectiveCap) * 100)) : 0;
     const barClass = pct > 85 ? 'capacity-bar-red' : pct > 60 ? 'capacity-bar-amber' : 'capacity-bar-green';
     html += `<div class="capacity-bar-wrapper">
@@ -550,8 +689,8 @@ function updateInfoValues(building: Building): void {
     updater.setClass('worker-count', `info-value ${assignedCount >= maxW ? 'state-active' : 'state-planned'}`);
   }
 
-  // Production
-  if (def.production && building.state === BuildingState.Active) {
+  // Production (skip for toolQueue buildings — handled by tool queue update below)
+  if (def.production && building.state === BuildingState.Active && building.toolQueue === undefined) {
     if (building.hasWorker && building.productionProgress > 0) {
       const multiplier = def.harvestTerrain ? getDistanceMultiplier(building.resourceDistance) : 1;
       const progressColor = def.harvestTerrain
@@ -572,6 +711,19 @@ function updateInfoValues(building: Building): void {
       const efficiency = Math.round((1 / multiplier) * 100);
       updater.setText('efficiency', `${efficiency}%`);
       updater.setText('res-distance', `${building.resourceDistance} tile${building.resourceDistance !== 1 ? 's' : ''}`);
+    }
+  }
+
+  // Tool queue updates
+  if (building.toolQueue !== undefined && building.state === BuildingState.Active) {
+    if (building.currentToolProduction) {
+      const pct = Math.round(building.productionProgress * 100);
+      updater.setWidth('tq-bar', `${pct}%`);
+    }
+    if (def.production) {
+      const speedMult = getProductionSpeedMultiplier(building);
+      const effectiveTime = def.production.productionTime * speedMult;
+      updater.setText('tq-cycle-time', `${effectiveTime.toFixed(1)}s`);
     }
   }
 
@@ -623,10 +775,7 @@ function updateInfoValues(building: Building): void {
     || Object.values(building.outputInventory).some((v) => v !== undefined && v > 0);
   if (hasInventory) {
     const effectiveCap = getEffectiveStorageCapacity(building);
-    const isStorage = building.type === BuildingType.Castle || building.type === BuildingType.Warehouse;
-    const totalUsed = isStorage
-      ? getInventoryTotal(building.inputInventory) + getInventoryTotal(building.outputInventory)
-      : getInventoryTotal(building.outputInventory);
+    const totalUsed = getInventoryTotal(building.inputInventory) + getInventoryTotal(building.outputInventory);
     const pct = effectiveCap > 0 ? Math.min(100, Math.round((totalUsed / effectiveCap) * 100)) : 0;
     const barClass = pct > 85 ? 'capacity-bar-red' : pct > 60 ? 'capacity-bar-amber' : 'capacity-bar-green';
     updater.setText('capacity-used', `${totalUsed} / ${effectiveCap}`);
@@ -686,6 +835,7 @@ function updateInfoValues(building: Building): void {
 
 /** Show the info panel for a building and start live updates */
 export function showInfoPanel(building: Building): void {
+  selectedBuildingId = building.id;
   const def = BUILDING_DEFINITIONS[building.type];
   infoPanelTitle.textContent = def.label;
   updater.reset();

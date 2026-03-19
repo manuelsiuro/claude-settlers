@@ -125,7 +125,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     tier: 1,
     cost: [{ resource: ResourceType.Wood, amount: 2 }],
     worker: 'Woodcutter',
-    workerTool: ResourceType.Tools,
+    workerTool: ResourceType.Axe,
     production: {
       inputs: [],
       outputs: [{ resource: ResourceType.Wood, amount: 1 }],
@@ -149,7 +149,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     tier: 1,
     cost: [{ resource: ResourceType.Wood, amount: 2 }],
     worker: 'Forester',
-    workerTool: '',
+    workerTool: ResourceType.Shovel,
     production: null,
     allowedTerrain: [TerrainType.Grassland],
     adjacentTerrain: null,
@@ -169,7 +169,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     tier: 1,
     cost: [{ resource: ResourceType.Wood, amount: 2 }],
     worker: 'Stonemason',
-    workerTool: ResourceType.Tools,
+    workerTool: ResourceType.Pickaxe,
     production: {
       inputs: [],
       outputs: [{ resource: ResourceType.Stone, amount: 1 }],
@@ -193,7 +193,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     tier: 1,
     cost: [{ resource: ResourceType.Wood, amount: 2 }],
     worker: 'Fisherman',
-    workerTool: ResourceType.Tools,
+    workerTool: ResourceType.FishingRod,
     production: {
       inputs: [],
       outputs: [{ resource: ResourceType.Fish, amount: 1 }],
@@ -240,7 +240,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     tier: 2,
     cost: [{ resource: ResourceType.Wood, amount: 3 }],
     worker: 'Sawmill Worker',
-    workerTool: '',
+    workerTool: ResourceType.Saw,
     production: {
       inputs: [{ resource: ResourceType.Wood, amount: 1 }],
       outputs: [{ resource: ResourceType.Planks, amount: 1 }],
@@ -267,7 +267,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
       { resource: ResourceType.Planks, amount: 2 },
     ],
     worker: 'Farmer',
-    workerTool: ResourceType.Tools,
+    workerTool: ResourceType.Scythe,
     production: {
       inputs: [],
       outputs: [{ resource: ResourceType.Grain, amount: 1 }],
@@ -294,7 +294,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
       { resource: ResourceType.Planks, amount: 1 },
     ],
     worker: 'Geologist',
-    workerTool: '',
+    workerTool: ResourceType.Hammer,
     production: null,
     allowedTerrain: [TerrainType.Grassland],
     adjacentTerrain: TerrainType.Mountain,
@@ -317,7 +317,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
       { resource: ResourceType.Planks, amount: 2 },
     ],
     worker: 'Miner',
-    workerTool: ResourceType.Tools,
+    workerTool: ResourceType.Pickaxe,
     production: {
       inputs: [{ resource: ResourceType.Fish, amount: 1 }],
       outputs: [{ resource: ResourceType.IronOre, amount: 1 }],
@@ -344,7 +344,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
       { resource: ResourceType.Planks, amount: 2 },
     ],
     worker: 'Miner',
-    workerTool: ResourceType.Tools,
+    workerTool: ResourceType.Pickaxe,
     production: {
       inputs: [{ resource: ResourceType.Fish, amount: 1 }],
       outputs: [{ resource: ResourceType.CoalOre, amount: 1 }],
@@ -371,7 +371,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
       { resource: ResourceType.Planks, amount: 2 },
     ],
     worker: 'Miner',
-    workerTool: ResourceType.Tools,
+    workerTool: ResourceType.Pickaxe,
     production: {
       inputs: [{ resource: ResourceType.Fish, amount: 1 }],
       outputs: [{ resource: ResourceType.GoldOre, amount: 1 }],
@@ -399,7 +399,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
       { resource: ResourceType.Stone, amount: 1 },
     ],
     worker: 'Miner',
-    workerTool: ResourceType.Tools,
+    workerTool: ResourceType.Pickaxe,
     production: {
       inputs: [{ resource: ResourceType.Fish, amount: 1 }],
       outputs: [{ resource: ResourceType.Stone, amount: 1 }],
@@ -482,7 +482,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
       { resource: ResourceType.Planks, amount: 2 },
     ],
     worker: 'Baker',
-    workerTool: '',
+    workerTool: ResourceType.RollingPin,
     production: {
       inputs: [
         { resource: ResourceType.Flour, amount: 1 },
@@ -512,7 +512,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
       { resource: ResourceType.Planks, amount: 2 },
     ],
     worker: 'Pig Farmer',
-    workerTool: '',
+    workerTool: ResourceType.Shovel,
     production: {
       inputs: [{ resource: ResourceType.Grain, amount: 1 }],
       outputs: [{ resource: ResourceType.Pigs, amount: 1 }],
@@ -540,7 +540,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
       { resource: ResourceType.Planks, amount: 2 },
     ],
     worker: 'Butcher',
-    workerTool: '',
+    workerTool: ResourceType.Cleaver,
     production: {
       inputs: [{ resource: ResourceType.Pigs, amount: 1 }],
       outputs: [{ resource: ResourceType.Meat, amount: 1 }],
@@ -568,7 +568,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
       { resource: ResourceType.Planks, amount: 2 },
     ],
     worker: 'Smelter Worker',
-    workerTool: '',
+    workerTool: ResourceType.Crucible,
     production: {
       inputs: [
         { resource: ResourceType.IronOre, amount: 1 },
@@ -605,7 +605,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
         { resource: ResourceType.IronBars, amount: 1 },
         { resource: ResourceType.Planks, amount: 1 },
       ],
-      outputs: [{ resource: ResourceType.Tools, amount: 1 }],
+      outputs: [],
       productionTime: 20,
     },
     allowedTerrain: [TerrainType.Grassland],
@@ -630,7 +630,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
       { resource: ResourceType.Planks, amount: 2 },
     ],
     worker: 'Goldsmith',
-    workerTool: '',
+    workerTool: ResourceType.Crucible,
     production: {
       inputs: [
         { resource: ResourceType.GoldOre, amount: 1 },
@@ -661,7 +661,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
       { resource: ResourceType.Planks, amount: 2 },
     ],
     worker: 'Blacksmith',
-    workerTool: '',
+    workerTool: ResourceType.Tongs,
     production: {
       inputs: [
         { resource: ResourceType.IronBars, amount: 2 },

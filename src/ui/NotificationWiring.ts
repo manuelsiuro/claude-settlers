@@ -16,6 +16,7 @@ function notificationToSfx(type: string): SfxType {
     case 'building_captured': return 'building_captured';
     case 'building_destroyed': return 'building_destroyed';
     case 'combat_result': return 'combat_clash';
+    case 'tool_waiting': return 'notification';
     case 'victory': return 'victory';
     case 'defeat': return 'defeat';
     default: return 'notification';

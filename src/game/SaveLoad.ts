@@ -31,7 +31,7 @@ import type { GoodsDistributionSettings } from './GoodsDistribution';
 import { serializeDistribution, deserializeDistribution } from './GoodsDistribution';
 
 /** Current save format version */
-const SAVE_VERSION = 7;
+const SAVE_VERSION = 8;
 
 /** localStorage key for auto-save */
 const STORAGE_KEY = 'feudal_realm_save';
@@ -354,6 +354,24 @@ export function deserializeGame(
     if (b.activeUpgrade === undefined) b.activeUpgrade = null;
     if (!b.extraWorkerIds) b.extraWorkerIds = [];
     if (b.productionPaused === undefined) b.productionPaused = false;
+    // v8: tool system fields
+    if (b.waitingForTool === undefined) b.waitingForTool = null;
+    if (b.waitingForToolSince === undefined) b.waitingForToolSince = null;
+    if (b.currentToolProduction === undefined) b.currentToolProduction = null;
+    // Convert old 'tools' in inventories to 'hammer_tool' (safe fallback)
+    for (const inv of [b.inputInventory, b.outputInventory, b.constructionDelivered]) {
+      if (inv && 'tools' in inv) {
+        const amount = (inv as Record<string, number>)['tools'];
+        delete (inv as Record<string, number>)['tools'];
+        (inv as Record<string, number>)['hammer_tool'] = ((inv as Record<string, number>)['hammer_tool'] ?? 0) + amount;
+      }
+    }
+  }
+  // v8: patch units missing carriedTool field
+  for (const u of data.units) {
+    if ((u as unknown as Record<string, unknown>).carriedTool === undefined) {
+      (u as unknown as Record<string, unknown>).carriedTool = null;
+    }
   }
 
   // Restore terrain overrides (from forestry: Forest↔Grassland changes)

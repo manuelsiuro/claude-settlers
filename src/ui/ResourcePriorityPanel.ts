@@ -1,5 +1,5 @@
 import type { Game } from '../engine/Game';
-import { RESOURCE_PROPERTIES, ResourceType } from '../game/ResourceType';
+import { RESOURCE_PROPERTIES, ResourceType, TOOL_TYPES } from '../game/ResourceType';
 import {
   getResourceCategoryWeights,
   setResourceCategoryWeights,
@@ -20,7 +20,8 @@ const ALL_RESOURCES: ResourceType[] = [
   ResourceType.Bread, ResourceType.Meat,
   ResourceType.IronOre, ResourceType.CoalOre, ResourceType.GoldOre,
   ResourceType.IronBars, ResourceType.GoldBars,
-  ResourceType.Tools, ResourceType.Swords, ResourceType.Shields,
+  ResourceType.Swords, ResourceType.Shields,
+  ...TOOL_TYPES,
   ResourceType.Pigs,
 ];
 

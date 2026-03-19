@@ -336,12 +336,19 @@ export class GameState {
    * Returns buildings with a worker field defined and no unit currently assigned.
    */
   getBuildingsNeedingWorkers(playerId: number): Building[] {
-    return this.getBuildingsByPlayer(playerId).filter((building) => {
+    const buildings = this.getBuildingsByPlayer(playerId).filter((building) => {
       const def = BUILDING_DEFINITIONS[building.type];
       if (!def.worker) return false;
       if (building.state !== 'active') return false;
       return !this.workerByBuilding.has(building.id);
     });
+    // FIFO ordering: buildings waiting for tools longest get priority
+    buildings.sort((a, b) => {
+      const aTime = a.waitingForToolSince ?? 0;
+      const bTime = b.waitingForToolSince ?? 0;
+      return aTime - bTime;
+    });
+    return buildings;
   }
 
   /**

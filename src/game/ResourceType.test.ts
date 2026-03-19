@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { ResourceType, RESOURCE_PROPERTIES } from './ResourceType';
+import { ResourceType, RESOURCE_PROPERTIES, TOOL_TYPES, isToolType } from './ResourceType';
 
 describe('ResourceType', () => {
-  it('should define all 17 resource types', () => {
+  it('should define all 27 resource types', () => {
     const types = Object.values(ResourceType);
-    expect(types).toHaveLength(17);
+    expect(types).toHaveLength(27);
   });
 
   it('should have unique string values for each type', () => {
@@ -34,8 +34,9 @@ describe('ResourceType', () => {
   it('should categorize processed goods correctly', () => {
     const processedTypes = [
       ResourceType.Planks, ResourceType.Flour, ResourceType.Bread, ResourceType.Meat,
-      ResourceType.IronBars, ResourceType.GoldBars, ResourceType.Tools,
+      ResourceType.IronBars, ResourceType.GoldBars,
       ResourceType.Swords, ResourceType.Shields,
+      ...TOOL_TYPES,
     ];
     for (const type of processedTypes) {
       expect(RESOURCE_PROPERTIES[type].category).toBe('processed');
@@ -52,5 +53,17 @@ describe('ResourceType', () => {
 
   it('should categorize pigs as animal', () => {
     expect(RESOURCE_PROPERTIES[ResourceType.Pigs].category).toBe('animal');
+  });
+
+  it('should define 11 tool types', () => {
+    expect(TOOL_TYPES).toHaveLength(11);
+    for (const t of TOOL_TYPES) {
+      expect(isToolType(t)).toBe(true);
+    }
+  });
+
+  it('should not mark non-tools as tool types', () => {
+    expect(isToolType(ResourceType.Wood)).toBe(false);
+    expect(isToolType(ResourceType.Swords)).toBe(false);
   });
 });

@@ -53,6 +53,8 @@ export class ProductionManager {
 
       const def = BUILDING_DEFINITIONS[building.type];
       if (!def.production) continue;
+      // Skip dynamic-output buildings (e.g., Toolmaker) — handled by their own manager
+      if (def.production.outputs.length === 0) continue;
 
       // WoodcutterHut production is handled by WoodcutterManager
       if (building.type === BuildingType.WoodcutterHut) continue;
