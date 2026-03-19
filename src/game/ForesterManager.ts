@@ -12,6 +12,11 @@ import { findPath } from './Pathfinding';
 import { setUnitPath, clearUnitPath } from './Unit';
 import { TerrainType } from './TerrainType';
 import { createRng } from './noise';
+import {
+  FORESTER_PLANT_DURATION as PLANT_DURATION,
+  FORESTER_IDLE_COOLDOWN as IDLE_COOLDOWN,
+  FORESTER_MAX_PLANT_RADIUS as MAX_PLANT_RADIUS,
+} from './data/balanceConstants';
 
 export type ForesterPhase =
   | 'idle_at_hut'
@@ -26,15 +31,6 @@ interface ForesterWorkState {
   idleCooldown: number;
   plantedTiles: Set<string>;
 }
-
-/** Time to plant a sapling (seconds) */
-const PLANT_DURATION = 5.0;
-
-/** Cooldown between work cycles (seconds) */
-const IDLE_COOLDOWN = 3.0;
-
-/** Max BFS radius to search for plantable spots */
-const MAX_PLANT_RADIUS = 6;
 
 /** Seed offset for planting RNG to avoid collisions with other systems */
 const PLANT_RNG_SEED_OFFSET = 7000;

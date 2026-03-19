@@ -4,6 +4,11 @@ import { ResourceType } from './ResourceType';
 import { TerrainType } from './TerrainType';
 import type { GameState } from './GameState';
 import type { TerritoryManager } from './TerritoryManager';
+import {
+  VICTORY_DOMINATION_THRESHOLD,
+  VICTORY_ECONOMIC_GOLD_TARGET,
+  VICTORY_PEACEFUL_GOODS_TARGET,
+} from './data/balanceConstants';
 
 export const VictoryCondition = {
   /** All enemy Castles destroyed — last player standing */
@@ -69,9 +74,9 @@ export class VictoryManager {
   private result: VictoryResult | null = null;
 
   /** Thresholds */
-  static DOMINATION_THRESHOLD = 0.75;
-  static ECONOMIC_GOLD_TARGET = 50;
-  static PEACEFUL_GOODS_TARGET = 100;
+  static DOMINATION_THRESHOLD = VICTORY_DOMINATION_THRESHOLD;
+  static ECONOMIC_GOLD_TARGET = VICTORY_ECONOMIC_GOLD_TARGET;
+  static PEACEFUL_GOODS_TARGET = VICTORY_PEACEFUL_GOODS_TARGET;
 
   /** Timed victory: limit in seconds (0 = disabled) */
   private timedLimit: number;

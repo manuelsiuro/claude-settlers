@@ -11,6 +11,11 @@ import { UNIT_DEFINITIONS } from './UnitType';
 import { findPath } from './Pathfinding';
 import { setUnitPath, clearUnitPath } from './Unit';
 import { TerrainType } from './TerrainType';
+import {
+  GEOLOGIST_PROSPECT_DURATION as PROSPECT_DURATION,
+  GEOLOGIST_IDLE_COOLDOWN as IDLE_COOLDOWN,
+  GEOLOGIST_MAX_PROSPECT_RADIUS as MAX_PROSPECT_RADIUS,
+} from './data/balanceConstants';
 
 export type GeologistPhase =
   | 'idle_at_hut'
@@ -25,15 +30,6 @@ interface GeologistWorkState {
   prospectedTiles: Set<string>;
   idleCooldown: number;
 }
-
-/** Time in seconds to prospect a single mountain tile */
-const PROSPECT_DURATION = 5.0;
-
-/** Cooldown between prospect cycles when idle (seconds) */
-const IDLE_COOLDOWN = 2.0;
-
-/** Max BFS radius to search for unprospected mountains */
-const MAX_PROSPECT_RADIUS = 10;
 
 /**
  * Manages geologist prospecting behavior for all GeologistHut buildings.

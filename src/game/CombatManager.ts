@@ -2,6 +2,7 @@ import type { GameState } from './GameState';
 import type { KnightManager } from './KnightManager';
 import type { Unit } from './Unit';
 import { UnitType } from './UnitType';
+import { COMBAT_WINS_PER_RANK } from './data/balanceConstants';
 
 /**
  * Result of a single 1v1 duel between two knights.
@@ -35,7 +36,7 @@ export class CombatManager {
   private combatWins: Map<string, number> = new Map();
 
   /** Wins required per rank advancement */
-  private static WINS_PER_RANK = 2;
+  private static WINS_PER_RANK = COMBAT_WINS_PER_RANK;
 
   /** Optional callback when a duel is resolved */
   onDuelResolved: ((result: DuelResult) => void) | null = null;

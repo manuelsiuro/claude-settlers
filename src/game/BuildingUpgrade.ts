@@ -2,6 +2,7 @@ import type { Building } from './Building';
 import { BUILDING_DEFINITIONS } from './BuildingType';
 import type { BuildingType } from './BuildingType';
 import { ResourceType } from './ResourceType';
+import { UPGRADES_MAX_LEVEL } from './data/balanceConstants';
 
 export const UpgradeAxis = {
   Storage: 'storage',
@@ -25,7 +26,7 @@ export interface BuildingUpgradeConfig {
 export type BuildingUpgradeSpec = Partial<Record<UpgradeAxis, BuildingUpgradeConfig>>;
 
 /** Max upgrade level for all axes */
-const MAX_LEVEL = 10;
+const MAX_LEVEL = UPGRADES_MAX_LEVEL;
 
 /**
  * Storage capacity formula: Math.ceil(baseCapacity * (1 + 0.4 * level))

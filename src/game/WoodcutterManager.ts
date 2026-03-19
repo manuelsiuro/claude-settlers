@@ -10,6 +10,11 @@ import { ResourceType } from './ResourceType';
 import { findPath } from './Pathfinding';
 import { setUnitPath, clearUnitPath } from './Unit';
 import { TerrainType } from './TerrainType';
+import {
+  WOODCUTTER_CHOP_DURATION as CHOP_DURATION,
+  WOODCUTTER_IDLE_COOLDOWN as IDLE_COOLDOWN,
+  WOODCUTTER_MAX_SEARCH_RADIUS as MAX_SEARCH_RADIUS,
+} from './data/balanceConstants';
 
 export type WoodcutterPhase =
   | 'idle_at_hut'
@@ -24,15 +29,6 @@ interface WoodcutterWorkState {
   chopProgress: number;
   idleCooldown: number;
 }
-
-/** Time to chop a tree (seconds) */
-const CHOP_DURATION = 8.0;
-
-/** Cooldown between work cycles (seconds) */
-const IDLE_COOLDOWN = 2.0;
-
-/** Max BFS radius to search for trees */
-const MAX_SEARCH_RADIUS = 8;
 
 /**
  * Manages woodcutter logging behavior for all WoodcutterHut buildings.

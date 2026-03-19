@@ -3,6 +3,11 @@ import type { HexCoord } from './HexGrid';
 import { TerrainType } from './TerrainType';
 import { createRng } from './noise';
 import type { GameState } from './GameState';
+import {
+  TREES_MAX_PER_TILE as MAX_TREES_PER_TILE,
+  TREES_SAPLING_GROWTH_TIME as SAPLING_GROWTH_TIME,
+  TREES_YOUNG_GROWTH_TIME as YOUNG_GROWTH_TIME,
+} from './data/balanceConstants';
 
 export interface TreeEntity {
   id: string;
@@ -17,15 +22,6 @@ export interface TreeEntity {
   markedForCut: boolean;
   markedBy: string | null;
 }
-
-/** Max trees per hex tile */
-const MAX_TREES_PER_TILE = 4;
-
-/** Seconds for sapling → young */
-const SAPLING_GROWTH_TIME = 60;
-
-/** Seconds for young → mature */
-const YOUNG_GROWTH_TIME = 90;
 
 let nextTreeId = 1;
 

@@ -5,6 +5,7 @@ import { ResourceType } from './ResourceType';
 import type { GameState } from './GameState';
 import { UnitType } from './UnitType';
 import { UnitState } from './Unit';
+import { COMBAT_GOLD_BONUS_PER_BAR, COMBAT_MAX_GOLD_BONUS } from './data/balanceConstants';
 
 /**
  * Manages knight recruitment and stationing in military buildings.
@@ -125,8 +126,7 @@ export class KnightManager {
       totalGold += getInventoryAmount(building.outputInventory, ResourceType.GoldBars);
     }
 
-    // Each gold bar adds 5% bonus, up to 50% max
-    return 1.0 + Math.min(totalGold * 0.05, 0.5);
+    return 1.0 + Math.min(totalGold * COMBAT_GOLD_BONUS_PER_BAR, COMBAT_MAX_GOLD_BONUS);
   }
 
   /**
