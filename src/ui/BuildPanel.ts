@@ -275,7 +275,7 @@ function generateTooltipContent(def: BuildingDefinition, available: Partial<Reco
     <div class="build-tooltip-desc">${def.description}</div>
     <div class="build-item-section">
       <span class="build-item-section-label">Cost</span>
-      <div class="build-item-section-content">${formatCostWithAvailability(def, available)}</div>
+      <div class="build-item-section-content">${formatCost(def, available)}</div>
     </div>
     ${prodSummary ? `<div class="build-item-section"><span class="build-item-section-label">Production</span><div class="build-item-section-content">${prodSummary}</div></div>` : ''}
     ${milInfo}
@@ -356,36 +356,23 @@ function canAfford(
   return true;
 }
 
-/** Format cost with availability coloring and data-field attributes */
-function formatCostWithAvailability(
+/** Format cost pills with availability coloring and data-field attributes */
+function formatCost(
   def: BuildingDefinition,
   available: Partial<Record<ResourceType, number>>,
+  compact = false,
 ): string {
-  if (def.cost.length === 0) return '<span class="cost-pill cost-pill-free">Free</span>';
+  const style = compact ? ' style="font-size:0.625rem;padding:1px 6px;"' : '';
+  if (def.cost.length === 0) return `<span class="cost-pill cost-pill-free"${style}>Free</span>`;
   return def.cost
     .map((c) => {
       const have = available[c.resource] ?? 0;
       const ok = have >= c.amount;
       const cssClass = ok ? 'cost-pill cost-pill-ok' : 'cost-pill cost-pill-short';
-      return `<span class="${cssClass}" data-field="cost-${def.type}-${c.resource}">${resourceIcon(c.resource)} ${RESOURCE_PROPERTIES[c.resource].label} ${c.amount}</span>`;
+      const label = compact ? '' : ` ${RESOURCE_PROPERTIES[c.resource].label}`;
+      return `<span class="${cssClass}"${style} data-field="cost-${def.type}-${c.resource}">${resourceIcon(c.resource)}${label} ${c.amount}</span>`;
     })
-    .join(' ');
-}
-
-/** Compact cost: icon + amount only (for tiles) */
-function formatCompactCost(
-  def: BuildingDefinition,
-  available: Partial<Record<ResourceType, number>>,
-): string {
-  if (def.cost.length === 0) return '<span class="cost-pill cost-pill-free" style="font-size:0.625rem;padding:1px 6px;">Free</span>';
-  return def.cost
-    .map((c) => {
-      const have = available[c.resource] ?? 0;
-      const ok = have >= c.amount;
-      const cssClass = ok ? 'cost-pill cost-pill-ok' : 'cost-pill cost-pill-short';
-      return `<span class="${cssClass}" style="font-size:0.625rem;padding:1px 6px;" data-field="cost-${def.type}-${c.resource}">${resourceIcon(c.resource)} ${c.amount}</span>`;
-    })
-    .join('');
+    .join(compact ? '' : ' ');
 }
 
 /** Format production recipe summary */
@@ -461,7 +448,7 @@ function generateBuildHTML(): string {
       const tileClass = affordable ? 'build-tile' : 'build-tile build-tile-disabled';
       html += `<button class="${tileClass}" data-field="build-${def.type}" data-building-type="${def.type}">
         <span class="build-tile-name">${def.label}</span>
-        <div class="build-tile-cost">${formatCompactCost(def, available)}</div>
+        <div class="build-tile-cost">${formatCost(def, available, true)}</div>
       </button>`;
 
       // Mobile: expanded detail after this tile
@@ -491,7 +478,7 @@ function generateExpandedDetailHTML(
     <div class="build-tile-expanded-desc">${def.description}</div>
     <div class="build-item-section">
       <span class="build-item-section-label">Cost</span>
-      <div class="build-item-section-content">${formatCostWithAvailability(def, available)}</div>
+      <div class="build-item-section-content">${formatCost(def, available)}</div>
     </div>
     ${prodSummary ? `<div class="build-item-section"><span class="build-item-section-label">Production</span><div class="build-item-section-content">${prodSummary}</div></div>` : ''}
     ${milInfo}
