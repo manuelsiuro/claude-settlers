@@ -20,6 +20,7 @@ import { ForesterManager } from './ForesterManager';
 import { UpgradeManager } from './UpgradeManager';
 import { FogOfWarManager } from './FogOfWarManager';
 import { HarborManager } from './HarborManager';
+import { PopulationManager } from './PopulationManager';
 import { AIPlayer } from './AIPlayer';
 import { BuildingType } from './BuildingType';
 import {
@@ -54,10 +55,11 @@ function makeTestGrid(): HexGrid {
 }
 
 function createManagers(gameState: GameState, roadNetwork: RoadNetwork, territoryManager: TerritoryManager) {
-  const unitManager = new UnitManager(gameState);
+  const populationManager = new PopulationManager(gameState);
+  const unitManager = new UnitManager(gameState, populationManager);
   const productionManager = new ProductionManager(gameState);
-  const constructionManager = new ConstructionManager(gameState);
-  const transporterManager = new TransporterManager(gameState, roadNetwork);
+  const constructionManager = new ConstructionManager(gameState, populationManager);
+  const transporterManager = new TransporterManager(gameState, roadNetwork, populationManager);
   const logisticsManager = new LogisticsManager(gameState, roadNetwork);
   const knightManager = new KnightManager(gameState);
   const combatManager = new CombatManager(gameState, knightManager);
@@ -123,7 +125,7 @@ describe('SaveLoad: round-trip serialization', () => {
       { frustum: 10, position: { x: 0, y: 20, z: 0 }, target: { x: 0, y: 0, z: 0 } },
     );
 
-    expect(data.version).toBe(8);
+    expect(data.version).toBe(9);
     expect(data.config).toEqual(testConfig);
     expect(data.buildings).toEqual([]);
     expect(data.units).toEqual([]);
@@ -449,7 +451,7 @@ describe('SaveLoad: round-trip serialization', () => {
     // Create an AI player
     const ai = new AIPlayer(
       2, Difficulty.Normal, gameState, territoryManager,
-      managers.attackManager, managers.knightManager, managers.upgradeManager, roadNetwork, () => {},
+      managers.attackManager, managers.knightManager, managers.upgradeManager, roadNetwork, new PopulationManager(gameState), () => {},
     );
     // Simulate some decisions
     ai._setBuildOrderIndex(5);
@@ -472,7 +474,7 @@ describe('SaveLoad: round-trip serialization', () => {
     const managers2 = createManagers(gs2, rn2, tm2);
     const ai2 = new AIPlayer(
       2, Difficulty.Normal, gs2, tm2,
-      managers2.attackManager, managers2.knightManager, managers2.upgradeManager, rn2, () => {},
+      managers2.attackManager, managers2.knightManager, managers2.upgradeManager, rn2, new PopulationManager(gs2), () => {},
     );
 
     deserializeGame(data, gs2, rn2, managers2, [ai2]);
@@ -540,7 +542,7 @@ describe('SaveLoad: round-trip serialization', () => {
     const json = JSON.stringify(data);
     const parsed = JSON.parse(json) as SaveData;
 
-    expect(parsed.version).toBe(8);
+    expect(parsed.version).toBe(9);
     expect(parsed.config.seed).toBe(42);
     expect(parsed.buildings.length).toBe(2);
     expect(parsed.units.length).toBe(1);
@@ -566,6 +568,8 @@ describe('SaveLoad: round-trip serialization', () => {
   });
 
   it('should round-trip transporter state (carrying goods)', () => {
+    // Place Castle so population capacity allows transporter spawning
+    gameState.placeBuilding(BuildingType.Castle, { q: 8, r: 8 }, 1);
     const managers = createManagers(gameState, roadNetwork, territoryManager);
 
     // Set up flags and a road

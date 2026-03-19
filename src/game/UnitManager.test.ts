@@ -8,6 +8,7 @@ import { BuildingState, resetBuildingIdCounter, addToInventory } from './Buildin
 import { UnitState, resetUnitIdCounter } from './Unit';
 import { UnitType } from './UnitType';
 import { TOOL_TYPES } from './ResourceType';
+import { PopulationManager } from './PopulationManager';
 
 describe('UnitManager', () => {
   let grid: HexGrid;
@@ -29,7 +30,8 @@ describe('UnitManager', () => {
     grid.setTile(6, 8, TerrainType.Water, 0.1);
 
     gameState = new GameState(grid);
-    unitManager = new UnitManager(gameState);
+    const populationManager = new PopulationManager(gameState);
+    unitManager = new UnitManager(gameState, populationManager);
   });
 
   function placeCastle() {

@@ -3,6 +3,8 @@ import type { BuildingDefinition } from './BuildingType';
 import { ResourceType } from './ResourceType';
 import type { HexCoord } from './HexGrid';
 import { getEffectiveStorageCapacity } from './BuildingUpgrade';
+import { CASTLE_STARTING_RESOURCES_BY_DIFFICULTY } from './data/balanceConstants';
+import type { Difficulty } from './GameConfig';
 
 export const BuildingState = {
   /** Waiting for construction resources to be delivered */
@@ -229,8 +231,10 @@ export const CASTLE_STARTING_RESOURCES: { resource: ResourceType; amount: number
 ];
 
 /** Initialize a Castle building with starting resources */
-export function initializeCastleResources(castle: Building): void {
-  for (const { resource, amount } of CASTLE_STARTING_RESOURCES) {
+export function initializeCastleResources(castle: Building, difficulty?: Difficulty): void {
+  const resources: { resource: ResourceType; amount: number }[] =
+    (difficulty ? CASTLE_STARTING_RESOURCES_BY_DIFFICULTY[difficulty] : null) ?? CASTLE_STARTING_RESOURCES;
+  for (const { resource, amount } of resources) {
     addToInventory(castle.outputInventory, resource, amount);
   }
 }

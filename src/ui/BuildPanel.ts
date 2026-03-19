@@ -297,6 +297,7 @@ function renderMobileTabs(): void {
     { key: 'processing', label: 'Processing' },
     { key: 'military', label: 'Military' },
     { key: 'logistics', label: 'Logistics' },
+    { key: 'housing', label: 'Housing' },
   ];
   let html = '<div class="build-category-tabs">';
   for (const cat of categories) {

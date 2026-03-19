@@ -6,6 +6,9 @@
  * stay in their respective manager files.
  */
 
+import { ResourceType } from '../ResourceType';
+import type { Difficulty } from '../GameConfig';
+
 // ─── Woodcutter ─────────────────────────────────────────────────────────────
 
 /** Seconds the woodcutter spends chopping a tree */
@@ -61,3 +64,53 @@ export const VICTORY_DOMINATION_THRESHOLD = 0.75;
 export const VICTORY_ECONOMIC_GOLD_TARGET = 50;
 /** Total processed goods needed for peaceful victory */
 export const VICTORY_PEACEFUL_GOODS_TARGET = 100;
+
+// ─── Population & Housing ──────────────────────────────────────────────────
+
+/** Base population capacity provided by the Castle */
+export const CASTLE_POPULATION_CAPACITY = 15;
+/** Population capacity for Small House */
+export const SMALL_HOUSE_CAPACITY = 8;
+/** Population capacity for Medium House */
+export const MEDIUM_HOUSE_CAPACITY = 16;
+/** Population capacity for Large House */
+export const LARGE_HOUSE_CAPACITY = 25;
+/** Usage ratio at which the HUD counter shows a warning color */
+export const POPULATION_WARNING_THRESHOLD = 0.9;
+/** Usage ratio below which the HUD counter is normal (green) */
+export const POPULATION_CAUTION_THRESHOLD = 0.75;
+
+/** Population color severity based on usage ratio */
+export function getPopulationSeverity(ratio: number): 'critical' | 'warning' | 'normal' {
+  if (ratio >= POPULATION_WARNING_THRESHOLD) return 'critical';
+  if (ratio >= POPULATION_CAUTION_THRESHOLD) return 'warning';
+  return 'normal';
+}
+
+// ─── Difficulty-Based Starting Resources ───────────────────────────────────
+
+/** Resource types included in all starting configurations (order matters for readability) */
+const STARTING_RESOURCE_TYPES = [
+  ResourceType.Wood, ResourceType.Stone, ResourceType.Planks,
+  ResourceType.Fish, ResourceType.Bread, ResourceType.IronBars,
+  ResourceType.Axe, ResourceType.Pickaxe, ResourceType.Saw,
+  ResourceType.Scythe, ResourceType.FishingRod, ResourceType.Hammer,
+  ResourceType.Shovel, ResourceType.Crucible,
+] as const;
+
+/** Per-difficulty starting amounts (same order as STARTING_RESOURCE_TYPES) */
+const STARTING_AMOUNTS: Record<Difficulty, readonly number[]> = {
+  easy:   [16, 10, 8, 6, 6, 10, 3, 3, 1, 1, 1, 3, 1, 1],
+  normal: [12,  8, 6, 4, 4,  8, 2, 2, 1, 1, 1, 2, 1, 1],
+  hard:   [ 8,  5, 4, 2, 2,  4, 1, 1, 1, 1, 1, 1, 1, 1],
+};
+
+function buildResourceList(amounts: readonly number[]): { resource: ResourceType; amount: number }[] {
+  return STARTING_RESOURCE_TYPES.map((resource, i) => ({ resource, amount: amounts[i] }));
+}
+
+export const CASTLE_STARTING_RESOURCES_BY_DIFFICULTY: Record<Difficulty, { resource: ResourceType; amount: number }[]> = {
+  easy: buildResourceList(STARTING_AMOUNTS.easy),
+  normal: buildResourceList(STARTING_AMOUNTS.normal),
+  hard: buildResourceList(STARTING_AMOUNTS.hard),
+};

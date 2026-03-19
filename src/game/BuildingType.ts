@@ -40,11 +40,16 @@ export const BuildingType = {
   // Logistics
   Warehouse: 'warehouse',
   Harbor: 'harbor',
+
+  // Housing
+  SmallHouse: 'small_house',
+  MediumHouse: 'medium_house',
+  LargeHouse: 'large_house',
 } as const;
 
 export type BuildingType = (typeof BuildingType)[keyof typeof BuildingType];
 
-export type BuildingCategory = 'core' | 'gathering' | 'processing' | 'military' | 'logistics';
+export type BuildingCategory = 'core' | 'gathering' | 'processing' | 'military' | 'logistics' | 'housing';
 
 export interface BuildingCost {
   resource: ResourceType;
@@ -90,6 +95,8 @@ export interface BuildingDefinition {
   constructionTime: number;
   /** Work radius in hex tiles for gathering/prospecting buildings (0 = not applicable) */
   workRadius: number;
+  /** Population capacity provided by this building (housing buildings) */
+  populationCapacity: number;
 }
 
 export { BUILDING_DEFINITIONS, getBuildingsByCategory, getBuildingsByTier } from './data/buildingDefinitions';

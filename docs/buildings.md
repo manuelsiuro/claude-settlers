@@ -275,3 +275,49 @@ All buildings share these runtime visual behaviors (implemented in `BuildingAnim
     - **Boats (Indicator):** Small, simple boat shapes (e.g., elongated blue cuboids with a small central vertical cuboid for a mast/cabin) docked alongside the pier.
 - **Relative Dimensions:** Pier is long and narrow; dock building is small.
 - **Key Colors:** Dark Brown (pier), Light Brown/Grey (building), Blue (boats).
+
+---
+
+## Housing
+
+### 26. Small House
+
+- **Function:** Increases population capacity by 8. No worker or production.
+- **Visual Description:**
+    - **Foundation:** Low, wide cuboid (color: Grey-Brown stone).
+    - **Walls:** Slightly smaller cuboid on top of foundation (color: Warm Brown wood).
+    - **Roof:** Triangular prism / peaked roof (color: Reddish-Brown thatch).
+    - **Window:** Small light-blue square on the front face.
+    - **Door:** Dark wood rectangle on the front face with a darker trim frame.
+    - **Chimney:** Small stone cuboid rising from the roof.
+- **Relative Dimensions:** Small footprint, single story. Similar to Woodcutter's Hut.
+- **Key Colors:** Warm Brown, Reddish-Brown, Grey-Brown.
+
+### 27. Medium House
+
+- **Function:** Increases population capacity by 16. No worker or production.
+- **Visual Description:**
+    - **First Floor:** Stone cuboid, slightly wider than upper floor (color: Warm Grey stone).
+    - **Second Floor:** Wooden cuboid sitting on the stone base (color: Medium Brown wood).
+    - **Floor Divider:** Thin dark-brown trim strip between floors.
+    - **Roof:** Peaked triangular prism (color: Dark Brown).
+    - **Windows:** Two on the front face (one per floor) plus one on the second floor left side (color: Light Blue).
+    - **Door:** Dark wood rectangle with trim frame on ground floor.
+    - **Chimney:** Stone cuboid on the roof.
+- **Relative Dimensions:** Medium footprint, two stories tall. Taller than Sawmill.
+- **Key Colors:** Warm Grey, Medium Brown, Dark Brown.
+
+### 28. Large House
+
+- **Function:** Increases population capacity by 25. No worker or production.
+- **Visual Description:**
+    - **Main Block:** Large stone cuboid, L-shaped with a perpendicular wing extension (color: Light Warm Stone).
+    - **Wing:** Smaller stone cuboid extending from the back-right of main block.
+    - **Stone Base Course:** Dark stone strip along the bottom.
+    - **Main Roof:** Large peaked triangular prism (color: Dark Slate grey).
+    - **Wing Roof:** Smaller peaked roof on the wing section (color: Dark Slate grey).
+    - **Windows:** Three evenly spaced on the front face, one on the wing side (color: Light Blue).
+    - **Grand Door:** Large dark oak rectangle with wood-trim arch frame.
+    - **Chimney:** Tall stone cuboid with a cap piece on the main roof.
+- **Relative Dimensions:** Large footprint (L-shaped), imposing. Similar to Barracks in scale.
+- **Key Colors:** Light Warm Stone, Dark Slate, Dark Oak.

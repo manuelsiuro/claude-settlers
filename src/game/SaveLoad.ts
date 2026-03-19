@@ -31,7 +31,7 @@ import type { GoodsDistributionSettings } from './GoodsDistribution';
 import { serializeDistribution, deserializeDistribution } from './GoodsDistribution';
 
 /** Current save format version */
-const SAVE_VERSION = 8;
+const SAVE_VERSION = 9;
 
 /** localStorage key for auto-save */
 const STORAGE_KEY = 'feudal_realm_save';
@@ -371,6 +371,10 @@ export function deserializeGame(
   for (const u of data.units) {
     if ((u as unknown as Record<string, unknown>).carriedTool === undefined) {
       (u as unknown as Record<string, unknown>).carriedTool = null;
+    }
+    // v9: patch units missing pendingDismissal field
+    if ((u as unknown as Record<string, unknown>).pendingDismissal === undefined) {
+      (u as unknown as Record<string, unknown>).pendingDismissal = false;
     }
   }
 

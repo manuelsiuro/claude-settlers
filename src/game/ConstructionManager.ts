@@ -14,6 +14,7 @@ import type { Unit } from './Unit';
 import { UnitState, setUnitPath } from './Unit';
 import { UnitType, UNIT_DEFINITIONS } from './UnitType';
 import { findPath } from './Pathfinding';
+import type { PopulationManager } from './PopulationManager';
 
 /**
  * Manages building construction lifecycle:
@@ -24,6 +25,7 @@ import { findPath } from './Pathfinding';
  */
 export class ConstructionManager {
   private gameState: GameState;
+  private populationManager: PopulationManager;
 
   /** Track which buildings have a builder assigned (buildingId → unitId) */
   private builderAssignments: Map<string, string> = new Map();
@@ -35,8 +37,9 @@ export class ConstructionManager {
   /** Optional callback when a building transitions to Active */
   onBuildingActivated: ((building: Building) => void) | null = null;
 
-  constructor(gameState: GameState) {
+  constructor(gameState: GameState, populationManager: PopulationManager) {
     this.gameState = gameState;
+    this.populationManager = populationManager;
   }
 
   /** Serialization: get internal state for save */
@@ -134,6 +137,9 @@ export class ConstructionManager {
       // Find this player's Castle to spawn from
       const castle = this.gameState.findCastle(building.playerId);
       if (!castle) continue;
+
+      // Check population capacity before spawning
+      if (!this.populationManager.canSpawn(building.playerId)) continue;
 
       // Check tool availability for the builder
       if (builderTool) {

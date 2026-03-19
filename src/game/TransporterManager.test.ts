@@ -10,6 +10,7 @@ import { UnitState, resetUnitIdCounter } from './Unit';
 import { ResourceType } from './ResourceType';
 import { BuildingType } from './BuildingType';
 import { resetBuildingIdCounter } from './Building';
+import { PopulationManager } from './PopulationManager';
 
 describe('TransporterManager', () => {
   let grid: HexGrid;
@@ -37,8 +38,11 @@ describe('TransporterManager', () => {
 
     gameState = new GameState(grid);
     roadNetwork = new RoadNetwork(grid);
-    transporterManager = new TransporterManager(gameState, roadNetwork);
-    unitManager = new UnitManager(gameState);
+    // Place a Castle so population capacity is available for spawning
+    gameState.placeBuilding(BuildingType.Castle, { q: 8, r: 8 }, 1);
+    const populationManager = new PopulationManager(gameState);
+    transporterManager = new TransporterManager(gameState, roadNetwork, populationManager);
+    unitManager = new UnitManager(gameState, populationManager);
   });
 
   describe('transporter spawning', () => {

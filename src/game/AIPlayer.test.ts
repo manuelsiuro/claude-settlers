@@ -20,6 +20,7 @@ import { UnitState, resetUnitIdCounter } from './Unit';
 import { Difficulty } from './GameConfig';
 import { UpgradeManager } from './UpgradeManager';
 import { RoadNetwork } from './RoadNetwork';
+import { PopulationManager } from './PopulationManager';
 import type { Building } from './Building';
 
 // ─── Test helpers ────────────────────────────────────────────────────────────
@@ -97,6 +98,7 @@ function setupAI(
     knightManager,
     new UpgradeManager(gameState),
     new RoadNetwork(gameState.getGrid()),
+    new PopulationManager(gameState),
     (building: Building) => placed.push(building),
   );
   return { ai, placed, gameState, territoryManager, attackManager, knightManager };
@@ -185,6 +187,7 @@ describe('AIPlayer', () => {
       knightManager,
       new UpgradeManager(gameState),
       new RoadNetwork(gameState.getGrid()),
+      new PopulationManager(gameState),
       (b: Building) => placed.push(b),
     );
 
@@ -225,6 +228,7 @@ describe('AIPlayer', () => {
       tinyManagers.knightManager,
       new UpgradeManager(tinyState),
       new RoadNetwork(tinyGrid),
+      new PopulationManager(tinyState),
       (b: Building) => placed.push(b),
     );
 
@@ -397,14 +401,15 @@ describe('AIPlayer', () => {
 
     // Jump straight to GuardHut in the build order (avoids FishermanHut water-adjacency
     // skip logic that would consume several decision ticks on an all-grassland map).
-    ai._setBuildOrderIndex(6);
+    // GuardHut is at index 7 in balanced build order (after SmallHouse was inserted at 5).
+    ai._setBuildOrderIndex(7);
 
     // Snapshot territory before the placement
     const territorySnapshot = new Set(
       territoryManager.getPlayerTerritory(2).map((c) => `${c.q},${c.r}`),
     );
 
-    ai.update(20); // places GuardHut (index 6)
+    ai.update(20); // places GuardHut (index 7)
 
     const guardHut = placed.find((b) => b.type === BuildingType.GuardHut);
     expect(guardHut).toBeDefined();
@@ -434,6 +439,7 @@ describe('AIPlayer', () => {
       knightManager,
       new UpgradeManager(gameState),
       new RoadNetwork(gameState.getGrid()),
+      new PopulationManager(gameState),
       (b: Building) => placed.push(b),
     );
 

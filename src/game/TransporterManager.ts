@@ -6,6 +6,7 @@ import { UnitType } from './UnitType';
 import { findPath } from './Pathfinding';
 import { hasInputSpace } from './Building';
 import { BUILDING_DEFINITIONS } from './BuildingType';
+import type { PopulationManager } from './PopulationManager';
 
 /**
  * Transporter state machine within a road segment.
@@ -34,6 +35,7 @@ interface TransporterState {
 export class TransporterManager {
   private gameState: GameState;
   private roadNetwork: RoadNetwork;
+  private populationManager: PopulationManager;
 
   /** Track transporter state: unitId → TransporterState */
   private transporterStates: Map<string, TransporterState> = new Map();
@@ -42,9 +44,10 @@ export class TransporterManager {
   private spawnCooldown = 0;
   private static SPAWN_INTERVAL = 1.0;
 
-  constructor(gameState: GameState, roadNetwork: RoadNetwork) {
+  constructor(gameState: GameState, roadNetwork: RoadNetwork, populationManager: PopulationManager) {
     this.gameState = gameState;
     this.roadNetwork = roadNetwork;
+    this.populationManager = populationManager;
   }
 
   /** Serialization: get internal state for save */
@@ -197,6 +200,9 @@ export class TransporterManager {
 
       const flagA = this.roadNetwork.getFlag(road.flagA);
       if (!flagA) continue;
+
+      // Check population capacity before spawning
+      if (!this.populationManager.canSpawn(flagA.playerId)) continue;
 
       // Spawn transporter at flagA's position, owned by the flag's player
       const unit = this.gameState.spawnUnit(
@@ -425,19 +431,48 @@ export class TransporterManager {
   }
 
   /**
+   * Release a transporter from its road assignment.
+   * Drops carried goods at nearest flag, clears road assignment.
+   * Called by UnitManager.dismissUnit() before sending the unit home.
+   */
+  releaseTransporter(unitId: string): void {
+    const state = this.transporterStates.get(unitId);
+    if (!state) return;
+
+    this.dropCarriedGood(state);
+
+    // Clear road assignment
+    const road = this.roadNetwork.getRoad(state.roadId);
+    if (road) {
+      road.transporterId = null;
+    }
+
+    const unit = this.gameState.getUnit(unitId);
+    if (unit) {
+      unit.carryingResource = null;
+    }
+
+    this.transporterStates.delete(unitId);
+  }
+
+  /** Drop a transporter's carried good at its target flag */
+  private dropCarriedGood(state: TransporterState): void {
+    if (!state.carrying) return;
+    const flag = this.roadNetwork.getFlag(state.targetFlagId);
+    if (flag) {
+      flag.goods.push(state.carrying);
+    }
+    state.carrying = null;
+  }
+
+  /**
    * Clean up transporters whose road has been removed.
    */
   private cleanupOrphans(): void {
     for (const [unitId, state] of this.transporterStates) {
       const road = this.roadNetwork.getRoad(state.roadId);
       if (!road) {
-        // Road was removed — drop carried good at nearest flag
-        if (state.carrying) {
-          const flag = this.roadNetwork.getFlag(state.targetFlagId);
-          if (flag) {
-            flag.goods.push(state.carrying);
-          }
-        }
+        this.dropCarriedGood(state);
 
         const unit = this.gameState.getUnit(unitId);
         if (unit) {

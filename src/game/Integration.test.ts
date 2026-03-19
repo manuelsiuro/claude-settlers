@@ -29,6 +29,7 @@ import { ForesterManager } from './ForesterManager';
 import { UpgradeManager } from './UpgradeManager';
 import { FogOfWarManager } from './FogOfWarManager';
 import { HarborManager } from './HarborManager';
+import { PopulationManager } from './PopulationManager';
 import { serializeGame, deserializeGame } from './SaveLoad';
 import type { SaveData } from './SaveLoad';
 
@@ -79,11 +80,14 @@ describe('Integration: Full Production Chain', () => {
     grid.setTile(5, 4, TerrainType.Mountain, 0.5);
 
     gameState = new GameState(grid);
+    // Place a Castle so population capacity is available for spawning
+    gameState.placeBuilding(BuildingType.Castle, { q: 8, r: 8 }, 1);
     roadNetwork = new RoadNetwork(grid);
-    unitManager = new UnitManager(gameState);
+    const populationManager = new PopulationManager(gameState);
+    unitManager = new UnitManager(gameState, populationManager);
     productionManager = new ProductionManager(gameState);
-    constructionManager = new ConstructionManager(gameState);
-    transporterManager = new TransporterManager(gameState, roadNetwork);
+    constructionManager = new ConstructionManager(gameState, populationManager);
+    transporterManager = new TransporterManager(gameState, roadNetwork, populationManager);
     logisticsManager = new LogisticsManager(gameState, roadNetwork);
     treeManager = new TreeManager();
     woodcutterManager = new WoodcutterManager(gameState, treeManager);
@@ -93,8 +97,8 @@ describe('Integration: Full Production Chain', () => {
   });
 
   it('should transport Wood from Woodcutter to Sawmill', () => {
-    // Set up Castle at (8,8)
-    const castleResult = gameState.placeBuilding(BuildingType.Castle, { q: 8, r: 8 }, 1);
+    // Castle already placed in beforeEach
+    const castleResult = { ok: true, building: gameState.findCastle(1)! };
     expect(castleResult.ok).toBe(true);
     if (!castleResult.ok) return;
     initializeCastleResources(castleResult.building);
@@ -188,10 +192,9 @@ describe('Integration: Full Production Chain', () => {
   });
 
   it('should construct a building through resource delivery', () => {
-    // Castle with starting resources
-    const castleResult = gameState.placeBuilding(BuildingType.Castle, { q: 8, r: 8 }, 1);
-    if (!castleResult.ok) throw new Error('Castle placement failed');
-    initializeCastleResources(castleResult.building);
+    // Castle already placed in beforeEach
+    const castle = gameState.findCastle(1)!;
+    initializeCastleResources(castle);
 
     // Place a Woodcutter (costs 2 Wood to construct)
     const wcResult = gameState.placeBuilding(BuildingType.WoodcutterHut, { q: 9, r: 8 }, 1);
@@ -389,8 +392,9 @@ describe('Integration: Phase 7 — Notifications & UI Workflow', () => {
     knightManager = new KnightManager(gameState);
     combatManager = new CombatManager(gameState, knightManager);
     attackManager = new AttackManager(gameState, combatManager, territoryManager);
-    constructionManager = new ConstructionManager(gameState);
-    unitManager = new UnitManager(gameState);
+    const populationManager = new PopulationManager(gameState);
+    constructionManager = new ConstructionManager(gameState, populationManager);
+    unitManager = new UnitManager(gameState, populationManager);
   });
 
   it('should fire onBuildingActivated with building when construction completes', () => {
@@ -867,9 +871,10 @@ describe('Integration: Multi-player State', () => {
 
     gameState = new GameState(grid);
     roadNetwork = new RoadNetwork(grid);
-    unitManager = new UnitManager(gameState);
-    constructionManager = new ConstructionManager(gameState);
-    transporterManager = new TransporterManager(gameState, roadNetwork);
+    const populationManager = new PopulationManager(gameState);
+    unitManager = new UnitManager(gameState, populationManager);
+    constructionManager = new ConstructionManager(gameState, populationManager);
+    transporterManager = new TransporterManager(gameState, roadNetwork, populationManager);
     logisticsManager = new LogisticsManager(gameState, roadNetwork);
     productionManager = new ProductionManager(gameState);
   });
@@ -1099,10 +1104,11 @@ describe('Integration: Full 2-Player Game Scenario', () => {
 
     gameState = new GameState(grid);
     roadNetwork = new RoadNetwork(grid);
-    unitManager = new UnitManager(gameState);
+    const populationManager = new PopulationManager(gameState);
+    unitManager = new UnitManager(gameState, populationManager);
     productionManager = new ProductionManager(gameState);
-    constructionManager = new ConstructionManager(gameState);
-    transporterManager = new TransporterManager(gameState, roadNetwork);
+    constructionManager = new ConstructionManager(gameState, populationManager);
+    transporterManager = new TransporterManager(gameState, roadNetwork, populationManager);
     logisticsManager = new LogisticsManager(gameState, roadNetwork);
     territoryManager = new TerritoryManager(gameState);
     knightManager = new KnightManager(gameState);
@@ -1136,6 +1142,7 @@ describe('Integration: Full 2-Player Game Scenario', () => {
       knightManager,
       new UpgradeManager(gameState),
       roadNetwork,
+      new PopulationManager(gameState),
       (building: Building) => { placedByAI.push(building); },
     );
   });
@@ -1308,10 +1315,11 @@ describe('Integration: Save/Load Round-Trip', () => {
 
     gameState = new GameState(grid);
     roadNetwork = new RoadNetwork(grid);
-    unitManager = new UnitManager(gameState);
+    const populationManager = new PopulationManager(gameState);
+    unitManager = new UnitManager(gameState, populationManager);
     productionManager = new ProductionManager(gameState);
-    constructionManager = new ConstructionManager(gameState);
-    transporterManager = new TransporterManager(gameState, roadNetwork);
+    constructionManager = new ConstructionManager(gameState, populationManager);
+    transporterManager = new TransporterManager(gameState, roadNetwork, populationManager);
     logisticsManager = new LogisticsManager(gameState, roadNetwork);
     territoryManager = new TerritoryManager(gameState);
     knightManager = new KnightManager(gameState);
@@ -1348,6 +1356,7 @@ describe('Integration: Save/Load Round-Trip', () => {
       knightManager,
       upgradeManager,
       roadNetwork,
+      new PopulationManager(gameState),
       () => {},
     );
 
@@ -1407,9 +1416,10 @@ describe('Integration: Save/Load Round-Trip', () => {
     }
     const gs2 = new GameState(grid2);
     const rn2 = new RoadNetwork(grid2);
-    const um2 = new UnitManager(gs2);
-    const cm2 = new ConstructionManager(gs2);
-    const tm2 = new TransporterManager(gs2, rn2);
+    const pm2 = new PopulationManager(gs2);
+    const um2 = new UnitManager(gs2, pm2);
+    const cm2 = new ConstructionManager(gs2, pm2);
+    const tm2 = new TransporterManager(gs2, rn2, pm2);
     const lm2 = new LogisticsManager(gs2, rn2);
     const terr2 = new TerritoryManager(gs2);
     const km2 = new KnightManager(gs2);
@@ -1418,7 +1428,7 @@ describe('Integration: Save/Load Round-Trip', () => {
     const vm2 = new VictoryManager(gs2, terr2, [1, 2]);
     const gm2 = new GeologistManager(gs2);
 
-    const ai2 = new AIPlayer(2, Difficulty.Normal, gs2, terr2, am2, km2, new UpgradeManager(gs2), rn2, () => {});
+    const ai2 = new AIPlayer(2, Difficulty.Normal, gs2, terr2, am2, km2, new UpgradeManager(gs2), rn2, pm2, () => {});
 
     deserializeGame(
       parsed, gs2, rn2,
@@ -1500,18 +1510,19 @@ describe('Integration: Save/Load Round-Trip', () => {
     }
     const gs2 = new GameState(grid2);
     const rn2 = new RoadNetwork(grid2);
+    const pm2 = new PopulationManager(gs2);
     const terr2 = new TerritoryManager(gs2);
     const km2 = new KnightManager(gs2);
     const cb2 = new CombatManager(gs2, km2);
     const am2 = new AttackManager(gs2, cb2, terr2);
     const vm2 = new VictoryManager(gs2, terr2, [1, 2]);
-    const um2 = new UnitManager(gs2);
-    const cm2 = new ConstructionManager(gs2);
-    const tm2 = new TransporterManager(gs2, rn2);
+    const um2 = new UnitManager(gs2, pm2);
+    const cm2 = new ConstructionManager(gs2, pm2);
+    const tm2 = new TransporterManager(gs2, rn2, pm2);
     const lm2 = new LogisticsManager(gs2, rn2);
     const gm2 = new GeologistManager(gs2);
 
-    const ai2 = new AIPlayer(2, Difficulty.Normal, gs2, terr2, am2, km2, new UpgradeManager(gs2), rn2, () => {});
+    const ai2 = new AIPlayer(2, Difficulty.Normal, gs2, terr2, am2, km2, new UpgradeManager(gs2), rn2, pm2, () => {});
 
     deserializeGame(
       parsed, gs2, rn2,
@@ -1577,18 +1588,19 @@ describe('Integration: Save/Load Round-Trip', () => {
     }
     const gs2 = new GameState(grid2);
     const rn2 = new RoadNetwork(grid2);
+    const pm2 = new PopulationManager(gs2);
     const terr2 = new TerritoryManager(gs2);
     const km2 = new KnightManager(gs2);
     const cb2 = new CombatManager(gs2, km2);
     const am2 = new AttackManager(gs2, cb2, terr2);
     const vm2 = new VictoryManager(gs2, terr2, [1, 2]);
-    const um2 = new UnitManager(gs2);
-    const cm2 = new ConstructionManager(gs2);
-    const tm2 = new TransporterManager(gs2, rn2);
+    const um2 = new UnitManager(gs2, pm2);
+    const cm2 = new ConstructionManager(gs2, pm2);
+    const tm2 = new TransporterManager(gs2, rn2, pm2);
     const lm2 = new LogisticsManager(gs2, rn2);
     const gm2 = new GeologistManager(gs2);
 
-    const ai2 = new AIPlayer(2, Difficulty.Normal, gs2, terr2, am2, km2, new UpgradeManager(gs2), rn2, () => {});
+    const ai2 = new AIPlayer(2, Difficulty.Normal, gs2, terr2, am2, km2, new UpgradeManager(gs2), rn2, pm2, () => {});
 
     deserializeGame(
       parsed, gs2, rn2,
@@ -1638,10 +1650,11 @@ describe('Integration: Performance Benchmark', () => {
 
     const gameState = new GameState(grid);
     const roadNetwork = new RoadNetwork(grid);
-    const unitManager = new UnitManager(gameState);
+    const populationManager = new PopulationManager(gameState);
+    const unitManager = new UnitManager(gameState, populationManager);
     const productionManager = new ProductionManager(gameState);
-    const constructionManager = new ConstructionManager(gameState);
-    const transporterManager = new TransporterManager(gameState, roadNetwork);
+    const constructionManager = new ConstructionManager(gameState, populationManager);
+    const transporterManager = new TransporterManager(gameState, roadNetwork, populationManager);
     const logisticsManager = new LogisticsManager(gameState, roadNetwork);
     const territoryManager = new TerritoryManager(gameState);
     const knightManager = new KnightManager(gameState);
@@ -1702,7 +1715,7 @@ describe('Integration: Performance Benchmark', () => {
     // Create AI player
     const ai = new AIPlayer(
       2, Difficulty.Hard, gameState, territoryManager,
-      attackManager, knightManager, new UpgradeManager(gameState), roadNetwork, () => {},
+      attackManager, knightManager, new UpgradeManager(gameState), roadNetwork, populationManager, () => {},
     );
 
     // Warm up

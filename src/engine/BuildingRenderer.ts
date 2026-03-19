@@ -45,6 +45,10 @@ export const BUILDING_SCALE: Record<string, number> = {
   [BuildingType.Watchtower]: 0.09,
   // Logistics
   [BuildingType.Harbor]: 0.12,
+  // Housing
+  [BuildingType.SmallHouse]: 0.15,
+  [BuildingType.MediumHouse]: 0.15,
+  [BuildingType.LargeHouse]: 0.15,
 };
 
 const DEFAULT_BUILDING_SCALE = 0.15;

@@ -6,6 +6,7 @@ import { UnitState, setUnitPath, clearUnitPath } from './Unit';
 import { UNIT_DEFINITIONS, WORKER_TO_UNIT_TYPE, UnitType } from './UnitType';
 import { findPath } from './Pathfinding';
 import { getMaxWorkers } from './BuildingUpgrade';
+import { PopulationManager } from './PopulationManager';
 import { logger } from '../util/Logger';
 
 /**
@@ -14,17 +15,28 @@ import { logger } from '../util/Logger';
  */
 export class UnitManager {
   private gameState: GameState;
+  private populationManager: PopulationManager;
   private spawnCooldown = 0;
   private gameTime = 0;
 
   /** Optional callback when a building starts waiting for a tool */
   onBuildingWaitingForTool: ((building: import('./Building').Building) => void) | null = null;
 
+  /** Optional callback when population cap prevents spawning (throttled per player) */
+  onPopulationCapReached: ((playerId: number) => void) | null = null;
+
+  /** Last time a pop cap notification was sent per player */
+  private lastPopCapNotificationTime: Map<number, number> = new Map();
+
+  /** Minimum seconds between pop cap notifications per player */
+  private static POP_CAP_NOTIFY_COOLDOWN = 30.0;
+
   /** Minimum seconds between serf spawns */
   private static SPAWN_INTERVAL = 2.0;
 
-  constructor(gameState: GameState) {
+  constructor(gameState: GameState, populationManager: PopulationManager) {
     this.gameState = gameState;
+    this.populationManager = populationManager;
   }
 
   /** Serialization: get internal state for save */
@@ -99,6 +111,12 @@ export class UnitManager {
       // Find buildings that need workers
       const needingWorkers = this.gameState.getBuildingsNeedingWorkers(playerId);
       if (needingWorkers.length === 0) continue;
+
+      // Check population capacity before spawning
+      if (!this.populationManager.canSpawn(playerId)) {
+        this.notifyPopCap(playerId);
+        continue;
+      }
 
       // Pick the first building that needs a worker
       const building = needingWorkers[0];
@@ -181,6 +199,9 @@ export class UnitManager {
         );
         building.extraWorkerIds = existingExtra;
         if (existingExtra.length >= maxW - 1) continue;
+
+        // Check population capacity for extra workers
+        if (!this.populationManager.canSpawn(playerId)) continue;
 
         const def = BUILDING_DEFINITIONS[building.type];
         const unitType = WORKER_TO_UNIT_TYPE[def.worker];
@@ -290,9 +311,48 @@ export class UnitManager {
             }
             unit.carriedTool = null;
           }
+          // If pending dismissal, permanently remove the unit
+          if (unit.pendingDismissal) {
+            this.gameState.removeUnit(unit.id);
+          }
         }
       }
     }
+  }
+
+  /**
+   * Dismiss a unit: mark for removal after it walks home and returns its tool.
+   * For transporters, call releaseTransporter first via the provided callback.
+   */
+  dismissUnit(
+    unit: Unit,
+    releaseTransporter?: (unitId: string) => void,
+  ): void {
+    unit.pendingDismissal = true;
+
+    // If transporter, release from road first
+    if (unit.type === UnitType.Transporter && releaseTransporter) {
+      releaseTransporter(unit.id);
+    }
+
+    // If extra worker, remove from building's extraWorkerIds
+    if (unit.assignedBuildingId) {
+      const building = this.gameState.getBuilding(unit.assignedBuildingId);
+      if (building?.extraWorkerIds) {
+        const idx = building.extraWorkerIds.indexOf(unit.id);
+        if (idx >= 0) building.extraWorkerIds.splice(idx, 1);
+      }
+    }
+
+    this.sendHome(unit);
+  }
+
+  /** Throttled population cap notification per player */
+  private notifyPopCap(playerId: number): void {
+    const last = this.lastPopCapNotificationTime.get(playerId) ?? 0;
+    if (this.gameTime - last < UnitManager.POP_CAP_NOTIFY_COOLDOWN) return;
+    this.lastPopCapNotificationTime.set(playerId, this.gameTime);
+    this.onPopulationCapReached?.(playerId);
   }
 
   /**

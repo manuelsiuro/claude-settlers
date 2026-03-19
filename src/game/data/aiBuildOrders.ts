@@ -9,6 +9,7 @@ const AGGRESSIVE_BUILD_ORDER: BuildingType[] = [
   BuildingType.ForesterHut,
   BuildingType.Quarry,
   BuildingType.Sawmill,
+  BuildingType.SmallHouse,
   BuildingType.GuardHut,
   BuildingType.GuardHut,
   BuildingType.FishermanHut,
@@ -16,6 +17,7 @@ const AGGRESSIVE_BUILD_ORDER: BuildingType[] = [
   BuildingType.IronMine,
   BuildingType.CoalMine,
   BuildingType.IronSmelter,
+  BuildingType.MediumHouse,
   BuildingType.BlacksmithArmory,
   BuildingType.Barracks,
   BuildingType.Barracks,
@@ -31,6 +33,7 @@ const ECONOMIC_BUILD_ORDER: BuildingType[] = [
   BuildingType.WoodcutterHut,
   BuildingType.Quarry,
   BuildingType.Sawmill,
+  BuildingType.SmallHouse,
   BuildingType.FishermanHut,
   BuildingType.Farm,
   BuildingType.Warehouse,
@@ -42,10 +45,12 @@ const ECONOMIC_BUILD_ORDER: BuildingType[] = [
   BuildingType.CoalMine,
   BuildingType.IronSmelter,
   BuildingType.ToolmakerWorkshop,
+  BuildingType.MediumHouse,
   BuildingType.GuardHut,
   BuildingType.BlacksmithArmory,
   BuildingType.GoldMine,
   BuildingType.GoldsmithMint,
+  BuildingType.LargeHouse,
   BuildingType.Barracks,
   BuildingType.Watchtower,
 ];
@@ -63,6 +68,7 @@ const BALANCED_BUILD_ORDER: BuildingType[] = [
   BuildingType.WoodcutterHut,
   BuildingType.Quarry,
   BuildingType.Sawmill,
+  BuildingType.SmallHouse,         // population housing
   BuildingType.FishermanHut,       // skipped if no water-adjacent hex in territory
   BuildingType.GuardHut,           // placed at border to expand territory
 
@@ -71,6 +77,7 @@ const BALANCED_BUILD_ORDER: BuildingType[] = [
   BuildingType.GuardHut,           // border expansion
   BuildingType.Warehouse,          // overflow storage before mining chain saturates Castle
   BuildingType.GeologistHut,       // prospect mountains for ore deposits
+  BuildingType.MediumHouse,        // population housing
   BuildingType.IronMine,           // requires prospected iron deposit
   BuildingType.CoalMine,           // requires prospected coal deposit
   BuildingType.Harbor,             // water logistics (skipped if no water-adjacent hex)
@@ -86,6 +93,7 @@ const BALANCED_BUILD_ORDER: BuildingType[] = [
   BuildingType.Watchtower,         // border
 
   // ── Late game: gold economy + extra military ────────────────────────────
+  BuildingType.LargeHouse,         // population housing
   BuildingType.GoldMine,           // requires prospected gold deposit
   BuildingType.GoldsmithMint,
   BuildingType.Barracks,

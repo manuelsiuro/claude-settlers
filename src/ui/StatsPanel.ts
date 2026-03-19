@@ -6,6 +6,7 @@ import { BuildingState } from '../game/Building';
 import { RESOURCE_PROPERTIES, ResourceType, TOOL_TYPES } from '../game/ResourceType';
 import { UNIT_DEFINITIONS, UnitType } from '../game/UnitType';
 import { renderEconomySection, drawEconomySparklines } from './EconomyPanel';
+import { getPopulationSeverity } from '../game/data/balanceConstants';
 import { renderPriorityHTML, attachPriorityListeners } from './ResourcePriorityPanel';
 import { showTechTreePanel } from './TechTreePanel';
 import { PanelUpdater } from './PanelUpdater';
@@ -198,6 +199,11 @@ function getStatsStructureKey(): string {
   } else if (activeStatsTab === 'population') {
     const population = getPopulationBreakdown();
     parts.push('u:' + population.map((p) => p.type).join(','));
+    const housingTypes = gameState.getBuildingsByPlayer(pid)
+      .filter(b => b.state === BuildingState.Active && BUILDING_DEFINITIONS[b.type].populationCapacity > 0)
+      .map(b => b.type).sort();
+    parts.push('h:' + housingTypes.join(','));
+    parts.push('idle:' + gameState.getIdleUnitsAtCastle(pid).length);
   } else if (activeStatsTab === 'buildings') {
     const buildings = gameState.getBuildingsByPlayer(pid);
     const buildingTypes = [...new Set(buildings.map((b) => b.type))].sort();
@@ -273,12 +279,52 @@ function generateStatsHTML(): string {
     html += '</div>';
   } else if (activeStatsTab === 'population') {
     const population = getPopulationBreakdown();
-    const totalUnits = gameState.getUnitsByPlayer(pid).length;
-    html += '<div class="info-section">';
+    const popMgr = getGame().getPopulationManager();
+    const current = popMgr.getCurrentPopulation(pid);
+    const capacity = popMgr.getCapacity(pid);
+    const ratio = popMgr.getUsageRatio(pid);
+    const severity = getPopulationSeverity(ratio);
+    const barColor = severity === 'critical' ? '#EF5350' : severity === 'warning' ? '#FFB74D' : '#4CAF50';
+
+    // Capacity Overview
+    html += '<div class="info-section"><div class="info-section-label">Population Capacity</div>';
     html += `<div class="stat-highlight">
-      <span class="info-label">Total Units</span>
-      <span class="stat-highlight-value" data-field="pop-total">${totalUnits}</span>
+      <span class="info-label">Population</span>
+      <span class="stat-highlight-value" data-field="pop-total" style="color:${barColor}">${current}/${capacity}</span>
     </div>`;
+    html += `<div style="background:var(--color-progress-bg);border-radius:4px;height:8px;margin:4px 0 8px">
+      <div data-field="pop-bar" style="width:${Math.min(ratio * 100, 100)}%;height:100%;border-radius:4px;background:${barColor};transition:width 0.3s"></div>
+    </div>`;
+
+    // Housing breakdown
+    const housingTypes = gameState.getBuildingsByPlayer(pid)
+      .filter(b => b.state === BuildingState.Active && BUILDING_DEFINITIONS[b.type].populationCapacity > 0);
+    const housingCounts = new Map<string, { count: number; cap: number }>();
+    for (const b of housingTypes) {
+      const def = BUILDING_DEFINITIONS[b.type];
+      const entry = housingCounts.get(b.type) ?? { count: 0, cap: 0 };
+      entry.count++;
+      entry.cap += def.populationCapacity;
+      housingCounts.set(b.type, entry);
+    }
+    for (const [type, { count, cap }] of housingCounts) {
+      const label = BUILDING_DEFINITIONS[type as BuildingType].label;
+      html += `<div class="info-resource-row">
+        <span class="info-resource-name">${count}× ${label}</span>
+        <span class="info-resource-amount">+${cap}</span>
+      </div>`;
+    }
+    html += '</div>';
+
+    // Unit Roster
+    html += '<div class="info-section"><div class="info-section-label">Unit Roster</div>';
+    const idleCount = gameState.getIdleUnitsAtCastle(pid).length;
+    if (idleCount > 0) {
+      html += `<div class="info-resource-row">
+        <span class="info-resource-name" style="color:var(--color-on-surface-faint)">Idle at Castle</span>
+        <span class="info-resource-amount" data-field="pop-idle">${idleCount}</span>
+      </div>`;
+    }
     for (const p of population) {
       html += `<div class="info-resource-row">
         <span class="info-resource-name">${p.label}</span>
@@ -356,8 +402,14 @@ function updateStatsValues(): void {
       updater.setClass(`res-${r}`, `resource-pill${amount === 0 ? ' resource-pill-zero' : ''}`);
     }
   } else if (activeStatsTab === 'population') {
-    const totalUnits = gameState.getUnitsByPlayer(pid).length;
-    updater.setText('pop-total', `${totalUnits}`);
+    const popMgr = getGame().getPopulationManager();
+    const current = popMgr.getCurrentPopulation(pid);
+    const capacity = popMgr.getCapacity(pid);
+    const ratio = capacity > 0 ? current / capacity : 1;
+    updater.setText('pop-total', `${current}/${capacity}`);
+    updater.setWidth('pop-bar', `${Math.min(ratio * 100, 100)}%`);
+    const idleCount = gameState.getIdleUnitsAtCastle(pid).length;
+    updater.setText('pop-idle', `${idleCount}`);
     const population = getPopulationBreakdown();
     for (const p of population) {
       updater.setText(`pop-${p.type}`, `${p.count}`);

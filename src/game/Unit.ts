@@ -48,6 +48,8 @@ export interface Unit {
   knightRank: number;
   /** Tool consumed at spawn, returned to Castle when dismissed (null if none) */
   carriedTool: ResourceType | null;
+  /** When true, unit will be removed from GameState after arriving home */
+  pendingDismissal: boolean;
 }
 
 let nextUnitId = 1;
@@ -73,6 +75,7 @@ export function createUnit(
     carryingResource: null,
     knightRank: 1,
     carriedTool: null,
+    pendingDismissal: false,
   };
 }
 

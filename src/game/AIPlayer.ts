@@ -21,6 +21,7 @@ import {
 } from './BuildingUpgrade';
 import { autoConnectBuilding } from './AutoRoad';
 import type { RoadNetwork } from './RoadNetwork';
+import type { PopulationManager } from './PopulationManager';
 
 /** Callback to render a newly placed building. */
 export type BuildingPlacedCallback = (building: Building, grid: HexGrid) => void;
@@ -49,6 +50,7 @@ export class AIPlayer {
   private readonly knightManager: KnightManager;
   private readonly upgradeManager: UpgradeManager;
   private readonly roadNetwork: RoadNetwork;
+  private readonly populationManager: PopulationManager;
   private readonly onBuildingPlaced: BuildingPlacedCallback;
   private readonly config: DifficultyConfig;
 
@@ -81,6 +83,7 @@ export class AIPlayer {
     knightManager: KnightManager,
     upgradeManager: UpgradeManager,
     roadNetwork: RoadNetwork,
+    populationManager: PopulationManager,
     onBuildingPlaced: BuildingPlacedCallback,
   ) {
     this.playerId = playerId;
@@ -91,6 +94,7 @@ export class AIPlayer {
     this.knightManager = knightManager;
     this.upgradeManager = upgradeManager;
     this.roadNetwork = roadNetwork;
+    this.populationManager = populationManager;
     this.onBuildingPlaced = onBuildingPlaced;
 
     this.config = DIFFICULTY_CONFIGS[difficulty];
@@ -113,6 +117,7 @@ export class AIPlayer {
 
       // Some difficulties skip a fraction of decision ticks
       if (this.config.skipChance === 0 || Math.random() >= this.config.skipChance) {
+        this.checkHousingNeeds();
         this.tryBuildNext();
         this.manageToolQueue();
         // Only try upgrades once economy is established
@@ -130,6 +135,34 @@ export class AIPlayer {
       // Reset threat flag after one attack cycle
       this.underThreat = false;
       this.tryAttack();
+    }
+  }
+
+  /**
+   * Reactively build housing when population usage is high.
+   * Tries the best affordable house (Large > Medium > Small).
+   */
+  private checkHousingNeeds(): void {
+    if (this.populationManager.getUsageRatio(this.playerId) < 0.8) return;
+
+    const housePriority: BuildingType[] = [
+      BuildingType.LargeHouse,
+      BuildingType.MediumHouse,
+      BuildingType.SmallHouse,
+    ];
+
+    for (const type of housePriority) {
+      if (!this.canAfford(type)) continue;
+      const coord = this.findValidHex(type);
+      if (!coord) continue;
+
+      const result = this.gameState.placeBuilding(type, coord, this.playerId);
+      if (result.ok) {
+        this.onBuildingPlaced(result.building, this.gameState.getGrid());
+        this.territoryManager.markDirty();
+        autoConnectBuilding(coord, this.playerId, this.roadNetwork, this.gameState.getGrid());
+        return;
+      }
     }
   }
 

@@ -5,6 +5,7 @@ import { audioManager } from './engine/AudioManager';
 import { Minimap } from './engine/Minimap';
 import type { GameConfig } from './game/GameConfig';
 import { BUILDING_DEFINITIONS } from './game/BuildingType';
+import { getPopulationSeverity } from './game/data/balanceConstants';
 import type { SaveData } from './game/SaveLoad';
 import { loadSettings } from './game/SettingsStorage';
 import './ui/styles.css';
@@ -176,6 +177,8 @@ app.innerHTML = `
       <span id="mute-icon-on">${icon('volume_up')}</span>
       <span id="mute-icon-off" class="hidden">${icon('volume_off')}</span>
     </button>
+    <div class="game-controls-divider"></div>
+    <span id="pop-counter" class="pop-counter" title="Population">${icon('people')} <span id="pop-counter-text">0/15</span></span>
   </div>
 
   <!-- Build Toolbar (desktop only) -->
@@ -194,6 +197,9 @@ app.innerHTML = `
     </button>
     <button class="build-toolbar-tab" data-category="logistics" title="Logistics">
       ${icon('warehouse')}<span class="build-toolbar-label">Logistics</span>
+    </button>
+    <button class="build-toolbar-tab" data-category="housing" title="Housing">
+      ${icon('home')}<span class="build-toolbar-label">Housing</span>
     </button>
     <div class="build-toolbar-divider"></div>
     <button class="build-toolbar-tab" data-panel="stats" title="Statistics">
@@ -423,6 +429,7 @@ const container = document.getElementById('game-container')!;
 let game: Game | undefined;
 let currentTooltip: TooltipController | undefined;
 let currentMinimap: Minimap | undefined;
+let popCounterInterval: ReturnType<typeof setInterval> | null = null;
 
 /** Get the active Game instance (only call from UI handlers after game starts) */
 function getGame(): Game {
@@ -479,6 +486,7 @@ async function startGame(config: Partial<GameConfig>, savedData?: SaveData): Pro
   stopInfoPanelUpdates();
   stopStatsPanelUpdates();
   stopBuildPanelUpdates();
+  if (popCounterInterval) { clearInterval(popCounterInterval); popCounterInterval = null; }
   hideInfoPanelElement();
   hideStatsPanelElement();
   hideBuildPanelElement();
@@ -603,6 +611,22 @@ async function startGame(config: Partial<GameConfig>, savedData?: SaveData): Pro
       placementLabel.textContent = 'Building Road — click next hex to continue';
     };
   }
+
+  // Wire population counter updates
+  const popCounterText = document.getElementById('pop-counter-text')!;
+  const popCounterEl = document.getElementById('pop-counter')!;
+  if (popCounterInterval) clearInterval(popCounterInterval);
+  popCounterInterval = setInterval(() => {
+    if (!game) return;
+    const popMgr = game.getPopulationManager();
+    const pid = game.getHumanPlayerId();
+    const current = popMgr.getCurrentPopulation(pid);
+    const capacity = popMgr.getCapacity(pid);
+    popCounterText.textContent = `${current}/${capacity}`;
+    const severity = getPopulationSeverity(popMgr.getUsageRatio(pid));
+    popCounterEl.classList.toggle('pop-warning', severity === 'warning');
+    popCounterEl.classList.toggle('pop-critical', severity === 'critical');
+  }, 1000);
 
   const minimapContainer = document.getElementById('minimap-container')!;
   currentMinimap = new Minimap(game, minimapContainer);

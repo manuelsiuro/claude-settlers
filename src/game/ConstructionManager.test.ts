@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { ConstructionManager } from './ConstructionManager';
 import { UnitManager } from './UnitManager';
+import { PopulationManager } from './PopulationManager';
 import { GameState } from './GameState';
 import { HexGrid } from './HexGrid';
 import { TerrainType } from './TerrainType';
@@ -39,8 +40,9 @@ describe('ConstructionManager', () => {
     }
 
     gameState = new GameState(grid);
-    construction = new ConstructionManager(gameState);
-    unitManager = new UnitManager(gameState);
+    const populationManager = new PopulationManager(gameState);
+    construction = new ConstructionManager(gameState, populationManager);
+    unitManager = new UnitManager(gameState, populationManager);
   });
 
   function placeCastleWithResources() {

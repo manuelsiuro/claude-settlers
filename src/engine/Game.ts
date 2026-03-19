@@ -63,6 +63,7 @@ import { WeatherController } from './WeatherController';
 import type { ColorGradingParams } from './AtmosphereController';
 import { FlagLightSystem } from './FlagLightSystem';
 import { WorkAreaRenderer } from './WorkAreaRenderer';
+import { PopulationManager } from '../game/PopulationManager';
 
 export const ShadowQuality = {
   Off: 'off',
@@ -80,6 +81,7 @@ export type GameNotificationType =
   | 'building_destroyed'
   | 'combat_result'
   | 'tool_waiting'
+  | 'population_cap'
   | 'victory'
   | 'defeat';
 
@@ -134,6 +136,7 @@ export class Game {
   private weatherController: WeatherController;
   private flagLightSystem: FlagLightSystem;
   private workAreaRenderer: WorkAreaRenderer;
+  private populationManager: PopulationManager;
   private aiPlayers: AIPlayer[] = [];
   private roadRenderer: RoadRenderer;
   private territoryRenderer: TerritoryRenderer;
@@ -233,14 +236,15 @@ export class Game {
       terrainBalance: terrainBalance ?? undefined,
     });
     this.gameState = new GameState(this.grid);
+    this.populationManager = new PopulationManager(this.gameState);
     this.mapRenderer = new MapRenderer();
     this.buildingRenderer = new BuildingRenderer();
     this.unitRenderer = new UnitRenderer();
-    this.unitManager = new UnitManager(this.gameState);
+    this.unitManager = new UnitManager(this.gameState, this.populationManager);
     this.productionManager = new ProductionManager(this.gameState);
-    this.constructionManager = new ConstructionManager(this.gameState);
+    this.constructionManager = new ConstructionManager(this.gameState, this.populationManager);
     this.roadNetwork = new RoadNetwork(this.grid);
-    this.transporterManager = new TransporterManager(this.gameState, this.roadNetwork);
+    this.transporterManager = new TransporterManager(this.gameState, this.roadNetwork, this.populationManager);
     this.logisticsManager = new LogisticsManager(this.gameState, this.roadNetwork);
     this.harborManager = new HarborManager(this.gameState, this.roadNetwork, this.grid);
     this.territoryManager = new TerritoryManager(this.gameState);
@@ -348,6 +352,10 @@ export class Game {
     };
     this.unitManager.onBuildingWaitingForTool = notifyToolWaiting;
     this.constructionManager.onBuildingWaitingForTool = notifyToolWaiting;
+    this.unitManager.onPopulationCapReached = (playerId: number) => {
+      if (playerId !== this.humanPlayerId) return;
+      this.onNotification?.({ type: 'population_cap', message: 'Population at capacity — build more houses' });
+    };
 
     this.gameState.territoryCheck = (q, r, playerId) => this.territoryManager.isOwnedBy(q, r, playerId);
     this.gameState.onBuildingRemoved = (building) => {
@@ -355,6 +363,10 @@ export class Game {
       if (building.playerId === this.humanPlayerId) {
         const def = BUILDING_DEFINITIONS[building.type];
         this.onNotification?.({ type: 'building_destroyed', message: `${def.label} destroyed` });
+        // Check if population now exceeds capacity after housing destroyed
+        if (def.populationCapacity > 0 && this.populationManager.getUsageRatio(building.playerId) > 1) {
+          this.onNotification?.({ type: 'population_cap', message: 'Population exceeds capacity! Build more houses' });
+        }
       }
     };
     this.knightManager.onKnightRecruited = (building) => {
@@ -746,6 +758,7 @@ export class Game {
         this.knightManager,
         this.upgradeManager,
         this.roadNetwork,
+        this.populationManager,
         (building, grid) => {
           this.buildingRenderer.addBuilding(building, grid);
         },
@@ -835,7 +848,7 @@ export class Game {
             playerId,
           );
           if (result.ok) {
-            initializeCastleResources(result.building);
+            initializeCastleResources(result.building, this.config.difficulty);
             this.buildingRenderer.addBuilding(result.building, this.grid);
             this.territoryManager.markDirty();
             return;
@@ -1230,6 +1243,10 @@ export class Game {
   /** Hide the work area overlay */
   hideWorkArea(): void {
     this.workAreaRenderer.hide();
+  }
+
+  getPopulationManager(): PopulationManager {
+    return this.populationManager;
   }
 
   getFogOfWarManager(): FogOfWarManager {

@@ -31,4 +31,7 @@ export const BUILDING_MODEL_MAP: Record<BuildingType, BuildingModelName> = {
   [BuildingType.Barracks]: 'barracks',
   [BuildingType.Warehouse]: 'warehouse',
   [BuildingType.Harbor]: 'harbor',
+  [BuildingType.SmallHouse]: 'small_house',
+  [BuildingType.MediumHouse]: 'medium_house',
+  [BuildingType.LargeHouse]: 'large_house',
 };

@@ -1,6 +1,6 @@
 # Project Progress
 
-## Current Phase: Post-Phase 9 — All Core Phases Complete
+## Current Phase: Expansion Features — Population Management Complete
 
 ## Task Board
 
@@ -104,6 +104,7 @@
 - [DONE] Building scale coherence audit & fix — Analyzed all 24 GLB model bounding boxes. 7 buildings had effective footprints under 0.40 (GoldsmithMint 0.24, GuardHut 0.26, IronSmelter 0.29, Bakery 0.29, GeologistHut 0.30, BlacksmithArmory 0.32, Watchtower 0.32). Added per-building scale factors (1.5–2.0×) targeting 0.45–0.55 effective footprint range. Additionally scaled 4 mid-tier buildings slightly undersized (WoodcutterHut 1.15×, ForesterHut 1.15×, ToolmakerWorkshop 1.2×, Slaughterhouse 1.2×) and removed incorrect 0.9× downscale on Warehouse. Single-file change in BuildingRenderer.ts BUILDING_SCALE map. 439 tests passing — 2026-03-12.
 
 ## Completed
+- **2026-03-19**: Population Management System — 10 phases. PopulationManager (stateless query), spawn gating on UnitManager/TransporterManager/ConstructionManager, 3 housing buildings (Small/Medium/Large House), HUD population counter with color states, Housing build tab, enhanced Stats Population tab, AI reactive housing, difficulty-based starting resources, save/load v9, 3 Blender house models. 1 new file, 27 modified, 3 GLB assets. 615 tests passing.
 - **2026-03-12**: Polish Phase — Ambient Life, Military Visibility, Economy UX, Performance. 13 new files created, 12 files modified. ParticleSystem (smoke/sparks/dust), BuildingAnimator (windmill/furnace/sawmill/construction/destruction), TreeSwayShader (GPU wind), PlayerColors (shared), Knight visuals (faction color + rank chevrons + Fighting state), CombatAnimationState + CombatRenderer (duel phases, attack warnings, capture banners), GoodsDistribution (priority routing), TooltipController (hover/long-press tooltips), BuildingStatusOverlay (icon sprites), EconomyTracker (production/consumption rates), ProductionChainOverlay (supply chain lines), Minimap enhancements (unit dots + construction), Pathfinding binary heap optimization. 16 new tests, 496 total passing.
 - **2026-03-12**: Building scale coherence fix. 12 buildings now have per-model scale factors in BUILDING_SCALE (4 mines at 2.5×, 7 undersized buildings at 1.5–2.0×, 4 mid-tier at 1.1–1.2×). Warehouse 0.9× downscale removed. All buildings now have proportional footprints (0.45–0.75 effective range, Castle 1.14 as landmark).
 - **2026-03-12**: Distance-based production cycles. Gathering buildings produce slower when far from their harvest terrain (e.g., Woodcutter far from Forest). `harvestTerrain` field on BuildingDefinition, BFS distance calculation with wrapping on HexGrid, distance multiplier in ProductionManager, colored placement preview + info panel enhancements. 17 new tests.
@@ -269,6 +270,18 @@ All 17 tasks from the improvement plan are now complete. 569 tests passing, 0 er
 - [DONE] GPU-driven weather shaders — WeatherController rewritten with custom vertex/fragment shaders for rain (elongated streaks, wind drift, ground splash rings) and snow (organic multi-sine drift, size variation, twinkling alpha pulse). Camera-relative spawning via uCamPos uniform. ShaderTimeManager integration for uTime. Smooth fade transitions (2s) between weather states. — 2026-03-19
 - [DONE] Weather atmosphere overlay — Rain/snow modulate fog density, sun intensity, exposure, and color grading (saturation reduction + cool tint shift) proportional to transition opacity. Base values cached and restored each frame before atmosphere update. — 2026-03-19
 - [DONE] Auto weather scheduling — When time-of-day is "Auto" and weather is "None", WeatherController auto-schedules random weather events. State machine: 90–240s gap → pick rain/snow (nightness > 0.5: 60% snow, else 80% rain) → 60–180s duration → fade out → repeat. Manual weather selection disables auto-scheduling. Game.ts passes nightness from AtmosphereController each frame. — 2026-03-19
+
+### Population Management System [DONE]
+- [DONE] Phase 1: Data Model — `populationCapacity` field on BuildingDefinition (all 27 buildings), `pendingDismissal` on Unit, `housing` BuildingCategory, 3 new building types (SmallHouse +8 cap, MediumHouse +16 cap, LargeHouse +25 cap), Castle base capacity 15. Balance constants + difficulty-based starting resources (Easy/Normal/Hard). — 2026-03-19
+- [DONE] Phase 2: PopulationManager — Stateless query object: `getCapacity()`, `getCurrentPopulation()`, `canSpawn()`, `getAvailableSlots()`, `getUsageRatio()`. Integrated into Game.ts constructor. — 2026-03-19
+- [DONE] Phase 3: Spawn Gating — UnitManager, TransporterManager, ConstructionManager all check `canSpawn()` before spawning. `dismissUnit()` API with `pendingDismissal` flow (walk home → return tool → remove). `releaseTransporter()` for transporter cleanup. Throttled `onPopulationCapReached` callback (30s cooldown). — 2026-03-19
+- [DONE] Phase 4: HUD Population Counter — `pop-counter` in game controls bar showing `current/capacity` with color states (green <75%, amber 75-90%, red >90%). 1-second update interval with proper cleanup. — 2026-03-19
+- [DONE] Phase 5: Housing UI — Housing tab in desktop/mobile build toolbar. Enhanced Population tab in StatsPanel with capacity bar, housing breakdown, idle count, unit roster. — 2026-03-19
+- [DONE] Phase 6: Notifications — `population_cap` notification type wired to SFX + snackbar. Fires on spawn blocked and housing destroyed (when over cap). — 2026-03-19
+- [DONE] Phase 7: AI Adaptation — Houses in all 3 build orders (SmallHouse early, MediumHouse mid, LargeHouse late). Reactive `checkHousingNeeds()` builds best affordable house when usage >= 80%. — 2026-03-19
+- [DONE] Phase 8: Difficulty Resources — `CASTLE_STARTING_RESOURCES_BY_DIFFICULTY` with Easy (generous) / Normal (default) / Hard (scarce) resource sets. `initializeCastleResources()` accepts `Difficulty`. — 2026-03-19
+- [DONE] Phase 9: Save/Load — Version bumped to 9. Backward compat patch for `pendingDismissal` field. Old saves work (no houses but Castle provides capacity). — 2026-03-19
+- [DONE] Phase 10: 3D Models — 3 house GLBs created via Blender MCP (Small House 11KB, Medium House 14KB, Large House 16KB). AssetLoader, BuildingModels, BuildingRenderer scale entries. Visual descriptions added to docs/buildings.md. — 2026-03-19
 
 ## Blockers
 _None._

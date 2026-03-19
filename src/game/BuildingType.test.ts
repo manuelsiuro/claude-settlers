@@ -42,8 +42,8 @@ describe('BuildingDefinitions', () => {
     expect(castle.storageCapacity).toBeGreaterThan(0);
   });
 
-  it('Tier 1 buildings should only cost Wood', () => {
-    const tier1 = getBuildingsByTier(1);
+  it('Tier 1 buildings (non-housing) should only cost Wood', () => {
+    const tier1 = getBuildingsByTier(1).filter(d => d.category !== 'housing');
     expect(tier1.length).toBeGreaterThan(0);
     for (const def of tier1) {
       for (const cost of def.cost) {

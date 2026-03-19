@@ -1,6 +1,12 @@
 import { ResourceType } from '../ResourceType';
 import { TerrainType } from '../TerrainType';
 import type { BuildingType, BuildingDefinition, BuildingCategory } from '../BuildingType';
+import {
+  CASTLE_POPULATION_CAPACITY,
+  SMALL_HOUSE_CAPACITY,
+  MEDIUM_HOUSE_CAPACITY,
+  LARGE_HOUSE_CAPACITY,
+} from './balanceConstants';
 
 export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
   // ============================================================
@@ -25,6 +31,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     storageCapacity: 150,
     constructionTime: 0,
     workRadius: 0,
+    populationCapacity: CASTLE_POPULATION_CAPACITY,
   },
 
   // ============================================================
@@ -53,6 +60,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     storageCapacity: 6,
     constructionTime: 20,
     workRadius: 5,
+    populationCapacity: 0,
   },
 
   ['forester_hut']: {
@@ -74,6 +82,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     storageCapacity: 0,
     constructionTime: 15,
     workRadius: 3,
+    populationCapacity: 0,
   },
 
   ['quarry']: {
@@ -99,6 +108,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     storageCapacity: 6,
     constructionTime: 20,
     workRadius: 0,
+    populationCapacity: 0,
   },
 
   ['fisherman_hut']: {
@@ -124,6 +134,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     storageCapacity: 6,
     constructionTime: 15,
     workRadius: 0,
+    populationCapacity: 0,
   },
 
   ['guard_hut']: {
@@ -145,6 +156,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     storageCapacity: 3,
     constructionTime: 25,
     workRadius: 0,
+    populationCapacity: 0,
   },
 
   // ============================================================
@@ -173,6 +185,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     storageCapacity: 6,
     constructionTime: 25,
     workRadius: 0,
+    populationCapacity: 0,
   },
 
   ['farm']: {
@@ -201,6 +214,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     storageCapacity: 6,
     constructionTime: 30,
     workRadius: 0,
+    populationCapacity: 0,
   },
 
   ['geologist_hut']: {
@@ -225,6 +239,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     storageCapacity: 4,
     constructionTime: 20,
     workRadius: 7,
+    populationCapacity: 0,
   },
 
   ['iron_mine']: {
@@ -253,6 +268,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     storageCapacity: 4,
     constructionTime: 35,
     workRadius: 0,
+    populationCapacity: 0,
   },
 
   ['coal_mine']: {
@@ -281,6 +297,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     storageCapacity: 4,
     constructionTime: 35,
     workRadius: 0,
+    populationCapacity: 0,
   },
 
   ['gold_mine']: {
@@ -309,6 +326,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     storageCapacity: 4,
     constructionTime: 35,
     workRadius: 0,
+    populationCapacity: 0,
   },
 
   ['stone_mine']: {
@@ -338,6 +356,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     storageCapacity: 4,
     constructionTime: 35,
     workRadius: 0,
+    populationCapacity: 0,
   },
 
   ['watchtower']: {
@@ -363,6 +382,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     storageCapacity: 6,
     constructionTime: 40,
     workRadius: 0,
+    populationCapacity: 0,
   },
 
   // ============================================================
@@ -395,6 +415,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     storageCapacity: 6,
     constructionTime: 35,
     workRadius: 0,
+    populationCapacity: 0,
   },
 
   ['bakery']: {
@@ -427,6 +448,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     storageCapacity: 6,
     constructionTime: 35,
     workRadius: 0,
+    populationCapacity: 0,
   },
 
   ['pig_farm']: {
@@ -455,6 +477,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     storageCapacity: 4,
     constructionTime: 30,
     workRadius: 0,
+    populationCapacity: 0,
   },
 
   ['slaughterhouse']: {
@@ -484,6 +507,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     storageCapacity: 4,
     constructionTime: 30,
     workRadius: 0,
+    populationCapacity: 0,
   },
 
   ['iron_smelter']: {
@@ -516,6 +540,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     storageCapacity: 4,
     constructionTime: 40,
     workRadius: 0,
+    populationCapacity: 0,
   },
 
   ['toolmaker_workshop']: {
@@ -548,6 +573,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     storageCapacity: 6,
     constructionTime: 35,
     workRadius: 0,
+    populationCapacity: 0,
   },
 
   ['goldsmith_mint']: {
@@ -580,6 +606,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     storageCapacity: 4,
     constructionTime: 35,
     workRadius: 0,
+    populationCapacity: 0,
   },
 
   ['blacksmith_armory']: {
@@ -616,6 +643,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     storageCapacity: 6,
     constructionTime: 35,
     workRadius: 0,
+    populationCapacity: 0,
   },
 
   ['barracks']: {
@@ -641,6 +669,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     storageCapacity: 12,
     constructionTime: 60,
     workRadius: 0,
+    populationCapacity: 0,
   },
 
   // ============================================================
@@ -668,6 +697,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     storageCapacity: 30,
     constructionTime: 30,
     workRadius: 0,
+    populationCapacity: 0,
   },
 
   ['harbor']: {
@@ -693,6 +723,88 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     storageCapacity: 8,
     constructionTime: 40,
     workRadius: 0,
+    populationCapacity: 0,
+  },
+
+  // ============================================================
+  // HOUSING
+  // ============================================================
+  ['small_house']: {
+    type: 'small_house',
+    label: 'Small House',
+    description: 'Simple cottage that increases population capacity',
+    category: 'housing',
+    tier: 1,
+    cost: [
+      { resource: ResourceType.Wood, amount: 3 },
+      { resource: ResourceType.Planks, amount: 2 },
+    ],
+    worker: '',
+    workerTool: '',
+    production: null,
+    allowedTerrain: [TerrainType.Grassland],
+    adjacentTerrain: null,
+    harvestTerrain: null,
+    knightSlots: 0,
+    influenceRadius: 0,
+    visionRadius: 0,
+    storageCapacity: 0,
+    constructionTime: 20,
+    workRadius: 0,
+    populationCapacity: SMALL_HOUSE_CAPACITY,
+  },
+
+  ['medium_house']: {
+    type: 'medium_house',
+    label: 'Medium House',
+    description: 'Two-story dwelling with more population capacity',
+    category: 'housing',
+    tier: 2,
+    cost: [
+      { resource: ResourceType.Wood, amount: 4 },
+      { resource: ResourceType.Planks, amount: 3 },
+      { resource: ResourceType.Stone, amount: 2 },
+    ],
+    worker: '',
+    workerTool: '',
+    production: null,
+    allowedTerrain: [TerrainType.Grassland],
+    adjacentTerrain: null,
+    harvestTerrain: null,
+    knightSlots: 0,
+    influenceRadius: 0,
+    visionRadius: 0,
+    storageCapacity: 0,
+    constructionTime: 35,
+    workRadius: 0,
+    populationCapacity: MEDIUM_HOUSE_CAPACITY,
+  },
+
+  ['large_house']: {
+    type: 'large_house',
+    label: 'Large House',
+    description: 'Manor house with large population capacity',
+    category: 'housing',
+    tier: 3,
+    cost: [
+      { resource: ResourceType.Wood, amount: 5 },
+      { resource: ResourceType.Planks, amount: 4 },
+      { resource: ResourceType.Stone, amount: 4 },
+      { resource: ResourceType.IronBars, amount: 2 },
+    ],
+    worker: '',
+    workerTool: '',
+    production: null,
+    allowedTerrain: [TerrainType.Grassland],
+    adjacentTerrain: null,
+    harvestTerrain: null,
+    knightSlots: 0,
+    influenceRadius: 0,
+    visionRadius: 0,
+    storageCapacity: 0,
+    constructionTime: 50,
+    workRadius: 0,
+    populationCapacity: LARGE_HOUSE_CAPACITY,
   },
 };
 
