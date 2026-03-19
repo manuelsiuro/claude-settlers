@@ -14,8 +14,8 @@ import { TerrainType } from './TerrainType';
 import {
   GEOLOGIST_PROSPECT_DURATION as PROSPECT_DURATION,
   GEOLOGIST_IDLE_COOLDOWN as IDLE_COOLDOWN,
-  GEOLOGIST_MAX_PROSPECT_RADIUS as MAX_PROSPECT_RADIUS,
 } from './data/balanceConstants';
+import { getEffectiveWorkRadius } from './BuildingUpgrade';
 
 export type GeologistPhase =
   | 'idle_at_hut'
@@ -94,7 +94,7 @@ export class GeologistManager {
         if (ws.idleCooldown > 0) return;
 
         // Find nearest unprospected mountain
-        const target = this.findUnprospectedMountain(building.coord, ws.prospectedTiles, grid);
+        const target = this.findUnprospectedMountain(building.coord, ws.prospectedTiles, grid, getEffectiveWorkRadius(building));
         if (!target) {
           ws.idleCooldown = IDLE_COOLDOWN;
           return;
@@ -197,13 +197,14 @@ export class GeologistManager {
     origin: HexCoord,
     prospectedTiles: Set<string>,
     grid: HexGrid,
+    maxRadius: number,
   ): HexCoord | null {
     const visited = new Set<string>();
     visited.add(HexGrid.key(origin.q, origin.r));
 
     let frontier: HexCoord[] = [origin];
 
-    for (let dist = 1; dist <= MAX_PROSPECT_RADIUS; dist++) {
+    for (let dist = 1; dist <= maxRadius; dist++) {
       const nextFrontier: HexCoord[] = [];
       for (const pos of frontier) {
         const neighbors = grid.getNeighbors(pos.q, pos.r);

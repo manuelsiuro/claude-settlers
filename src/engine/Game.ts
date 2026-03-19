@@ -62,6 +62,7 @@ import { PostProcessing } from './PostProcessing';
 import { WeatherController } from './WeatherController';
 import type { ColorGradingParams } from './AtmosphereController';
 import { FlagLightSystem } from './FlagLightSystem';
+import { WorkAreaRenderer } from './WorkAreaRenderer';
 
 export const ShadowQuality = {
   Off: 'off',
@@ -132,6 +133,7 @@ export class Game {
   private postProcessing: PostProcessing;
   private weatherController: WeatherController;
   private flagLightSystem: FlagLightSystem;
+  private workAreaRenderer: WorkAreaRenderer;
   private aiPlayers: AIPlayer[] = [];
   private roadRenderer: RoadRenderer;
   private territoryRenderer: TerritoryRenderer;
@@ -285,6 +287,7 @@ export class Game {
     };
     this.weatherController = new WeatherController();
     this.flagLightSystem = new FlagLightSystem();
+    this.workAreaRenderer = new WorkAreaRenderer();
     this.atmosphereController.onNightnessUpdate = (nightness) => {
       this.flagLightSystem.setNightness(nightness);
       this.postProcessing.setBloomStrength(0.3 + 0.2 * nightness);
@@ -487,6 +490,9 @@ export class Game {
 
     // Set up flag light system (nighttime lanterns)
     this.flagLightSystem.addToScene(this.scene);
+
+    // Set up work area renderer (building selection overlay)
+    this.workAreaRenderer.addToScene(this.scene);
 
     // Set up weather controller
     this.weatherController.addToScene(this.scene);
@@ -1012,6 +1018,7 @@ export class Game {
     this.buildingStatusOverlay.dispose();
     this.buildingAnimator.dispose();
     this.flagLightSystem.dispose();
+    this.workAreaRenderer.dispose();
     this.weatherController.dispose();
     this.particleSystem.dispose();
     this.treeRenderer.dispose();
@@ -1209,6 +1216,20 @@ export class Game {
 
   getFogOfWarRenderer(): FogOfWarRenderer {
     return this.fogOfWarRenderer;
+  }
+
+  /** Show work area overlay for a building (if it has a work radius) */
+  showWorkArea(building: import('../game/Building').Building): void {
+    if (BUILDING_DEFINITIONS[building.type].workRadius > 0) {
+      this.workAreaRenderer.show(building, this.grid);
+    } else {
+      this.workAreaRenderer.hide();
+    }
+  }
+
+  /** Hide the work area overlay */
+  hideWorkArea(): void {
+    this.workAreaRenderer.hide();
   }
 
   getFogOfWarManager(): FogOfWarManager {

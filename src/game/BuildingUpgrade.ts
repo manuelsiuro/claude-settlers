@@ -2,12 +2,13 @@ import type { Building } from './Building';
 import { BUILDING_DEFINITIONS } from './BuildingType';
 import type { BuildingType } from './BuildingType';
 import { ResourceType } from './ResourceType';
-import { UPGRADES_MAX_LEVEL } from './data/balanceConstants';
+import { UPGRADES_MAX_LEVEL, WORK_RADIUS_MAX_LEVEL } from './data/balanceConstants';
 
 export const UpgradeAxis = {
   Storage: 'storage',
   Production: 'production',
   Workers: 'workers',
+  WorkRadius: 'workRadius',
 } as const;
 
 export type UpgradeAxis = (typeof UpgradeAxis)[keyof typeof UpgradeAxis];
@@ -144,6 +145,19 @@ function buildUpgradeRegistry(): Partial<Record<BuildingType, BuildingUpgradeSpe
       hasUpgrades = true;
     }
 
+    // Work radius upgrades (buildings with workRadius > 0)
+    if (def.workRadius > 0) {
+      const levels: UpgradeLevelConfig[] = [];
+      for (let lv = 1; lv <= WORK_RADIUS_MAX_LEVEL; lv++) {
+        levels.push({
+          cost: getScaledCost(def.tier, lv),
+          value: def.workRadius + lv, // +1 hex per level
+        });
+      }
+      spec[UpgradeAxis.WorkRadius] = { maxLevel: WORK_RADIUS_MAX_LEVEL, levels };
+      hasUpgrades = true;
+    }
+
     if (hasUpgrades) {
       registry[bt] = spec;
     }
@@ -199,6 +213,16 @@ export function getMaxWorkers(building: Building): number {
   if (level === 0) return 1;
   const config = getUpgradeConfig(building.type, UpgradeAxis.Workers);
   if (!config || level > config.maxLevel) return 1;
+  return config.levels[level - 1].value;
+}
+
+/** Get effective work radius accounting for upgrade level */
+export function getEffectiveWorkRadius(building: Building): number {
+  const def = BUILDING_DEFINITIONS[building.type];
+  const level = building.upgradeLevels?.[UpgradeAxis.WorkRadius] ?? 0;
+  if (level === 0) return def.workRadius;
+  const config = getUpgradeConfig(building.type, UpgradeAxis.WorkRadius);
+  if (!config || level > config.maxLevel) return def.workRadius;
   return config.levels[level - 1].value;
 }
 

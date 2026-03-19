@@ -12,6 +12,7 @@ import {
   getEffectiveStorageCapacity,
   getProductionSpeedMultiplier,
   getMaxWorkers,
+  getEffectiveWorkRadius,
   canUpgrade,
 } from '../game/BuildingUpgrade';
 import { startAttackTargeting, isAttackModeActive } from './BuildPanel';
@@ -189,7 +190,7 @@ function getInfoStructureKey(building: Building): string {
   // Upgrade states per axis
   const upgradeSpec = BUILDING_UPGRADES[building.type];
   if (upgradeSpec && building.state === BuildingState.Active) {
-    for (const axis of [UpgradeAxis.Storage, UpgradeAxis.Production, UpgradeAxis.Workers]) {
+    for (const axis of [UpgradeAxis.Storage, UpgradeAxis.Production, UpgradeAxis.Workers, UpgradeAxis.WorkRadius]) {
       const config = upgradeSpec[axis];
       if (!config) continue;
       const level = building.upgradeLevels?.[axis] ?? 0;
@@ -584,6 +585,7 @@ function generateInfoHTML(building: Building): string {
       { axis: UpgradeAxis.Storage, label: 'Storage' },
       { axis: UpgradeAxis.Production, label: 'Speed' },
       { axis: UpgradeAxis.Workers, label: 'Workers' },
+      { axis: UpgradeAxis.WorkRadius, label: 'Work Area' },
     ];
 
     for (const { axis, label } of axes) {
@@ -601,6 +603,8 @@ function generateInfoHTML(building: Building): string {
         effectText = mult < 1 ? `${Math.round((1 / mult - 1) * 100)}% faster` : 'Normal';
       } else if (axis === UpgradeAxis.Workers) {
         effectText = `${getMaxWorkers(building)} worker${getMaxWorkers(building) > 1 ? 's' : ''}`;
+      } else if (axis === UpgradeAxis.WorkRadius) {
+        effectText = `${getEffectiveWorkRadius(building)} hex radius`;
       }
 
       html += `<div class="info-row">
@@ -786,7 +790,7 @@ function updateInfoValues(building: Building): void {
   // Upgrades
   const upgradeSpec = BUILDING_UPGRADES[building.type];
   if (upgradeSpec && building.state === BuildingState.Active && building.playerId === getGame().getHumanPlayerId()) {
-    for (const axis of [UpgradeAxis.Storage, UpgradeAxis.Production, UpgradeAxis.Workers]) {
+    for (const axis of [UpgradeAxis.Storage, UpgradeAxis.Production, UpgradeAxis.Workers, UpgradeAxis.WorkRadius]) {
       const config = upgradeSpec[axis];
       if (!config) continue;
       const currentLevel = building.upgradeLevels?.[axis] ?? 0;
@@ -799,6 +803,8 @@ function updateInfoValues(building: Building): void {
         effectText = mult < 1 ? `${Math.round((1 / mult - 1) * 100)}% faster` : 'Normal';
       } else if (axis === UpgradeAxis.Workers) {
         effectText = `${getMaxWorkers(building)} worker${getMaxWorkers(building) > 1 ? 's' : ''}`;
+      } else if (axis === UpgradeAxis.WorkRadius) {
+        effectText = `${getEffectiveWorkRadius(building)} hex radius`;
       }
       updater.setText(`upgrade-${axis}-effect`, effectText);
 

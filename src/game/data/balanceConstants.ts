@@ -12,8 +12,6 @@
 export const WOODCUTTER_CHOP_DURATION = 8.0;
 /** Seconds the woodcutter waits before searching for another tree */
 export const WOODCUTTER_IDLE_COOLDOWN = 2.0;
-/** Max hex radius from the hut to search for trees */
-export const WOODCUTTER_MAX_SEARCH_RADIUS = 8;
 
 // ─── Forester ───────────────────────────────────────────────────────────────
 
@@ -21,8 +19,6 @@ export const WOODCUTTER_MAX_SEARCH_RADIUS = 8;
 export const FORESTER_PLANT_DURATION = 5.0;
 /** Seconds the forester waits before planting another tree */
 export const FORESTER_IDLE_COOLDOWN = 3.0;
-/** Max hex radius from the hut to search for planting spots */
-export const FORESTER_MAX_PLANT_RADIUS = 6;
 
 // ─── Geologist ──────────────────────────────────────────────────────────────
 
@@ -30,13 +26,11 @@ export const FORESTER_MAX_PLANT_RADIUS = 6;
 export const GEOLOGIST_PROSPECT_DURATION = 5.0;
 /** Seconds the geologist waits before prospecting another tile */
 export const GEOLOGIST_IDLE_COOLDOWN = 2.0;
-/** Max hex radius from the hut to search for prospect sites */
-export const GEOLOGIST_MAX_PROSPECT_RADIUS = 10;
 
 // ─── Trees ──────────────────────────────────────────────────────────────────
 
 /** Maximum trees allowed on a single hex tile */
-export const TREES_MAX_PER_TILE = 4;
+export const TREES_MAX_PER_TILE = 10;
 /** Seconds for a sapling to grow to young stage */
 export const TREES_SAPLING_GROWTH_TIME = 60;
 /** Seconds for a young tree to grow to mature stage */
@@ -55,6 +49,9 @@ export const COMBAT_MAX_GOLD_BONUS = 0.5;
 
 /** Maximum upgrade level per axis */
 export const UPGRADES_MAX_LEVEL = 10;
+
+/** Maximum upgrade level for work radius (+1 hex per level) */
+export const WORK_RADIUS_MAX_LEVEL = 3;
 
 // ─── Victory Conditions ─────────────────────────────────────────────────────
 

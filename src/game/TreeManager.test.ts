@@ -36,9 +36,9 @@ describe('TreeManager', () => {
       treeManager.initializeFromMap(grid);
       const trees = treeManager.getAllTrees();
 
-      // Each forest tile has 2-4 trees, and we have 4 forest tiles
-      expect(trees.length).toBeGreaterThanOrEqual(8);
-      expect(trees.length).toBeLessThanOrEqual(16);
+      // Each forest tile has 5-10 trees, and we have 4 forest tiles
+      expect(trees.length).toBeGreaterThanOrEqual(20);
+      expect(trees.length).toBeLessThanOrEqual(40);
     });
 
     it('should create all trees as mature', () => {
@@ -91,7 +91,7 @@ describe('TreeManager', () => {
       for (const tree of treeManager.getAllTrees()) {
         const count = treeManager.getTreeCountOnTile(tree.tileCoord);
         expect(count).toBeGreaterThanOrEqual(1);
-        expect(count).toBeLessThanOrEqual(4);
+        expect(count).toBeLessThanOrEqual(10);
       }
     });
   });
@@ -243,16 +243,16 @@ describe('TreeManager', () => {
 
   describe('findPlantableSpot', () => {
     it('should find a spot on forest tile with room', () => {
-      // Forest tile at (3,3) has some trees but less than 4 (could be 2-4)
+      // Forest tile at (3,3) has some trees but less than 10 (could be 5-10)
       treeManager.initializeFromMap(grid);
 
-      // Find a tile with less than 4 trees
+      // Find a tile with less than 10 trees
       const spot = treeManager.findPlantableSpot({ q: 3, r: 3 }, 3, grid, gameState);
 
       // Should find at least one plantable spot nearby
       if (spot) {
         const count = treeManager.getTreeCountOnTile(spot);
-        expect(count).toBeLessThan(4);
+        expect(count).toBeLessThan(10);
       }
     });
 

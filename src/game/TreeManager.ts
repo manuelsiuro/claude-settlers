@@ -64,7 +64,7 @@ export class TreeManager {
       if (tile.terrain !== TerrainType.Forest) continue;
 
       const rng = createRng(tile.coord.q * 1000 + tile.coord.r);
-      const treeCount = 2 + Math.floor(rng() * 3);
+      const treeCount = 5 + Math.floor(rng() * 6);
 
       for (let i = 0; i < treeCount; i++) {
         const isConifer = rng() > 0.5;

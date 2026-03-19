@@ -24,6 +24,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     visionRadius: 10,
     storageCapacity: 150,
     constructionTime: 0,
+    workRadius: 0,
   },
 
   // ============================================================
@@ -51,6 +52,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     visionRadius: 0,
     storageCapacity: 6,
     constructionTime: 20,
+    workRadius: 5,
   },
 
   ['forester_hut']: {
@@ -71,6 +73,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     visionRadius: 0,
     storageCapacity: 0,
     constructionTime: 15,
+    workRadius: 3,
   },
 
   ['quarry']: {
@@ -95,6 +98,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     visionRadius: 0,
     storageCapacity: 6,
     constructionTime: 20,
+    workRadius: 0,
   },
 
   ['fisherman_hut']: {
@@ -119,6 +123,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     visionRadius: 0,
     storageCapacity: 6,
     constructionTime: 15,
+    workRadius: 0,
   },
 
   ['guard_hut']: {
@@ -139,6 +144,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     visionRadius: 6,
     storageCapacity: 3,
     constructionTime: 25,
+    workRadius: 0,
   },
 
   // ============================================================
@@ -166,6 +172,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     visionRadius: 0,
     storageCapacity: 6,
     constructionTime: 25,
+    workRadius: 0,
   },
 
   ['farm']: {
@@ -193,6 +200,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     visionRadius: 0,
     storageCapacity: 6,
     constructionTime: 30,
+    workRadius: 0,
   },
 
   ['geologist_hut']: {
@@ -216,6 +224,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     visionRadius: 0,
     storageCapacity: 4,
     constructionTime: 20,
+    workRadius: 7,
   },
 
   ['iron_mine']: {
@@ -243,6 +252,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     visionRadius: 0,
     storageCapacity: 4,
     constructionTime: 35,
+    workRadius: 0,
   },
 
   ['coal_mine']: {
@@ -270,6 +280,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     visionRadius: 0,
     storageCapacity: 4,
     constructionTime: 35,
+    workRadius: 0,
   },
 
   ['gold_mine']: {
@@ -297,6 +308,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     visionRadius: 0,
     storageCapacity: 4,
     constructionTime: 35,
+    workRadius: 0,
   },
 
   ['stone_mine']: {
@@ -325,6 +337,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     visionRadius: 0,
     storageCapacity: 4,
     constructionTime: 35,
+    workRadius: 0,
   },
 
   ['watchtower']: {
@@ -349,6 +362,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     visionRadius: 10,
     storageCapacity: 6,
     constructionTime: 40,
+    workRadius: 0,
   },
 
   // ============================================================
@@ -380,6 +394,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     visionRadius: 0,
     storageCapacity: 6,
     constructionTime: 35,
+    workRadius: 0,
   },
 
   ['bakery']: {
@@ -411,6 +426,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     visionRadius: 0,
     storageCapacity: 6,
     constructionTime: 35,
+    workRadius: 0,
   },
 
   ['pig_farm']: {
@@ -438,6 +454,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     visionRadius: 0,
     storageCapacity: 4,
     constructionTime: 30,
+    workRadius: 0,
   },
 
   ['slaughterhouse']: {
@@ -466,6 +483,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     visionRadius: 0,
     storageCapacity: 4,
     constructionTime: 30,
+    workRadius: 0,
   },
 
   ['iron_smelter']: {
@@ -497,6 +515,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     visionRadius: 0,
     storageCapacity: 4,
     constructionTime: 40,
+    workRadius: 0,
   },
 
   ['toolmaker_workshop']: {
@@ -528,6 +547,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     visionRadius: 0,
     storageCapacity: 6,
     constructionTime: 35,
+    workRadius: 0,
   },
 
   ['goldsmith_mint']: {
@@ -559,6 +579,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     visionRadius: 0,
     storageCapacity: 4,
     constructionTime: 35,
+    workRadius: 0,
   },
 
   ['blacksmith_armory']: {
@@ -594,6 +615,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     visionRadius: 0,
     storageCapacity: 6,
     constructionTime: 35,
+    workRadius: 0,
   },
 
   ['barracks']: {
@@ -618,6 +640,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     visionRadius: 9,
     storageCapacity: 12,
     constructionTime: 60,
+    workRadius: 0,
   },
 
   // ============================================================
@@ -644,6 +667,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     visionRadius: 0,
     storageCapacity: 30,
     constructionTime: 30,
+    workRadius: 0,
   },
 
   ['harbor']: {
@@ -668,6 +692,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     visionRadius: 0,
     storageCapacity: 8,
     constructionTime: 40,
+    workRadius: 0,
   },
 };
 

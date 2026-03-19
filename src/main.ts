@@ -573,10 +573,12 @@ async function startGame(config: Partial<GameConfig>, savedData?: SaveData): Pro
       if (building) {
         showInfoPanel(building);
         g.getProductionChainOverlay().show(building, g.getGameState());
+        g.showWorkArea(building);
       } else {
         hideInfoPanelElement();
         stopInfoPanelUpdates();
         g.getProductionChainOverlay().clear();
+        g.hideWorkArea();
       }
     };
   }

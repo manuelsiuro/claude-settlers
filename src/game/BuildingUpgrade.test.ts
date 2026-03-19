@@ -10,6 +10,7 @@ import {
   getEffectiveStorageCapacity,
   getProductionSpeedMultiplier,
   getMaxWorkers,
+  getEffectiveWorkRadius,
   canUpgrade,
   getUpgradeTime,
 } from './BuildingUpgrade';
@@ -27,8 +28,12 @@ describe('BuildingUpgrade', () => {
       expect(BUILDING_UPGRADES[BuildingType.Warehouse]?.[UpgradeAxis.Storage]).toBeDefined();
     });
 
-    it('should NOT have storage upgrades for ForesterHut (storageCapacity = 0)', () => {
-      expect(BUILDING_UPGRADES[BuildingType.ForesterHut]).toBeUndefined();
+    it('should have work radius upgrades for ForesterHut (workRadius > 0)', () => {
+      expect(BUILDING_UPGRADES[BuildingType.ForesterHut]?.[UpgradeAxis.WorkRadius]).toBeDefined();
+    });
+
+    it('should NOT have work radius upgrades for Castle (workRadius = 0)', () => {
+      expect(BUILDING_UPGRADES[BuildingType.Castle]?.[UpgradeAxis.WorkRadius]).toBeUndefined();
     });
 
     it('should have production upgrades for buildings with production recipes', () => {
@@ -188,6 +193,57 @@ describe('BuildingUpgrade', () => {
       const building = createBuilding(BuildingType.Sawmill, { q: 5, r: 5 }, 1);
       building.upgradeLevels[UpgradeAxis.Workers] = 10;
       expect(getMaxWorkers(building)).toBe(6);
+    });
+  });
+
+  describe('getEffectiveWorkRadius', () => {
+    it('should return base workRadius at level 0', () => {
+      const building = createBuilding(BuildingType.ForesterHut, { q: 5, r: 5 }, 1);
+      expect(getEffectiveWorkRadius(building)).toBe(3); // base workRadius for forester_hut
+    });
+
+    it('should return base + 1 at level 1', () => {
+      const building = createBuilding(BuildingType.ForesterHut, { q: 5, r: 5 }, 1);
+      building.upgradeLevels[UpgradeAxis.WorkRadius] = 1;
+      expect(getEffectiveWorkRadius(building)).toBe(4);
+    });
+
+    it('should return base + 2 at level 2', () => {
+      const building = createBuilding(BuildingType.ForesterHut, { q: 5, r: 5 }, 1);
+      building.upgradeLevels[UpgradeAxis.WorkRadius] = 2;
+      expect(getEffectiveWorkRadius(building)).toBe(5);
+    });
+
+    it('should return base + 3 at level 3 (max)', () => {
+      const building = createBuilding(BuildingType.ForesterHut, { q: 5, r: 5 }, 1);
+      building.upgradeLevels[UpgradeAxis.WorkRadius] = 3;
+      expect(getEffectiveWorkRadius(building)).toBe(6);
+    });
+
+    it('should return 0 for buildings without work radius', () => {
+      const building = createBuilding(BuildingType.Castle, { q: 5, r: 5 }, 1);
+      expect(getEffectiveWorkRadius(building)).toBe(0);
+    });
+
+    it('should have max level 3 for work radius upgrades', () => {
+      const config = getUpgradeConfig(BuildingType.ForesterHut, UpgradeAxis.WorkRadius);
+      expect(config).not.toBeNull();
+      expect(config!.maxLevel).toBe(3);
+      expect(config!.levels).toHaveLength(3);
+    });
+
+    it('should work for woodcutter hut (base radius 5)', () => {
+      const building = createBuilding(BuildingType.WoodcutterHut, { q: 5, r: 5 }, 1);
+      expect(getEffectiveWorkRadius(building)).toBe(5);
+      building.upgradeLevels[UpgradeAxis.WorkRadius] = 2;
+      expect(getEffectiveWorkRadius(building)).toBe(7);
+    });
+
+    it('should work for geologist hut (base radius 7)', () => {
+      const building = createBuilding(BuildingType.GeologistHut, { q: 5, r: 5 }, 1);
+      expect(getEffectiveWorkRadius(building)).toBe(7);
+      building.upgradeLevels[UpgradeAxis.WorkRadius] = 3;
+      expect(getEffectiveWorkRadius(building)).toBe(10);
     });
   });
 

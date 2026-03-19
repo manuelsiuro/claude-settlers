@@ -96,13 +96,13 @@ describe('ForesterManager', () => {
   });
 
   describe('density limit', () => {
-    it('should not plant more than MAX_TREES_PER_TILE (4) trees on one tile', () => {
-      // Pre-fill a tile with 4 trees
-      for (let i = 0; i < 4; i++) {
-        treeManager.addTree({ q: 6, r: 6 }, 'tree_deciduous', i * 0.2, 0, 0, 1);
+    it('should not plant more than MAX_TREES_PER_TILE (10) trees on one tile', () => {
+      // Pre-fill a tile with 10 trees
+      for (let i = 0; i < 10; i++) {
+        treeManager.addTree({ q: 6, r: 6 }, 'tree_deciduous', i * 0.1, 0, 0, 1);
       }
 
-      expect(treeManager.getTreeCountOnTile({ q: 6, r: 6 })).toBe(4);
+      expect(treeManager.getTreeCountOnTile({ q: 6, r: 6 })).toBe(10);
 
       // The findPlantableSpot should skip this tile
       const spot = treeManager.findPlantableSpot(

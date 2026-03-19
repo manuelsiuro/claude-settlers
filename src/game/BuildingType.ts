@@ -88,6 +88,8 @@ export interface BuildingDefinition {
   storageCapacity: number;
   /** Construction time in seconds */
   constructionTime: number;
+  /** Work radius in hex tiles for gathering/prospecting buildings (0 = not applicable) */
+  workRadius: number;
 }
 
 export { BUILDING_DEFINITIONS, getBuildingsByCategory, getBuildingsByTier } from './data/buildingDefinitions';

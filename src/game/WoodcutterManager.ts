@@ -13,8 +13,8 @@ import { TerrainType } from './TerrainType';
 import {
   WOODCUTTER_CHOP_DURATION as CHOP_DURATION,
   WOODCUTTER_IDLE_COOLDOWN as IDLE_COOLDOWN,
-  WOODCUTTER_MAX_SEARCH_RADIUS as MAX_SEARCH_RADIUS,
 } from './data/balanceConstants';
+import { getEffectiveWorkRadius } from './BuildingUpgrade';
 
 export type WoodcutterPhase =
   | 'idle_at_hut'
@@ -104,7 +104,7 @@ export class WoodcutterManager {
         // Find nearest mature tree
         const tree = this.treeManager.findNearestMatureTree(
           building.coord,
-          MAX_SEARCH_RADIUS,
+          getEffectiveWorkRadius(building),
           grid,
         );
         if (!tree) {

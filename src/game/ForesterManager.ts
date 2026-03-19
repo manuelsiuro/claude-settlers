@@ -15,8 +15,8 @@ import { createRng } from './noise';
 import {
   FORESTER_PLANT_DURATION as PLANT_DURATION,
   FORESTER_IDLE_COOLDOWN as IDLE_COOLDOWN,
-  FORESTER_MAX_PLANT_RADIUS as MAX_PLANT_RADIUS,
 } from './data/balanceConstants';
+import { getEffectiveWorkRadius } from './BuildingUpgrade';
 
 export type ForesterPhase =
   | 'idle_at_hut'
@@ -102,7 +102,7 @@ export class ForesterManager {
         // Find a plantable spot
         const spot = this.treeManager.findPlantableSpot(
           building.coord,
-          MAX_PLANT_RADIUS,
+          getEffectiveWorkRadius(building),
           grid,
           this.gameState,
           ws.plantedTiles,
