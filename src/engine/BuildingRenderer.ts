@@ -13,66 +13,75 @@ import type { FogOfWarManager } from '../game/FogOfWarManager';
  * HEX_WIDTH = sqrt(3) ≈ 1.732
  */
 export const BUILDING_SCALE: Record<string, number> = {
-  // Large (85-90% fill)
+  // ── Core ──
   [BuildingType.Castle]: 0.15,
-  [BuildingType.Barracks]: 0.12,
-  // Medium-large (75-80% fill)
-  [BuildingType.Farm]: 0.135,
-  [BuildingType.PigFarm]: 0.11,
-  [BuildingType.Warehouse]: 0.12,
-  // Medium (65-75% fill)
+
+  // ── Tier 1: Basic Economy ──
+  [BuildingType.WoodcutterHut]: 0.29,
+  [BuildingType.ForesterHut]: 0.15,
+  [BuildingType.Quarry]: 0.17,
+  [BuildingType.FishermanHut]: 0.20,
+  [BuildingType.GuardHut]: 0.13,
+
+  // ── Tier 2: Processing & Gathering ──
   [BuildingType.Sawmill]: 0.17,
+  [BuildingType.Farm]: 0.135,
+  [BuildingType.GeologistHut]: 0.18,
+  [BuildingType.IronMine]: 0.09,
+  [BuildingType.CoalMine]: 0.10,
+  [BuildingType.GoldMine]: 0.09,
+  [BuildingType.StoneMine]: 0.10,
+  [BuildingType.Watchtower]: 0.09,
+
+  // ── Tier 3: Specialized Production & Military ──
   [BuildingType.Windmill]: 0.17,
   [BuildingType.Bakery]: 0.21,
+  [BuildingType.PigFarm]: 0.11,
   [BuildingType.Slaughterhouse]: 0.16,
   [BuildingType.IronSmelter]: 0.12,
   [BuildingType.ToolmakerWorkshop]: 0.23,
   [BuildingType.GoldsmithMint]: 0.16,
   [BuildingType.BlacksmithArmory]: 0.22,
-  // Medium-compact (60-65% fill)
-  [BuildingType.IronMine]: 0.09,
-  [BuildingType.CoalMine]: 0.10,
-  [BuildingType.GoldMine]: 0.09,
-  [BuildingType.StoneMine]: 0.10,
-  [BuildingType.Quarry]: 0.17,
-  // Small (50-60% fill)
-  [BuildingType.WoodcutterHut]: 0.29,
-  [BuildingType.ForesterHut]: 0.15,
-  [BuildingType.FishermanHut]: 0.20,
-  [BuildingType.GeologistHut]: 0.18,
-  [BuildingType.GuardHut]: 0.13,
-  // Tall-narrow (50-55% fill)
-  [BuildingType.Watchtower]: 0.09,
-  // Logistics
+  [BuildingType.Barracks]: 0.12,
+
+  // ── Logistics ──
+  [BuildingType.Warehouse]: 0.12,
   [BuildingType.Harbor]: 0.12,
-  // Housing
+
+  // ── Housing ──
   [BuildingType.SmallHouse]: 0.15,
   [BuildingType.MediumHouse]: 0.15,
   [BuildingType.LargeHouse]: 0.15,
-  // Expansion buildings (models are 0.3–0.8 Blender units vs 3–12 for originals)
-  // Target effective footprint: ~0.50–0.70 at rendered scale (footprint × scale × DEFAULT)
-  'well': 0.25,            // footprint 0.40 → effective 0.60
-  'orchard': 0.18,         // footprint 0.73 → effective 0.59
-  'vineyard': 0.20,        // footprint 0.56 → effective 0.56
-  'winery': 0.18,          // footprint 0.63 → effective 0.57
-  'brewery': 0.20,         // footprint 0.56 → effective 0.56
-  'dairy_farm': 0.18,      // footprint 0.66 → effective 0.59
-  'cheese_maker_building': 0.22, // footprint 0.48 → effective 0.53
-  'hayfield': 0.24,        // footprint 0.49 → effective 0.59
-  'tannery': 0.18,         // footprint 0.59 → effective 0.53
-  'weavers_hut': 0.22,     // footprint 0.46 → effective 0.51
-  'charcoal_burner': 0.18, // footprint 0.64 → effective 0.58
-  'fletchers_workshop': 0.18, // footprint 0.56 → effective 0.50
-  'siege_workshop': 0.15,  // footprint 0.78 → effective 0.58
-  'stable': 0.16,          // footprint 0.70 → effective 0.56
-  'cattle_ranch': 0.18,    // footprint 0.64 → effective 0.58
-  'sheep_farm': 0.18,      // footprint 0.69 → effective 0.62
-  'butchery': 0.20,        // footprint 0.52 → effective 0.52
-  'fortress': 0.22,        // footprint 0.48 → effective 0.53
-  'archery_range': 0.16,   // footprint 0.71 → effective 0.57
-  'torch_tower': 0.80,     // footprint 0.10 → effective 0.40 (tall+narrow)
-  'inn_tavern': 0.17,      // footprint 0.64 → effective 0.54
-  'market': 0.35,          // footprint 0.30 → effective 0.53
+
+  // ── Expansion: Food & Farming ──
+  [BuildingType.Well]: 0.25,
+  [BuildingType.Orchard]: 0.18,
+  [BuildingType.Vineyard]: 0.20,
+  [BuildingType.Winery]: 0.18,
+  [BuildingType.Brewery]: 0.20,
+  [BuildingType.DairyFarm]: 0.18,
+  [BuildingType.CheeseMakerBuilding]: 0.22,
+  [BuildingType.Hayfield]: 0.24,
+
+  // ── Expansion: Crafting & Animals ──
+  [BuildingType.Tannery]: 0.18,
+  [BuildingType.WeaversHut]: 0.22,
+  [BuildingType.CharcoalBurner]: 0.18,
+  [BuildingType.FletchersWorkshop]: 0.18,
+  [BuildingType.SiegeWorkshop]: 0.15,
+  [BuildingType.Stable]: 0.16,
+  [BuildingType.CattleRanch]: 0.18,
+  [BuildingType.SheepFarm]: 0.18,
+  [BuildingType.Butchery]: 0.20,
+
+  // ── Expansion: Military ──
+  [BuildingType.Fortress]: 0.22,
+  [BuildingType.ArcheryRange]: 0.16,
+  [BuildingType.TorchTower]: 0.80,
+
+  // ── Expansion: Special ──
+  [BuildingType.InnTavern]: 0.17,
+  [BuildingType.Market]: 0.35,
 };
 
 const DEFAULT_BUILDING_SCALE = 0.15;
