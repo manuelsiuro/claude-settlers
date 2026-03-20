@@ -1,6 +1,6 @@
 # Project Progress
 
-## Current Phase: Expansion Features — Phase A+B Complete, Phase C-G Remaining
+## Current Phase: Expansion Features — All Phases Complete (A–J), Merged to Main
 
 ## Task Board
 
@@ -139,6 +139,36 @@
 - [DONE] F4: InfoPanel garrison labels — Military building info panel shows unit type names (Knight/Archer/Cavalry/etc.) instead of generic "Knight" for all — 2026-03-20
 - [DONE] F5: StatsPanel military breakdown — Military tab shows unit counts by type (Knights, Archers, Cavalry, etc.) and badge counts all military types — 2026-03-20
 - 669 tests passing, build clean, lint clean.
+
+### Expansion Phase G: 3D Models [DONE]
+- [DONE] G1: 22 building GLB models — Well, Orchard, Vineyard, Winery, Brewery, Dairy Farm, Cheese Maker, Hayfield, Tannery, Weavers Hut, Charcoal Burner, Fletchers Workshop, Siege Workshop, Stable, Cattle Ranch, Sheep Farm, Butchery, Fortress, Archery Range, Torch Tower, Inn/Tavern, Market — 2026-03-20
+- [DONE] G2: 20 unit GLB models — 14 civilian professions + Archer, Cavalry, Siege Operator, Scout, Donkey, Horse Transport — 2026-03-20
+- [DONE] G3: 28 resource GLB models — 17 expansion resources + 11 tool types — 2026-03-20
+- [DONE] G4: 17 resource icons for StatsPanel/PriorityPanel (colored SVG circles) — 2026-03-20
+- Generation script at scripts/generate_expansion_models.py. Low-poly stylized models, 1-34 KB each.
+
+### Expansion Phase H: Advanced Transport [DONE]
+- [DONE] H1: Multi-carry cargo — Unit.cargo[] array alongside carryingResource (synced), carryCapacity on UnitDefinition (Transporter=1, Donkey=3, HorseTransport=8) — 2026-03-20
+- [DONE] H2: Road quality system — Road.quality 0-3 (Path/Dirt/Stone/Paved), RoadNetwork.upgradeRoad(), upgrade costs in balanceConstants — 2026-03-20
+- [DONE] H3: Transport spawning — Road quality determines transport type (0→foot, 1+→Donkey, 3→HorseTransport) — 2026-03-20
+- [DONE] H4: Road upgrade UI — Flag InfoPanel + Building InfoPanel show connected roads with upgrade buttons, cost display, affordability — 2026-03-20
+- [DONE] H5: Road visual tiers — Quality-based color (#c4a060→#b08840→#909090→#707878), radius (0.035→0.065), auto-rebuild on upgrade — 2026-03-20
+- 13 transport tests, 682 total passing. SaveLoad v11 with cargo/quality backward compat.
+
+### Expansion Phase I: Animal Lifecycle [DONE]
+- [DONE] I1: AnimalLifecycleManager — Age tracking, hunger timer, periodic feeding from Castle/Warehouse, starvation death, cargo drop on death — 2026-03-20
+- [DONE] I2: Animal specs — Donkey (feed Hay/Grain every 120s, lifespan 20min, starve at 60s), HorseTransport (feed every 90s, lifespan 15min, starve at 45s) — 2026-03-20
+- [DONE] I3: Integration — Game.ts update loop, SaveLoad serialization, backward compat for animalAge/animalHungerTimer fields — 2026-03-20
+- 11 animal lifecycle tests, 693 total passing.
+
+### Expansion Phase J: Balance Tuning [DONE]
+- [DONE] J1: Mining bottleneck fix — Iron/Coal Mine 30s→40s (1 fisherman sustains 2 mines) — 2026-03-20
+- [DONE] J2: Food chain speedup — Windmill 15s→10s, Bakery 18s→14s (bread chain 58s→49s) — 2026-03-20
+- [DONE] J3: Transport speed — Transporter 0.55→0.70 hex/s (27% faster logistics) — 2026-03-20
+- [DONE] J4: Hard AI rebalance — Attack threshold 8→10, attack interval 8s→12s — 2026-03-20
+- [DONE] J5: Morale scaling — MORALE_MULTIPLIER_SCALE 0.6→0.8 (+32% max bonus) — 2026-03-20
+- [DONE] J6: Late-game economy — Gold Mine 35s→28s, Goldsmith 25s→20s, Stable 40s→28s — 2026-03-20
+- 693 tests passing.
 
 ## Completed
 - **2026-03-19**: Population Management System — 10 phases. PopulationManager (stateless query), spawn gating on UnitManager/TransporterManager/ConstructionManager, 3 housing buildings (Small/Medium/Large House), HUD population counter with color states, Housing build tab, enhanced Stats Population tab, AI reactive housing, difficulty-based starting resources, save/load v9, 3 Blender house models. 1 new file, 27 modified, 3 GLB assets. 615 tests passing.
