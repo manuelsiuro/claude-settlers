@@ -1,6 +1,6 @@
 # Project Progress
 
-## Current Phase: Expansion Features — Population Management Complete
+## Current Phase: Expansion Features — All Phases Complete (A–J), Merged to Main
 
 ## Task Board
 
@@ -102,6 +102,73 @@
 ### Post-Phase 8: Gameplay Enhancements
 - [DONE] Distance-based production cycles — Gathering buildings (WoodcutterHut, Quarry, FishermanHut, Farm, mines) now scale production time by distance to their harvest terrain. Formula: `effectiveTime = baseTime * min(3.0, 1.0 + max(0, dist-1) * 0.25)`. BFS with world wrapping finds nearest matching terrain. Placement preview: ghost mesh colored green/orange/red by distance rating, placement bar shows "Distance: X tiles — Rating". Info panel: effective cycle time (colored), efficiency %, resource distance for gathering buildings. Progress bar color matches rating. Processing/military/logistics buildings unaffected. 17 new tests (HexGrid.hexDistance, findNearestTerrain with wrapping, distance multiplier formula, distance-scaled production, processing buildings ignore distance). 426 tests passing — 2026-03-12.
 - [DONE] Building scale coherence audit & fix — Analyzed all 24 GLB model bounding boxes. 7 buildings had effective footprints under 0.40 (GoldsmithMint 0.24, GuardHut 0.26, IronSmelter 0.29, Bakery 0.29, GeologistHut 0.30, BlacksmithArmory 0.32, Watchtower 0.32). Added per-building scale factors (1.5–2.0×) targeting 0.45–0.55 effective footprint range. Additionally scaled 4 mid-tier buildings slightly undersized (WoodcutterHut 1.15×, ForesterHut 1.15×, ToolmakerWorkshop 1.2×, Slaughterhouse 1.2×) and removed incorrect 0.9× downscale on Warehouse. Single-file change in BuildingRenderer.ts BUILDING_SCALE map. 439 tests passing — 2026-03-12.
+
+### Expansion Phase A+B: Foundation + Core Mechanics [DONE]
+- [DONE] A1: Terrain-weighted pathfinding — `findPath()` now uses `TERRAIN_PROPERTIES[].movementCost` (Grassland:1.0, Forest:1.5, Mountain:3.0, Desert:2.0). 2 new pathfinding tests — 2026-03-19
+- [DONE] A2: Unit satiation field — `satiation: number` on Unit interface (default 1.0), `satiationValue` and `isDrink` on ResourceProperties, food values (Fish:0.40, Bread:0.60, Meat:0.80, Fruit:0.35, Cheese:0.55, Wine:0.30, Beer:0.25) — 2026-03-19
+- [DONE] A3: Night gameplay hook — `currentNightness` stored from AtmosphereController callback, `getNightness()` public getter — 2026-03-19
+- [DONE] A4: 17 new resource types — Raw (Grapes, Fruit, WaterBarrel, Milk, Hay, Wool, RawLeather), Processed (Wine, Beer, Cheese, Cloth, WorkedLeather, Arrows, Bow, SiegeRam), Animals (Cattle, Horses). Total: 44 resources — 2026-03-19
+- [DONE] A5: 20 new unit types — 14 civilian (Orchardist, Vintner, Winemaker, Brewer, Dairymaid, CheeseMaker, Tanner, Weaver, CharcoalBurner, Fletcher, Engineer, Stablehand, Rancher, Shepherd), 4 military (Archer, Cavalry, SiegeOperator, Scout), 2 transport (Donkey, HorseTransport). Total: 39 units — 2026-03-19
+- [DONE] A6: 22 new building types — Food (Well, Orchard, Vineyard, Winery, Brewery, DairyFarm, CheeseMaker, Hayfield), Crafting (Tannery, WeaversHut, CharcoalBurner, FletchersWorkshop, SiegeWorkshop, Stable, CattleRanch, SheepFarm, Butchery), Military (Fortress, ArcheryRange, TorchTower), Special (InnTavern, Market). Full production recipes. Total: 49 buildings — 2026-03-19
+- [DONE] B1: FeedingManager — satiation decay (base 0.005/s, 1.2x working, 0.5x garrisoned), periodic feeding from Castle/Warehouse (5s interval), hunger multiplier helpers. 8 tests — 2026-03-19
+- [DONE] B4: MoraleManager — rolling 5-min drink event window, getMorale() = base(0.5) + variety + volume + gold, production/combat multipliers. 9 tests — 2026-03-19
+- Save version bumped to 10, backward compat for satiation field. AssetLoader, BuildingModels, UnitModels, BuildingRenderer all updated with new types. Balance constants for hunger/night/morale added. 637 tests passing.
+
+### Expansion Phase C-D: Content Integration + UI [DONE]
+- [DONE] C1: StatsPanel resource lists — Added 14 raw (Grapes, Fruit, WaterBarrel, Milk, Hay, Wool, RawLeather, Cattle, Horses) and 8 processed (Wine, Beer, Cheese, Cloth, WorkedLeather, Arrows, Bow, SiegeRam) to RAW_RESOURCES/PROCESSED_RESOURCES arrays — 2026-03-19
+- [DONE] C2: ResourcePriorityPanel — Added all 17 new resources to ALL_RESOURCES in logical display order (core raw, expansion raw, ores, military, expansion processed, tools, animals) — 2026-03-19
+- [DONE] C3: AI build order updates — Aggressive: added FletchersWorkshop, ArcheryRange, Fortress. Balanced: added Well, Brewery, Hayfield, DairyFarm, CheeseMakerBuilding, InnTavern. Economic: added Orchard, Vineyard, Winery, CattleRanch, SheepFarm, Tannery, WeaversHut, Stable, Market — 2026-03-19
+- [DONE] C4: InfoPanel satiation display — Worker satiation bar (green >75%, amber 25-75%, red <25%) with live percentage updates — 2026-03-19
+- [DONE] D5: Morale HUD indicator — Shield icon + percentage in game controls bar, color-coded (green >=70%, red <40%). 1-second update interval — 2026-03-19
+- [DONE] D6: StatsPanel morale section — Military tab: morale bar, production/combat bonus percentages, drink supply count. Population tab: average satiation bar with color coding — 2026-03-19
+- [DONE] D7: Production chain verification tests — 11 tests: DAG validity (all inputs have producers), 7 specific chain verifications (Hay→Milk→Cheese, Cattle→Meat+Leather, Charcoal, Vineyard→Wine, Beer morale chain, Wool→Cloth, Fletcher, Stable, SiegeWorkshop), producer coverage — 2026-03-19
+- 648 tests passing, build clean, lint clean.
+
+### Expansion Phase E: Military Expansion [DONE]
+- [DONE] E1: Scout Unit — Scout UnitType with 12-hex visionRadius, 2.0 moveSpeed, 0.2 combatStrength, empty recruitmentItems (serf promotion). FogOfWarManager now uses UNIT_DEFINITIONS visionRadius for all unit types — 2026-03-20
+- [DONE] E2: Archer + Ranged Combat — Archer UnitType with 3-hex attackRange, 0.6 combatStrength, Bow+Arrows recruitment. ArcheryRange building auto-recruits Archers. CombatManager extended for all military unit types (not just Knight) — 2026-03-20
+- [DONE] E3: Cavalry + Charge — Cavalry UnitType with 1.3 combatStrength, 1.3 chargeMultiplier (first engagement), 1.8 moveSpeed, Horse+Sword+Shield recruitment. Barracks/Fortress prioritize Cavalry over Knight when Horse available. Charge bonus in CombatManager — 2026-03-20
+- [DONE] E4: Siege Operator + Building Damage — SiegeOperator UnitType with 3.0 buildingDamage, 0.5 combatStrength, SiegeRam recruitment. Building.hp field added (default 1.0). CombatManager.applySiegeDamage() reduces building HP. AttackManager siege logic bypasses defenders to damage building directly — 2026-03-20
+- [DONE] E5: Fortress Integration — Verified 20 knightSlots, influenceRadius 10, visionRadius 12. Fortress/Barracks recruit Cavalry → Siege → Knight by priority. AttackManager accepts all military types for attack orders — 2026-03-20
+- UnitDefinition extended with combatStrength, attackRange, visionRadius, buildingDamage, chargeMultiplier, recruitmentItems. KnightManager refactored for type-aware recruitment. SaveLoad backward compat for building hp field. 21 new tests, 669 total passing.
+
+### Expansion Phase F: Polish & UI Integration [DONE]
+- [DONE] F1: AI military adaptation — AIPlayer.getAvailableKnights() now includes all military unit types (Knight, Archer, Cavalry, SiegeOperator, Scout) for attack orders — 2026-03-20
+- [DONE] F2: Tooltip satiation — Building tooltips show worker satiation percentage with color coding — 2026-03-20
+- [DONE] F3: Tooltip garrison details — Military building tooltips show unit type breakdown (e.g., "2 Knights, 1 Cavalry") instead of just count — 2026-03-20
+- [DONE] F4: InfoPanel garrison labels — Military building info panel shows unit type names (Knight/Archer/Cavalry/etc.) instead of generic "Knight" for all — 2026-03-20
+- [DONE] F5: StatsPanel military breakdown — Military tab shows unit counts by type (Knights, Archers, Cavalry, etc.) and badge counts all military types — 2026-03-20
+- 669 tests passing, build clean, lint clean.
+
+### Expansion Phase G: 3D Models [DONE]
+- [DONE] G1: 22 building GLB models — Well, Orchard, Vineyard, Winery, Brewery, Dairy Farm, Cheese Maker, Hayfield, Tannery, Weavers Hut, Charcoal Burner, Fletchers Workshop, Siege Workshop, Stable, Cattle Ranch, Sheep Farm, Butchery, Fortress, Archery Range, Torch Tower, Inn/Tavern, Market — 2026-03-20
+- [DONE] G2: 20 unit GLB models — 14 civilian professions + Archer, Cavalry, Siege Operator, Scout, Donkey, Horse Transport — 2026-03-20
+- [DONE] G3: 28 resource GLB models — 17 expansion resources + 11 tool types — 2026-03-20
+- [DONE] G4: 17 resource icons for StatsPanel/PriorityPanel (colored SVG circles) — 2026-03-20
+- Generation script at scripts/generate_expansion_models.py. Low-poly stylized models, 1-34 KB each.
+
+### Expansion Phase H: Advanced Transport [DONE]
+- [DONE] H1: Multi-carry cargo — Unit.cargo[] array alongside carryingResource (synced), carryCapacity on UnitDefinition (Transporter=1, Donkey=3, HorseTransport=8) — 2026-03-20
+- [DONE] H2: Road quality system — Road.quality 0-3 (Path/Dirt/Stone/Paved), RoadNetwork.upgradeRoad(), upgrade costs in balanceConstants — 2026-03-20
+- [DONE] H3: Transport spawning — Road quality determines transport type (0→foot, 1+→Donkey, 3→HorseTransport) — 2026-03-20
+- [DONE] H4: Road upgrade UI — Flag InfoPanel + Building InfoPanel show connected roads with upgrade buttons, cost display, affordability — 2026-03-20
+- [DONE] H5: Road visual tiers — Quality-based color (#c4a060→#b08840→#909090→#707878), radius (0.035→0.065), auto-rebuild on upgrade — 2026-03-20
+- 13 transport tests, 682 total passing. SaveLoad v11 with cargo/quality backward compat.
+
+### Expansion Phase I: Animal Lifecycle [DONE]
+- [DONE] I1: AnimalLifecycleManager — Age tracking, hunger timer, periodic feeding from Castle/Warehouse, starvation death, cargo drop on death — 2026-03-20
+- [DONE] I2: Animal specs — Donkey (feed Hay/Grain every 120s, lifespan 20min, starve at 60s), HorseTransport (feed every 90s, lifespan 15min, starve at 45s) — 2026-03-20
+- [DONE] I3: Integration — Game.ts update loop, SaveLoad serialization, backward compat for animalAge/animalHungerTimer fields — 2026-03-20
+- 11 animal lifecycle tests, 693 total passing.
+
+### Expansion Phase J: Balance Tuning [DONE]
+- [DONE] J1: Mining bottleneck fix — Iron/Coal Mine 30s→40s (1 fisherman sustains 2 mines) — 2026-03-20
+- [DONE] J2: Food chain speedup — Windmill 15s→10s, Bakery 18s→14s (bread chain 58s→49s) — 2026-03-20
+- [DONE] J3: Transport speed — Transporter 0.55→0.70 hex/s (27% faster logistics) — 2026-03-20
+- [DONE] J4: Hard AI rebalance — Attack threshold 8→10, attack interval 8s→12s — 2026-03-20
+- [DONE] J5: Morale scaling — MORALE_MULTIPLIER_SCALE 0.6→0.8 (+32% max bonus) — 2026-03-20
+- [DONE] J6: Late-game economy — Gold Mine 35s→28s, Goldsmith 25s→20s, Stable 40s→28s — 2026-03-20
+- 693 tests passing.
 
 ## Completed
 - **2026-03-19**: Population Management System — 10 phases. PopulationManager (stateless query), spawn gating on UnitManager/TransporterManager/ConstructionManager, 3 housing buildings (Small/Medium/Large House), HUD population counter with color states, Housing build tab, enhanced Stats Population tab, AI reactive housing, difficulty-based starting resources, save/load v9, 3 Blender house models. 1 new file, 27 modified, 3 GLB assets. 615 tests passing.

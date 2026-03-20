@@ -438,6 +438,18 @@ html, body {
 .pop-counter svg { width: 16px; height: 16px; }
 .pop-warning { color: #FFB74D; }
 .pop-critical { color: #EF5350; }
+.morale-counter {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: rgba(255,255,255,0.85);
+  font-size: 0.6875rem;
+  padding: 0 4px;
+  white-space: nowrap;
+}
+.morale-counter svg { width: 16px; height: 16px; }
+.morale-high { color: #4CAF50; }
+.morale-low { color: #EF5350; }
 
 /* ============================================================
    Snackbar

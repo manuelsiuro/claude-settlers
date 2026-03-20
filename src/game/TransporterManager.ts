@@ -1,7 +1,7 @@
 import type { GameState } from './GameState';
 import type { RoadNetwork, Flag, FlagGood } from './RoadNetwork';
 import type { Unit } from './Unit';
-import { UnitState, setUnitPath, clearUnitPath } from './Unit';
+import { UnitState, setUnitPath, clearUnitPath, getCarryCapacity } from './Unit';
 import { UnitType } from './UnitType';
 import { findPath } from './Pathfinding';
 import { hasInputSpace } from './Building';
@@ -17,8 +17,8 @@ interface TransporterState {
   roadId: string;
   /** Which flag the transporter is heading toward */
   targetFlagId: string;
-  /** Whether the transporter is currently carrying a good */
-  carrying: FlagGood | null;
+  /** Goods being carried (multi-carry for Donkey/HorseTransport) */
+  carrying: FlagGood[];
   /** When set, the transporter is idle at this flag waiting for goods */
   waitingAtFlagId: string | null;
 }
@@ -32,6 +32,12 @@ interface TransporterState {
  *   2. Picks up a good that needs to go toward the other flag
  *   3. If no goods, idles at the current flag until goods appear
  */
+/** Sync unit.carryingResource and unit.cargo from transporter state */
+function syncCargoToUnit(unit: Unit, carrying: FlagGood[]): void {
+  unit.carryingResource = carrying.length > 0 ? carrying[0].resource : null;
+  unit.cargo = carrying.map(g => ({ resource: g.resource, amount: 1 }));
+}
+
 export class TransporterManager {
   private gameState: GameState;
   private roadNetwork: RoadNetwork;
@@ -52,7 +58,7 @@ export class TransporterManager {
 
   /** Serialization: get internal state for save */
   _getState(): {
-    transporterStates: [string, TransporterState][];
+    transporterStates: [string, { roadId: string; targetFlagId: string; carrying: FlagGood[]; waitingAtFlagId: string | null }][];
     spawnCooldown: number;
   } {
     return {
@@ -63,12 +69,22 @@ export class TransporterManager {
 
   /** Serialization: restore internal state from save */
   _loadState(state: {
-    transporterStates: [string, { roadId: string; targetFlagId: string; carrying: FlagGood | null; waitingAtFlagId?: string | null }][];
+    transporterStates: [string, { roadId: string; targetFlagId: string; carrying: FlagGood | FlagGood[] | null; waitingAtFlagId?: string | null }][];
     spawnCooldown: number;
   }): void {
-    // Backward compatibility: default waitingAtFlagId to null for v1 saves
     const entries: [string, TransporterState][] = state.transporterStates.map(
-      ([id, s]) => [id, { ...s, waitingAtFlagId: s.waitingAtFlagId ?? null }],
+      ([id, s]) => {
+        // Backward compat: convert single FlagGood|null to FlagGood[]
+        let carrying: FlagGood[];
+        if (Array.isArray(s.carrying)) {
+          carrying = s.carrying;
+        } else if (s.carrying) {
+          carrying = [s.carrying];
+        } else {
+          carrying = [];
+        }
+        return [id, { roadId: s.roadId, targetFlagId: s.targetFlagId, carrying, waitingAtFlagId: s.waitingAtFlagId ?? null }];
+      },
     );
     this.transporterStates = new Map(entries);
     this.spawnCooldown = state.spawnCooldown;
@@ -204,9 +220,17 @@ export class TransporterManager {
       // Check population capacity before spawning
       if (!this.populationManager.canSpawn(flagA.playerId)) continue;
 
+      // Select transport type based on road quality
+      let unitType: UnitType = UnitType.Transporter;
+      if (road.quality >= 3) {
+        unitType = UnitType.HorseTransport;
+      } else if (road.quality >= 1) {
+        unitType = UnitType.Donkey;
+      }
+
       // Spawn transporter at flagA's position, owned by the flag's player
       const unit = this.gameState.spawnUnit(
-        UnitType.Transporter,
+        unitType,
         { ...flagA.coord },
         flagA.playerId,
       );
@@ -216,7 +240,7 @@ export class TransporterManager {
       const state: TransporterState = {
         roadId: road.id,
         targetFlagId: road.flagB,
-        carrying: null,
+        carrying: [],
         waitingAtFlagId: null,
       };
       this.transporterStates.set(unit.id, state);
@@ -251,20 +275,20 @@ export class TransporterManager {
       const currentFlagId = state.targetFlagId;
       const otherFlagId = currentFlagId === road.flagA ? road.flagB : road.flagA;
 
-      // Drop off carried good at the current flag
-      if (state.carrying) {
+      // Drop off carried goods at the current flag
+      if (state.carrying.length > 0) {
         const flag = this.roadNetwork.getFlag(currentFlagId);
         if (flag) {
-          if (state.carrying.destinationFlagId === currentFlagId && flag.buildingId) {
-            // Reached final destination — deliver to building
-            this.deliverToBuilding(flag, state.carrying);
-          } else {
-            // Intermediate flag — leave the good here for the next transporter
-            flag.goods.push(state.carrying);
+          for (const good of state.carrying) {
+            if (good.destinationFlagId === currentFlagId && flag.buildingId) {
+              this.deliverToBuilding(flag, good);
+            } else {
+              flag.goods.push(good);
+            }
           }
         }
-        state.carrying = null;
-        unit.carryingResource = null;
+        state.carrying = [];
+        syncCargoToUnit(unit, state.carrying);
       }
 
       // Try to pick up goods or idle
@@ -294,11 +318,10 @@ export class TransporterManager {
       if (currentFlag) {
         const goodIndex = this.findGoodForDirection(currentFlag, currentFlagId, otherFlagId);
         if (goodIndex >= 0) {
-          // Pick up and walk to other flag
+          // Pick up goods (multi-carry: up to carryCapacity)
           state.waitingAtFlagId = null;
           state.targetFlagId = otherFlagId;
-          state.carrying = currentFlag.goods.splice(goodIndex, 1)[0];
-          unit.carryingResource = state.carrying.resource;
+          this.pickUpGoods(unit, state, currentFlag, currentFlagId, otherFlagId);
           this.walkTo(unit, otherFlagId, state);
           continue;
         }
@@ -338,8 +361,7 @@ export class TransporterManager {
     // Check current flag for goods going toward other flag
     const goodIndex = this.findGoodForDirection(currentFlag, currentFlagId, otherFlagId);
     if (goodIndex >= 0) {
-      state.carrying = currentFlag.goods.splice(goodIndex, 1)[0];
-      unit.carryingResource = state.carrying.resource;
+      this.pickUpGoods(unit, state, currentFlag, currentFlagId, otherFlagId);
       state.targetFlagId = otherFlagId;
       this.walkTo(unit, otherFlagId, state);
       return;
@@ -360,6 +382,33 @@ export class TransporterManager {
     // No goods anywhere — idle at current flag
     state.waitingAtFlagId = currentFlagId;
     unit.state = UnitState.Working;
+  }
+
+  /**
+   * Pick up goods at a flag heading in a given direction (multi-carry aware).
+   * Picks up to carryCapacity goods that route through otherFlagId.
+   */
+  private pickUpGoods(
+    unit: Unit,
+    state: TransporterState,
+    flag: Flag,
+    currentFlagId: string,
+    otherFlagId: string,
+  ): void {
+    const capacity = getCarryCapacity(unit);
+    state.carrying = [];
+    let picked = 0;
+    // Pick goods that route toward otherFlagId, up to capacity
+    for (let i = flag.goods.length - 1; i >= 0 && picked < capacity; i--) {
+      const good = flag.goods[i];
+      if (good.destinationFlagId === currentFlagId) continue; // wrong direction
+      const route = this.roadNetwork.findRoute(currentFlagId, good.destinationFlagId);
+      if (route.length >= 2 && route[1] === otherFlagId) {
+        state.carrying.push(flag.goods.splice(i, 1)[0]);
+        picked++;
+      }
+    }
+    syncCargoToUnit(unit, state.carrying);
   }
 
   /**
@@ -439,7 +488,7 @@ export class TransporterManager {
     const state = this.transporterStates.get(unitId);
     if (!state) return;
 
-    this.dropCarriedGood(state);
+    this.dropCarriedGoods(state);
 
     // Clear road assignment
     const road = this.roadNetwork.getRoad(state.roadId);
@@ -450,19 +499,22 @@ export class TransporterManager {
     const unit = this.gameState.getUnit(unitId);
     if (unit) {
       unit.carryingResource = null;
+      unit.cargo = [];
     }
 
     this.transporterStates.delete(unitId);
   }
 
-  /** Drop a transporter's carried good at its target flag */
-  private dropCarriedGood(state: TransporterState): void {
-    if (!state.carrying) return;
+  /** Drop a transporter's carried goods at its target flag */
+  private dropCarriedGoods(state: TransporterState): void {
+    if (state.carrying.length === 0) return;
     const flag = this.roadNetwork.getFlag(state.targetFlagId);
     if (flag) {
-      flag.goods.push(state.carrying);
+      for (const good of state.carrying) {
+        flag.goods.push(good);
+      }
     }
-    state.carrying = null;
+    state.carrying = [];
   }
 
   /**
@@ -472,13 +524,14 @@ export class TransporterManager {
     for (const [unitId, state] of this.transporterStates) {
       const road = this.roadNetwork.getRoad(state.roadId);
       if (!road) {
-        this.dropCarriedGood(state);
+        this.dropCarriedGoods(state);
 
         const unit = this.gameState.getUnit(unitId);
         if (unit) {
           clearUnitPath(unit);
           unit.state = UnitState.Idle;
           unit.carryingResource = null;
+          unit.cargo = [];
         }
         this.transporterStates.delete(unitId);
       }

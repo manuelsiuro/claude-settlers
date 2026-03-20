@@ -26,12 +26,14 @@ import type { UpgradeManager } from './UpgradeManager';
 import type { FogOfWarManager } from './FogOfWarManager';
 import type { AIPlayer } from './AIPlayer';
 import type { HarborManager, WaterRoute } from './HarborManager';
+import type { FeedingManager } from './FeedingManager';
+import type { MoraleManager } from './MoraleManager';
 import { TerrainType } from './TerrainType';
 import type { GoodsDistributionSettings } from './GoodsDistribution';
 import { serializeDistribution, deserializeDistribution } from './GoodsDistribution';
 
 /** Current save format version */
-const SAVE_VERSION = 9;
+const SAVE_VERSION = 11;
 
 /** localStorage key for auto-save */
 const STORAGE_KEY = 'feudal_realm_save';
@@ -66,7 +68,7 @@ export interface SaveData {
     deliveryCooldown: number;
   };
   transporterManager: {
-    transporterStates: [string, { roadId: string; targetFlagId: string; carrying: FlagGood | null; waitingAtFlagId: string | null }][];
+    transporterStates: [string, { roadId: string; targetFlagId: string; carrying: FlagGood | FlagGood[] | null; waitingAtFlagId: string | null }][];
     spawnCooldown: number;
   };
   unitManager: {
@@ -146,6 +148,18 @@ export interface SaveData {
     waterRoutes: WaterRoute[];
   };
 
+  // Expansion managers
+  feedingManager?: {
+    feedingCooldown: number;
+  };
+  moraleManager?: {
+    drinkEvents: [number, { drinkType: string; timestamp: number }[]][];
+    elapsedTime: number;
+  };
+  animalLifecycleManager?: {
+    feedCooldown: number;
+  };
+
   // Economy settings
   goodsDistribution?: ReturnType<typeof serializeDistribution>;
 
@@ -188,6 +202,9 @@ export function serializeGame(
     upgradeManager: UpgradeManager;
     fogOfWarManager: FogOfWarManager;
     harborManager: HarborManager;
+    feedingManager: FeedingManager;
+    moraleManager: MoraleManager;
+    animalLifecycleManager?: { _getState(): { feedCooldown: number } };
   },
   aiPlayers: AIPlayer[],
   camera: { frustum: number; position: { x: number; y: number; z: number }; target: { x: number; y: number; z: number } },
@@ -257,6 +274,10 @@ export function serializeGame(
 
     harborManager: managers.harborManager._getState(),
 
+    feedingManager: managers.feedingManager._getState(),
+    moraleManager: managers.moraleManager._getState(),
+    animalLifecycleManager: managers.animalLifecycleManager?._getState(),
+
     goodsDistribution: distributionSettings ? serializeDistribution(distributionSettings) : undefined,
 
     aiPlayers: aiPlayers.map((ai) => ai._getState()),
@@ -293,6 +314,9 @@ export function deserializeGame(
     upgradeManager: UpgradeManager;
     fogOfWarManager: FogOfWarManager;
     harborManager: HarborManager;
+    feedingManager: FeedingManager;
+    moraleManager: MoraleManager;
+    animalLifecycleManager?: { _loadState(state: { feedCooldown: number }): void };
   },
   aiPlayers: AIPlayer[],
 ): GoodsDistributionSettings | null {
@@ -307,6 +331,15 @@ export function deserializeGame(
     units: data.units,
     workerByBuilding: data.workerByBuilding,
   });
+
+  // v11: patch roads missing quality field
+  if (data.roads) {
+    for (const r of data.roads) {
+      if ((r as unknown as Record<string, unknown>).quality === undefined) {
+        (r as unknown as Record<string, unknown>).quality = 0;
+      }
+    }
+  }
 
   // Restore road network
   roadNetwork._loadState({
@@ -347,6 +380,15 @@ export function deserializeGame(
   if (data.harborManager) {
     managers.harborManager._loadState(data.harborManager);
   }
+  if (data.feedingManager) {
+    managers.feedingManager._loadState(data.feedingManager);
+  }
+  if (data.moraleManager) {
+    managers.moraleManager._loadState(data.moraleManager);
+  }
+  if (data.animalLifecycleManager && managers.animalLifecycleManager) {
+    managers.animalLifecycleManager._loadState(data.animalLifecycleManager);
+  }
 
   // Backward compat: patch buildings missing fields from older versions
   for (const b of data.buildings) {
@@ -366,6 +408,8 @@ export function deserializeGame(
         (inv as Record<string, number>)['hammer_tool'] = ((inv as Record<string, number>)['hammer_tool'] ?? 0) + amount;
       }
     }
+    // v11: building HP field
+    if (b.hp === undefined) b.hp = 1.0;
   }
   // v8: patch units missing carriedTool field
   for (const u of data.units) {
@@ -375,6 +419,22 @@ export function deserializeGame(
     // v9: patch units missing pendingDismissal field
     if ((u as unknown as Record<string, unknown>).pendingDismissal === undefined) {
       (u as unknown as Record<string, unknown>).pendingDismissal = false;
+    }
+    // v10: patch units missing satiation field
+    if ((u as unknown as Record<string, unknown>).satiation === undefined) {
+      (u as unknown as Record<string, unknown>).satiation = 1.0;
+    }
+    // v11: patch units missing animal lifecycle fields
+    if ((u as unknown as Record<string, unknown>).animalAge === undefined) {
+      (u as unknown as Record<string, unknown>).animalAge = 0;
+    }
+    if ((u as unknown as Record<string, unknown>).animalHungerTimer === undefined) {
+      (u as unknown as Record<string, unknown>).animalHungerTimer = 0;
+    }
+    // v11: patch units missing cargo field
+    if ((u as unknown as Record<string, unknown>).cargo === undefined) {
+      const cr = (u as unknown as Record<string, unknown>).carryingResource;
+      (u as unknown as Record<string, unknown>).cargo = cr ? [{ resource: cr, amount: 1 }] : [];
     }
   }
 

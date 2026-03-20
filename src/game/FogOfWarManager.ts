@@ -1,6 +1,6 @@
 import { BUILDING_DEFINITIONS } from './BuildingType';
 import { BuildingState } from './Building';
-import { UnitType } from './UnitType';
+import { UNIT_DEFINITIONS } from './UnitType';
 import type { GameState } from './GameState';
 import { HexGrid } from './HexGrid';
 
@@ -156,7 +156,8 @@ export class FogOfWarManager {
 
     // Unit vision sources
     for (const unit of units) {
-      const radius = unit.type === UnitType.Knight ? 3 : 2;
+      const def = UNIT_DEFINITIONS[unit.type];
+      const radius = def.visionRadius ?? 2;
 
       let sources = sourcesByPlayer.get(unit.playerId);
       if (!sources) {

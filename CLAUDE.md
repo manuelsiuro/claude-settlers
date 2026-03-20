@@ -11,9 +11,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 All design specs live in `docs/`:
 
 - `docs/game.md` — Master game design document: core gameplay loop, mechanics (resource management, building system, transportation/logistics, territory expansion, combat, economic management), progression tree, UI layout, win conditions
-- `docs/buildings.md` — Visual designs for all 23 building types with specific colors and style references
-- `docs/resources.md` — Visual designs for all 17 resource types (raw materials, processed goods, animals)
-- `docs/units.md` — Visual designs for all serf professions (18 types) and knights, built on a shared base model with profession-specific additions
+- `docs/buildings.md` — Visual designs for all 50 building types with specific colors and style references
+- `docs/resources.md` — Visual designs for all 44 resource types (raw materials, processed goods, animals, tools)
+- `docs/units.md` — Visual designs for all 39 unit types (civilian professions, military, transport)
 - `docs/terrains.md` — Visual designs for 5 terrain types (grassland, forest, mountain, water, desert) with hex colors and decoration styles
 
 **Always read the relevant design doc before implementing a feature.** The docs specify exact shapes, colors, and behaviors.
@@ -31,11 +31,16 @@ All design specs live in `docs/`:
 
 ### Core Game Systems (from design doc)
 
-- **Resource chain economy**: multi-step production chains (e.g., Grain → Flour → Bread; Iron Ore → Iron Bars → Tools/Weapons). Buildings have explicit inputs/outputs.
-- **Flag-and-road logistics**: players place Flags to define paths; Transporters carry goods between Flags. Only one Transporter per road segment between two Flags.
-- **Indirect unit control**: players don't command individual serfs — they create jobs via buildings. Serfs auto-assign. Knights are the exception (directable for attacks).
-- **Territory system**: military buildings (Guard Hut, Watchtower, Barracks) project areas of influence that define borders.
-- **Knight recruitment**: a serf delivering a Sword+Shield set to a military building with an empty slot becomes a Knight. Knights gain ranks (1-5) through combat; Gold Bars provide a global combat bonus.
+- **Resource chain economy**: multi-step production chains (e.g., Grain → Flour → Bread; Iron Ore → Iron Bars → Tools/Weapons; Hay → Dairy Farm → Milk → Cheese). 50 building types with explicit inputs/outputs across 44 resource types.
+- **Flag-and-road logistics**: players place Flags to define paths; Transporters carry goods between Flags. Road quality (Path/Dirt/Stone/Paved) determines transport type: foot (1 item), Donkey (3 items), HorseTransport (8 items). Road upgrades via building/flag InfoPanel.
+- **Indirect unit control**: players don't command individual serfs — they create jobs via buildings. Serfs auto-assign. Military units (Knights, Archers, Cavalry, Siege Operators, Scouts) are the exception (directable for attacks).
+- **Territory system**: military buildings (Guard Hut, Watchtower, Barracks, Fortress) project areas of influence that define borders. Fortress has 20 slots and radius 10.
+- **Military recruitment**: type-aware recruitment at military buildings. Knights (Sword+Shield), Archers (Bow+Arrows at ArcheryRange), Cavalry (Horse+Sword+Shield at Barracks/Fortress), Siege Operators (SiegeRam), Scouts (serf promotion). Ranks 1-5 through combat; Gold Bars provide global combat bonus.
+- **Combat system**: 1v1 probability-based duels for all military types. Cavalry charge bonus (1.3x first engagement). Siege Operators deal 3x building damage (building HP system). Archers have 3-hex range with 0.6x melee strength.
+- **Hunger & feeding**: `FeedingManager` decays unit satiation over time (0.005/s base, 1.2x working, 0.5x garrisoned). Feeds from Castle/Warehouse every 5s. Hunger penalties: speed (-20%/-40%), production (-15%/-30%).
+- **Morale system**: `MoraleManager` tracks drink service (Beer/Wine via Inn/Tavern). Morale = base(0.5) + variety + volume + gold bonuses. Affects production (+32% max) and combat multipliers.
+- **Day/night effects**: night production slowdown (25%), civilian speed penalty (40%), torch tower mitigation (50% reduction in 5-hex radius).
+- **Animal lifecycle**: `AnimalLifecycleManager` tracks Donkey/HorseTransport feeding, aging, starvation death. Cargo drops at nearest flag on death.
 - **Goods distribution**: per-resource priority (1-5) and per-building importance (1-5) control routing scores. `LogisticsManager` uses composite `importance × priority / distance` when deciding where to send output goods.
 - **Economy tracking**: `EconomyTracker` maintains a rolling 5-minute window of production/consumption events, providing per-resource rates, net balance, and bottleneck detection.
 
@@ -118,7 +123,7 @@ This project uses `PROGRESS.md` at the repo root as the single source of truth f
 
 ### Development Phases
 
-Phases 1–9 are all complete. See `PROGRESS.md` for current status and `git log` for history. Next work is expansion features from `docs/expansion.md` — use the `feudal-expansion` skill.
+Phases 1–9 and all expansion phases (A–J) are complete. The game now has 50 building types, 44 resource types, 39 unit types, hunger/morale systems, military expansion (5 unit types), advanced transport (multi-carry, road quality tiers), animal lifecycle, and balance tuning. See `PROGRESS.md` for full history. 693 tests passing.
 
 ### Verification
 

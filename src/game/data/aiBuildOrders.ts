@@ -19,9 +19,12 @@ const AGGRESSIVE_BUILD_ORDER: BuildingType[] = [
   BuildingType.IronSmelter,
   BuildingType.MediumHouse,
   BuildingType.BlacksmithArmory,
+  BuildingType.FletchersWorkshop,         // arrows for archers
+  BuildingType.ArcheryRange,              // ranged unit recruitment
   BuildingType.Barracks,
   BuildingType.Barracks,
   BuildingType.Watchtower,
+  BuildingType.Fortress,                  // 20 knight slots
 ];
 
 /**
@@ -50,7 +53,18 @@ const ECONOMIC_BUILD_ORDER: BuildingType[] = [
   BuildingType.BlacksmithArmory,
   BuildingType.GoldMine,
   BuildingType.GoldsmithMint,
+  // ── Expansion: full food & crafting chains ───────────────────────────────
+  BuildingType.Orchard,                   // fruit production
+  BuildingType.Vineyard,                  // grapes for wine
+  BuildingType.Winery,                    // grapes → wine
+  BuildingType.Well,                      // water for brewery
+  BuildingType.CattleRanch,              // cattle for butchery + leather
+  BuildingType.SheepFarm,               // wool for cloth
+  BuildingType.Tannery,                  // raw leather → worked leather
+  BuildingType.WeaversHut,              // wool → cloth
+  BuildingType.Stable,                    // horse breeding
   BuildingType.LargeHouse,
+  BuildingType.Market,                    // trade hub
   BuildingType.Barracks,
   BuildingType.Watchtower,
 ];
@@ -91,6 +105,14 @@ const BALANCED_BUILD_ORDER: BuildingType[] = [
   BuildingType.BlacksmithArmory,
   BuildingType.Barracks,           // placed at border for max influence
   BuildingType.Watchtower,         // border
+
+  // ── Expansion: food diversity & morale ────────────────────────────────
+  BuildingType.Well,               // water for brewery
+  BuildingType.Brewery,            // water + grain → beer
+  BuildingType.Hayfield,           // hay for dairy farm
+  BuildingType.DairyFarm,          // hay + cattle → milk
+  BuildingType.CheeseMakerBuilding, // milk → cheese
+  BuildingType.InnTavern,          // serves drinks for morale
 
   // ── Late game: gold economy + extra military ────────────────────────────
   BuildingType.LargeHouse,         // population housing
@@ -134,9 +156,9 @@ export const DIFFICULTY_CONFIGS: Record<Difficulty, DifficultyConfig> = {
   },
   [Difficulty.Hard]: {
     buildOrder: AGGRESSIVE_BUILD_ORDER,
-    attackThreshold: 8,
+    attackThreshold: 10,
     decisionInterval: 2.5,
-    attackInterval: 8.0,
+    attackInterval: 12.0,
     skipChance: 0,
     knightsPerAttack: 2,
   },

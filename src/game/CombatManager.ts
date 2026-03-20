@@ -1,11 +1,11 @@
 import type { GameState } from './GameState';
 import type { KnightManager } from './KnightManager';
 import type { Unit } from './Unit';
-import { UnitType } from './UnitType';
+import { UnitType, UNIT_DEFINITIONS } from './UnitType';
 import { COMBAT_WINS_PER_RANK } from './data/balanceConstants';
 
 /**
- * Result of a single 1v1 duel between two knights.
+ * Result of a single 1v1 duel between two military units.
  */
 export interface DuelResult {
   winnerId: string;
@@ -16,6 +16,12 @@ export interface DuelResult {
   loserPlayerId: number;
   /** Whether the winner gained a rank from this duel */
   rankUp: boolean;
+}
+
+/** Check if a unit type is a military combatant */
+function isMilitaryCombatant(type: UnitType): boolean {
+  const def = UNIT_DEFINITIONS[type];
+  return def.category === 'military';
 }
 
 /**
@@ -69,10 +75,20 @@ export class CombatManager {
 
     if (!attacker || !defender) return null;
     if (attackerId === defenderId) return null;
-    if (attacker.type !== UnitType.Knight || defender.type !== UnitType.Knight) return null;
+    if (!isMilitaryCombatant(attacker.type) || !isMilitaryCombatant(defender.type)) return null;
 
-    const attackerStrength = this.knightManager.getKnightStrength(attackerId);
-    const defenderStrength = this.knightManager.getKnightStrength(defenderId);
+    let attackerStrength = this.knightManager.getKnightStrength(attackerId);
+    let defenderStrength = this.knightManager.getKnightStrength(defenderId);
+
+    // Apply cavalry charge bonus on first engagement
+    const attackerDef = UNIT_DEFINITIONS[attacker.type];
+    const defenderDef = UNIT_DEFINITIONS[defender.type];
+    if (attackerDef.chargeMultiplier && (this.combatWins.get(attackerId) ?? 0) === 0) {
+      attackerStrength *= attackerDef.chargeMultiplier;
+    }
+    if (defenderDef.chargeMultiplier && (this.combatWins.get(defenderId) ?? 0) === 0) {
+      defenderStrength *= defenderDef.chargeMultiplier;
+    }
 
     // Probability that attacker wins
     const totalStrength = attackerStrength + defenderStrength;
@@ -177,5 +193,21 @@ export class CombatManager {
         this.combatWins.delete(knightId);
       }
     }
+  }
+
+  /**
+   * Apply siege damage to a building from a siege unit.
+   * Returns the new HP value (0 = building destroyed/capturable).
+   */
+  applySiegeDamage(unitId: string, building: import('./Building').Building): number {
+    const unit = this.gameState.getUnit(unitId);
+    if (!unit) return building.hp;
+    const unitDef = UNIT_DEFINITIONS[unit.type];
+    const buildingDmg = unitDef.buildingDamage ?? 0;
+    if (buildingDmg <= 0) return building.hp;
+
+    const damage = 0.1 * buildingDmg; // 0.1 base per tick × multiplier
+    building.hp = Math.max(0, building.hp - damage);
+    return building.hp;
   }
 }

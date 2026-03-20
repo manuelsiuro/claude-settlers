@@ -8,6 +8,12 @@ import { findPath } from './Pathfinding';
 import { getMaxWorkers } from './BuildingUpgrade';
 import { PopulationManager } from './PopulationManager';
 import { logger } from '../util/Logger';
+import {
+  NIGHT_SPEED_PENALTY_CIVILIAN,
+  NIGHT_SPEED_PENALTY_TRANSPORTER,
+  NIGHT_SPEED_PENALTY_KNIGHT,
+  NIGHT_SPEED_PENALTY_BUILDER,
+} from './data/balanceConstants';
 
 /**
  * Manages unit spawning, job assignment, and movement updates.
@@ -18,6 +24,9 @@ export class UnitManager {
   private populationManager: PopulationManager;
   private spawnCooldown = 0;
   private gameTime = 0;
+
+  /** Current nightness level 0.0–1.0 (set by Game each frame) */
+  nightness = 0;
 
   /** Optional callback when a building starts waiting for a tool */
   onBuildingWaitingForTool: ((building: import('./Building').Building) => void) | null = null;
@@ -37,6 +46,23 @@ export class UnitManager {
   constructor(gameState: GameState, populationManager: PopulationManager) {
     this.gameState = gameState;
     this.populationManager = populationManager;
+  }
+
+  /** Get night speed penalty for a unit based on its type */
+  private getNightSpeedPenalty(unit: import('./Unit').Unit): number {
+    if (this.nightness <= 0) return 0;
+    const def = UNIT_DEFINITIONS[unit.type];
+    let basePenalty: number;
+    if (def.category === 'military') {
+      basePenalty = NIGHT_SPEED_PENALTY_KNIGHT;
+    } else if (unit.type === UnitType.Builder) {
+      basePenalty = NIGHT_SPEED_PENALTY_BUILDER;
+    } else if (unit.type === UnitType.Transporter) {
+      basePenalty = NIGHT_SPEED_PENALTY_TRANSPORTER;
+    } else {
+      basePenalty = NIGHT_SPEED_PENALTY_CIVILIAN;
+    }
+    return this.nightness * basePenalty;
   }
 
   /** Serialization: get internal state for save */
@@ -263,7 +289,8 @@ export class UnitManager {
       }
 
       const def = UNIT_DEFINITIONS[unit.type];
-      const speed = def.moveSpeed;
+      const nightPenalty = this.getNightSpeedPenalty(unit);
+      const speed = def.moveSpeed * (1 - nightPenalty);
 
       // Advance moveProgress
       unit.moveProgress += speed * deltaTime;

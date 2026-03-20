@@ -5,6 +5,7 @@ import { HexGrid } from '../game/HexGrid';
 import type { HexCoord } from '../game/HexGrid';
 import { MapRenderer } from './MapRenderer';
 import type { Building } from '../game/Building';
+import type { Flag } from '../game/RoadNetwork';
 
 const CLICK_THRESHOLD = 5; // pixels — if mouse moves less than this, it's a click
 
@@ -27,6 +28,10 @@ export class SelectionController {
 
   /** Callback when a building is selected or deselected */
   onSelectionChanged: ((building: Building | null) => void) | null = null;
+  /** Callback when a flag is selected (for road info panel) */
+  onFlagSelected: ((flag: Flag | null) => void) | null = null;
+
+  private selectedFlag: Flag | null = null;
 
   constructor(game: Game) {
     this.game = game;
@@ -133,9 +138,34 @@ export class SelectionController {
     const building = gameState.getBuildingAt(coord.q, coord.r);
 
     if (building) {
+      this.clearFlagSelection();
       this.select(building);
     } else {
-      this.deselect();
+      // Check for flag at this hex
+      const roadNetwork = this.game.getRoadNetwork();
+      const flag = roadNetwork.getFlagAt(coord.q, coord.r);
+      if (flag && flag.playerId === this.game.getHumanPlayerId()) {
+        this.select(null); // deselect building
+        this.selectFlag(flag);
+      } else {
+        this.clearFlagSelection();
+        this.deselect();
+      }
+    }
+  }
+
+  /** Select a flag and show its road info */
+  selectFlag(flag: Flag): void {
+    this.selectedFlag = flag;
+    this.showHighlight(flag.coord);
+    this.onFlagSelected?.(flag);
+  }
+
+  /** Clear flag selection */
+  private clearFlagSelection(): void {
+    if (this.selectedFlag) {
+      this.selectedFlag = null;
+      this.onFlagSelected?.(null);
     }
   }
 

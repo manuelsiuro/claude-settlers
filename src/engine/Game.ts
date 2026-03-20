@@ -64,6 +64,9 @@ import type { ColorGradingParams } from './AtmosphereController';
 import { FlagLightSystem } from './FlagLightSystem';
 import { WorkAreaRenderer } from './WorkAreaRenderer';
 import { PopulationManager } from '../game/PopulationManager';
+import { FeedingManager } from '../game/FeedingManager';
+import { MoraleManager } from '../game/MoraleManager';
+import { AnimalLifecycleManager } from '../game/AnimalLifecycleManager';
 
 export const ShadowQuality = {
   Off: 'off',
@@ -137,6 +140,9 @@ export class Game {
   private flagLightSystem: FlagLightSystem;
   private workAreaRenderer: WorkAreaRenderer;
   private populationManager: PopulationManager;
+  private feedingManager: FeedingManager;
+  private animalLifecycleManager: AnimalLifecycleManager;
+  private moraleManager: MoraleManager;
   private aiPlayers: AIPlayer[] = [];
   private roadRenderer: RoadRenderer;
   private territoryRenderer: TerritoryRenderer;
@@ -168,6 +174,9 @@ export class Game {
 
   /** Whether the game is paused */
   private _paused = false;
+
+  /** Current nightness level 0.0–1.0 from atmosphere controller */
+  private currentNightness = 0;
 
   /** Notification callback — subscribe to receive game event alerts */
   onNotification: ((notification: GameNotification) => void) | null = null;
@@ -237,6 +246,8 @@ export class Game {
     });
     this.gameState = new GameState(this.grid);
     this.populationManager = new PopulationManager(this.gameState);
+    this.feedingManager = new FeedingManager(this.gameState);
+    this.moraleManager = new MoraleManager(this.gameState);
     this.mapRenderer = new MapRenderer();
     this.buildingRenderer = new BuildingRenderer();
     this.unitRenderer = new UnitRenderer();
@@ -245,6 +256,7 @@ export class Game {
     this.constructionManager = new ConstructionManager(this.gameState, this.populationManager);
     this.roadNetwork = new RoadNetwork(this.grid);
     this.transporterManager = new TransporterManager(this.gameState, this.roadNetwork, this.populationManager);
+    this.animalLifecycleManager = new AnimalLifecycleManager(this.gameState, this.roadNetwork, this.transporterManager);
     this.logisticsManager = new LogisticsManager(this.gameState, this.roadNetwork);
     this.harborManager = new HarborManager(this.gameState, this.roadNetwork, this.grid);
     this.territoryManager = new TerritoryManager(this.gameState);
@@ -293,16 +305,25 @@ export class Game {
     this.flagLightSystem = new FlagLightSystem();
     this.workAreaRenderer = new WorkAreaRenderer();
     this.atmosphereController.onNightnessUpdate = (nightness) => {
+      this.currentNightness = nightness;
       this.flagLightSystem.setNightness(nightness);
       this.postProcessing.setBloomStrength(0.3 + 0.2 * nightness);
     };
-    // Wire production events to economy tracker
-    const trackProduction = (inputs: { resource: ResourceType; amount: number }[], outputs: { resource: ResourceType; amount: number }[]) => {
+    // Wire production events to economy tracker and morale system
+    const trackProduction = (inputs: { resource: ResourceType; amount: number }[], outputs: { resource: ResourceType; amount: number }[], building?: import('../game/Building').Building) => {
       for (const input of inputs) {
         this.economyTracker.recordConsumption(input.resource, input.amount);
       }
       for (const output of outputs) {
         this.economyTracker.recordProduction(output.resource, output.amount);
+      }
+      // InnTavern consumes drinks → record for morale
+      if (building?.type === BuildingType.InnTavern) {
+        for (const input of inputs) {
+          if (RESOURCE_PROPERTIES[input.resource].isDrink) {
+            this.moraleManager.recordDrinkServed(building.playerId, input.resource);
+          }
+        }
       }
     };
     this.productionManager.onProductionComplete = trackProduction;
@@ -539,6 +560,9 @@ export class Game {
           upgradeManager: this.upgradeManager,
           fogOfWarManager: this.fogOfWarManager,
           harborManager: this.harborManager,
+          feedingManager: this.feedingManager,
+          moraleManager: this.moraleManager,
+          animalLifecycleManager: this.animalLifecycleManager,
         },
         this.aiPlayers,
       );
@@ -664,6 +688,10 @@ export class Game {
       }
 
       this.territoryManager.update();
+      // Pass nightness to managers for day/night gameplay effects
+      this.unitManager.nightness = this.currentNightness;
+      this.productionManager.nightness = this.currentNightness;
+      this.updateLightMitigation();
       this.unitManager.update(deltaTime);
       this.constructionManager.update(deltaTime);
       this.upgradeManager.update(deltaTime);
@@ -684,6 +712,9 @@ export class Game {
       for (const ai of this.aiPlayers) {
         ai.update(deltaTime);
       }
+      this.feedingManager.update(deltaTime);
+      this.moraleManager.update(deltaTime);
+      this.animalLifecycleManager.update(deltaTime);
       this.economyTracker.update(deltaTime);
       this.roadRenderer.sync(this.roadNetwork, (id) => this.gameState.getUnit(id));
       this.territoryRenderer.sync(this.territoryManager);
@@ -1102,6 +1133,14 @@ export class Game {
     return this.unitManager;
   }
 
+  getFeedingManager(): FeedingManager {
+    return this.feedingManager;
+  }
+
+  getMoraleManager(): MoraleManager {
+    return this.moraleManager;
+  }
+
   getGameState(): GameState {
     return this.gameState;
   }
@@ -1132,6 +1171,11 @@ export class Game {
 
   getHumanPlayerId(): number {
     return this.humanPlayerId;
+  }
+
+  /** Get current nightness level 0.0–1.0 */
+  getNightness(): number {
+    return this.currentNightness;
   }
 
   getVictoryManager(): VictoryManager {
@@ -1297,6 +1341,35 @@ export class Game {
   }
 
   /** Serialize the full game state for save/load */
+  /**
+   * Compute TorchTower light mitigation for nearby buildings.
+   * Buildings within TORCH_TOWER_LIGHT_RADIUS of an active TorchTower
+   * get 50% reduction in night penalties.
+   */
+  private updateLightMitigation(): void {
+    this.productionManager.lightMitigation.clear();
+    if (this.currentNightness <= 0) return;
+
+    const allBuildings = this.gameState.getAllBuildings();
+    const torchTowers = allBuildings.filter(
+      b => b.type === BuildingType.TorchTower && b.state === BuildingState.Active,
+    );
+    if (torchTowers.length === 0) return;
+
+    const LIGHT_RADIUS = 5; // TORCH_TOWER_LIGHT_RADIUS from balanceConstants
+    for (const building of allBuildings) {
+      if (building.state !== BuildingState.Active) continue;
+      for (const tower of torchTowers) {
+        if (tower.playerId !== building.playerId) continue;
+        const dist = HexGrid.hexDistance(building.coord, tower.coord);
+        if (dist <= LIGHT_RADIUS) {
+          this.productionManager.lightMitigation.set(building.id, 0.5);
+          break;
+        }
+      }
+    }
+  }
+
   serialize(): SaveData {
     // Compute camera target (point the camera is looking at)
     const target = new THREE.Vector3();
@@ -1324,6 +1397,9 @@ export class Game {
         upgradeManager: this.upgradeManager,
         fogOfWarManager: this.fogOfWarManager,
         harborManager: this.harborManager,
+        feedingManager: this.feedingManager,
+        moraleManager: this.moraleManager,
+        animalLifecycleManager: this.animalLifecycleManager,
       },
       this.aiPlayers,
       {

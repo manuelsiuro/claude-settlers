@@ -70,6 +70,8 @@ export interface Building {
   toolQueue: { toolType: ResourceType; count: number }[] | undefined;
   /** Currently producing tool type (Toolmaker buildings only) */
   currentToolProduction: ResourceType | null;
+  /** Building health points (1.0 = full health, 0 = destroyed). Military buildings only. */
+  hp: number;
 }
 
 let nextBuildingId = 1;
@@ -104,6 +106,7 @@ export function createBuilding(
     waitingForToolSince: null,
     toolQueue: undefined,
     currentToolProduction: null,
+    hp: 1.0,
   };
 }
 

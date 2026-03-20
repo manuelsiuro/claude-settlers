@@ -8,9 +8,9 @@ import {
 import { BUILDING_DEFINITIONS } from './BuildingType';
 
 describe('UnitType', () => {
-  it('should have 19 unit types (18 professions + Knight)', () => {
+  it('should have 39 unit types', () => {
     const types = Object.values(UnitType);
-    expect(types).toHaveLength(19);
+    expect(types).toHaveLength(39);
   });
 
   it('all unit types should have unique string values', () => {
@@ -32,10 +32,25 @@ describe('UnitDefinition', () => {
     expect(UNIT_DEFINITIONS[UnitType.Knight].category).toBe('military');
   });
 
-  it('all non-Knight units should be civilian', () => {
+  it('military units should be in military category', () => {
+    const militaryTypes = [UnitType.Knight, UnitType.Archer, UnitType.Cavalry, UnitType.SiegeOperator, UnitType.Scout];
+    for (const type of militaryTypes) {
+      expect(UNIT_DEFINITIONS[type].category).toBe('military');
+    }
+  });
+
+  it('transport units should be in transport category', () => {
+    const transportTypes = [UnitType.Donkey, UnitType.HorseTransport];
+    for (const type of transportTypes) {
+      expect(UNIT_DEFINITIONS[type].category).toBe('transport');
+    }
+  });
+
+  it('all non-military/non-transport units should be civilian', () => {
     for (const type of Object.values(UnitType)) {
-      if (type === UnitType.Knight) continue;
-      expect(UNIT_DEFINITIONS[type].category).toBe('civilian');
+      const def = UNIT_DEFINITIONS[type];
+      if (def.category === 'military' || def.category === 'transport') continue;
+      expect(def.category).toBe('civilian');
     }
   });
 

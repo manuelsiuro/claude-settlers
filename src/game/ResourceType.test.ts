@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { ResourceType, RESOURCE_PROPERTIES, TOOL_TYPES, isToolType } from './ResourceType';
+import { ResourceType, RESOURCE_PROPERTIES, TOOL_TYPES, isToolType, isFood } from './ResourceType';
 
 describe('ResourceType', () => {
-  it('should define all 27 resource types', () => {
+  it('should define all 44 resource types', () => {
     const types = Object.values(ResourceType);
-    expect(types).toHaveLength(27);
+    expect(types).toHaveLength(44);
   });
 
   it('should have unique string values for each type', () => {
@@ -43,12 +43,12 @@ describe('ResourceType', () => {
     }
   });
 
-  it('should mark food resources correctly', () => {
-    expect(RESOURCE_PROPERTIES[ResourceType.Fish].isFood).toBe(true);
-    expect(RESOURCE_PROPERTIES[ResourceType.Bread].isFood).toBe(true);
-    expect(RESOURCE_PROPERTIES[ResourceType.Meat].isFood).toBe(true);
-    expect(RESOURCE_PROPERTIES[ResourceType.Wood].isFood).toBe(false);
-    expect(RESOURCE_PROPERTIES[ResourceType.IronBars].isFood).toBe(false);
+  it('should mark food resources correctly via satiationValue', () => {
+    expect(isFood(ResourceType.Fish)).toBe(true);
+    expect(isFood(ResourceType.Bread)).toBe(true);
+    expect(isFood(ResourceType.Meat)).toBe(true);
+    expect(isFood(ResourceType.Wood)).toBe(false);
+    expect(isFood(ResourceType.IronBars)).toBe(false);
   });
 
   it('should categorize pigs as animal', () => {

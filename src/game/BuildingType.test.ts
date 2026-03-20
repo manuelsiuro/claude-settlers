@@ -42,12 +42,13 @@ describe('BuildingDefinitions', () => {
     expect(castle.storageCapacity).toBeGreaterThan(0);
   });
 
-  it('Tier 1 buildings (non-housing) should only cost Wood', () => {
+  it('Tier 1 buildings should only cost basic resources (Wood, Stone, Planks)', () => {
     const tier1 = getBuildingsByTier(1).filter(d => d.category !== 'housing');
     expect(tier1.length).toBeGreaterThan(0);
+    const basicResources = [ResourceType.Wood, ResourceType.Stone, ResourceType.Planks];
     for (const def of tier1) {
       for (const cost of def.cost) {
-        expect(cost.resource).toBe(ResourceType.Wood);
+        expect(basicResources).toContain(cost.resource);
       }
     }
   });

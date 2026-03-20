@@ -49,6 +49,9 @@ export const BUILDING_SCALE: Record<string, number> = {
   [BuildingType.SmallHouse]: 0.15,
   [BuildingType.MediumHouse]: 0.15,
   [BuildingType.LargeHouse]: 0.15,
+  // Expansion: non-default scales only (all others use DEFAULT_BUILDING_SCALE = 0.15)
+  [BuildingType.Fortress]: 0.12,
+  [BuildingType.TorchTower]: 0.12,
 };
 
 const DEFAULT_BUILDING_SCALE = 0.15;

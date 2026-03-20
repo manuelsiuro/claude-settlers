@@ -42,14 +42,22 @@ export interface Unit {
   pathIndex: number;
   /** Interpolation progress 0..1 between path[pathIndex] and path[pathIndex+1] */
   moveProgress: number;
-  /** Resource currently being carried (null if empty-handed) */
+  /** Resource currently being carried (null if empty-handed). Synced from cargo[0]. */
   carryingResource: ResourceType | null;
+  /** Items currently being carried (multi-carry for Donkey/HorseTransport) */
+  cargo: { resource: ResourceType; amount: number }[];
   /** Knight rank 1-5 (only meaningful for Knight type) */
   knightRank: number;
   /** Tool consumed at spawn, returned to Castle when dismissed (null if none) */
   carriedTool: ResourceType | null;
   /** When true, unit will be removed from GameState after arriving home */
   pendingDismissal: boolean;
+  /** Satiation level 0.0–1.0 (1.0 = fully fed) */
+  satiation: number;
+  /** Time alive in seconds (transport animals only, for lifespan tracking) */
+  animalAge: number;
+  /** Seconds since last fed (transport animals only, for starvation tracking) */
+  animalHungerTimer: number;
 }
 
 let nextUnitId = 1;
@@ -73,15 +81,24 @@ export function createUnit(
     pathIndex: 0,
     moveProgress: 0,
     carryingResource: null,
+    cargo: [],
     knightRank: 1,
     carriedTool: null,
     pendingDismissal: false,
+    satiation: 1.0,
+    animalAge: 0,
+    animalHungerTimer: 0,
   };
 }
 
 /** Get the unit definition for a unit instance */
 export function getUnitDefinition(unit: Unit): UnitDefinition {
   return UNIT_DEFINITIONS[unit.type];
+}
+
+/** Get carry capacity for a unit (1 for foot transporters, 3 for donkey, 8 for horse cart) */
+export function getCarryCapacity(unit: Unit): number {
+  return UNIT_DEFINITIONS[unit.type].carryCapacity ?? 1;
 }
 
 /** Check if a unit is currently moving */

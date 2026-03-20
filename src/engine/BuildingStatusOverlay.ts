@@ -10,6 +10,7 @@ import { getEffectiveStorageCapacity } from '../game/BuildingUpgrade';
  */
 export const StatusType = {
   NoWorker: 'no_worker',
+  Hungry: 'hungry',
   MissingInputs: 'missing_inputs',
   StorageFull: 'storage_full',
   Paused: 'paused',
@@ -24,6 +25,7 @@ export type StatusType = (typeof StatusType)[keyof typeof StatusType];
 /** Colors for each status type */
 const STATUS_COLORS: Record<string, number> = {
   [StatusType.NoWorker]: 0xff3333,
+  [StatusType.Hungry]: 0xff6600,
   [StatusType.MissingInputs]: 0xffaa00,
   [StatusType.StorageFull]: 0xff8800,
   [StatusType.Paused]: 0x888888,
@@ -63,6 +65,23 @@ function getStatusTexture(status: StatusType): THREE.CanvasTexture {
       ctx.lineTo(24, 24);
       ctx.moveTo(24, 8);
       ctx.lineTo(8, 24);
+      ctx.stroke();
+      break;
+    case StatusType.Hungry:
+      // Orange fork/knife icon (simplified as a circle with line)
+      ctx.fillStyle = cssColor;
+      ctx.beginPath();
+      ctx.arc(16, 14, 8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(16, 8);
+      ctx.lineTo(16, 20);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(12, 12);
+      ctx.lineTo(20, 12);
       ctx.stroke();
       break;
     case StatusType.MissingInputs:
@@ -234,6 +253,14 @@ export class BuildingStatusOverlay {
     // No-worker check (buildings that need workers) — use canonical truth from gameState
     if (def.worker && !gameState.getWorkerForBuilding(building.id)) {
       return StatusType.NoWorker;
+    }
+
+    // Hungry worker check (satiation below 0.50)
+    if (def.worker) {
+      const worker = gameState.getWorkerForBuilding(building.id);
+      if (worker && worker.satiation < 0.50) {
+        return StatusType.Hungry;
+      }
     }
 
     // Production paused

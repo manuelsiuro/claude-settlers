@@ -37,6 +37,7 @@ import {
 import {
   initInfoPanel,
   showInfoPanel,
+  showFlagInfoPanel,
   closeInfoPanel,
   stopInfoPanelUpdates,
   hideInfoPanelElement,
@@ -179,6 +180,8 @@ app.innerHTML = `
     </button>
     <div class="game-controls-divider"></div>
     <span id="pop-counter" class="pop-counter" title="Population">${icon('people')} <span id="pop-counter-text">0/15</span></span>
+    <div class="game-controls-divider"></div>
+    <span id="morale-counter" class="morale-counter" title="Morale">${icon('shield_icon')} <span id="morale-counter-text">50%</span></span>
   </div>
 
   <!-- Build Toolbar (desktop only) -->
@@ -589,6 +592,14 @@ async function startGame(config: Partial<GameConfig>, savedData?: SaveData): Pro
         g.hideWorkArea();
       }
     };
+    selection.onFlagSelected = (flag) => {
+      if (flag) {
+        showFlagInfoPanel(flag);
+      } else {
+        hideInfoPanelElement();
+        stopInfoPanelUpdates();
+      }
+    };
   }
 
   // Wire road placement controller
@@ -612,20 +623,29 @@ async function startGame(config: Partial<GameConfig>, savedData?: SaveData): Pro
     };
   }
 
-  // Wire population counter updates
+  // Wire population + morale counter updates
   const popCounterText = document.getElementById('pop-counter-text')!;
   const popCounterEl = document.getElementById('pop-counter')!;
+  const moraleCounterText = document.getElementById('morale-counter-text')!;
+  const moraleCounterEl = document.getElementById('morale-counter')!;
   if (popCounterInterval) clearInterval(popCounterInterval);
   popCounterInterval = setInterval(() => {
     if (!game) return;
-    const popMgr = game.getPopulationManager();
     const pid = game.getHumanPlayerId();
+    // Population
+    const popMgr = game.getPopulationManager();
     const current = popMgr.getCurrentPopulation(pid);
     const capacity = popMgr.getCapacity(pid);
     popCounterText.textContent = `${current}/${capacity}`;
     const severity = getPopulationSeverity(popMgr.getUsageRatio(pid));
     popCounterEl.classList.toggle('pop-warning', severity === 'warning');
     popCounterEl.classList.toggle('pop-critical', severity === 'critical');
+    // Morale
+    const morale = game.getMoraleManager().getMorale(pid);
+    const moralePct = Math.round(morale * 100);
+    moraleCounterText.textContent = `${moralePct}%`;
+    moraleCounterEl.classList.toggle('morale-high', morale >= 0.7);
+    moraleCounterEl.classList.toggle('morale-low', morale < 0.4);
   }, 1000);
 
   const minimapContainer = document.getElementById('minimap-container')!;

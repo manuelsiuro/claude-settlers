@@ -30,6 +30,8 @@ import { UpgradeManager } from './UpgradeManager';
 import { FogOfWarManager } from './FogOfWarManager';
 import { HarborManager } from './HarborManager';
 import { PopulationManager } from './PopulationManager';
+import { FeedingManager } from './FeedingManager';
+import { MoraleManager } from './MoraleManager';
 import { serializeGame, deserializeGame } from './SaveLoad';
 import type { SaveData } from './SaveLoad';
 
@@ -1264,6 +1266,8 @@ describe('Integration: Save/Load Round-Trip', () => {
   let upgradeManager: UpgradeManager;
   let fogOfWarManager: FogOfWarManager;
   let harborManager: HarborManager;
+  let feedingManager: FeedingManager;
+  let moraleManager: MoraleManager;
   let aiPlayer: AIPlayer;
 
   function createManagers() {
@@ -1284,6 +1288,8 @@ describe('Integration: Save/Load Round-Trip', () => {
       upgradeManager,
       fogOfWarManager,
       harborManager,
+      feedingManager,
+      moraleManager,
     };
   }
 
@@ -1333,6 +1339,8 @@ describe('Integration: Save/Load Round-Trip', () => {
     upgradeManager = new UpgradeManager(gameState);
     fogOfWarManager = new FogOfWarManager(gameState);
     harborManager = new HarborManager(gameState, roadNetwork, grid);
+    feedingManager = new FeedingManager(gameState);
+    moraleManager = new MoraleManager(gameState);
 
     gameState.territoryCheck = (q, r, pid) => territoryManager.isOwnedBy(q, r, pid);
 
@@ -1449,6 +1457,9 @@ describe('Integration: Save/Load Round-Trip', () => {
         upgradeManager: new UpgradeManager(gs2),
         fogOfWarManager: new FogOfWarManager(gs2),
         harborManager: new HarborManager(gs2, rn2, grid2),
+        feedingManager: new FeedingManager(gs2),
+        moraleManager: new MoraleManager(gs2),
+        animalLifecycleManager: { _loadState: () => {} },
       },
       [ai2],
     );
@@ -1543,6 +1554,9 @@ describe('Integration: Save/Load Round-Trip', () => {
         upgradeManager: new UpgradeManager(gs2),
         fogOfWarManager: new FogOfWarManager(gs2),
         harborManager: new HarborManager(gs2, rn2, grid2),
+        feedingManager: new FeedingManager(gs2),
+        moraleManager: new MoraleManager(gs2),
+        animalLifecycleManager: { _loadState: () => {} },
       },
       [ai2],
     );
@@ -1621,6 +1635,9 @@ describe('Integration: Save/Load Round-Trip', () => {
         upgradeManager: new UpgradeManager(gs2),
         fogOfWarManager: new FogOfWarManager(gs2),
         harborManager: new HarborManager(gs2, rn2, grid2),
+        feedingManager: new FeedingManager(gs2),
+        moraleManager: new MoraleManager(gs2),
+        animalLifecycleManager: { _loadState: () => {} },
       },
       [ai2],
     );
