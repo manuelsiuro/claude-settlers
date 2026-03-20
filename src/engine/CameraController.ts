@@ -1,11 +1,19 @@
 import * as THREE from 'three';
 import { HexGrid } from '../game/HexGrid';
-import type { Game } from './Game';
 
 const PAN_SPEED = 0.02;
 const ZOOM_SPEED = 0.5;
 const MIN_FRUSTUM = 2;
 const TOUCH_PAN_SPEED = 0.03;
+
+/** Minimal interface for anything that can host a CameraController (Game or MapEditor) */
+export interface CameraHost {
+  getCamera(): THREE.OrthographicCamera;
+  getRenderer(): THREE.WebGLRenderer;
+  getGrid(): HexGrid;
+  getFrustum(): number;
+  setFrustum(f: number): void;
+}
 
 interface TouchState {
   id: number;
@@ -18,7 +26,7 @@ interface TouchState {
  * and zoom (scroll wheel / pinch).
  */
 export class CameraController {
-  private game: Game;
+  private game: CameraHost;
   private canvas: HTMLCanvasElement;
   private isDragging = false;
   private lastMouse = { x: 0, y: 0 };
@@ -43,7 +51,7 @@ export class CameraController {
   // Fixed offset from target to camera position (isometric direction)
   private cameraOffset: THREE.Vector3;
 
-  constructor(game: Game) {
+  constructor(game: CameraHost) {
     this.game = game;
     this.canvas = game.getRenderer().domElement;
 

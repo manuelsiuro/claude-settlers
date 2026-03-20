@@ -1,8 +1,17 @@
 # Project Progress
 
-## Current Phase: Expansion Features — All Phases Complete (A–J), Merged to Main
+## Current Phase: Map Level Editor — Complete
 
 ## Task Board
+
+### Map Level Editor [COMPLETE]
+- [DONE] Data Layer — MapData.ts (interfaces, validation, grid conversion), MapStorage.ts (localStorage CRUD, file I/O, bundled maps), GameConfig.customMapId — 2026-03-20
+- [DONE] CameraHost refactor — Extracted CameraHost interface from CameraController so MapEditor can reuse it — 2026-03-20
+- [DONE] Editor Engine — MapEditor.ts (Three.js scene, asset loading, pointer events, start position markers), UndoManager.ts (command-pattern undo/redo) — 2026-03-20
+- [DONE] Editor Tools — MapEditorTools.ts with 6 tools: terrain brush, elevation brush, deposit tool, start position, flood fill, eraser. Brush preview overlay. — 2026-03-20
+- [DONE] Editor UI — MapEditorUI.ts (full DOM: topbar, toolbar, viewport, properties panel, status bar), MapEditorState.ts, ThumbnailGenerator.ts (2D canvas thumbnails using minimap colors) — 2026-03-20
+- [DONE] Game Integration — Game.ts conditional buildGridFromMapData() vs generateMap(), custom castle placement from MapData, SaveLoad v12 (stores all tiles for custom maps), Setup Screen map source tabs + gallery, main.ts editor lifecycle — 2026-03-20
+- [DONE] Polish & Tests — MapData.test.ts (8 tests: validation, round-trip, deposits), CSS styles, all 745 tests pass — 2026-03-20
 
 ### Phase 1: Project Scaffolding [COMPLETE]
 - [DONE] Initialize project (Vite + TypeScript + Three.js + MDUI for Material 3) — 2026-03-10

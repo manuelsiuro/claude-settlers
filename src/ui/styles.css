@@ -3584,3 +3584,362 @@ html[data-theme="night"] .priority-importance-dot.filled {
     font-size: 11px;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MAP EDITOR
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.map-editor-root {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  color: var(--color-on-surface);
+}
+
+/* Top bar */
+.map-editor-topbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--color-surface-container);
+  border-bottom: 1px solid var(--color-outline-variant);
+  flex-shrink: 0;
+}
+.map-editor-topbar-title {
+  font-weight: 600;
+  font-size: 15px;
+}
+.map-editor-map-name {
+  font-size: 13px;
+  opacity: 0.7;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.map-editor-topbar-spacer {
+  flex: 1;
+}
+.editor-play-btn {
+  background: #4CAF50 !important;
+}
+
+/* Body = toolbar + viewport + properties */
+.map-editor-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Left toolbar */
+.map-editor-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 4px;
+  background: var(--color-surface-container);
+  border-right: 1px solid var(--color-outline-variant);
+  width: 56px;
+  flex-shrink: 0;
+  align-items: center;
+}
+.map-editor-tool-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 4px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--color-on-surface-variant);
+  font-size: 9px;
+  width: 48px;
+  transition: background 0.15s, color 0.15s;
+}
+.map-editor-tool-btn:hover {
+  background: var(--color-icon-btn-hover);
+}
+.map-editor-tool-btn.active {
+  background: var(--color-primary-container);
+  color: var(--color-primary);
+}
+.map-editor-tool-label {
+  font-size: 9px;
+  line-height: 1;
+}
+.map-editor-toolbar-divider {
+  width: 32px;
+  height: 1px;
+  background: var(--color-outline-variant);
+  margin: 4px 0;
+}
+
+/* Viewport (Three.js canvas) */
+.map-editor-viewport {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+}
+.map-editor-viewport canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Right properties panel */
+.map-editor-properties {
+  width: 200px;
+  flex-shrink: 0;
+  padding: 12px;
+  background: var(--color-surface-container);
+  border-left: 1px solid var(--color-outline-variant);
+  overflow-y: auto;
+  font-size: 12px;
+}
+.map-editor-prop-section {
+  margin-bottom: 12px;
+}
+.map-editor-prop-title {
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.7;
+  margin-bottom: 6px;
+}
+.map-editor-prop-divider {
+  height: 1px;
+  background: var(--color-outline-variant);
+  margin: 12px 0;
+}
+
+/* Terrain grid */
+.map-editor-terrain-grid {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.map-editor-terrain-btn {
+  width: 32px;
+  height: 32px;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.1s;
+}
+.map-editor-terrain-btn:hover {
+  transform: scale(1.1);
+}
+.map-editor-terrain-btn.active {
+  border-color: #fff;
+  box-shadow: 0 0 0 2px var(--color-primary);
+}
+
+/* Brush size */
+.map-editor-brush-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.map-editor-brush-val {
+  font-weight: 600;
+  font-size: 16px;
+  min-width: 20px;
+  text-align: center;
+}
+
+/* Player buttons */
+.map-editor-player-row {
+  display: flex;
+  gap: 4px;
+}
+.map-editor-player-btn {
+  width: 32px;
+  height: 32px;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.map-editor-player-btn[data-player="1"] { background: #4488ff; color: #fff; }
+.map-editor-player-btn[data-player="2"] { background: #ff4444; color: #fff; }
+.map-editor-player-btn[data-player="3"] { background: #44cc44; color: #fff; }
+.map-editor-player-btn[data-player="4"] { background: #ffcc00; color: #000; }
+.map-editor-player-btn.active {
+  border-color: #fff;
+  box-shadow: 0 0 0 2px var(--color-primary);
+}
+
+/* Inputs */
+.map-editor-field-label {
+  display: block;
+  font-size: 11px;
+  opacity: 0.7;
+  margin: 4px 0 2px;
+}
+.map-editor-input,
+.map-editor-select,
+.map-editor-textarea {
+  width: 100%;
+  padding: 4px 6px;
+  border: 1px solid var(--color-input-border);
+  border-radius: 4px;
+  font-size: 12px;
+  background: var(--color-input-bg);
+  color: var(--color-on-surface);
+}
+.map-editor-textarea {
+  resize: vertical;
+}
+
+/* Button sizes */
+.btn-sm {
+  padding: 4px 10px !important;
+  font-size: 12px !important;
+  height: auto !important;
+  min-height: 28px;
+}
+
+/* Status bar */
+.map-editor-statusbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  font-size: 11px;
+  background: var(--color-surface-dim);
+  border-top: 1px solid var(--color-outline-variant);
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+.map-editor-statusbar-divider {
+  opacity: 0.3;
+}
+
+/* Map gallery (in setup screen) */
+.map-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 4px;
+}
+.map-gallery-card {
+  border: 2px solid var(--color-outline-variant);
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  background: var(--color-card-bg);
+}
+.map-gallery-card:hover {
+  border-color: var(--color-primary);
+}
+.map-gallery-card.selected {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-container);
+}
+.map-gallery-thumb {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  background: #1a1a2e;
+  display: block;
+}
+.map-gallery-info {
+  padding: 6px;
+  font-size: 11px;
+}
+.map-gallery-name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.map-gallery-meta {
+  opacity: 0.6;
+  font-size: 10px;
+}
+.map-gallery-actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+/* Setup screen map source tabs */
+.setup-map-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 12px;
+  border-bottom: 2px solid var(--color-outline-variant);
+}
+.setup-map-tab {
+  flex: 1;
+  padding: 8px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: var(--color-on-surface-variant);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: color 0.15s, border-color 0.15s;
+}
+.setup-map-tab.active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+/* Gallery section label */
+.map-gallery-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.6;
+  margin-bottom: 4px;
+}
+
+/* Mobile responsive */
+@media (max-width: 640px) {
+  .map-editor-body {
+    flex-direction: column;
+  }
+  .map-editor-toolbar {
+    flex-direction: row;
+    width: auto;
+    height: 48px;
+    border-right: none;
+    border-bottom: 1px solid var(--color-outline-variant);
+    overflow-x: auto;
+    padding: 4px 8px;
+  }
+  .map-editor-toolbar-divider {
+    width: 1px;
+    height: 32px;
+    margin: 0 4px;
+  }
+  .map-editor-properties {
+    width: auto;
+    max-height: 180px;
+    border-left: none;
+    border-top: 1px solid var(--color-outline-variant);
+  }
+  .map-editor-tool-label {
+    display: none;
+  }
+}

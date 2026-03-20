@@ -1,6 +1,10 @@
 import * as THREE from 'three';
 import { HexGrid } from '../game/HexGrid';
 import { generateMap } from '../game/MapGenerator';
+import { buildGridFromMapData } from '../game/MapData';
+import type { MapData } from '../game/MapData';
+import { getMap } from '../editor/MapStorage';
+import { applyBalanceOverrides } from '../game/data/balanceConstants';
 import { BuildingType } from '../game/BuildingType';
 import { RESOURCE_PROPERTIES } from '../game/ResourceType';
 import type { ResourceType } from '../game/ResourceType';
@@ -158,6 +162,7 @@ export class Game {
   private frustum = 10;
   private directionalLight: THREE.DirectionalLight;
   private config: GameConfig;
+  private customMapData: MapData | null = null;
 
   /** Cached base color grading params from AtmosphereController (before weather overlay) */
   private baseColorGrading: ColorGradingParams = { warmTint: [1.02, 1.0, 0.96], contrast: 1.08, saturation: 1.1 };
@@ -240,13 +245,32 @@ export class Game {
     this.setupEnvironment();
 
     // Grid, game state, and renderers (map built after assets load)
-    const terrainBalance = SCENARIO_TERRAIN_BALANCE[this.config.scenario];
-    this.grid = generateMap({
-      width: this.config.mapSize,
-      height: this.config.mapSize,
-      seed: this.config.seed,
-      terrainBalance: terrainBalance ?? undefined,
-    });
+    if (this.config.customMapId) {
+      const mapData = getMap(this.config.customMapId);
+      if (mapData) {
+        this.grid = buildGridFromMapData(mapData);
+        this.customMapData = mapData;
+        // Apply map-specific balance overrides (after global loadBalanceConfig)
+        if (mapData.balanceConfig) {
+          applyBalanceOverrides(mapData.balanceConfig);
+        }
+      } else {
+        // Fallback to procedural generation if map was deleted
+        this.grid = generateMap({
+          width: this.config.mapSize,
+          height: this.config.mapSize,
+          seed: this.config.seed,
+        });
+      }
+    } else {
+      const terrainBalance = SCENARIO_TERRAIN_BALANCE[this.config.scenario];
+      this.grid = generateMap({
+        width: this.config.mapSize,
+        height: this.config.mapSize,
+        seed: this.config.seed,
+        terrainBalance: terrainBalance ?? undefined,
+      });
+    }
     this.gameState = new GameState(this.grid);
     this.populationManager = new PopulationManager(this.gameState);
     this.feedingManager = new FeedingManager(this.gameState);
@@ -619,6 +643,7 @@ export class Game {
 
       // New game: place starting Castles and create AI controllers
       this.placeStartingCastles();
+      this.restorePrePlacedContent();
       this.initAIPlayers();
 
       // Position camera at human player's Castle (or map center as fallback)
@@ -814,6 +839,17 @@ export class Game {
 
   /** Place starting Castles for all players, spread across the map */
   private placeStartingCastles(): void {
+    // Use custom map starting positions if available
+    if (this.customMapData?.startingPositions.length) {
+      const n = this.config.numPlayers;
+      const mapPositions = this.customMapData.startingPositions;
+      for (let i = 0; i < Math.min(n, mapPositions.length); i++) {
+        const sp = mapPositions[i];
+        this.placeCastleNear(sp.q, sp.r, sp.playerId);
+      }
+      return;
+    }
+
     const w = this.grid.width;
     const h = this.grid.height;
     const n = this.config.numPlayers;
@@ -898,6 +934,49 @@ export class Game {
             this.territoryManager.markDirty();
             return;
           }
+        }
+      }
+    }
+  }
+
+  /** Restore pre-placed buildings, flags, and roads from custom map data */
+  private restorePrePlacedContent(): void {
+    if (!this.customMapData) return;
+
+    // Restore pre-placed buildings (non-Castle, since castles are placed separately)
+    if (this.customMapData.buildings) {
+      for (const b of this.customMapData.buildings) {
+        // Skip Castles — those are handled by placeStartingCastles
+        if (b.type === BuildingType.Castle) continue;
+        const result = this.gameState.placeBuilding(
+          b.type as BuildingType,
+          { q: b.q, r: b.r },
+          b.playerId,
+        );
+        if (result.ok) {
+          // Mark as active and fully built
+          result.building.state = BuildingState.Active;
+          result.building.constructionProgress = 1;
+          this.buildingRenderer.addBuilding(result.building, this.grid);
+          this.territoryManager.markDirty();
+        }
+      }
+    }
+
+    // Restore flags
+    if (this.customMapData.flags) {
+      for (const f of this.customMapData.flags) {
+        this.roadNetwork.placeFlag({ q: f.q, r: f.r }, f.playerId);
+      }
+    }
+
+    // Restore roads
+    if (this.customMapData.roads) {
+      for (const r of this.customMapData.roads) {
+        const flagA = this.roadNetwork.getFlagAt(r.flagA.q, r.flagA.r);
+        const flagB = this.roadNetwork.getFlagAt(r.flagB.q, r.flagB.r);
+        if (flagA && flagB) {
+          this.roadNetwork.connectFlags(flagA.id, flagB.id);
         }
       }
     }

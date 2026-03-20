@@ -33,7 +33,7 @@ import type { GoodsDistributionSettings } from './GoodsDistribution';
 import { serializeDistribution, deserializeDistribution } from './GoodsDistribution';
 
 /** Current save format version */
-const SAVE_VERSION = 11;
+const SAVE_VERSION = 12;
 
 /** localStorage key for auto-save */
 const STORAGE_KEY = 'feudal_realm_save';
@@ -227,12 +227,15 @@ export function serializeGame(
     }
   }
 
-  // Collect terrain overrides: save all Forest/Grassland terrain state
-  // (these can change during gameplay from woodcutting/planting)
-  const terrainOverrides: { q: number; r: number; terrain: string }[] = [];
+  // Collect terrain overrides.
+  // For custom maps: save ALL tiles (map can't be regenerated from seed).
+  // For generated maps: only Forest/Grassland (those change via woodcutting/planting).
+  const terrainOverrides: { q: number; r: number; terrain: string; elevation?: number }[] = [];
+  const isCustomMap = !!config.customMapId;
   for (const tile of grid.getAllTiles()) {
-    // Only save Forest and Grassland tiles since those are the only ones that change
-    if (tile.terrain === TerrainType.Forest || tile.terrain === TerrainType.Grassland) {
+    if (isCustomMap) {
+      terrainOverrides.push({ q: tile.coord.q, r: tile.coord.r, terrain: tile.terrain, elevation: tile.elevation });
+    } else if (tile.terrain === TerrainType.Forest || tile.terrain === TerrainType.Grassland) {
       terrainOverrides.push({ q: tile.coord.q, r: tile.coord.r, terrain: tile.terrain });
     }
   }
@@ -438,13 +441,17 @@ export function deserializeGame(
     }
   }
 
-  // Restore terrain overrides (from forestry: Forest↔Grassland changes)
+  // Restore terrain overrides (from forestry or custom map full tile set)
   if (data.terrainOverrides) {
     const grid = gameState.getGrid();
     for (const override of data.terrainOverrides) {
       const tile = grid.getTile(override.q, override.r);
-      if (tile && tile.terrain !== override.terrain) {
-        grid.setTile(override.q, override.r, override.terrain as TerrainType, tile.elevation, tile.deposit);
+      const elevation = (override as { elevation?: number }).elevation ?? tile?.elevation ?? 0;
+      if (tile) {
+        grid.setTile(override.q, override.r, override.terrain as TerrainType, elevation, tile.deposit);
+      } else {
+        // For custom maps: tile may not exist in regenerated grid, create it
+        grid.setTile(override.q, override.r, override.terrain as TerrainType, elevation);
       }
     }
   }

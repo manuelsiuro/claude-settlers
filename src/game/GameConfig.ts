@@ -51,6 +51,7 @@ export interface GameConfig {
   difficulty: Difficulty;
   scenario: Scenario;
   victory?: VictoryConfig;
+  customMapId?: string; // If set, load from MapStorage instead of generateMap()
 }
 
 export const DEFAULT_CONFIG: GameConfig = {

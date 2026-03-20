@@ -9,6 +9,8 @@ import { getPopulationSeverity } from './game/data/balanceConstants';
 import { loadBalanceConfig } from './game/data/BalanceConfigLoader';
 import type { SaveData } from './game/SaveLoad';
 import { loadSettings } from './game/SettingsStorage';
+import { MapEditorUI } from './editor/MapEditorUI';
+import type { MapData } from './game/MapData';
 import './ui/styles.css';
 
 // Register service worker for PWA installability
@@ -335,25 +337,56 @@ app.innerHTML = `
       <p class="setup-subtitle">Configure your world and begin your conquest</p>
       <div class="setup-divider"></div>
 
-      <div class="setup-field">
-        <label class="setup-field-label" for="setup-seed">Map Seed</label>
-        <div class="setup-seed-row">
-          <input type="number" id="setup-seed" value="42" min="1" max="999999">
-          <button id="setup-random-seed" type="button" title="Random seed">&#x1f3b2;</button>
+      <!-- Map Source Tabs -->
+      <div class="setup-map-tabs">
+        <button class="setup-map-tab active" id="setup-tab-generated">${icon('map')} Generated</button>
+        <button class="setup-map-tab" id="setup-tab-custom">${icon('construction')} Custom Map</button>
+      </div>
+
+      <!-- Generated map fields -->
+      <div id="setup-generated-fields">
+        <div class="setup-field">
+          <label class="setup-field-label" for="setup-seed">Map Seed</label>
+          <div class="setup-seed-row">
+            <input type="number" id="setup-seed" value="42" min="1" max="999999">
+            <button id="setup-random-seed" type="button" title="Random seed">&#x1f3b2;</button>
+          </div>
+        </div>
+
+        <div class="setup-options-row">
+          <div class="setup-field">
+            <label class="setup-field-label" for="setup-map-size">Map Size</label>
+            <select id="setup-map-size">
+              <option value="24">Small (24x24)</option>
+              <option value="32" selected>Medium (32x32)</option>
+              <option value="48">Large (48x48)</option>
+              <option value="64">Huge (64x64)</option>
+            </select>
+          </div>
+
+          <div class="setup-field">
+            <label class="setup-field-label" for="setup-landscape">Landscape</label>
+            <select id="setup-landscape">
+              <option value="default" selected>Default</option>
+              <option value="island">Island</option>
+              <option value="continent">Continent</option>
+              <option value="archipelago">Archipelago</option>
+            </select>
+            <div id="setup-landscape-desc" class="setup-field-desc">Balanced mix of all terrain types</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Custom map fields -->
+      <div id="setup-custom-fields" class="hidden">
+        <div id="setup-map-gallery" style="margin-bottom:8px;"></div>
+        <div style="display:flex;gap:6px;">
+          <button class="btn-outlined btn-sm" id="setup-import-map-btn">${icon('folder_open')} Import</button>
+          <button class="btn-filled btn-sm" id="setup-editor-btn">${icon('construction')} Map Editor</button>
         </div>
       </div>
 
       <div class="setup-options-row">
-        <div class="setup-field">
-          <label class="setup-field-label" for="setup-map-size">Map Size</label>
-          <select id="setup-map-size">
-            <option value="24">Small (24x24)</option>
-            <option value="32" selected>Medium (32x32)</option>
-            <option value="48">Large (48x48)</option>
-            <option value="64">Huge (64x64)</option>
-          </select>
-        </div>
-
         <div class="setup-field">
           <label class="setup-field-label" for="setup-players">Players</label>
           <select id="setup-players">
@@ -369,17 +402,6 @@ app.innerHTML = `
       </div>
 
       <div class="setup-options-row">
-        <div class="setup-field">
-          <label class="setup-field-label" for="setup-landscape">Landscape</label>
-          <select id="setup-landscape">
-            <option value="default" selected>Default</option>
-            <option value="island">Island</option>
-            <option value="continent">Continent</option>
-            <option value="archipelago">Archipelago</option>
-          </select>
-          <div id="setup-landscape-desc" class="setup-field-desc">Balanced mix of all terrain types</div>
-        </div>
-
         <div class="setup-field">
           <label class="setup-field-label" for="setup-difficulty">Difficulty</label>
           <select id="setup-difficulty">
@@ -470,6 +492,7 @@ let game: Game | undefined;
 let currentTooltip: TooltipController | undefined;
 let currentMinimap: Minimap | undefined;
 let popCounterInterval: ReturnType<typeof setInterval> | null = null;
+let currentEditor: MapEditorUI | undefined;
 
 /** Get the active Game instance (only call from UI handlers after game starts) */
 function getGame(): Game {
@@ -498,7 +521,7 @@ initAppBar(
 
 initTechTreePanel();
 initDashboard(getGame);
-initSetupScreen(startGame);
+initSetupScreen(startGame, openMapEditor);
 
 // Initialize settings UI from persisted values
 {
@@ -516,6 +539,42 @@ initSetupScreen(startGame);
   audioManager.sfxVolume = saved.audio.sfxVolume;
   audioManager.musicVolume = saved.audio.musicVolume;
   if (saved.audio.muted) audioManager.muted = true;
+}
+
+// ============================================================
+// Map Editor lifecycle
+// ============================================================
+function openMapEditor(): void {
+  // Hide setup screen and main game UI
+  const setupOverlay = document.getElementById('setup-overlay')!;
+  setupOverlay.classList.add('hidden');
+  const mainContent = document.getElementById('main-content')!;
+  mainContent.style.display = 'none';
+
+  // Create editor
+  currentEditor = new MapEditorUI(document.body);
+  currentEditor.onBack = () => closeMapEditor();
+  currentEditor.onPlay = (mapData: MapData) => {
+    closeMapEditor();
+    const config: Partial<GameConfig> = {
+      customMapId: mapData.id,
+      mapSize: mapData.width as GameConfig['mapSize'],
+      numPlayers: Math.max(1, mapData.startingPositions.length),
+    };
+    startGame(config);
+  };
+  currentEditor.start();
+}
+
+function closeMapEditor(): void {
+  if (currentEditor) {
+    currentEditor.dispose();
+    currentEditor = undefined;
+  }
+  const mainContent = document.getElementById('main-content')!;
+  mainContent.style.display = '';
+  const setupOverlay = document.getElementById('setup-overlay')!;
+  setupOverlay.classList.remove('hidden');
 }
 
 // ============================================================
