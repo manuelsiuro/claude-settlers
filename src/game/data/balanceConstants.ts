@@ -147,7 +147,7 @@ export const MORALE_GOLD_BONUS_MAX = 0.10;
 /** Base morale-to-multiplier value (at morale=0.5) */
 export const MORALE_MULTIPLIER_BASE = 0.85;
 /** Morale-to-multiplier scaling factor */
-export const MORALE_MULTIPLIER_SCALE = 0.6;
+export const MORALE_MULTIPLIER_SCALE = 0.8;
 
 // ─── Difficulty-Based Starting Resources ───────────────────────────────────
 

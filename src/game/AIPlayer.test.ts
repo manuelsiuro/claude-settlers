@@ -144,7 +144,7 @@ describe('AIPlayer', () => {
     // Attack intervals scale with difficulty
     expect(easy.attackInterval).toBe(20.0);
     expect(normal.attackInterval).toBe(15.0);
-    expect(hard.attackInterval).toBe(8.0);
+    expect(hard.attackInterval).toBe(12.0);
   });
 
   it('should not build before the decision interval elapses', () => {

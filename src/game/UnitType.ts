@@ -89,7 +89,7 @@ export const UNIT_DEFINITIONS: Record<UnitType, UnitDefinition> = {
     label: 'Transporter',
     category: 'civilian',
     requiredTool: null,
-    moveSpeed: 0.55,
+    moveSpeed: 0.70,
     carryCapacity: 1,
   },
   [UnitType.Builder]: {

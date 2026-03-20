@@ -156,9 +156,9 @@ export const DIFFICULTY_CONFIGS: Record<Difficulty, DifficultyConfig> = {
   },
   [Difficulty.Hard]: {
     buildOrder: AGGRESSIVE_BUILD_ORDER,
-    attackThreshold: 8,
+    attackThreshold: 10,
     decisionInterval: 2.5,
-    attackInterval: 8.0,
+    attackInterval: 12.0,
     skipChance: 0,
     knightsPerAttack: 2,
   },
