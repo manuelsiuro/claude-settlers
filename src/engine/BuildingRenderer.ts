@@ -49,9 +49,30 @@ export const BUILDING_SCALE: Record<string, number> = {
   [BuildingType.SmallHouse]: 0.15,
   [BuildingType.MediumHouse]: 0.15,
   [BuildingType.LargeHouse]: 0.15,
-  // Expansion: non-default scales only (all others use DEFAULT_BUILDING_SCALE = 0.15)
-  [BuildingType.Fortress]: 0.12,
-  [BuildingType.TorchTower]: 0.12,
+  // Expansion buildings (models are 0.3–0.8 Blender units vs 3–12 for originals)
+  // Target effective footprint: ~0.50–0.70 at rendered scale (footprint × scale × DEFAULT)
+  'well': 0.25,            // footprint 0.40 → effective 0.60
+  'orchard': 0.18,         // footprint 0.73 → effective 0.59
+  'vineyard': 0.20,        // footprint 0.56 → effective 0.56
+  'winery': 0.18,          // footprint 0.63 → effective 0.57
+  'brewery': 0.20,         // footprint 0.56 → effective 0.56
+  'dairy_farm': 0.18,      // footprint 0.66 → effective 0.59
+  'cheese_maker_building': 0.22, // footprint 0.48 → effective 0.53
+  'hayfield': 0.24,        // footprint 0.49 → effective 0.59
+  'tannery': 0.18,         // footprint 0.59 → effective 0.53
+  'weavers_hut': 0.22,     // footprint 0.46 → effective 0.51
+  'charcoal_burner': 0.18, // footprint 0.64 → effective 0.58
+  'fletchers_workshop': 0.18, // footprint 0.56 → effective 0.50
+  'siege_workshop': 0.15,  // footprint 0.78 → effective 0.58
+  'stable': 0.16,          // footprint 0.70 → effective 0.56
+  'cattle_ranch': 0.18,    // footprint 0.64 → effective 0.58
+  'sheep_farm': 0.18,      // footprint 0.69 → effective 0.62
+  'butchery': 0.20,        // footprint 0.52 → effective 0.52
+  'fortress': 0.22,        // footprint 0.48 → effective 0.53
+  'archery_range': 0.16,   // footprint 0.71 → effective 0.57
+  'torch_tower': 0.80,     // footprint 0.10 → effective 0.40 (tall+narrow)
+  'inn_tavern': 0.17,      // footprint 0.64 → effective 0.54
+  'market': 0.35,          // footprint 0.30 → effective 0.53
 };
 
 const DEFAULT_BUILDING_SCALE = 0.15;
