@@ -1,0 +1,3016 @@
+{
+  "generatedAt": "2026-03-20T17:56:36.270Z",
+  "version": "1.0.0",
+  "constants": {
+    "woodcutter": {
+      "chopDuration": 8,
+      "idleCooldown": 2
+    },
+    "forester": {
+      "plantDuration": 5,
+      "idleCooldown": 3
+    },
+    "geologist": {
+      "prospectDuration": 5,
+      "idleCooldown": 2
+    },
+    "trees": {
+      "maxPerTile": 10,
+      "saplingGrowthTime": 60,
+      "youngGrowthTime": 90
+    },
+    "combat": {
+      "winsPerRank": 2,
+      "goldBonusPerBar": 0.05,
+      "maxGoldBonus": 0.5
+    },
+    "upgrades": {
+      "maxLevel": 10,
+      "workRadiusMaxLevel": 3
+    },
+    "victory": {
+      "dominationThreshold": 0.75,
+      "economicGoldTarget": 50,
+      "peacefulGoodsTarget": 100
+    },
+    "population": {
+      "castleCapacity": 15,
+      "smallHouseCapacity": 8,
+      "mediumHouseCapacity": 16,
+      "largeHouseCapacity": 25,
+      "warningThreshold": 0.9,
+      "cautionThreshold": 0.75
+    },
+    "hunger": {
+      "decayRate": 0.002,
+      "workingMultiplier": 1.2,
+      "garrisonedMultiplier": 0.5,
+      "hungryThreshold": 0.5,
+      "starvingThreshold": 0.25,
+      "speedPenaltyHungry": 0.2,
+      "speedPenaltyStarving": 0.4,
+      "productionPenaltyHungry": 0.15,
+      "productionPenaltyStarving": 0.3
+    },
+    "night": {
+      "productionSlowdown": 0.25,
+      "speedPenaltyCivilian": 0.4,
+      "speedPenaltyTransporter": 0.35,
+      "speedPenaltyKnight": 0.15,
+      "speedPenaltyBuilder": 0.3,
+      "torchTowerReduction": 0.5,
+      "torchTowerRadius": 5
+    },
+    "morale": {
+      "base": 0.5,
+      "window": 300,
+      "varietyBonusMax": 0.2,
+      "varietyPerType": 0.1,
+      "volumeBonusMax": 0.2,
+      "volumePerDrink": 0.02,
+      "goldBonusPerBar": 0.01,
+      "goldBonusMax": 0.1,
+      "multiplierBase": 0.85,
+      "multiplierScale": 0.8
+    },
+    "animals": {
+      "feedInterval": 10,
+      "specs": {
+        "donkey": {
+          "feedResources": [
+            "hay",
+            "grain"
+          ],
+          "feedRate": 120,
+          "lifespan": 1200,
+          "starvationTime": 60
+        },
+        "horse_transport": {
+          "feedResources": [
+            "hay",
+            "grain"
+          ],
+          "feedRate": 90,
+          "lifespan": 900,
+          "starvationTime": 45
+        }
+      }
+    }
+  },
+  "startingResources": {
+    "easy": [
+      {
+        "resource": "wood",
+        "amount": 16
+      },
+      {
+        "resource": "stone",
+        "amount": 10
+      },
+      {
+        "resource": "planks",
+        "amount": 8
+      },
+      {
+        "resource": "fish",
+        "amount": 10
+      },
+      {
+        "resource": "bread",
+        "amount": 10
+      },
+      {
+        "resource": "iron_bars",
+        "amount": 10
+      },
+      {
+        "resource": "axe",
+        "amount": 3
+      },
+      {
+        "resource": "pickaxe",
+        "amount": 3
+      },
+      {
+        "resource": "saw",
+        "amount": 1
+      },
+      {
+        "resource": "scythe",
+        "amount": 1
+      },
+      {
+        "resource": "fishing_rod",
+        "amount": 1
+      },
+      {
+        "resource": "hammer_tool",
+        "amount": 3
+      },
+      {
+        "resource": "shovel",
+        "amount": 1
+      },
+      {
+        "resource": "crucible",
+        "amount": 1
+      }
+    ],
+    "normal": [
+      {
+        "resource": "wood",
+        "amount": 12
+      },
+      {
+        "resource": "stone",
+        "amount": 8
+      },
+      {
+        "resource": "planks",
+        "amount": 6
+      },
+      {
+        "resource": "fish",
+        "amount": 8
+      },
+      {
+        "resource": "bread",
+        "amount": 8
+      },
+      {
+        "resource": "iron_bars",
+        "amount": 8
+      },
+      {
+        "resource": "axe",
+        "amount": 2
+      },
+      {
+        "resource": "pickaxe",
+        "amount": 2
+      },
+      {
+        "resource": "saw",
+        "amount": 1
+      },
+      {
+        "resource": "scythe",
+        "amount": 1
+      },
+      {
+        "resource": "fishing_rod",
+        "amount": 1
+      },
+      {
+        "resource": "hammer_tool",
+        "amount": 2
+      },
+      {
+        "resource": "shovel",
+        "amount": 1
+      },
+      {
+        "resource": "crucible",
+        "amount": 1
+      }
+    ],
+    "hard": [
+      {
+        "resource": "wood",
+        "amount": 8
+      },
+      {
+        "resource": "stone",
+        "amount": 5
+      },
+      {
+        "resource": "planks",
+        "amount": 4
+      },
+      {
+        "resource": "fish",
+        "amount": 4
+      },
+      {
+        "resource": "bread",
+        "amount": 4
+      },
+      {
+        "resource": "iron_bars",
+        "amount": 4
+      },
+      {
+        "resource": "axe",
+        "amount": 1
+      },
+      {
+        "resource": "pickaxe",
+        "amount": 1
+      },
+      {
+        "resource": "saw",
+        "amount": 1
+      },
+      {
+        "resource": "scythe",
+        "amount": 1
+      },
+      {
+        "resource": "fishing_rod",
+        "amount": 1
+      },
+      {
+        "resource": "hammer_tool",
+        "amount": 1
+      },
+      {
+        "resource": "shovel",
+        "amount": 1
+      },
+      {
+        "resource": "crucible",
+        "amount": 1
+      }
+    ]
+  },
+  "roads": {
+    "qualityNames": [
+      "Path",
+      "Dirt Road",
+      "Stone Road",
+      "Paved Road"
+    ],
+    "upgradeCosts": [
+      [
+        {
+          "resource": "planks",
+          "amount": 1
+        }
+      ],
+      [
+        {
+          "resource": "stone",
+          "amount": 2
+        }
+      ],
+      [
+        {
+          "resource": "stone",
+          "amount": 2
+        },
+        {
+          "resource": "planks",
+          "amount": 1
+        }
+      ]
+    ],
+    "upgradeTimes": [
+      5,
+      10,
+      15
+    ]
+  },
+  "buildings": {
+    "castle": {
+      "label": "Castle",
+      "category": "core",
+      "tier": 0,
+      "cost": [],
+      "worker": null,
+      "workerTool": null,
+      "production": null,
+      "knightSlots": 0,
+      "influenceRadius": 8,
+      "storageCapacity": 150,
+      "constructionTime": 0,
+      "workRadius": 0,
+      "populationCapacity": 15
+    },
+    "woodcutter_hut": {
+      "label": "Woodcutter's Hut",
+      "category": "gathering",
+      "tier": 1,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 2
+        }
+      ],
+      "worker": "Woodcutter",
+      "workerTool": "axe",
+      "production": {
+        "inputs": [],
+        "outputs": [
+          {
+            "resource": "wood",
+            "amount": 1
+          }
+        ],
+        "productionTime": 15
+      },
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 6,
+      "constructionTime": 20,
+      "workRadius": 5,
+      "populationCapacity": 0
+    },
+    "forester_hut": {
+      "label": "Forester's Hut",
+      "category": "gathering",
+      "tier": 1,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 2
+        }
+      ],
+      "worker": "Forester",
+      "workerTool": "shovel",
+      "production": null,
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 0,
+      "constructionTime": 15,
+      "workRadius": 3,
+      "populationCapacity": 0
+    },
+    "quarry": {
+      "label": "Quarry",
+      "category": "gathering",
+      "tier": 1,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 2
+        }
+      ],
+      "worker": "Stonemason",
+      "workerTool": "pickaxe",
+      "production": {
+        "inputs": [],
+        "outputs": [
+          {
+            "resource": "stone",
+            "amount": 1
+          }
+        ],
+        "productionTime": 20
+      },
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 6,
+      "constructionTime": 20,
+      "workRadius": 0,
+      "populationCapacity": 0
+    },
+    "fisherman_hut": {
+      "label": "Fisherman's Hut",
+      "category": "gathering",
+      "tier": 1,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 2
+        }
+      ],
+      "worker": "Fisherman",
+      "workerTool": "fishing_rod",
+      "production": {
+        "inputs": [],
+        "outputs": [
+          {
+            "resource": "fish",
+            "amount": 1
+          }
+        ],
+        "productionTime": 18
+      },
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 6,
+      "constructionTime": 15,
+      "workRadius": 0,
+      "populationCapacity": 0
+    },
+    "guard_hut": {
+      "label": "Guard Hut",
+      "category": "military",
+      "tier": 1,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 3
+        }
+      ],
+      "worker": null,
+      "workerTool": null,
+      "production": null,
+      "knightSlots": 3,
+      "influenceRadius": 4,
+      "storageCapacity": 3,
+      "constructionTime": 25,
+      "workRadius": 0,
+      "populationCapacity": 0
+    },
+    "sawmill": {
+      "label": "Sawmill",
+      "category": "processing",
+      "tier": 2,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 3
+        }
+      ],
+      "worker": "Sawmill Worker",
+      "workerTool": "saw",
+      "production": {
+        "inputs": [
+          {
+            "resource": "wood",
+            "amount": 1
+          }
+        ],
+        "outputs": [
+          {
+            "resource": "planks",
+            "amount": 1
+          }
+        ],
+        "productionTime": 12
+      },
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 6,
+      "constructionTime": 25,
+      "workRadius": 0,
+      "populationCapacity": 0
+    },
+    "farm": {
+      "label": "Farm",
+      "category": "gathering",
+      "tier": 2,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 3
+        },
+        {
+          "resource": "planks",
+          "amount": 2
+        }
+      ],
+      "worker": "Farmer",
+      "workerTool": "scythe",
+      "production": {
+        "inputs": [],
+        "outputs": [
+          {
+            "resource": "grain",
+            "amount": 1
+          }
+        ],
+        "productionTime": 25
+      },
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 6,
+      "constructionTime": 30,
+      "workRadius": 0,
+      "populationCapacity": 0
+    },
+    "geologist_hut": {
+      "label": "Geologist's Hut",
+      "category": "gathering",
+      "tier": 2,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 2
+        },
+        {
+          "resource": "planks",
+          "amount": 1
+        }
+      ],
+      "worker": "Geologist",
+      "workerTool": "hammer_tool",
+      "production": null,
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 4,
+      "constructionTime": 20,
+      "workRadius": 7,
+      "populationCapacity": 0
+    },
+    "iron_mine": {
+      "label": "Iron Mine",
+      "category": "gathering",
+      "tier": 2,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 3
+        },
+        {
+          "resource": "planks",
+          "amount": 2
+        }
+      ],
+      "worker": "Miner",
+      "workerTool": "pickaxe",
+      "production": {
+        "inputs": [
+          {
+            "resource": "fish",
+            "amount": 1
+          }
+        ],
+        "outputs": [
+          {
+            "resource": "iron_ore",
+            "amount": 1
+          }
+        ],
+        "productionTime": 40
+      },
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 4,
+      "constructionTime": 35,
+      "workRadius": 0,
+      "populationCapacity": 0
+    },
+    "coal_mine": {
+      "label": "Coal Mine",
+      "category": "gathering",
+      "tier": 2,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 3
+        },
+        {
+          "resource": "planks",
+          "amount": 2
+        }
+      ],
+      "worker": "Miner",
+      "workerTool": "pickaxe",
+      "production": {
+        "inputs": [
+          {
+            "resource": "fish",
+            "amount": 1
+          }
+        ],
+        "outputs": [
+          {
+            "resource": "coal_ore",
+            "amount": 1
+          }
+        ],
+        "productionTime": 40
+      },
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 4,
+      "constructionTime": 35,
+      "workRadius": 0,
+      "populationCapacity": 0
+    },
+    "gold_mine": {
+      "label": "Gold Mine",
+      "category": "gathering",
+      "tier": 2,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 3
+        },
+        {
+          "resource": "planks",
+          "amount": 2
+        }
+      ],
+      "worker": "Miner",
+      "workerTool": "pickaxe",
+      "production": {
+        "inputs": [
+          {
+            "resource": "fish",
+            "amount": 1
+          }
+        ],
+        "outputs": [
+          {
+            "resource": "gold_ore",
+            "amount": 1
+          }
+        ],
+        "productionTime": 28
+      },
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 4,
+      "constructionTime": 35,
+      "workRadius": 0,
+      "populationCapacity": 0
+    },
+    "stone_mine": {
+      "label": "Stone Mine",
+      "category": "gathering",
+      "tier": 2,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 3
+        },
+        {
+          "resource": "planks",
+          "amount": 2
+        },
+        {
+          "resource": "stone",
+          "amount": 1
+        }
+      ],
+      "worker": "Miner",
+      "workerTool": "pickaxe",
+      "production": {
+        "inputs": [
+          {
+            "resource": "fish",
+            "amount": 1
+          }
+        ],
+        "outputs": [
+          {
+            "resource": "stone",
+            "amount": 1
+          }
+        ],
+        "productionTime": 25
+      },
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 4,
+      "constructionTime": 35,
+      "workRadius": 0,
+      "populationCapacity": 0
+    },
+    "watchtower": {
+      "label": "Watchtower",
+      "category": "military",
+      "tier": 2,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 3
+        },
+        {
+          "resource": "stone",
+          "amount": 3
+        },
+        {
+          "resource": "planks",
+          "amount": 2
+        }
+      ],
+      "worker": null,
+      "workerTool": null,
+      "production": null,
+      "knightSlots": 6,
+      "influenceRadius": 6,
+      "storageCapacity": 6,
+      "constructionTime": 40,
+      "workRadius": 0,
+      "populationCapacity": 0
+    },
+    "windmill": {
+      "label": "Windmill",
+      "category": "processing",
+      "tier": 3,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 3
+        },
+        {
+          "resource": "stone",
+          "amount": 2
+        },
+        {
+          "resource": "planks",
+          "amount": 2
+        }
+      ],
+      "worker": "Miller",
+      "workerTool": null,
+      "production": {
+        "inputs": [
+          {
+            "resource": "grain",
+            "amount": 1
+          }
+        ],
+        "outputs": [
+          {
+            "resource": "flour",
+            "amount": 1
+          }
+        ],
+        "productionTime": 10
+      },
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 6,
+      "constructionTime": 35,
+      "workRadius": 0,
+      "populationCapacity": 0
+    },
+    "bakery": {
+      "label": "Bakery",
+      "category": "processing",
+      "tier": 3,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 3
+        },
+        {
+          "resource": "stone",
+          "amount": 2
+        },
+        {
+          "resource": "planks",
+          "amount": 2
+        }
+      ],
+      "worker": "Baker",
+      "workerTool": "rolling_pin",
+      "production": {
+        "inputs": [
+          {
+            "resource": "flour",
+            "amount": 1
+          },
+          {
+            "resource": "coal_ore",
+            "amount": 1
+          }
+        ],
+        "outputs": [
+          {
+            "resource": "bread",
+            "amount": 1
+          }
+        ],
+        "productionTime": 14
+      },
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 6,
+      "constructionTime": 35,
+      "workRadius": 0,
+      "populationCapacity": 0
+    },
+    "pig_farm": {
+      "label": "Pig Farm",
+      "category": "processing",
+      "tier": 3,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 3
+        },
+        {
+          "resource": "planks",
+          "amount": 2
+        }
+      ],
+      "worker": "Pig Farmer",
+      "workerTool": "shovel",
+      "production": {
+        "inputs": [
+          {
+            "resource": "grain",
+            "amount": 1
+          }
+        ],
+        "outputs": [
+          {
+            "resource": "pigs",
+            "amount": 1
+          }
+        ],
+        "productionTime": 30
+      },
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 4,
+      "constructionTime": 30,
+      "workRadius": 0,
+      "populationCapacity": 0
+    },
+    "slaughterhouse": {
+      "label": "Slaughterhouse",
+      "category": "processing",
+      "tier": 3,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 3
+        },
+        {
+          "resource": "stone",
+          "amount": 2
+        },
+        {
+          "resource": "planks",
+          "amount": 2
+        }
+      ],
+      "worker": "Butcher",
+      "workerTool": "cleaver",
+      "production": {
+        "inputs": [
+          {
+            "resource": "pigs",
+            "amount": 1
+          }
+        ],
+        "outputs": [
+          {
+            "resource": "meat",
+            "amount": 1
+          }
+        ],
+        "productionTime": 15
+      },
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 4,
+      "constructionTime": 30,
+      "workRadius": 0,
+      "populationCapacity": 0
+    },
+    "iron_smelter": {
+      "label": "Iron Smelter",
+      "category": "processing",
+      "tier": 3,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 3
+        },
+        {
+          "resource": "stone",
+          "amount": 3
+        },
+        {
+          "resource": "planks",
+          "amount": 2
+        }
+      ],
+      "worker": "Smelter Worker",
+      "workerTool": "crucible",
+      "production": {
+        "inputs": [
+          {
+            "resource": "iron_ore",
+            "amount": 1
+          },
+          {
+            "resource": "coal_ore",
+            "amount": 1
+          }
+        ],
+        "outputs": [
+          {
+            "resource": "iron_bars",
+            "amount": 1
+          }
+        ],
+        "productionTime": 20
+      },
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 4,
+      "constructionTime": 40,
+      "workRadius": 0,
+      "populationCapacity": 0
+    },
+    "toolmaker_workshop": {
+      "label": "Toolmaker's Workshop",
+      "category": "processing",
+      "tier": 3,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 3
+        },
+        {
+          "resource": "stone",
+          "amount": 2
+        },
+        {
+          "resource": "planks",
+          "amount": 2
+        }
+      ],
+      "worker": "Toolmaker",
+      "workerTool": null,
+      "production": {
+        "inputs": [
+          {
+            "resource": "iron_bars",
+            "amount": 1
+          },
+          {
+            "resource": "planks",
+            "amount": 1
+          }
+        ],
+        "outputs": [],
+        "productionTime": 20
+      },
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 6,
+      "constructionTime": 35,
+      "workRadius": 0,
+      "populationCapacity": 0
+    },
+    "goldsmith_mint": {
+      "label": "Goldsmith / Mint",
+      "category": "processing",
+      "tier": 3,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 3
+        },
+        {
+          "resource": "stone",
+          "amount": 2
+        },
+        {
+          "resource": "planks",
+          "amount": 2
+        }
+      ],
+      "worker": "Goldsmith",
+      "workerTool": "crucible",
+      "production": {
+        "inputs": [
+          {
+            "resource": "gold_ore",
+            "amount": 1
+          },
+          {
+            "resource": "coal_ore",
+            "amount": 1
+          }
+        ],
+        "outputs": [
+          {
+            "resource": "gold_bars",
+            "amount": 1
+          }
+        ],
+        "productionTime": 20
+      },
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 4,
+      "constructionTime": 35,
+      "workRadius": 0,
+      "populationCapacity": 0
+    },
+    "blacksmith_armory": {
+      "label": "Blacksmith / Armory",
+      "category": "processing",
+      "tier": 3,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 3
+        },
+        {
+          "resource": "stone",
+          "amount": 2
+        },
+        {
+          "resource": "planks",
+          "amount": 2
+        }
+      ],
+      "worker": "Blacksmith",
+      "workerTool": "tongs",
+      "production": {
+        "inputs": [
+          {
+            "resource": "iron_bars",
+            "amount": 2
+          },
+          {
+            "resource": "coal_ore",
+            "amount": 1
+          },
+          {
+            "resource": "planks",
+            "amount": 1
+          }
+        ],
+        "outputs": [
+          {
+            "resource": "swords",
+            "amount": 1
+          },
+          {
+            "resource": "shields",
+            "amount": 1
+          }
+        ],
+        "productionTime": 25
+      },
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 6,
+      "constructionTime": 35,
+      "workRadius": 0,
+      "populationCapacity": 0
+    },
+    "barracks": {
+      "label": "Barracks",
+      "category": "military",
+      "tier": 3,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 5
+        },
+        {
+          "resource": "stone",
+          "amount": 5
+        },
+        {
+          "resource": "planks",
+          "amount": 3
+        }
+      ],
+      "worker": null,
+      "workerTool": null,
+      "production": null,
+      "knightSlots": 12,
+      "influenceRadius": 8,
+      "storageCapacity": 12,
+      "constructionTime": 60,
+      "workRadius": 0,
+      "populationCapacity": 0
+    },
+    "warehouse": {
+      "label": "Warehouse",
+      "category": "logistics",
+      "tier": 2,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 3
+        },
+        {
+          "resource": "planks",
+          "amount": 3
+        }
+      ],
+      "worker": null,
+      "workerTool": null,
+      "production": null,
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 30,
+      "constructionTime": 30,
+      "workRadius": 0,
+      "populationCapacity": 0
+    },
+    "harbor": {
+      "label": "Harbor",
+      "category": "logistics",
+      "tier": 2,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 4
+        },
+        {
+          "resource": "stone",
+          "amount": 3
+        },
+        {
+          "resource": "planks",
+          "amount": 2
+        }
+      ],
+      "worker": null,
+      "workerTool": null,
+      "production": null,
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 8,
+      "constructionTime": 40,
+      "workRadius": 0,
+      "populationCapacity": 0
+    },
+    "small_house": {
+      "label": "Small House",
+      "category": "housing",
+      "tier": 1,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 3
+        },
+        {
+          "resource": "planks",
+          "amount": 2
+        }
+      ],
+      "worker": null,
+      "workerTool": null,
+      "production": null,
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 0,
+      "constructionTime": 20,
+      "workRadius": 0,
+      "populationCapacity": 8
+    },
+    "medium_house": {
+      "label": "Medium House",
+      "category": "housing",
+      "tier": 2,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 4
+        },
+        {
+          "resource": "planks",
+          "amount": 3
+        },
+        {
+          "resource": "stone",
+          "amount": 2
+        }
+      ],
+      "worker": null,
+      "workerTool": null,
+      "production": null,
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 0,
+      "constructionTime": 35,
+      "workRadius": 0,
+      "populationCapacity": 16
+    },
+    "large_house": {
+      "label": "Large House",
+      "category": "housing",
+      "tier": 3,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 5
+        },
+        {
+          "resource": "planks",
+          "amount": 4
+        },
+        {
+          "resource": "stone",
+          "amount": 4
+        },
+        {
+          "resource": "iron_bars",
+          "amount": 2
+        }
+      ],
+      "worker": null,
+      "workerTool": null,
+      "production": null,
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 0,
+      "constructionTime": 50,
+      "workRadius": 0,
+      "populationCapacity": 25
+    },
+    "well": {
+      "label": "Well",
+      "category": "gathering",
+      "tier": 1,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 2
+        },
+        {
+          "resource": "stone",
+          "amount": 2
+        }
+      ],
+      "worker": null,
+      "workerTool": null,
+      "production": {
+        "inputs": [],
+        "outputs": [
+          {
+            "resource": "water_barrel",
+            "amount": 1
+          }
+        ],
+        "productionTime": 20
+      },
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 4,
+      "constructionTime": 15,
+      "workRadius": 0,
+      "populationCapacity": 0
+    },
+    "orchard": {
+      "label": "Orchard",
+      "category": "gathering",
+      "tier": 2,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 3
+        },
+        {
+          "resource": "planks",
+          "amount": 2
+        }
+      ],
+      "worker": "Orchardist",
+      "workerTool": "scythe",
+      "production": {
+        "inputs": [],
+        "outputs": [
+          {
+            "resource": "fruit",
+            "amount": 1
+          }
+        ],
+        "productionTime": 22
+      },
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 6,
+      "constructionTime": 25,
+      "workRadius": 0,
+      "populationCapacity": 0
+    },
+    "vineyard": {
+      "label": "Vineyard",
+      "category": "gathering",
+      "tier": 2,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 3
+        },
+        {
+          "resource": "planks",
+          "amount": 2
+        }
+      ],
+      "worker": "Vintner",
+      "workerTool": "scythe",
+      "production": {
+        "inputs": [],
+        "outputs": [
+          {
+            "resource": "grapes",
+            "amount": 1
+          }
+        ],
+        "productionTime": 28
+      },
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 6,
+      "constructionTime": 30,
+      "workRadius": 0,
+      "populationCapacity": 0
+    },
+    "winery": {
+      "label": "Winery",
+      "category": "processing",
+      "tier": 3,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 3
+        },
+        {
+          "resource": "stone",
+          "amount": 2
+        },
+        {
+          "resource": "planks",
+          "amount": 2
+        }
+      ],
+      "worker": "Winemaker",
+      "workerTool": null,
+      "production": {
+        "inputs": [
+          {
+            "resource": "grapes",
+            "amount": 1
+          }
+        ],
+        "outputs": [
+          {
+            "resource": "wine",
+            "amount": 1
+          }
+        ],
+        "productionTime": 20
+      },
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 6,
+      "constructionTime": 35,
+      "workRadius": 0,
+      "populationCapacity": 0
+    },
+    "brewery": {
+      "label": "Brewery",
+      "category": "processing",
+      "tier": 2,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 3
+        },
+        {
+          "resource": "stone",
+          "amount": 2
+        },
+        {
+          "resource": "planks",
+          "amount": 1
+        }
+      ],
+      "worker": "Brewer",
+      "workerTool": null,
+      "production": {
+        "inputs": [
+          {
+            "resource": "grain",
+            "amount": 1
+          },
+          {
+            "resource": "water_barrel",
+            "amount": 1
+          }
+        ],
+        "outputs": [
+          {
+            "resource": "beer",
+            "amount": 1
+          }
+        ],
+        "productionTime": 18
+      },
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 6,
+      "constructionTime": 30,
+      "workRadius": 0,
+      "populationCapacity": 0
+    },
+    "dairy_farm": {
+      "label": "Dairy Farm",
+      "category": "gathering",
+      "tier": 2,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 3
+        },
+        {
+          "resource": "planks",
+          "amount": 2
+        }
+      ],
+      "worker": "Dairymaid",
+      "workerTool": null,
+      "production": {
+        "inputs": [
+          {
+            "resource": "hay",
+            "amount": 1
+          }
+        ],
+        "outputs": [
+          {
+            "resource": "milk",
+            "amount": 1
+          }
+        ],
+        "productionTime": 22
+      },
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 6,
+      "constructionTime": 25,
+      "workRadius": 0,
+      "populationCapacity": 0
+    },
+    "cheese_maker_building": {
+      "label": "Cheese Maker",
+      "category": "processing",
+      "tier": 3,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 3
+        },
+        {
+          "resource": "stone",
+          "amount": 2
+        },
+        {
+          "resource": "planks",
+          "amount": 1
+        }
+      ],
+      "worker": "Cheese Maker",
+      "workerTool": null,
+      "production": {
+        "inputs": [
+          {
+            "resource": "milk",
+            "amount": 1
+          }
+        ],
+        "outputs": [
+          {
+            "resource": "cheese",
+            "amount": 1
+          }
+        ],
+        "productionTime": 16
+      },
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 6,
+      "constructionTime": 30,
+      "workRadius": 0,
+      "populationCapacity": 0
+    },
+    "hayfield": {
+      "label": "Hayfield",
+      "category": "gathering",
+      "tier": 1,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 2
+        },
+        {
+          "resource": "planks",
+          "amount": 1
+        }
+      ],
+      "worker": "Farmer",
+      "workerTool": "scythe",
+      "production": {
+        "inputs": [],
+        "outputs": [
+          {
+            "resource": "hay",
+            "amount": 1
+          }
+        ],
+        "productionTime": 20
+      },
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 6,
+      "constructionTime": 20,
+      "workRadius": 0,
+      "populationCapacity": 0
+    },
+    "tannery": {
+      "label": "Tannery",
+      "category": "processing",
+      "tier": 3,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 3
+        },
+        {
+          "resource": "stone",
+          "amount": 2
+        },
+        {
+          "resource": "planks",
+          "amount": 2
+        }
+      ],
+      "worker": "Tanner",
+      "workerTool": null,
+      "production": {
+        "inputs": [
+          {
+            "resource": "raw_leather",
+            "amount": 1
+          }
+        ],
+        "outputs": [
+          {
+            "resource": "worked_leather",
+            "amount": 1
+          }
+        ],
+        "productionTime": 18
+      },
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 6,
+      "constructionTime": 35,
+      "workRadius": 0,
+      "populationCapacity": 0
+    },
+    "weavers_hut": {
+      "label": "Weaver's Hut",
+      "category": "processing",
+      "tier": 3,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 3
+        },
+        {
+          "resource": "planks",
+          "amount": 2
+        }
+      ],
+      "worker": "Weaver",
+      "workerTool": null,
+      "production": {
+        "inputs": [
+          {
+            "resource": "wool",
+            "amount": 1
+          }
+        ],
+        "outputs": [
+          {
+            "resource": "cloth",
+            "amount": 1
+          }
+        ],
+        "productionTime": 16
+      },
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 6,
+      "constructionTime": 30,
+      "workRadius": 0,
+      "populationCapacity": 0
+    },
+    "charcoal_burner": {
+      "label": "Charcoal Burner",
+      "category": "processing",
+      "tier": 2,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 3
+        },
+        {
+          "resource": "stone",
+          "amount": 1
+        }
+      ],
+      "worker": "Charcoal Burner",
+      "workerTool": "axe",
+      "production": {
+        "inputs": [
+          {
+            "resource": "wood",
+            "amount": 2
+          }
+        ],
+        "outputs": [
+          {
+            "resource": "coal_ore",
+            "amount": 1
+          }
+        ],
+        "productionTime": 22
+      },
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 6,
+      "constructionTime": 25,
+      "workRadius": 0,
+      "populationCapacity": 0
+    },
+    "fletchers_workshop": {
+      "label": "Fletcher's Workshop",
+      "category": "processing",
+      "tier": 3,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 3
+        },
+        {
+          "resource": "stone",
+          "amount": 2
+        },
+        {
+          "resource": "planks",
+          "amount": 2
+        }
+      ],
+      "worker": "Fletcher",
+      "workerTool": null,
+      "production": {
+        "inputs": [
+          {
+            "resource": "wood",
+            "amount": 1
+          },
+          {
+            "resource": "iron_bars",
+            "amount": 1
+          }
+        ],
+        "outputs": [
+          {
+            "resource": "bow",
+            "amount": 1
+          },
+          {
+            "resource": "arrows",
+            "amount": 1
+          }
+        ],
+        "productionTime": 22
+      },
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 6,
+      "constructionTime": 35,
+      "workRadius": 0,
+      "populationCapacity": 0
+    },
+    "siege_workshop": {
+      "label": "Siege Workshop",
+      "category": "processing",
+      "tier": 3,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 4
+        },
+        {
+          "resource": "stone",
+          "amount": 3
+        },
+        {
+          "resource": "planks",
+          "amount": 3
+        },
+        {
+          "resource": "iron_bars",
+          "amount": 2
+        }
+      ],
+      "worker": "Engineer",
+      "workerTool": "hammer_tool",
+      "production": {
+        "inputs": [
+          {
+            "resource": "wood",
+            "amount": 2
+          },
+          {
+            "resource": "iron_bars",
+            "amount": 2
+          }
+        ],
+        "outputs": [
+          {
+            "resource": "siege_ram",
+            "amount": 1
+          }
+        ],
+        "productionTime": 35
+      },
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 4,
+      "constructionTime": 50,
+      "workRadius": 0,
+      "populationCapacity": 0
+    },
+    "stable": {
+      "label": "Stable",
+      "category": "processing",
+      "tier": 3,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 4
+        },
+        {
+          "resource": "stone",
+          "amount": 2
+        },
+        {
+          "resource": "planks",
+          "amount": 3
+        }
+      ],
+      "worker": "Stablehand",
+      "workerTool": "shovel",
+      "production": {
+        "inputs": [
+          {
+            "resource": "hay",
+            "amount": 1
+          },
+          {
+            "resource": "grain",
+            "amount": 1
+          }
+        ],
+        "outputs": [
+          {
+            "resource": "horses",
+            "amount": 1
+          }
+        ],
+        "productionTime": 28
+      },
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 4,
+      "constructionTime": 40,
+      "workRadius": 0,
+      "populationCapacity": 0
+    },
+    "cattle_ranch": {
+      "label": "Cattle Ranch",
+      "category": "gathering",
+      "tier": 2,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 3
+        },
+        {
+          "resource": "planks",
+          "amount": 2
+        }
+      ],
+      "worker": "Rancher",
+      "workerTool": "shovel",
+      "production": {
+        "inputs": [
+          {
+            "resource": "hay",
+            "amount": 1
+          }
+        ],
+        "outputs": [
+          {
+            "resource": "cattle",
+            "amount": 1
+          }
+        ],
+        "productionTime": 35
+      },
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 4,
+      "constructionTime": 30,
+      "workRadius": 0,
+      "populationCapacity": 0
+    },
+    "sheep_farm": {
+      "label": "Sheep Farm",
+      "category": "gathering",
+      "tier": 2,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 3
+        },
+        {
+          "resource": "planks",
+          "amount": 2
+        }
+      ],
+      "worker": "Shepherd",
+      "workerTool": null,
+      "production": {
+        "inputs": [
+          {
+            "resource": "hay",
+            "amount": 1
+          }
+        ],
+        "outputs": [
+          {
+            "resource": "wool",
+            "amount": 1
+          }
+        ],
+        "productionTime": 25
+      },
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 6,
+      "constructionTime": 25,
+      "workRadius": 0,
+      "populationCapacity": 0
+    },
+    "butchery": {
+      "label": "Butchery",
+      "category": "processing",
+      "tier": 3,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 3
+        },
+        {
+          "resource": "stone",
+          "amount": 2
+        },
+        {
+          "resource": "planks",
+          "amount": 2
+        }
+      ],
+      "worker": "Butcher",
+      "workerTool": "cleaver",
+      "production": {
+        "inputs": [
+          {
+            "resource": "cattle",
+            "amount": 1
+          }
+        ],
+        "outputs": [
+          {
+            "resource": "meat",
+            "amount": 1
+          },
+          {
+            "resource": "raw_leather",
+            "amount": 1
+          }
+        ],
+        "productionTime": 18
+      },
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 6,
+      "constructionTime": 30,
+      "workRadius": 0,
+      "populationCapacity": 0
+    },
+    "fortress": {
+      "label": "Fortress",
+      "category": "military",
+      "tier": 3,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 6
+        },
+        {
+          "resource": "stone",
+          "amount": 8
+        },
+        {
+          "resource": "planks",
+          "amount": 4
+        },
+        {
+          "resource": "iron_bars",
+          "amount": 3
+        }
+      ],
+      "worker": null,
+      "workerTool": null,
+      "production": null,
+      "knightSlots": 20,
+      "influenceRadius": 10,
+      "storageCapacity": 20,
+      "constructionTime": 80,
+      "workRadius": 0,
+      "populationCapacity": 0
+    },
+    "archery_range": {
+      "label": "Archery Range",
+      "category": "military",
+      "tier": 3,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 4
+        },
+        {
+          "resource": "stone",
+          "amount": 3
+        },
+        {
+          "resource": "planks",
+          "amount": 2
+        }
+      ],
+      "worker": null,
+      "workerTool": null,
+      "production": null,
+      "knightSlots": 8,
+      "influenceRadius": 5,
+      "storageCapacity": 8,
+      "constructionTime": 45,
+      "workRadius": 0,
+      "populationCapacity": 0
+    },
+    "torch_tower": {
+      "label": "Torch Tower",
+      "category": "military",
+      "tier": 2,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 3
+        },
+        {
+          "resource": "stone",
+          "amount": 3
+        }
+      ],
+      "worker": null,
+      "workerTool": null,
+      "production": null,
+      "knightSlots": 1,
+      "influenceRadius": 3,
+      "storageCapacity": 2,
+      "constructionTime": 25,
+      "workRadius": 0,
+      "populationCapacity": 0
+    },
+    "inn_tavern": {
+      "label": "Inn & Tavern",
+      "category": "processing",
+      "tier": 3,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 4
+        },
+        {
+          "resource": "stone",
+          "amount": 3
+        },
+        {
+          "resource": "planks",
+          "amount": 3
+        }
+      ],
+      "worker": "Brewer",
+      "workerTool": null,
+      "production": {
+        "inputs": [
+          {
+            "resource": "beer",
+            "amount": 1
+          }
+        ],
+        "outputs": [],
+        "productionTime": 15
+      },
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 8,
+      "constructionTime": 40,
+      "workRadius": 0,
+      "populationCapacity": 0
+    },
+    "market": {
+      "label": "Market",
+      "category": "logistics",
+      "tier": 2,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 3
+        },
+        {
+          "resource": "stone",
+          "amount": 2
+        },
+        {
+          "resource": "planks",
+          "amount": 2
+        }
+      ],
+      "worker": null,
+      "workerTool": null,
+      "production": null,
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 12,
+      "constructionTime": 30,
+      "workRadius": 0,
+      "populationCapacity": 0
+    }
+  },
+  "resources": {
+    "wood": {
+      "label": "Wood",
+      "category": "raw",
+      "satiationValue": 0,
+      "isDrink": false
+    },
+    "stone": {
+      "label": "Stone",
+      "category": "raw",
+      "satiationValue": 0,
+      "isDrink": false
+    },
+    "grain": {
+      "label": "Grain",
+      "category": "raw",
+      "satiationValue": 0,
+      "isDrink": false
+    },
+    "fish": {
+      "label": "Fish",
+      "category": "raw",
+      "satiationValue": 0.4,
+      "isDrink": false
+    },
+    "iron_ore": {
+      "label": "Iron Ore",
+      "category": "raw",
+      "satiationValue": 0,
+      "isDrink": false
+    },
+    "coal_ore": {
+      "label": "Coal",
+      "category": "raw",
+      "satiationValue": 0,
+      "isDrink": false
+    },
+    "gold_ore": {
+      "label": "Gold Ore",
+      "category": "raw",
+      "satiationValue": 0,
+      "isDrink": false
+    },
+    "grapes": {
+      "label": "Grapes",
+      "category": "raw",
+      "satiationValue": 0,
+      "isDrink": false
+    },
+    "fruit": {
+      "label": "Fruit",
+      "category": "raw",
+      "satiationValue": 0.35,
+      "isDrink": false
+    },
+    "water_barrel": {
+      "label": "Water Barrel",
+      "category": "raw",
+      "satiationValue": 0,
+      "isDrink": false
+    },
+    "milk": {
+      "label": "Milk",
+      "category": "raw",
+      "satiationValue": 0,
+      "isDrink": false
+    },
+    "hay": {
+      "label": "Hay",
+      "category": "raw",
+      "satiationValue": 0,
+      "isDrink": false
+    },
+    "wool": {
+      "label": "Wool",
+      "category": "raw",
+      "satiationValue": 0,
+      "isDrink": false
+    },
+    "raw_leather": {
+      "label": "Raw Leather",
+      "category": "raw",
+      "satiationValue": 0,
+      "isDrink": false
+    },
+    "planks": {
+      "label": "Planks",
+      "category": "processed",
+      "satiationValue": 0,
+      "isDrink": false
+    },
+    "flour": {
+      "label": "Flour",
+      "category": "processed",
+      "satiationValue": 0,
+      "isDrink": false
+    },
+    "bread": {
+      "label": "Bread",
+      "category": "processed",
+      "satiationValue": 0.6,
+      "isDrink": false
+    },
+    "meat": {
+      "label": "Meat",
+      "category": "processed",
+      "satiationValue": 0.8,
+      "isDrink": false
+    },
+    "iron_bars": {
+      "label": "Iron Bars",
+      "category": "processed",
+      "satiationValue": 0,
+      "isDrink": false
+    },
+    "gold_bars": {
+      "label": "Gold Bars",
+      "category": "processed",
+      "satiationValue": 0,
+      "isDrink": false
+    },
+    "swords": {
+      "label": "Swords",
+      "category": "processed",
+      "satiationValue": 0,
+      "isDrink": false
+    },
+    "shields": {
+      "label": "Shields",
+      "category": "processed",
+      "satiationValue": 0,
+      "isDrink": false
+    },
+    "wine": {
+      "label": "Wine",
+      "category": "processed",
+      "satiationValue": 0.3,
+      "isDrink": true
+    },
+    "beer": {
+      "label": "Beer",
+      "category": "processed",
+      "satiationValue": 0.25,
+      "isDrink": true
+    },
+    "cheese": {
+      "label": "Cheese",
+      "category": "processed",
+      "satiationValue": 0.55,
+      "isDrink": false
+    },
+    "cloth": {
+      "label": "Cloth",
+      "category": "processed",
+      "satiationValue": 0,
+      "isDrink": false
+    },
+    "worked_leather": {
+      "label": "Worked Leather",
+      "category": "processed",
+      "satiationValue": 0,
+      "isDrink": false
+    },
+    "arrows": {
+      "label": "Arrows",
+      "category": "processed",
+      "satiationValue": 0,
+      "isDrink": false
+    },
+    "bow": {
+      "label": "Bow",
+      "category": "processed",
+      "satiationValue": 0,
+      "isDrink": false
+    },
+    "siege_ram": {
+      "label": "Siege Ram",
+      "category": "processed",
+      "satiationValue": 0,
+      "isDrink": false
+    },
+    "axe": {
+      "label": "Axe",
+      "category": "processed",
+      "satiationValue": 0,
+      "isDrink": false
+    },
+    "pickaxe": {
+      "label": "Pickaxe",
+      "category": "processed",
+      "satiationValue": 0,
+      "isDrink": false
+    },
+    "saw": {
+      "label": "Saw",
+      "category": "processed",
+      "satiationValue": 0,
+      "isDrink": false
+    },
+    "scythe": {
+      "label": "Scythe",
+      "category": "processed",
+      "satiationValue": 0,
+      "isDrink": false
+    },
+    "fishing_rod": {
+      "label": "Fishing Rod",
+      "category": "processed",
+      "satiationValue": 0,
+      "isDrink": false
+    },
+    "hammer_tool": {
+      "label": "Hammer",
+      "category": "processed",
+      "satiationValue": 0,
+      "isDrink": false
+    },
+    "shovel": {
+      "label": "Shovel",
+      "category": "processed",
+      "satiationValue": 0,
+      "isDrink": false
+    },
+    "rolling_pin": {
+      "label": "Rolling Pin",
+      "category": "processed",
+      "satiationValue": 0,
+      "isDrink": false
+    },
+    "cleaver": {
+      "label": "Cleaver",
+      "category": "processed",
+      "satiationValue": 0,
+      "isDrink": false
+    },
+    "crucible": {
+      "label": "Crucible",
+      "category": "processed",
+      "satiationValue": 0,
+      "isDrink": false
+    },
+    "tongs": {
+      "label": "Tongs",
+      "category": "processed",
+      "satiationValue": 0,
+      "isDrink": false
+    },
+    "pigs": {
+      "label": "Pigs",
+      "category": "animal",
+      "satiationValue": 0,
+      "isDrink": false
+    },
+    "cattle": {
+      "label": "Cattle",
+      "category": "animal",
+      "satiationValue": 0,
+      "isDrink": false
+    },
+    "horses": {
+      "label": "Horses",
+      "category": "animal",
+      "satiationValue": 0,
+      "isDrink": false
+    }
+  },
+  "units": {
+    "transporter": {
+      "label": "Transporter",
+      "category": "civilian",
+      "requiredTool": null,
+      "moveSpeed": 0.7,
+      "combatStrength": 0,
+      "attackRange": 0,
+      "visionRadius": 2,
+      "buildingDamage": 0,
+      "chargeMultiplier": 0,
+      "recruitmentItems": [],
+      "carryCapacity": 1
+    },
+    "builder": {
+      "label": "Builder",
+      "category": "civilian",
+      "requiredTool": "hammer_tool",
+      "moveSpeed": 1.2,
+      "combatStrength": 0,
+      "attackRange": 0,
+      "visionRadius": 2,
+      "buildingDamage": 0,
+      "chargeMultiplier": 0,
+      "recruitmentItems": [],
+      "carryCapacity": 1
+    },
+    "woodcutter": {
+      "label": "Woodcutter",
+      "category": "civilian",
+      "requiredTool": "axe",
+      "moveSpeed": 1,
+      "combatStrength": 0,
+      "attackRange": 0,
+      "visionRadius": 2,
+      "buildingDamage": 0,
+      "chargeMultiplier": 0,
+      "recruitmentItems": [],
+      "carryCapacity": 1
+    },
+    "forester": {
+      "label": "Forester",
+      "category": "civilian",
+      "requiredTool": "shovel",
+      "moveSpeed": 1,
+      "combatStrength": 0,
+      "attackRange": 0,
+      "visionRadius": 2,
+      "buildingDamage": 0,
+      "chargeMultiplier": 0,
+      "recruitmentItems": [],
+      "carryCapacity": 1
+    },
+    "stonemason": {
+      "label": "Stonemason",
+      "category": "civilian",
+      "requiredTool": "pickaxe",
+      "moveSpeed": 1,
+      "combatStrength": 0,
+      "attackRange": 0,
+      "visionRadius": 2,
+      "buildingDamage": 0,
+      "chargeMultiplier": 0,
+      "recruitmentItems": [],
+      "carryCapacity": 1
+    },
+    "miner": {
+      "label": "Miner",
+      "category": "civilian",
+      "requiredTool": "pickaxe",
+      "moveSpeed": 0.8,
+      "combatStrength": 0,
+      "attackRange": 0,
+      "visionRadius": 2,
+      "buildingDamage": 0,
+      "chargeMultiplier": 0,
+      "recruitmentItems": [],
+      "carryCapacity": 1
+    },
+    "farmer": {
+      "label": "Farmer",
+      "category": "civilian",
+      "requiredTool": "scythe",
+      "moveSpeed": 1,
+      "combatStrength": 0,
+      "attackRange": 0,
+      "visionRadius": 2,
+      "buildingDamage": 0,
+      "chargeMultiplier": 0,
+      "recruitmentItems": [],
+      "carryCapacity": 1
+    },
+    "fisherman": {
+      "label": "Fisherman",
+      "category": "civilian",
+      "requiredTool": "fishing_rod",
+      "moveSpeed": 1,
+      "combatStrength": 0,
+      "attackRange": 0,
+      "visionRadius": 2,
+      "buildingDamage": 0,
+      "chargeMultiplier": 0,
+      "recruitmentItems": [],
+      "carryCapacity": 1
+    },
+    "geologist": {
+      "label": "Geologist",
+      "category": "civilian",
+      "requiredTool": "hammer_tool",
+      "moveSpeed": 0.8,
+      "combatStrength": 0,
+      "attackRange": 0,
+      "visionRadius": 2,
+      "buildingDamage": 0,
+      "chargeMultiplier": 0,
+      "recruitmentItems": [],
+      "carryCapacity": 1
+    },
+    "sawmill_worker": {
+      "label": "Sawmill Worker",
+      "category": "civilian",
+      "requiredTool": "saw",
+      "moveSpeed": 1,
+      "combatStrength": 0,
+      "attackRange": 0,
+      "visionRadius": 2,
+      "buildingDamage": 0,
+      "chargeMultiplier": 0,
+      "recruitmentItems": [],
+      "carryCapacity": 1
+    },
+    "miller": {
+      "label": "Miller",
+      "category": "civilian",
+      "requiredTool": null,
+      "moveSpeed": 1,
+      "combatStrength": 0,
+      "attackRange": 0,
+      "visionRadius": 2,
+      "buildingDamage": 0,
+      "chargeMultiplier": 0,
+      "recruitmentItems": [],
+      "carryCapacity": 1
+    },
+    "baker": {
+      "label": "Baker",
+      "category": "civilian",
+      "requiredTool": "rolling_pin",
+      "moveSpeed": 1,
+      "combatStrength": 0,
+      "attackRange": 0,
+      "visionRadius": 2,
+      "buildingDamage": 0,
+      "chargeMultiplier": 0,
+      "recruitmentItems": [],
+      "carryCapacity": 1
+    },
+    "pig_farmer": {
+      "label": "Pig Farmer",
+      "category": "civilian",
+      "requiredTool": "shovel",
+      "moveSpeed": 1,
+      "combatStrength": 0,
+      "attackRange": 0,
+      "visionRadius": 2,
+      "buildingDamage": 0,
+      "chargeMultiplier": 0,
+      "recruitmentItems": [],
+      "carryCapacity": 1
+    },
+    "butcher": {
+      "label": "Butcher",
+      "category": "civilian",
+      "requiredTool": "cleaver",
+      "moveSpeed": 1,
+      "combatStrength": 0,
+      "attackRange": 0,
+      "visionRadius": 2,
+      "buildingDamage": 0,
+      "chargeMultiplier": 0,
+      "recruitmentItems": [],
+      "carryCapacity": 1
+    },
+    "smelter_worker": {
+      "label": "Smelter Worker",
+      "category": "civilian",
+      "requiredTool": "crucible",
+      "moveSpeed": 1,
+      "combatStrength": 0,
+      "attackRange": 0,
+      "visionRadius": 2,
+      "buildingDamage": 0,
+      "chargeMultiplier": 0,
+      "recruitmentItems": [],
+      "carryCapacity": 1
+    },
+    "goldsmith": {
+      "label": "Goldsmith",
+      "category": "civilian",
+      "requiredTool": "crucible",
+      "moveSpeed": 1,
+      "combatStrength": 0,
+      "attackRange": 0,
+      "visionRadius": 2,
+      "buildingDamage": 0,
+      "chargeMultiplier": 0,
+      "recruitmentItems": [],
+      "carryCapacity": 1
+    },
+    "toolmaker": {
+      "label": "Toolmaker",
+      "category": "civilian",
+      "requiredTool": null,
+      "moveSpeed": 1,
+      "combatStrength": 0,
+      "attackRange": 0,
+      "visionRadius": 2,
+      "buildingDamage": 0,
+      "chargeMultiplier": 0,
+      "recruitmentItems": [],
+      "carryCapacity": 1
+    },
+    "blacksmith": {
+      "label": "Blacksmith",
+      "category": "civilian",
+      "requiredTool": "tongs",
+      "moveSpeed": 1,
+      "combatStrength": 0,
+      "attackRange": 0,
+      "visionRadius": 2,
+      "buildingDamage": 0,
+      "chargeMultiplier": 0,
+      "recruitmentItems": [],
+      "carryCapacity": 1
+    },
+    "orchardist": {
+      "label": "Orchardist",
+      "category": "civilian",
+      "requiredTool": "scythe",
+      "moveSpeed": 1,
+      "combatStrength": 0,
+      "attackRange": 0,
+      "visionRadius": 2,
+      "buildingDamage": 0,
+      "chargeMultiplier": 0,
+      "recruitmentItems": [],
+      "carryCapacity": 1
+    },
+    "vintner": {
+      "label": "Vintner",
+      "category": "civilian",
+      "requiredTool": "scythe",
+      "moveSpeed": 1,
+      "combatStrength": 0,
+      "attackRange": 0,
+      "visionRadius": 2,
+      "buildingDamage": 0,
+      "chargeMultiplier": 0,
+      "recruitmentItems": [],
+      "carryCapacity": 1
+    },
+    "winemaker": {
+      "label": "Winemaker",
+      "category": "civilian",
+      "requiredTool": null,
+      "moveSpeed": 1,
+      "combatStrength": 0,
+      "attackRange": 0,
+      "visionRadius": 2,
+      "buildingDamage": 0,
+      "chargeMultiplier": 0,
+      "recruitmentItems": [],
+      "carryCapacity": 1
+    },
+    "brewer": {
+      "label": "Brewer",
+      "category": "civilian",
+      "requiredTool": null,
+      "moveSpeed": 1,
+      "combatStrength": 0,
+      "attackRange": 0,
+      "visionRadius": 2,
+      "buildingDamage": 0,
+      "chargeMultiplier": 0,
+      "recruitmentItems": [],
+      "carryCapacity": 1
+    },
+    "dairymaid": {
+      "label": "Dairymaid",
+      "category": "civilian",
+      "requiredTool": null,
+      "moveSpeed": 1,
+      "combatStrength": 0,
+      "attackRange": 0,
+      "visionRadius": 2,
+      "buildingDamage": 0,
+      "chargeMultiplier": 0,
+      "recruitmentItems": [],
+      "carryCapacity": 1
+    },
+    "cheese_maker": {
+      "label": "Cheese Maker",
+      "category": "civilian",
+      "requiredTool": null,
+      "moveSpeed": 1,
+      "combatStrength": 0,
+      "attackRange": 0,
+      "visionRadius": 2,
+      "buildingDamage": 0,
+      "chargeMultiplier": 0,
+      "recruitmentItems": [],
+      "carryCapacity": 1
+    },
+    "tanner": {
+      "label": "Tanner",
+      "category": "civilian",
+      "requiredTool": null,
+      "moveSpeed": 1,
+      "combatStrength": 0,
+      "attackRange": 0,
+      "visionRadius": 2,
+      "buildingDamage": 0,
+      "chargeMultiplier": 0,
+      "recruitmentItems": [],
+      "carryCapacity": 1
+    },
+    "weaver": {
+      "label": "Weaver",
+      "category": "civilian",
+      "requiredTool": null,
+      "moveSpeed": 1,
+      "combatStrength": 0,
+      "attackRange": 0,
+      "visionRadius": 2,
+      "buildingDamage": 0,
+      "chargeMultiplier": 0,
+      "recruitmentItems": [],
+      "carryCapacity": 1
+    },
+    "charcoal_burner": {
+      "label": "Charcoal Burner",
+      "category": "civilian",
+      "requiredTool": "axe",
+      "moveSpeed": 1,
+      "combatStrength": 0,
+      "attackRange": 0,
+      "visionRadius": 2,
+      "buildingDamage": 0,
+      "chargeMultiplier": 0,
+      "recruitmentItems": [],
+      "carryCapacity": 1
+    },
+    "fletcher": {
+      "label": "Fletcher",
+      "category": "civilian",
+      "requiredTool": null,
+      "moveSpeed": 1,
+      "combatStrength": 0,
+      "attackRange": 0,
+      "visionRadius": 2,
+      "buildingDamage": 0,
+      "chargeMultiplier": 0,
+      "recruitmentItems": [],
+      "carryCapacity": 1
+    },
+    "engineer": {
+      "label": "Engineer",
+      "category": "civilian",
+      "requiredTool": "hammer_tool",
+      "moveSpeed": 1,
+      "combatStrength": 0,
+      "attackRange": 0,
+      "visionRadius": 2,
+      "buildingDamage": 0,
+      "chargeMultiplier": 0,
+      "recruitmentItems": [],
+      "carryCapacity": 1
+    },
+    "stablehand": {
+      "label": "Stablehand",
+      "category": "civilian",
+      "requiredTool": "shovel",
+      "moveSpeed": 1,
+      "combatStrength": 0,
+      "attackRange": 0,
+      "visionRadius": 2,
+      "buildingDamage": 0,
+      "chargeMultiplier": 0,
+      "recruitmentItems": [],
+      "carryCapacity": 1
+    },
+    "rancher": {
+      "label": "Rancher",
+      "category": "civilian",
+      "requiredTool": "shovel",
+      "moveSpeed": 1,
+      "combatStrength": 0,
+      "attackRange": 0,
+      "visionRadius": 2,
+      "buildingDamage": 0,
+      "chargeMultiplier": 0,
+      "recruitmentItems": [],
+      "carryCapacity": 1
+    },
+    "shepherd": {
+      "label": "Shepherd",
+      "category": "civilian",
+      "requiredTool": null,
+      "moveSpeed": 1,
+      "combatStrength": 0,
+      "attackRange": 0,
+      "visionRadius": 2,
+      "buildingDamage": 0,
+      "chargeMultiplier": 0,
+      "recruitmentItems": [],
+      "carryCapacity": 1
+    },
+    "knight": {
+      "label": "Knight",
+      "category": "military",
+      "requiredTool": null,
+      "moveSpeed": 1.2,
+      "combatStrength": 1,
+      "attackRange": 0,
+      "visionRadius": 3,
+      "buildingDamage": 0,
+      "chargeMultiplier": 0,
+      "recruitmentItems": [
+        {
+          "resource": "swords",
+          "amount": 1
+        },
+        {
+          "resource": "shields",
+          "amount": 1
+        }
+      ],
+      "carryCapacity": 1
+    },
+    "archer": {
+      "label": "Archer",
+      "category": "military",
+      "requiredTool": null,
+      "moveSpeed": 1,
+      "combatStrength": 0.6,
+      "attackRange": 3,
+      "visionRadius": 5,
+      "buildingDamage": 0,
+      "chargeMultiplier": 0,
+      "recruitmentItems": [
+        {
+          "resource": "bow",
+          "amount": 1
+        },
+        {
+          "resource": "arrows",
+          "amount": 1
+        }
+      ],
+      "carryCapacity": 1
+    },
+    "cavalry": {
+      "label": "Cavalry",
+      "category": "military",
+      "requiredTool": null,
+      "moveSpeed": 1.8,
+      "combatStrength": 1.3,
+      "attackRange": 0,
+      "visionRadius": 4,
+      "buildingDamage": 0,
+      "chargeMultiplier": 1.3,
+      "recruitmentItems": [
+        {
+          "resource": "horses",
+          "amount": 1
+        },
+        {
+          "resource": "swords",
+          "amount": 1
+        },
+        {
+          "resource": "shields",
+          "amount": 1
+        }
+      ],
+      "carryCapacity": 1
+    },
+    "siege_operator": {
+      "label": "Siege Operator",
+      "category": "military",
+      "requiredTool": null,
+      "moveSpeed": 0.6,
+      "combatStrength": 0.5,
+      "attackRange": 0,
+      "visionRadius": 2,
+      "buildingDamage": 3,
+      "chargeMultiplier": 0,
+      "recruitmentItems": [
+        {
+          "resource": "siege_ram",
+          "amount": 1
+        }
+      ],
+      "carryCapacity": 1
+    },
+    "scout": {
+      "label": "Scout",
+      "category": "military",
+      "requiredTool": null,
+      "moveSpeed": 2,
+      "combatStrength": 0.2,
+      "attackRange": 0,
+      "visionRadius": 12,
+      "buildingDamage": 0,
+      "chargeMultiplier": 0,
+      "recruitmentItems": [],
+      "carryCapacity": 1
+    },
+    "donkey": {
+      "label": "Donkey",
+      "category": "transport",
+      "requiredTool": null,
+      "moveSpeed": 0.45,
+      "combatStrength": 0,
+      "attackRange": 0,
+      "visionRadius": 2,
+      "buildingDamage": 0,
+      "chargeMultiplier": 0,
+      "recruitmentItems": [],
+      "carryCapacity": 3
+    },
+    "horse_transport": {
+      "label": "Horse Cart",
+      "category": "transport",
+      "requiredTool": null,
+      "moveSpeed": 0.6,
+      "combatStrength": 0,
+      "attackRange": 0,
+      "visionRadius": 2,
+      "buildingDamage": 0,
+      "chargeMultiplier": 0,
+      "recruitmentItems": [],
+      "carryCapacity": 8
+    }
+  },
+  "difficulty": {
+    "easy": {
+      "buildOrder": [
+        "woodcutter_hut",
+        "forester_hut",
+        "woodcutter_hut",
+        "quarry",
+        "sawmill",
+        "small_house",
+        "fisherman_hut",
+        "farm",
+        "warehouse",
+        "harbor",
+        "geologist_hut",
+        "windmill",
+        "bakery",
+        "iron_mine",
+        "coal_mine",
+        "iron_smelter",
+        "toolmaker_workshop",
+        "medium_house",
+        "guard_hut",
+        "blacksmith_armory",
+        "gold_mine",
+        "goldsmith_mint",
+        "orchard",
+        "vineyard",
+        "winery",
+        "well",
+        "cattle_ranch",
+        "sheep_farm",
+        "tannery",
+        "weavers_hut",
+        "stable",
+        "large_house",
+        "market",
+        "barracks",
+        "watchtower"
+      ],
+      "attackThreshold": 16,
+      "decisionInterval": 10,
+      "attackInterval": 20,
+      "skipChance": 0.3,
+      "knightsPerAttack": 1
+    },
+    "normal": {
+      "buildOrder": [
+        "woodcutter_hut",
+        "forester_hut",
+        "woodcutter_hut",
+        "quarry",
+        "sawmill",
+        "small_house",
+        "fisherman_hut",
+        "guard_hut",
+        "farm",
+        "guard_hut",
+        "warehouse",
+        "geologist_hut",
+        "medium_house",
+        "iron_mine",
+        "coal_mine",
+        "harbor",
+        "windmill",
+        "bakery",
+        "guard_hut",
+        "iron_smelter",
+        "toolmaker_workshop",
+        "blacksmith_armory",
+        "barracks",
+        "watchtower",
+        "well",
+        "brewery",
+        "hayfield",
+        "dairy_farm",
+        "cheese_maker_building",
+        "inn_tavern",
+        "large_house",
+        "gold_mine",
+        "goldsmith_mint",
+        "barracks",
+        "barracks"
+      ],
+      "attackThreshold": 12,
+      "decisionInterval": 5,
+      "attackInterval": 15,
+      "skipChance": 0,
+      "knightsPerAttack": 1
+    },
+    "hard": {
+      "buildOrder": [
+        "woodcutter_hut",
+        "forester_hut",
+        "quarry",
+        "sawmill",
+        "small_house",
+        "guard_hut",
+        "guard_hut",
+        "fisherman_hut",
+        "farm",
+        "iron_mine",
+        "coal_mine",
+        "iron_smelter",
+        "medium_house",
+        "blacksmith_armory",
+        "fletchers_workshop",
+        "archery_range",
+        "barracks",
+        "barracks",
+        "watchtower",
+        "fortress"
+      ],
+      "attackThreshold": 10,
+      "decisionInterval": 2.5,
+      "attackInterval": 12,
+      "skipChance": 0,
+      "knightsPerAttack": 2
+    }
+  }
+}

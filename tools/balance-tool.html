@@ -1,0 +1,2109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Feudal Realm Manager — Balance Tool</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f1a;
+    --card: #1a1a2e;
+    --grid: #2d2d44;
+    --text: #e2e8f0;
+    --accent: #60a5fa;
+    --error: #ef4444;
+    --warning: #f59e0b;
+    --success: #22c55e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 13px; height: 100%; overflow: hidden; }
+  input[type="number"], input[type="range"], select, button { font-family: 'JetBrains Mono', monospace; }
+  .tabular { font-variant-numeric: tabular-nums; }
+  .card { background: var(--card); border: 1px solid var(--grid); border-radius: 8px; padding: 12px; }
+  .btn { background: var(--accent); color: #0f0f1a; border: none; border-radius: 6px; padding: 6px 14px; cursor: pointer; font-weight: 600; font-size: 12px; transition: opacity .15s; }
+  .btn:hover { opacity: 0.85; }
+  .btn-sm { padding: 4px 10px; font-size: 11px; }
+  .btn-outline { background: transparent; border: 1px solid var(--accent); color: var(--accent); }
+  .btn-outline:hover { background: rgba(96,165,250,0.1); }
+  .input-num { background: #0f0f1a; border: 1px solid var(--grid); color: var(--text); border-radius: 4px; padding: 3px 6px; width: 70px; text-align: right; font-size: 12px; }
+  .input-num:focus { outline: none; border-color: var(--accent); }
+  select.sel { background: #0f0f1a; border: 1px solid var(--grid); color: var(--text); border-radius: 4px; padding: 4px 8px; font-size: 12px; }
+  select.sel:focus { outline: none; border-color: var(--accent); }
+  label.cb { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px; }
+  label.cb input[type="checkbox"] { accent-color: var(--accent); }
+  .section-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; margin-bottom: 6px; font-weight: 600; }
+  .scrollable { overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--grid) transparent; }
+  .scrollable::-webkit-scrollbar { width: 6px; }
+  .scrollable::-webkit-scrollbar-track { background: transparent; }
+  .scrollable::-webkit-scrollbar-thumb { background: var(--grid); border-radius: 3px; }
+  .tab-btn { background: transparent; border: none; color: #64748b; padding: 8px 16px; cursor: pointer; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 500; border-bottom: 2px solid transparent; transition: all .15s; white-space: nowrap; }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .heatmap-cell { width: 64px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; border-radius: 3px; }
+  .summary-card { text-align: center; padding: 12px; min-width: 120px; }
+  .summary-card .val { font-size: 22px; font-weight: 700; }
+  .summary-card .lbl { font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+  .range-val { display: inline-block; min-width: 36px; text-align: right; font-weight: 600; color: var(--accent); }
+  table.data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  table.data-table th { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--grid); color: #94a3b8; font-weight: 600; font-size: 11px; text-transform: uppercase; }
+  table.data-table td { padding: 5px 8px; border-bottom: 1px solid rgba(45,45,68,0.5); }
+  table.data-table tr:hover td { background: rgba(96,165,250,0.05); }
+  .gauge-ring { stroke-linecap: round; transition: stroke-dashoffset 0.3s ease; }
+  @media (max-width: 768px) {
+    .tab-layout { flex-direction: column !important; }
+    .tab-sidebar { width: 100% !important; max-height: 40vh; }
+    .tab-main { width: 100% !important; }
+  }
+</style>
+</head>
+<body class="flex flex-col h-screen">
+
+<!-- Header -->
+<header class="flex items-center justify-between px-4 py-2 border-b" style="border-color: var(--grid); background: var(--card); flex-shrink:0;">
+  <div class="flex items-center gap-3">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg>
+    <span class="font-bold text-sm" style="color:var(--accent)">Feudal Realm Manager</span>
+    <span class="text-xs" style="color:#64748b">Balance Tool v1.0</span>
+  </div>
+  <div class="flex items-center gap-2">
+    <button id="helpBtn" class="btn btn-sm btn-outline" style="width:28px;height:28px;padding:0;border-radius:50%;font-weight:700;" title="Help for current tab">?</button>
+    <button id="exportGameBtn" class="btn btn-sm btn-outline">Export to Game</button>
+  </div>
+</header>
+
+<!-- Tab Bar -->
+<nav id="tabBar" class="flex border-b overflow-x-auto" style="border-color: var(--grid); background: var(--card); flex-shrink:0;"></nav>
+
+<!-- Tab Content -->
+<div id="tabContainer" class="flex-1 overflow-hidden relative"></div>
+
+<!-- Help modal -->
+<div id="helpModal" class="fixed inset-0 hidden" style="background:rgba(0,0,0,0.6);z-index:9998;">
+  <div id="helpModalContent" class="absolute scrollable"
+    style="top:50%;left:50%;transform:translate(-50%,-50%);width:90%;max-width:600px;max-height:80vh;overflow-y:auto;background:var(--card);border:1px solid var(--grid);border-radius:12px;padding:24px;">
+  </div>
+</div>
+
+<!-- Loading overlay -->
+<div id="loadingOverlay" class="fixed inset-0 flex items-center justify-center" style="background:var(--bg);z-index:9999;">
+  <div class="text-center">
+    <div class="animate-spin w-8 h-8 border-2 border-t-transparent rounded-full mx-auto mb-3" style="border-color: var(--accent); border-top-color: transparent;"></div>
+    <div class="text-sm" style="color:#94a3b8;">Loading balance data...</div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// GLOBAL NAMESPACE & DATA
+// ============================================================
+window.BT = {};
+
+(function() {
+  'use strict';
+
+  const PALETTE = ['#60a5fa','#f472b6','#34d399','#fbbf24','#a78bfa','#fb923c','#22d3ee','#e879f9','#4ade80','#f87171','#38bdf8','#facc15'];
+  const CHART_DEFAULTS = {
+    gridColor: '#2d2d44',
+    textColor: '#e2e8f0',
+    bgColor: 'transparent',
+    font: 'JetBrains Mono'
+  };
+
+  let DATA = null;
+
+  // ============================================================
+  // CHART HELPERS
+  // ============================================================
+  BT.Charts = (function() {
+    const instances = {};
+
+    function applyDefaults() {
+      Chart.defaults.color = CHART_DEFAULTS.textColor;
+      Chart.defaults.borderColor = CHART_DEFAULTS.gridColor;
+      Chart.defaults.font.family = CHART_DEFAULTS.font;
+      Chart.defaults.font.size = 11;
+      Chart.defaults.plugins.legend.labels.usePointStyle = true;
+      Chart.defaults.plugins.legend.labels.pointStyleWidth = 10;
+      Chart.defaults.plugins.legend.labels.boxHeight = 8;
+    }
+    applyDefaults();
+
+    function destroy(id) {
+      if (instances[id]) { instances[id].destroy(); delete instances[id]; }
+    }
+
+    function createLineChart(canvasId, labels, datasets, opts = {}) {
+      destroy(canvasId);
+      const ctx = document.getElementById(canvasId);
+      if (!ctx) return null;
+      instances[canvasId] = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: datasets.map((ds, i) => ({
+            label: ds.label,
+            data: ds.data,
+            borderColor: ds.color || PALETTE[i % PALETTE.length],
+            backgroundColor: (ds.color || PALETTE[i % PALETTE.length]) + '20',
+            borderWidth: 1.5,
+            pointRadius: 0,
+            fill: ds.fill || false,
+            tension: 0.3,
+            ...ds
+          }))
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 300 },
+          interaction: { mode: 'index', intersect: false },
+          scales: {
+            x: { grid: { color: CHART_DEFAULTS.gridColor }, ticks: { maxTicksLimit: 10 }, title: opts.xTitle ? { display: true, text: opts.xTitle } : undefined },
+            y: { grid: { color: CHART_DEFAULTS.gridColor }, beginAtZero: true, title: opts.yTitle ? { display: true, text: opts.yTitle } : undefined, ...(opts.yMax !== undefined ? { max: opts.yMax } : {}) }
+          },
+          plugins: {
+            legend: { display: datasets.length > 1 && datasets.length <= 12 },
+            title: opts.title ? { display: true, text: opts.title, font: { size: 13, weight: '600' } } : undefined,
+            annotation: opts.annotations || undefined
+          }
+        }
+      });
+      return instances[canvasId];
+    }
+
+    function createBarChart(canvasId, labels, datasets, opts = {}) {
+      destroy(canvasId);
+      const ctx = document.getElementById(canvasId);
+      if (!ctx) return null;
+      instances[canvasId] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: datasets.map((ds, i) => ({
+            label: ds.label,
+            data: ds.data,
+            backgroundColor: ds.colors || ds.color || PALETTE[i % PALETTE.length],
+            borderRadius: 3,
+            barPercentage: 0.7,
+            ...ds
+          }))
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 300 },
+          indexAxis: opts.horizontal ? 'y' : 'x',
+          scales: {
+            x: { grid: { color: CHART_DEFAULTS.gridColor }, stacked: opts.stacked || false },
+            y: { grid: { color: CHART_DEFAULTS.gridColor }, beginAtZero: true, stacked: opts.stacked || false }
+          },
+          plugins: {
+            legend: { display: datasets.length > 1 },
+            title: opts.title ? { display: true, text: opts.title, font: { size: 13, weight: '600' } } : undefined
+          }
+        }
+      });
+      return instances[canvasId];
+    }
+
+    function createDualBar(canvasId, labels, produced, consumed, opts = {}) {
+      destroy(canvasId);
+      const ctx = document.getElementById(canvasId);
+      if (!ctx) return null;
+      instances[canvasId] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: opts.label1 || 'Produced', data: produced, backgroundColor: '#34d399', borderRadius: 3, barPercentage: 0.7 },
+            { label: opts.label2 || 'Consumed', data: consumed, backgroundColor: '#f87171', borderRadius: 3, barPercentage: 0.7 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 300 },
+          indexAxis: opts.horizontal ? 'y' : 'x',
+          scales: {
+            x: { grid: { color: CHART_DEFAULTS.gridColor } },
+            y: { grid: { color: CHART_DEFAULTS.gridColor }, beginAtZero: true }
+          },
+          plugins: {
+            title: opts.title ? { display: true, text: opts.title, font: { size: 13, weight: '600' } } : undefined
+          }
+        }
+      });
+      return instances[canvasId];
+    }
+
+    function createStackedArea(canvasId, labels, datasets, opts = {}) {
+      destroy(canvasId);
+      const ctx = document.getElementById(canvasId);
+      if (!ctx) return null;
+      instances[canvasId] = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: datasets.map((ds, i) => ({
+            label: ds.label,
+            data: ds.data,
+            borderColor: ds.color || PALETTE[i % PALETTE.length],
+            backgroundColor: (ds.color || PALETTE[i % PALETTE.length]) + '60',
+            borderWidth: 1.5,
+            pointRadius: 0,
+            fill: true,
+            tension: 0.3
+          }))
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 300 },
+          interaction: { mode: 'index', intersect: false },
+          scales: {
+            x: { grid: { color: CHART_DEFAULTS.gridColor }, stacked: true },
+            y: { grid: { color: CHART_DEFAULTS.gridColor }, stacked: true, beginAtZero: true, title: opts.yTitle ? { display: true, text: opts.yTitle } : undefined }
+          },
+          plugins: {
+            title: opts.title ? { display: true, text: opts.title, font: { size: 13, weight: '600' } } : undefined
+          }
+        }
+      });
+      return instances[canvasId];
+    }
+
+    return { createLineChart, createBarChart, createDualBar, createStackedArea, destroy };
+  })();
+
+  // ============================================================
+  // SIMULATION ENGINE
+  // ============================================================
+  BT.SimEngine = {
+    simulate({ init, step, snapshot, sampleInterval = 10, duration = 1800 }) {
+      let state = init();
+      const history = [];
+      for (let t = 0; t <= duration; t++) {
+        step(state, t);
+        if (t % sampleInterval === 0) history.push(snapshot(state, t));
+      }
+      return { finalState: state, history };
+    }
+  };
+
+  // ============================================================
+  // UI TAB SYSTEM
+  // ============================================================
+  BT.UI = (function() {
+    const tabs = [];
+    let activeTab = null;
+
+    function registerTab(id, label, iconSvg, initFn, activateFn) {
+      tabs.push({ id, label, iconSvg, initFn, activateFn, initialized: false });
+    }
+
+    function render() {
+      const bar = document.getElementById('tabBar');
+      const container = document.getElementById('tabContainer');
+      bar.innerHTML = '';
+      tabs.forEach(tab => {
+        const btn = document.createElement('button');
+        btn.className = 'tab-btn';
+        btn.innerHTML = `${tab.iconSvg} <span class="ml-1">${tab.label}</span>`;
+        btn.addEventListener('click', () => activate(tab.id));
+        btn.dataset.tabId = tab.id;
+        bar.appendChild(btn);
+
+        const content = document.createElement('div');
+        content.className = 'hidden absolute inset-0';
+        content.dataset.tabContent = tab.id;
+        container.appendChild(content);
+      });
+      if (tabs.length > 0) activate(tabs[0].id);
+    }
+
+    function activate(id) {
+      const tab = tabs.find(t => t.id === id);
+      if (!tab) return;
+      if (activeTab === id) return;
+      activeTab = id;
+
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tabId === id));
+      document.querySelectorAll('[data-tab-content]').forEach(el => {
+        el.classList.toggle('hidden', el.dataset.tabContent !== id);
+      });
+
+      if (!tab.initialized) {
+        const el = document.querySelector(`[data-tab-content="${id}"]`);
+        tab.initFn(el, DATA);
+        tab.initialized = true;
+      }
+      tab.activateFn(DATA);
+    }
+
+    function getActiveTab() { return activeTab; }
+
+    return { registerTab, render, activate, getActiveTab };
+  })();
+
+  // ============================================================
+  // HELPERS
+  // ============================================================
+  function fmt(n, decimals = 2) {
+    if (n === undefined || n === null || isNaN(n)) return '0';
+    return Number(n).toFixed(decimals);
+  }
+  function fmtTime(seconds) {
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}:${String(s).padStart(2, '0')}`;
+  }
+  function pct(n) { return (n * 100).toFixed(1) + '%'; }
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+  function buildCategoryMap(buildings) {
+    const cats = {};
+    for (const [id, b] of Object.entries(buildings)) {
+      const cat = b.category;
+      if (!cats[cat]) cats[cat] = [];
+      cats[cat].push({ id, ...b });
+    }
+    return cats;
+  }
+
+  function exportJSON(data, filename) {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  function makeRangeRow(label, id, min, max, step, value, suffix = '') {
+    return `<div class="flex items-center gap-2 mb-2">
+      <span class="w-28 text-xs truncate" title="${label}">${label}</span>
+      <input type="range" id="${id}" min="${min}" max="${max}" step="${step}" value="${value}" class="flex-1 accent-blue-400" style="height:4px;">
+      <span class="range-val tabular" id="${id}Val">${value}${suffix}</span>
+    </div>`;
+  }
+
+  function wireRange(id, suffix = '', onChange) {
+    const el = document.getElementById(id);
+    const valEl = document.getElementById(id + 'Val');
+    if (!el) return;
+    el.addEventListener('input', () => {
+      valEl.textContent = el.value + suffix;
+      if (onChange) onChange(Number(el.value));
+    });
+  }
+
+  function getProductionBuildings(data) {
+    const result = {};
+    for (const [id, b] of Object.entries(data.buildings)) {
+      if (b.production && b.production.outputs && b.production.outputs.length > 0) {
+        result[id] = b;
+      }
+    }
+    return result;
+  }
+
+  function getFoodResources(data) {
+    const foods = {};
+    for (const [id, r] of Object.entries(data.resources)) {
+      if (r.satiationValue > 0) foods[id] = r;
+    }
+    return foods;
+  }
+
+  // ============================================================
+  // HELP CONTENT
+  // ============================================================
+  const HELP_CONTENT = {
+    production: {
+      title: 'Production Chain Simulator',
+      purpose: 'Can this building mix sustain itself?',
+      workflow: [
+        'Pick a preset (e.g. "Bread Chain") or check individual buildings in the sidebar',
+        'Set building counts with the number spinners',
+        'Adjust duration and optionally enable "Infinite raw resources"',
+        'Click "Run Simulation" to see results'
+      ],
+      results: [
+        { term: 'Resource Stocks chart', desc: 'Lines rising = surplus accumulating. Flat at zero = bottleneck \u2014 that resource is consumed as fast as (or faster than) it is produced.' },
+        { term: 'Throughput bars', desc: 'Green = produced per minute, pink = consumed per minute. Imbalance means surplus or shortage.' },
+        { term: 'Bottleneck table', desc: 'Lists resources that hit zero and when. "Critical" means buildings idled waiting for this resource.' }
+      ],
+      tips: [
+        'Start with "Bread Chain" \u2014 it is the simplest multi-step chain (Farm \u2192 Windmill \u2192 Bakery)',
+        'Enable "Infinite raw resources" to test processing chains in isolation',
+        'If a resource flatlines at zero, add more of the upstream building'
+      ]
+    },
+    combat: {
+      title: 'Combat Simulator',
+      purpose: 'Who wins this matchup? How often?',
+      workflow: [
+        'Choose attacker and defender unit types from the dropdowns',
+        'Set rank (1-5), gold bars (0-10), and morale (0.5-1.0) for each side',
+        'Click "Run 10,000 Duels" for win probability',
+        'Or use "Generate Matrix" below for a full 5\u00d75 matchup grid'
+      ],
+      results: [
+        { term: 'Win rate cards', desc: 'Percentage each side wins over 10,000 simulated duels.' },
+        { term: 'Strength breakdown', desc: 'Shows how base strength \u00d7 rank \u00d7 gold \u00d7 morale \u00d7 charge combine into effective strength.' },
+        { term: 'Matchup matrix', desc: 'Color-coded grid: green = attacker advantage, red = disadvantage. Rows attack, columns defend.' }
+      ],
+      tips: [
+        'Knight vs Knight at same rank = exactly 50/50',
+        'Cavalry gets a 1.3\u00d7 charge bonus as attacker only (first engagement)',
+        'Gold bars cap at +50% bonus (10 bars). Higher rank is the strongest multiplier.'
+      ]
+    },
+    economy: {
+      title: 'Economy Sink/Source Validator',
+      purpose: 'Does this economy leak resources or starve?',
+      workflow: [
+        'Set population count and pick a difficulty (sets starting resources)',
+        'Add buildings via the building mix panel, or click "Load Balanced Mix"',
+        'Toggle "Include hunger consumption" and "Include construction costs" as needed',
+        'Click "Run Simulation" to analyze resource balance'
+      ],
+      results: [
+        { term: 'Net Balance chart', desc: 'Bars above zero = surplus, below zero = deficit per minute. Most-negative resources are your biggest bottleneck.' },
+        { term: 'Resource Stocks chart', desc: 'Lines over time \u2014 watch for any hitting zero (stockout). Red markers flag depletion events.' },
+        { term: 'Resource table', desc: 'Production rate, consumption rate, net rate, and status (Surplus/Deficit/Balanced) for every resource.' }
+      ],
+      tips: [
+        'Enable "hunger consumption" for realistic results \u2014 food is a major sink',
+        'Surplus/Deficit/Stockout counts at the top give a quick health check',
+        'If food depletes early, add Fisherman Huts first \u2014 they have no input dependencies'
+      ]
+    },
+    hunger: {
+      title: 'Hunger & Feeding Simulator',
+      purpose: 'How many food buildings do I need for N workers?',
+      workflow: [
+        'Set population count, working %, and garrisoned %',
+        'Add food buildings: Fisherman, Bakery chain, Pig+Slaughterhouse, Orchard, Dairy+Cheese, Cattle+Butchery',
+        'Set starting food stocks per type',
+        'Click "Run Simulation" to see if your population stays fed'
+      ],
+      results: [
+        { term: 'Satiation chart', desc: 'Blue line = average satiation. Above 0.50 (dashed) = no penalties. Below 0.25 (red dashed) = starving with severe penalties.' },
+        { term: 'Population status', desc: 'Stacked area: green = fed, orange = hungry (speed/production penalties), red = starving (severe penalties).' },
+        { term: 'Summary cards', desc: 'Final satiation, fed/hungry/starving counts, and penalty amounts.' }
+      ],
+      tips: [
+        'Working units consume 1.2\u00d7 food, garrisoned only 0.5\u00d7 \u2014 adjust percentages to model your game',
+        'Fisherman Hut is the simplest food source (no chain dependencies)',
+        'With zero food buildings, 20 workers exhaust 70 starting food items in ~13 minutes'
+      ]
+    },
+    starting: {
+      title: 'Starting Resources Analyzer',
+      purpose: 'How long do starting resources last? What can I build first?',
+      workflow: [
+        'Select a difficulty: Easy, Normal, Hard, or Custom',
+        'Pick a build order preset (matches AI difficulty strategies)',
+        'Click "Analyze" to compare'
+      ],
+      results: [
+        { term: 'Comparison table', desc: 'Side-by-side resource amounts. Green = highest, white = middle, red = lowest.' },
+        { term: 'Derived metrics', desc: 'Total food items, estimated food duration, and how many buildings you can afford from starting resources.' },
+        { term: 'Build timeline', desc: 'Cumulative construction time for the first buildings in your chosen build order.' }
+      ],
+      tips: [
+        'Easy gives ~6 affordable buildings vs Hard\'s ~3',
+        'Food duration tells you how urgently you need a Fisherman Hut',
+        'Use "Custom" mode to test hypothetical starting configurations'
+      ]
+    },
+    morale: {
+      title: 'Morale & Night Effects',
+      purpose: 'What is the combined production impact of morale and day/night?',
+      workflow: [
+        'Adjust drink types (0-2), drinks served (0-20), and gold bars (0-10)',
+        'Set torch tower count and affected buildings for the night section',
+        'Click "Calculate" to see morale value, multipliers, and day/night cycle effects'
+      ],
+      results: [
+        { term: 'Morale gauge', desc: 'Circular gauge showing morale percentage. 50% = neutral, above = production bonus, below = penalty.' },
+        { term: 'Formula breakdown', desc: 'Table showing Base + Drink Variety + Drink Volume + Gold = Total Morale, and the resulting multiplier.' },
+        { term: 'Day/Night cycle chart', desc: 'Production rate across all 6 day phases. Shows impact with and without torch towers and morale.' }
+      ],
+      tips: [
+        'Two unique drink types (Beer + Wine) give the max +0.20 variety bonus',
+        'Torch towers only help during dark phases (Dawn, GoldenHour, Evening, Night)',
+        'Morale multiplier ranges from 0.85 (worst) to 1.15 (best) \u2014 a 30% swing'
+      ]
+    }
+  };
+
+  function renderHelpCard(tabId, isModal) {
+    const h = HELP_CONTENT[tabId];
+    if (!h) return '';
+    const closeBtn = isModal
+      ? '<button onclick="document.getElementById(\'helpModal\').classList.add(\'hidden\')" style="position:absolute;top:12px;right:12px;background:none;border:none;color:var(--text);font-size:18px;cursor:pointer;padding:4px 8px;opacity:0.6;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">\u2715</button>'
+      : '';
+    const wrapStyle = isModal
+      ? 'position:relative;'
+      : 'max-width:640px;margin:40px auto;border-color:var(--accent);border-width:1px;';
+    return `<div class="card" style="${wrapStyle}">
+      ${closeBtn}
+      <div style="font-size:16px;font-weight:700;margin-bottom:4px;">${h.title}</div>
+      <div style="color:#94a3b8;font-style:italic;margin-bottom:16px;">${h.purpose}</div>
+      <div class="section-title">Workflow</div>
+      <ol style="padding-left:20px;margin-bottom:16px;line-height:1.8;">
+        ${h.workflow.map(s => `<li style="margin-bottom:4px;">${s}</li>`).join('')}
+      </ol>
+      <div class="section-title">Reading the Results</div>
+      <dl style="margin-bottom:16px;">
+        ${h.results.map(r => `<div style="margin-bottom:8px;"><dt style="color:var(--accent);font-weight:600;font-size:12px;">${r.term}</dt><dd style="color:#cbd5e1;font-size:12px;margin-left:12px;">${r.desc}</dd></div>`).join('')}
+      </dl>
+      <div style="background:rgba(96,165,250,0.08);border:1px solid rgba(96,165,250,0.2);border-radius:6px;padding:10px 12px;">
+        <div style="font-size:11px;font-weight:600;color:var(--accent);margin-bottom:6px;">\ud83d\udca1 Tips</div>
+        <ul style="padding-left:16px;margin:0;line-height:1.7;">
+          ${h.tips.map(t => `<li style="font-size:12px;color:#94a3b8;">${t}</li>`).join('')}
+        </ul>
+      </div>
+    </div>`;
+  }
+
+  // ============================================================
+  // TAB 1: PRODUCTION CHAIN SIMULATOR
+  // ============================================================
+  BT.TabProduction = (function() {
+    let charts = [];
+
+    const PRESETS = {
+      wood: { label: 'Basic Wood Chain', buildings: { woodcutter_hut: 1, forester_hut: 1, sawmill: 1 } },
+      bread: { label: 'Bread Chain', buildings: { farm: 1, windmill: 1, bakery: 1, coal_mine: 1 } },
+      iron: { label: 'Iron+Weapons Chain', buildings: { iron_mine: 1, coal_mine: 1, iron_smelter: 1, blacksmith_armory: 1 } },
+      full: { label: 'Full Economy', buildings: {} }
+    };
+
+    function init(container, data) {
+      // Populate full economy preset
+      for (const [id, b] of Object.entries(data.buildings)) {
+        if (b.production && b.tier <= 3 && b.category !== 'military') {
+          PRESETS.full.buildings[id] = 1;
+        }
+      }
+
+      const cats = buildCategoryMap(data.buildings);
+      let buildingPickerHTML = '';
+      for (const [cat, buildings] of Object.entries(cats)) {
+        const prodBuildings = buildings.filter(b => b.production);
+        if (prodBuildings.length === 0) continue;
+        buildingPickerHTML += `<div class="mb-3">
+          <div class="section-title">${cat}</div>
+          ${prodBuildings.map(b => `<div class="flex items-center gap-2 mb-1">
+            <label class="cb flex-1"><input type="checkbox" data-building="${b.id}" class="prod-building-cb"> ${b.label}</label>
+            <input type="number" min="0" max="10" value="1" step="1" class="input-num w-12" data-building-count="${b.id}">
+          </div>`).join('')}
+        </div>`;
+      }
+
+      // Starting resources
+      const allRes = Object.keys(data.resources);
+      let startResHTML = allRes.map(r => `<div class="flex items-center gap-1 mb-1">
+        <span class="w-24 text-xs truncate">${data.resources[r].label}</span>
+        <input type="number" min="0" max="999" value="0" step="1" class="input-num w-16" data-start-res="${r}">
+      </div>`).join('');
+
+      container.innerHTML = `<div class="flex h-full tab-layout" style="flex-direction:row;">
+        <div class="tab-sidebar scrollable p-3 border-r" style="width:320px; border-color:var(--grid); flex-shrink:0;">
+          <div class="section-title">Presets</div>
+          <div class="flex flex-wrap gap-1 mb-3">
+            ${Object.entries(PRESETS).map(([k, v]) => `<button class="btn btn-sm btn-outline preset-btn" data-preset="${k}">${v.label}</button>`).join('')}
+          </div>
+          <div class="section-title">Buildings</div>
+          <div class="mb-3">${buildingPickerHTML}</div>
+          <div class="section-title">Starting Resources</div>
+          <div class="card mb-3 scrollable" style="max-height:200px;">${startResHTML}</div>
+          ${makeRangeRow('Duration (min)', 'prodDuration', 5, 60, 1, 30, ' min')}
+          <label class="cb mb-3"><input type="checkbox" id="prodInfiniteRaw"> Infinite raw resources</label>
+          <button class="btn w-full mb-2" id="prodRunBtn">Run Simulation</button>
+          <button class="btn btn-sm btn-outline w-full" id="prodExportBtn">Export Results</button>
+        </div>
+        <div class="tab-main flex-1 scrollable p-4">
+          <div id="prodResults" class="space-y-4">
+            ${renderHelpCard('production')}
+          </div>
+        </div>
+      </div>`;
+
+      // Preset buttons
+      container.querySelectorAll('.preset-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          container.querySelectorAll('.prod-building-cb').forEach(cb => { cb.checked = false; });
+          const preset = PRESETS[btn.dataset.preset];
+          for (const [bId, count] of Object.entries(preset.buildings)) {
+            const cb = container.querySelector(`[data-building="${bId}"]`);
+            const countEl = container.querySelector(`[data-building-count="${bId}"]`);
+            if (cb) cb.checked = true;
+            if (countEl) countEl.value = count;
+          }
+        });
+      });
+
+      wireRange('prodDuration', ' min');
+
+      document.getElementById('prodRunBtn').addEventListener('click', () => runSimulation(data));
+      document.getElementById('prodExportBtn').addEventListener('click', () => {
+        exportJSON({ tab: 'production', config: getConfig(data), results: lastResults }, 'production_results.json');
+      });
+    }
+
+    let lastResults = null;
+
+    function getConfig(data) {
+      const buildings = {};
+      document.querySelectorAll('.prod-building-cb:checked').forEach(cb => {
+        const id = cb.dataset.building;
+        const count = parseInt(document.querySelector(`[data-building-count="${id}"]`)?.value || '1');
+        buildings[id] = count;
+      });
+      const startRes = {};
+      document.querySelectorAll('[data-start-res]').forEach(el => {
+        const v = parseInt(el.value);
+        if (v > 0) startRes[el.dataset.startRes] = v;
+      });
+      const duration = parseInt(document.getElementById('prodDuration')?.value || '30') * 60;
+      const infiniteRaw = document.getElementById('prodInfiniteRaw')?.checked || false;
+      return { buildings, startRes, duration, infiniteRaw };
+    }
+
+    function runSimulation(data) {
+      const config = getConfig(data);
+      if (Object.keys(config.buildings).length === 0) return;
+
+      const rawResources = new Set();
+      for (const [rId, r] of Object.entries(data.resources)) {
+        if (r.category === 'raw') rawResources.add(rId);
+      }
+
+      const result = BT.SimEngine.simulate({
+        duration: config.duration,
+        sampleInterval: Math.max(1, Math.floor(config.duration / 200)),
+        init() {
+          const stocks = {};
+          for (const r of Object.keys(data.resources)) stocks[r] = 0;
+          for (const [r, a] of Object.entries(config.startRes)) stocks[r] = a;
+          // Building instances with production progress
+          const instances = [];
+          for (const [bId, count] of Object.entries(config.buildings)) {
+            const bDef = data.buildings[bId];
+            if (!bDef || !bDef.production) continue;
+            for (let i = 0; i < count; i++) {
+              instances.push({ id: bId, def: bDef, progress: 0, producing: false, produced: 0, waited: 0 });
+            }
+          }
+          return { stocks, instances, produced: {}, consumed: {}, bottlenecks: {} };
+        },
+        step(state, t) {
+          for (const inst of state.instances) {
+            const prod = inst.def.production;
+            if (!prod || prod.outputs.length === 0) continue;
+
+            // Check inputs
+            let canProduce = true;
+            for (const inp of prod.inputs) {
+              if (config.infiniteRaw && rawResources.has(inp.resource)) continue;
+              if ((state.stocks[inp.resource] || 0) < inp.amount) {
+                canProduce = false;
+                if (!state.bottlenecks[inp.resource]) state.bottlenecks[inp.resource] = 0;
+                state.bottlenecks[inp.resource]++;
+                break;
+              }
+            }
+
+            if (!canProduce) {
+              inst.waited++;
+              continue;
+            }
+
+            if (!inst.producing) {
+              // Consume inputs
+              for (const inp of prod.inputs) {
+                if (config.infiniteRaw && rawResources.has(inp.resource)) continue;
+                state.stocks[inp.resource] -= inp.amount;
+                if (!state.consumed[inp.resource]) state.consumed[inp.resource] = 0;
+                state.consumed[inp.resource] += inp.amount;
+              }
+              inst.producing = true;
+              inst.progress = 0;
+            }
+
+            inst.progress++;
+            if (inst.progress >= prod.productionTime) {
+              for (const out of prod.outputs) {
+                state.stocks[out.resource] = (state.stocks[out.resource] || 0) + out.amount;
+                if (!state.produced[out.resource]) state.produced[out.resource] = 0;
+                state.produced[out.resource] += out.amount;
+              }
+              inst.produced++;
+              inst.producing = false;
+              inst.progress = 0;
+            }
+          }
+        },
+        snapshot(state, t) {
+          return { t, stocks: { ...state.stocks } };
+        }
+      });
+
+      lastResults = result;
+      renderResults(data, config, result);
+    }
+
+    function renderResults(data, config, result) {
+      const el = document.getElementById('prodResults');
+      charts.forEach(c => BT.Charts.destroy(c));
+      charts = [];
+
+      // Determine active resources
+      const activeRes = new Set();
+      for (const snap of result.history) {
+        for (const [r, v] of Object.entries(snap.stocks)) {
+          if (v > 0) activeRes.add(r);
+        }
+      }
+      for (const r of Object.keys(result.finalState.produced)) activeRes.add(r);
+      for (const r of Object.keys(result.finalState.consumed)) activeRes.add(r);
+
+      const labels = result.history.map(s => fmtTime(s.t));
+      const resArr = [...activeRes].sort();
+
+      // Summary cards
+      const totalProduced = Object.values(result.finalState.produced).reduce((a, b) => a + b, 0);
+      const totalConsumed = Object.values(result.finalState.consumed).reduce((a, b) => a + b, 0);
+      const durationMin = config.duration / 60;
+
+      // Throughput
+      const prodRates = {};
+      const consRates = {};
+      for (const r of resArr) {
+        prodRates[r] = ((result.finalState.produced[r] || 0) / durationMin);
+        consRates[r] = ((result.finalState.consumed[r] || 0) / durationMin);
+      }
+
+      // Bottleneck sorting
+      const bottleneckArr = Object.entries(result.finalState.bottlenecks).sort((a, b) => b[1] - a[1]).slice(0, 10);
+
+      el.innerHTML = `
+        <div class="flex flex-wrap gap-3 mb-4">
+          <div class="card summary-card"><div class="val tabular" style="color:var(--success)">${totalProduced}</div><div class="lbl">Total Produced</div></div>
+          <div class="card summary-card"><div class="val tabular" style="color:var(--error)">${totalConsumed}</div><div class="lbl">Total Consumed</div></div>
+          <div class="card summary-card"><div class="val tabular" style="color:var(--accent)">${fmt(totalProduced / durationMin, 1)}</div><div class="lbl">Items/min</div></div>
+          <div class="card summary-card"><div class="val tabular" style="color:var(--warning)">${bottleneckArr.length}</div><div class="lbl">Bottlenecks</div></div>
+        </div>
+        <div class="card mb-4" style="height:320px;"><canvas id="prodLineChart"></canvas></div>
+        <div class="card mb-4" style="height:280px;"><canvas id="prodBarChart"></canvas></div>
+        ${bottleneckArr.length > 0 ? `<div class="card mb-4">
+          <div class="section-title">Bottlenecks (ticks waiting for input)</div>
+          <table class="data-table">
+            <tr><th>Resource</th><th>Wait Ticks</th><th>Severity</th></tr>
+            ${bottleneckArr.map(([r, count]) => {
+              const severity = count > config.duration * 0.5 ? 'Critical' : count > config.duration * 0.2 ? 'High' : 'Low';
+              const color = severity === 'Critical' ? 'var(--error)' : severity === 'High' ? 'var(--warning)' : 'var(--success)';
+              return `<tr><td>${data.resources[r]?.label || r}</td><td class="tabular">${count}</td><td style="color:${color}">${severity}</td></tr>`;
+            }).join('')}
+          </table>
+        </div>` : ''}
+      `;
+
+      // Line chart
+      const lineDatasets = resArr.slice(0, 12).map((r, i) => ({
+        label: data.resources[r]?.label || r,
+        data: result.history.map(s => s.stocks[r] || 0),
+        color: PALETTE[i % PALETTE.length]
+      }));
+      BT.Charts.createLineChart('prodLineChart', labels, lineDatasets, { title: 'Resource Stocks Over Time', yTitle: 'Amount' });
+      charts.push('prodLineChart');
+
+      // Dual bar
+      const barRes = resArr.filter(r => (prodRates[r] || 0) > 0 || (consRates[r] || 0) > 0);
+      BT.Charts.createDualBar('prodBarChart',
+        barRes.map(r => data.resources[r]?.label || r),
+        barRes.map(r => Number(fmt(prodRates[r] || 0))),
+        barRes.map(r => Number(fmt(consRates[r] || 0))),
+        { title: 'Throughput (items/min)', horizontal: barRes.length > 8 }
+      );
+      charts.push('prodBarChart');
+    }
+
+    function activate() {}
+
+    return { init, activate };
+  })();
+
+  // ============================================================
+  // TAB 2: COMBAT SIMULATOR
+  // ============================================================
+  BT.TabCombat = (function() {
+    let charts = [];
+
+    const MILITARY_TYPES = ['knight', 'archer', 'cavalry', 'siege_operator', 'scout'];
+
+    function calcStrength(unit, rank, goldBars, morale, isCharging) {
+      const base = unit.combatStrength;
+      const goldBonus = 1 + Math.min(goldBars * 0.05, 0.5);
+      const moraleMultiplier = 0.85 + (morale - 0.5) * 0.8;
+      const charge = (isCharging && unit.chargeMultiplier > 0) ? unit.chargeMultiplier : 1;
+      return rank * base * goldBonus * moraleMultiplier * charge;
+    }
+
+    function runDuels(attacker, aRank, aGold, aMorale, defender, dRank, dGold, dMorale, n) {
+      const aStr = calcStrength(attacker, aRank, aGold, aMorale, true);
+      const dStr = calcStrength(defender, dRank, dGold, dMorale, false);
+      const winProb = aStr / (aStr + dStr);
+      let wins = 0;
+      for (let i = 0; i < n; i++) {
+        if (Math.random() < winProb) wins++;
+      }
+      return { attackerStr: aStr, defenderStr: dStr, winProb, wins, total: n, winPct: wins / n };
+    }
+
+    function init(container, data) {
+      const unitOptions = MILITARY_TYPES.map(id => `<option value="${id}">${data.units[id]?.label || id}</option>`).join('');
+
+      container.innerHTML = `<div class="flex h-full tab-layout" style="flex-direction:row;">
+        <div class="tab-sidebar scrollable p-3 border-r" style="width:320px; border-color:var(--grid); flex-shrink:0;">
+          <div class="section-title">Single Duel</div>
+          <div class="card mb-3">
+            <div class="text-xs font-semibold mb-2" style="color:var(--accent)">Attacker</div>
+            <div class="flex items-center gap-2 mb-1"><span class="w-16 text-xs">Type</span><select class="sel flex-1" id="combatAtkType">${unitOptions}</select></div>
+            <div class="flex items-center gap-2 mb-1"><span class="w-16 text-xs">Rank</span><input type="number" min="1" max="5" value="1" class="input-num" id="combatAtkRank"></div>
+            <div class="flex items-center gap-2 mb-1"><span class="w-16 text-xs">Gold</span><input type="number" min="0" max="10" value="0" class="input-num" id="combatAtkGold"></div>
+            ${makeRangeRow('Morale', 'combatAtkMorale', 0, 1, 0.05, 0.7)}
+          </div>
+          <div class="card mb-3">
+            <div class="text-xs font-semibold mb-2" style="color:var(--error)">Defender</div>
+            <div class="flex items-center gap-2 mb-1"><span class="w-16 text-xs">Type</span><select class="sel flex-1" id="combatDefType">${unitOptions}</select></div>
+            <div class="flex items-center gap-2 mb-1"><span class="w-16 text-xs">Rank</span><input type="number" min="1" max="5" value="1" class="input-num" id="combatDefRank"></div>
+            <div class="flex items-center gap-2 mb-1"><span class="w-16 text-xs">Gold</span><input type="number" min="0" max="10" value="0" class="input-num" id="combatDefGold"></div>
+            ${makeRangeRow('Morale', 'combatDefMorale', 0, 1, 0.05, 0.7)}
+          </div>
+          <button class="btn w-full mb-3" id="combatDuelBtn">Run 10,000 Duels</button>
+          <div class="section-title">Matrix Mode</div>
+          <div class="card mb-3">
+            <div class="flex items-center gap-2 mb-1"><span class="w-16 text-xs">Rank</span><input type="number" min="1" max="5" value="1" class="input-num" id="combatMatrixRank"></div>
+            <div class="flex items-center gap-2 mb-1"><span class="w-16 text-xs">Gold</span><input type="number" min="0" max="10" value="0" class="input-num" id="combatMatrixGold"></div>
+            ${makeRangeRow('Morale', 'combatMatrixMorale', 0, 1, 0.05, 0.7)}
+          </div>
+          <button class="btn btn-outline w-full mb-2" id="combatMatrixBtn">Generate Matrix</button>
+          <button class="btn btn-sm btn-outline w-full" id="combatExportBtn">Export Results</button>
+        </div>
+        <div class="tab-main flex-1 scrollable p-4">
+          <div id="combatResults" class="space-y-4">
+            ${renderHelpCard('combat')}
+          </div>
+        </div>
+      </div>`;
+
+      wireRange('combatAtkMorale');
+      wireRange('combatDefMorale');
+      wireRange('combatMatrixMorale');
+
+      document.getElementById('combatDuelBtn').addEventListener('click', () => runDuelSim(data));
+      document.getElementById('combatMatrixBtn').addEventListener('click', () => runMatrix(data));
+      document.getElementById('combatExportBtn').addEventListener('click', () => {
+        exportJSON({ tab: 'combat', results: lastResult }, 'combat_results.json');
+      });
+    }
+
+    let lastResult = null;
+
+    function runDuelSim(data) {
+      const atkType = document.getElementById('combatAtkType').value;
+      const defType = document.getElementById('combatDefType').value;
+      const aRank = parseInt(document.getElementById('combatAtkRank').value);
+      const dRank = parseInt(document.getElementById('combatDefRank').value);
+      const aGold = parseInt(document.getElementById('combatAtkGold').value);
+      const dGold = parseInt(document.getElementById('combatDefGold').value);
+      const aMorale = parseFloat(document.getElementById('combatAtkMorale').value);
+      const dMorale = parseFloat(document.getElementById('combatDefMorale').value);
+
+      const attacker = data.units[atkType];
+      const defender = data.units[defType];
+      const result = runDuels(attacker, aRank, aGold, aMorale, defender, dRank, dGold, dMorale, 10000);
+      lastResult = { type: 'duel', ...result, atkType, defType };
+
+      const el = document.getElementById('combatResults');
+      charts.forEach(c => BT.Charts.destroy(c));
+      charts = [];
+
+      const atkColor = result.winPct >= 0.5 ? 'var(--success)' : 'var(--error)';
+      const defColor = result.winPct < 0.5 ? 'var(--success)' : 'var(--error)';
+
+      el.innerHTML = `
+        <div class="flex flex-wrap gap-3 mb-4">
+          <div class="card summary-card"><div class="val tabular" style="color:${atkColor}">${(result.winPct * 100).toFixed(1)}%</div><div class="lbl">Attacker Win Rate</div></div>
+          <div class="card summary-card"><div class="val tabular" style="color:${defColor}">${((1 - result.winPct) * 100).toFixed(1)}%</div><div class="lbl">Defender Win Rate</div></div>
+          <div class="card summary-card"><div class="val tabular">${fmt(result.attackerStr)}</div><div class="lbl">Attacker Strength</div></div>
+          <div class="card summary-card"><div class="val tabular">${fmt(result.defenderStr)}</div><div class="lbl">Defender Strength</div></div>
+        </div>
+        <div class="card mb-4">
+          <div class="section-title">Strength Breakdown</div>
+          <table class="data-table">
+            <tr><th></th><th>Attacker (${attacker.label})</th><th>Defender (${defender.label})</th></tr>
+            <tr><td>Base Strength</td><td class="tabular">${attacker.combatStrength}</td><td class="tabular">${defender.combatStrength}</td></tr>
+            <tr><td>Rank</td><td class="tabular">${aRank}</td><td class="tabular">${dRank}</td></tr>
+            <tr><td>Gold Bonus</td><td class="tabular">+${pct(Math.min(aGold * 0.05, 0.5))}</td><td class="tabular">+${pct(Math.min(dGold * 0.05, 0.5))}</td></tr>
+            <tr><td>Morale Mult.</td><td class="tabular">x${fmt(0.85 + (aMorale - 0.5) * 0.8)}</td><td class="tabular">x${fmt(0.85 + (dMorale - 0.5) * 0.8)}</td></tr>
+            <tr><td>Charge Bonus</td><td class="tabular">${attacker.chargeMultiplier > 0 ? 'x' + attacker.chargeMultiplier : '-'}</td><td class="tabular">-</td></tr>
+            <tr style="font-weight:600"><td>Effective</td><td class="tabular" style="color:var(--accent)">${fmt(result.attackerStr)}</td><td class="tabular" style="color:var(--accent)">${fmt(result.defenderStr)}</td></tr>
+            <tr><td>Theoretical Win%</td><td class="tabular">${pct(result.winProb)}</td><td class="tabular">${pct(1 - result.winProb)}</td></tr>
+            <tr><td>Simulated Win%</td><td class="tabular">${pct(result.winPct)}</td><td class="tabular">${pct(1 - result.winPct)}</td></tr>
+          </table>
+        </div>
+        <div class="card mb-4" style="height:220px;"><canvas id="combatBarChart"></canvas></div>
+      `;
+
+      BT.Charts.createBarChart('combatBarChart',
+        ['Attacker Wins', 'Defender Wins'],
+        [{ label: 'Duels', data: [result.wins, result.total - result.wins], colors: ['#34d399', '#f87171'] }],
+        { title: `${attacker.label} vs ${defender.label} — 10,000 Duels` }
+      );
+      charts.push('combatBarChart');
+    }
+
+    function runMatrix(data) {
+      const rank = parseInt(document.getElementById('combatMatrixRank').value);
+      const gold = parseInt(document.getElementById('combatMatrixGold').value);
+      const morale = parseFloat(document.getElementById('combatMatrixMorale').value);
+
+      const matrix = [];
+      for (const atkId of MILITARY_TYPES) {
+        const row = [];
+        for (const defId of MILITARY_TYPES) {
+          const atk = data.units[atkId];
+          const def = data.units[defId];
+          const aStr = calcStrength(atk, rank, gold, morale, true);
+          const dStr = calcStrength(def, rank, gold, morale, false);
+          row.push(aStr / (aStr + dStr));
+        }
+        matrix.push(row);
+      }
+
+      lastResult = { type: 'matrix', matrix, rank, gold, morale };
+
+      const el = document.getElementById('combatResults');
+      charts.forEach(c => BT.Charts.destroy(c));
+      charts = [];
+
+      function heatColor(v) {
+        if (v >= 0.7) return '#22c55e';
+        if (v >= 0.55) return '#4ade80';
+        if (v >= 0.45) return '#fbbf24';
+        if (v >= 0.3) return '#fb923c';
+        return '#ef4444';
+      }
+
+      el.innerHTML = `
+        <div class="card mb-4">
+          <div class="section-title">Matchup Matrix (Rank ${rank}, ${gold} Gold, ${pct(morale)} Morale)</div>
+          <div class="text-xs mb-2" style="color:#64748b">Attacker win probability — rows attack, columns defend. Charge bonus applies to attacker only.</div>
+          <div class="overflow-x-auto">
+            <table class="data-table">
+              <tr><th style="width:100px">ATK \ DEF</th>${MILITARY_TYPES.map(id => `<th class="text-center">${data.units[id].label}</th>`).join('')}</tr>
+              ${MILITARY_TYPES.map((atkId, i) => `<tr>
+                <td class="font-semibold">${data.units[atkId].label}</td>
+                ${MILITARY_TYPES.map((defId, j) => {
+                  const v = matrix[i][j];
+                  return `<td class="text-center"><span class="heatmap-cell inline-flex" style="background:${heatColor(v)}20; color:${heatColor(v)}">${pct(v)}</span></td>`;
+                }).join('')}
+              </tr>`).join('')}
+            </table>
+          </div>
+        </div>
+        <div class="card text-xs" style="color:#64748b;">
+          <strong>Legend:</strong>
+          <span style="color:#22c55e">70%+</span> Strong advantage |
+          <span style="color:#4ade80">55-70%</span> Slight advantage |
+          <span style="color:#fbbf24">45-55%</span> Even |
+          <span style="color:#fb923c">30-45%</span> Disadvantage |
+          <span style="color:#ef4444">&lt;30%</span> Strong disadvantage
+        </div>
+      `;
+    }
+
+    function activate() {}
+
+    return { init, activate };
+  })();
+
+  // ============================================================
+  // TAB 3: ECONOMY SINK/SOURCE VALIDATOR
+  // ============================================================
+  BT.TabEconomy = (function() {
+    let charts = [];
+
+    function init(container, data) {
+      const cats = buildCategoryMap(data.buildings);
+      let buildingPickerHTML = '';
+      for (const [cat, buildings] of Object.entries(cats)) {
+        const prodBuildings = buildings.filter(b => b.production);
+        if (prodBuildings.length === 0) continue;
+        buildingPickerHTML += `<div class="mb-2">
+          <div class="text-xs font-semibold mb-1" style="color:#94a3b8">${cat}</div>
+          ${prodBuildings.map(b => `<div class="flex items-center gap-2 mb-1">
+            <span class="flex-1 text-xs truncate">${b.label}</span>
+            <input type="number" min="0" max="10" value="0" step="1" class="input-num w-12" data-econ-building="${b.id}">
+          </div>`).join('')}
+        </div>`;
+      }
+
+      container.innerHTML = `<div class="flex h-full tab-layout" style="flex-direction:row;">
+        <div class="tab-sidebar scrollable p-3 border-r" style="width:320px; border-color:var(--grid); flex-shrink:0;">
+          ${makeRangeRow('Population', 'econPop', 5, 100, 1, 20)}
+          ${makeRangeRow('Duration (min)', 'econDuration', 5, 60, 1, 30, ' min')}
+          <div class="flex items-center gap-2 mb-2"><span class="w-28 text-xs">Difficulty</span><select class="sel flex-1" id="econDifficulty"><option value="easy">Easy</option><option value="normal" selected>Normal</option><option value="hard">Hard</option></select></div>
+          <label class="cb mb-1"><input type="checkbox" id="econHunger" checked> Include hunger consumption</label>
+          <label class="cb mb-3"><input type="checkbox" id="econConstruction"> Include construction costs</label>
+          <div class="section-title">Building Mix</div>
+          <div class="card mb-3 scrollable" style="max-height:300px;">${buildingPickerHTML}</div>
+          <button class="btn btn-sm btn-outline mb-1" id="econPresetBalanced">Load Balanced Mix</button>
+          <button class="btn w-full mb-2 mt-2" id="econRunBtn">Run Simulation</button>
+          <button class="btn btn-sm btn-outline w-full" id="econExportBtn">Export Results</button>
+        </div>
+        <div class="tab-main flex-1 scrollable p-4">
+          <div id="econResults" class="space-y-4">
+            ${renderHelpCard('economy')}
+          </div>
+        </div>
+      </div>`;
+
+      wireRange('econPop');
+      wireRange('econDuration', ' min');
+
+      // Balanced preset
+      document.getElementById('econPresetBalanced').addEventListener('click', () => {
+        const balanced = { woodcutter_hut: 2, forester_hut: 1, sawmill: 1, quarry: 1, farm: 2, windmill: 1, bakery: 1, coal_mine: 1, fisherman_hut: 2, iron_mine: 1, iron_smelter: 1 };
+        container.querySelectorAll('[data-econ-building]').forEach(el => { el.value = balanced[el.dataset.econBuilding] || 0; });
+      });
+
+      document.getElementById('econRunBtn').addEventListener('click', () => runEconSim(data));
+      document.getElementById('econExportBtn').addEventListener('click', () => {
+        exportJSON({ tab: 'economy', results: lastResult }, 'economy_results.json');
+      });
+    }
+
+    let lastResult = null;
+
+    function runEconSim(data) {
+      const pop = parseInt(document.getElementById('econPop').value);
+      const duration = parseInt(document.getElementById('econDuration').value) * 60;
+      const diff = document.getElementById('econDifficulty').value;
+      const includeHunger = document.getElementById('econHunger').checked;
+      const includeConstruction = document.getElementById('econConstruction').checked;
+
+      const buildings = {};
+      document.querySelectorAll('[data-econ-building]').forEach(el => {
+        const v = parseInt(el.value);
+        if (v > 0) buildings[el.dataset.econBuilding] = v;
+      });
+
+      const startRes = {};
+      const sr = data.startingResources[diff] || data.startingResources.normal;
+      for (const item of sr) startRes[item.resource] = item.amount;
+
+      const foods = getFoodResources(data);
+      const foodIds = Object.keys(foods);
+      const hungerDecay = data.constants.hunger.decayRate;
+      const feedInterval = 5; // every 5 seconds
+
+      const result = BT.SimEngine.simulate({
+        duration,
+        sampleInterval: Math.max(1, Math.floor(duration / 200)),
+        init() {
+          const stocks = {};
+          for (const r of Object.keys(data.resources)) stocks[r] = 0;
+          for (const [r, a] of Object.entries(startRes)) stocks[r] = a;
+
+          // Subtract construction costs
+          if (includeConstruction) {
+            for (const [bId, count] of Object.entries(buildings)) {
+              const bDef = data.buildings[bId];
+              if (!bDef) continue;
+              for (let i = 0; i < count; i++) {
+                for (const c of bDef.cost) {
+                  stocks[c.resource] = (stocks[c.resource] || 0) - c.amount;
+                }
+              }
+            }
+          }
+
+          const instances = [];
+          for (const [bId, count] of Object.entries(buildings)) {
+            const bDef = data.buildings[bId];
+            if (!bDef || !bDef.production) continue;
+            for (let i = 0; i < count; i++) {
+              instances.push({ id: bId, def: bDef, progress: 0, producing: false });
+            }
+          }
+
+          return { stocks, instances, produced: {}, consumed: {}, satiation: 1.0, zeroEvents: {} };
+        },
+        step(state, t) {
+          // Production
+          for (const inst of state.instances) {
+            const prod = inst.def.production;
+            if (!prod || prod.outputs.length === 0) continue;
+            let canProduce = true;
+            for (const inp of prod.inputs) {
+              if ((state.stocks[inp.resource] || 0) < inp.amount) { canProduce = false; break; }
+            }
+            if (!canProduce) continue;
+            if (!inst.producing) {
+              for (const inp of prod.inputs) {
+                state.stocks[inp.resource] -= inp.amount;
+                if (!state.consumed[inp.resource]) state.consumed[inp.resource] = 0;
+                state.consumed[inp.resource] += inp.amount;
+              }
+              inst.producing = true;
+              inst.progress = 0;
+            }
+            inst.progress++;
+            if (inst.progress >= prod.productionTime) {
+              for (const out of prod.outputs) {
+                state.stocks[out.resource] = (state.stocks[out.resource] || 0) + out.amount;
+                if (!state.produced[out.resource]) state.produced[out.resource] = 0;
+                state.produced[out.resource] += out.amount;
+              }
+              inst.producing = false;
+              inst.progress = 0;
+            }
+          }
+
+          // Hunger consumption
+          if (includeHunger && t > 0 && t % feedInterval === 0) {
+            const needed = pop * hungerDecay * feedInterval;
+            let remaining = needed;
+            for (const fId of foodIds) {
+              if (remaining <= 0) break;
+              const avail = state.stocks[fId] || 0;
+              if (avail <= 0) continue;
+              const consume = Math.min(avail, remaining / (foods[fId].satiationValue || 0.3));
+              state.stocks[fId] -= consume;
+              if (!state.consumed[fId]) state.consumed[fId] = 0;
+              state.consumed[fId] += consume;
+              remaining -= consume * (foods[fId].satiationValue || 0.3);
+            }
+          }
+
+          // Track zero-stock events
+          for (const r of Object.keys(state.stocks)) {
+            if (state.stocks[r] <= 0 && !state.zeroEvents[r]) {
+              state.zeroEvents[r] = t;
+            }
+          }
+        },
+        snapshot(state, t) {
+          return { t, stocks: { ...state.stocks } };
+        }
+      });
+
+      lastResult = result;
+      renderEconResults(data, duration, result);
+    }
+
+    function renderEconResults(data, duration, result) {
+      const el = document.getElementById('econResults');
+      charts.forEach(c => BT.Charts.destroy(c));
+      charts = [];
+
+      const activeRes = new Set();
+      for (const snap of result.history) {
+        for (const [r, v] of Object.entries(snap.stocks)) {
+          if (Math.abs(v) > 0.01) activeRes.add(r);
+        }
+      }
+      for (const r of Object.keys(result.finalState.produced)) activeRes.add(r);
+      for (const r of Object.keys(result.finalState.consumed)) activeRes.add(r);
+      const resArr = [...activeRes].sort();
+
+      const durationMin = duration / 60;
+      const labels = result.history.map(s => fmtTime(s.t));
+
+      // Net balance
+      const netBalance = {};
+      for (const r of resArr) {
+        netBalance[r] = ((result.finalState.produced[r] || 0) - (result.finalState.consumed[r] || 0)) / durationMin;
+      }
+
+      const surplusRes = resArr.filter(r => netBalance[r] > 0.01);
+      const deficitRes = resArr.filter(r => netBalance[r] < -0.01);
+
+      el.innerHTML = `
+        <div class="flex flex-wrap gap-3 mb-4">
+          <div class="card summary-card"><div class="val tabular" style="color:var(--success)">${surplusRes.length}</div><div class="lbl">Surplus Resources</div></div>
+          <div class="card summary-card"><div class="val tabular" style="color:var(--error)">${deficitRes.length}</div><div class="lbl">Deficit Resources</div></div>
+          <div class="card summary-card"><div class="val tabular" style="color:var(--warning)">${Object.keys(result.finalState.zeroEvents).length}</div><div class="lbl">Stockouts</div></div>
+        </div>
+        <div class="card mb-4" style="height:280px;"><canvas id="econNetBar"></canvas></div>
+        <div class="card mb-4" style="height:320px;"><canvas id="econLineChart"></canvas></div>
+        <div class="card mb-4">
+          <div class="section-title">Resource Balance Table</div>
+          <table class="data-table">
+            <tr><th>Resource</th><th>Produced</th><th>Consumed</th><th>Net/min</th><th>Final Stock</th><th>Status</th></tr>
+            ${resArr.map(r => {
+              const p = result.finalState.produced[r] || 0;
+              const c = result.finalState.consumed[r] || 0;
+              const net = netBalance[r];
+              const stock = result.finalState.stocks[r] || 0;
+              const status = net > 0.01 ? '<span style="color:var(--success)">Surplus</span>' : net < -0.01 ? '<span style="color:var(--error)">Deficit</span>' : '<span style="color:var(--warning)">Balanced</span>';
+              return `<tr><td>${data.resources[r]?.label || r}</td><td class="tabular">${p}</td><td class="tabular">${fmt(c)}</td><td class="tabular">${fmt(net)}</td><td class="tabular">${fmt(stock, 0)}</td><td>${status}</td></tr>`;
+            }).join('')}
+          </table>
+        </div>
+      `;
+
+      // Net balance bar chart
+      const barRes = resArr.filter(r => Math.abs(netBalance[r]) > 0.005);
+      BT.Charts.createBarChart('econNetBar',
+        barRes.map(r => data.resources[r]?.label || r),
+        [{ label: 'Net Balance/min', data: barRes.map(r => Number(fmt(netBalance[r]))), colors: barRes.map(r => netBalance[r] >= 0 ? '#34d399' : '#f87171') }],
+        { title: 'Net Balance per Minute', horizontal: barRes.length > 10 }
+      );
+      charts.push('econNetBar');
+
+      // Line chart
+      const lineRes = resArr.filter(r => {
+        const maxVal = Math.max(...result.history.map(s => Math.abs(s.stocks[r] || 0)));
+        return maxVal > 0.5;
+      }).slice(0, 12);
+      BT.Charts.createLineChart('econLineChart', labels,
+        lineRes.map((r, i) => ({
+          label: data.resources[r]?.label || r,
+          data: result.history.map(s => s.stocks[r] || 0),
+          color: PALETTE[i % PALETTE.length]
+        })),
+        { title: 'Resource Stocks Over Time', yTitle: 'Amount' }
+      );
+      charts.push('econLineChart');
+    }
+
+    function activate() {}
+
+    return { init, activate };
+  })();
+
+  // ============================================================
+  // TAB 4: HUNGER & FEEDING SIMULATOR
+  // ============================================================
+  BT.TabHunger = (function() {
+    let charts = [];
+
+    const FOOD_CHAINS = [
+      { id: 'fisherman_hut', label: 'Fisherman Hut', output: 'fish' },
+      { id: 'bakery', label: 'Bakery Chain (farm+windmill+bakery)', output: 'bread' },
+      { id: 'slaughterhouse', label: 'Pig Farm+Slaughterhouse', output: 'meat' },
+      { id: 'orchard', label: 'Orchard', output: 'fruit' },
+      { id: 'cheese_maker_building', label: 'Dairy+Cheese Maker', output: 'cheese' },
+      { id: 'butchery', label: 'Cattle Ranch+Butchery', output: 'meat' }
+    ];
+
+    function init(container, data) {
+      const foods = getFoodResources(data);
+      const foodIds = Object.keys(foods);
+
+      let foodBuildingsHTML = FOOD_CHAINS.map(fc => `<div class="flex items-center gap-2 mb-1">
+        <span class="flex-1 text-xs truncate" title="${fc.label}">${fc.label}</span>
+        <input type="number" min="0" max="10" value="0" step="1" class="input-num w-12" data-hunger-chain="${fc.id}">
+      </div>`).join('');
+
+      let startFoodHTML = foodIds.map(fId => `<div class="flex items-center gap-2 mb-1">
+        <span class="w-20 text-xs truncate">${foods[fId].label}</span>
+        <input type="number" min="0" max="100" value="10" step="1" class="input-num w-14" data-hunger-start="${fId}">
+      </div>`).join('');
+
+      container.innerHTML = `<div class="flex h-full tab-layout" style="flex-direction:row;">
+        <div class="tab-sidebar scrollable p-3 border-r" style="width:320px; border-color:var(--grid); flex-shrink:0;">
+          ${makeRangeRow('Population', 'hungerPop', 5, 100, 1, 20)}
+          ${makeRangeRow('Working %', 'hungerWorking', 0, 100, 5, 60, '%')}
+          ${makeRangeRow('Garrisoned %', 'hungerGarrisoned', 0, 100, 5, 10, '%')}
+          ${makeRangeRow('Duration (min)', 'hungerDuration', 5, 60, 1, 30, ' min')}
+          <div class="section-title mt-2">Food Buildings</div>
+          <div class="card mb-3">${foodBuildingsHTML}</div>
+          <div class="section-title">Starting Food Stocks</div>
+          <div class="card mb-3">${startFoodHTML}</div>
+          <button class="btn w-full mb-2" id="hungerRunBtn">Run Simulation</button>
+          <button class="btn btn-sm btn-outline w-full" id="hungerExportBtn">Export Results</button>
+        </div>
+        <div class="tab-main flex-1 scrollable p-4">
+          <div id="hungerResults" class="space-y-4">
+            ${renderHelpCard('hunger')}
+          </div>
+        </div>
+      </div>`;
+
+      wireRange('hungerPop');
+      wireRange('hungerWorking', '%');
+      wireRange('hungerGarrisoned', '%');
+      wireRange('hungerDuration', ' min');
+
+      document.getElementById('hungerRunBtn').addEventListener('click', () => runHungerSim(data));
+      document.getElementById('hungerExportBtn').addEventListener('click', () => {
+        exportJSON({ tab: 'hunger', results: lastResult }, 'hunger_results.json');
+      });
+    }
+
+    let lastResult = null;
+
+    function getChainProductionTime(chainId, data) {
+      // Return the effective production time for each chain (bottleneck = slowest step)
+      const map = {
+        fisherman_hut: 18,
+        bakery: 25, // Farm is the bottleneck (25s grain -> 10s flour -> 14s bread)
+        slaughterhouse: 30, // Pig farm is bottleneck (30s)
+        orchard: 22,
+        cheese_maker_building: 22, // Dairy farm is bottleneck
+        butchery: 35 // Cattle ranch is bottleneck
+      };
+      const bDef = data.buildings[chainId];
+      if (bDef && bDef.production) return bDef.production.productionTime;
+      return map[chainId] || 20;
+    }
+
+    function getChainOutput(chainId) {
+      const map = {
+        fisherman_hut: 'fish',
+        bakery: 'bread',
+        slaughterhouse: 'meat',
+        orchard: 'fruit',
+        cheese_maker_building: 'cheese',
+        butchery: 'meat'
+      };
+      return map[chainId] || 'fish';
+    }
+
+    function runHungerSim(data) {
+      const pop = parseInt(document.getElementById('hungerPop').value);
+      const workingPct = parseInt(document.getElementById('hungerWorking').value) / 100;
+      const garrisonedPct = parseInt(document.getElementById('hungerGarrisoned').value) / 100;
+      const duration = parseInt(document.getElementById('hungerDuration').value) * 60;
+
+      const hungerConst = data.constants.hunger;
+      const foods = getFoodResources(data);
+      const foodIds = Object.keys(foods);
+      const feedInterval = 5;
+
+      // Food chains
+      const chains = [];
+      FOOD_CHAINS.forEach(fc => {
+        const count = parseInt(document.querySelector(`[data-hunger-chain="${fc.id}"]`)?.value || '0');
+        if (count > 0) {
+          const prodTime = getChainProductionTime(fc.id, data);
+          const output = getChainOutput(fc.id);
+          chains.push({ id: fc.id, count, prodTime, output, progress: 0 });
+        }
+      });
+
+      // Starting food
+      const startFood = {};
+      foodIds.forEach(fId => {
+        const el = document.querySelector(`[data-hunger-start="${fId}"]`);
+        startFood[fId] = parseInt(el?.value || '10');
+      });
+
+      // Effective decay rate
+      const idlePct = Math.max(0, 1 - workingPct - garrisonedPct);
+      const avgDecayMultiplier = idlePct * 1.0 + workingPct * hungerConst.workingMultiplier + garrisonedPct * hungerConst.garrisonedMultiplier;
+      const decayPerSecond = hungerConst.decayRate * avgDecayMultiplier;
+
+      const result = BT.SimEngine.simulate({
+        duration,
+        sampleInterval: Math.max(1, Math.floor(duration / 200)),
+        init() {
+          const foodStocks = {};
+          for (const fId of foodIds) foodStocks[fId] = startFood[fId] || 0;
+          const chainState = chains.map(c => ({ ...c, progressArr: new Array(c.count).fill(0) }));
+          return {
+            foodStocks,
+            chains: chainState,
+            satiation: 1.0,
+            fed: pop,
+            hungry: 0,
+            starving: 0,
+            totalFoodProduced: {},
+            totalFoodConsumed: {}
+          };
+        },
+        step(state, t) {
+          // Decay satiation
+          state.satiation = Math.max(0, state.satiation - decayPerSecond);
+
+          // Food production
+          for (const chain of state.chains) {
+            for (let i = 0; i < chain.count; i++) {
+              chain.progressArr[i]++;
+              if (chain.progressArr[i] >= chain.prodTime) {
+                state.foodStocks[chain.output] = (state.foodStocks[chain.output] || 0) + 1;
+                if (!state.totalFoodProduced[chain.output]) state.totalFoodProduced[chain.output] = 0;
+                state.totalFoodProduced[chain.output]++;
+                chain.progressArr[i] = 0;
+              }
+            }
+          }
+
+          // Feed units every feedInterval seconds
+          if (t > 0 && t % feedInterval === 0) {
+            const needed = pop * decayPerSecond * feedInterval;
+            let satiationGained = 0;
+            for (const fId of foodIds) {
+              if (satiationGained >= needed) break;
+              const avail = state.foodStocks[fId] || 0;
+              if (avail <= 0) continue;
+              const satVal = foods[fId].satiationValue;
+              const unitsNeeded = Math.ceil((needed - satiationGained) / satVal);
+              const consume = Math.min(avail, unitsNeeded);
+              state.foodStocks[fId] -= consume;
+              satiationGained += consume * satVal;
+              if (!state.totalFoodConsumed[fId]) state.totalFoodConsumed[fId] = 0;
+              state.totalFoodConsumed[fId] += consume;
+            }
+            state.satiation = Math.min(1.0, state.satiation + satiationGained / pop);
+          }
+
+          // Categorize population
+          if (state.satiation >= hungerConst.hungryThreshold) {
+            state.fed = pop; state.hungry = 0; state.starving = 0;
+          } else if (state.satiation >= hungerConst.starvingThreshold) {
+            const ratio = (state.satiation - hungerConst.starvingThreshold) / (hungerConst.hungryThreshold - hungerConst.starvingThreshold);
+            state.fed = Math.round(pop * ratio);
+            state.hungry = pop - state.fed;
+            state.starving = 0;
+          } else {
+            state.fed = 0;
+            const ratio = state.satiation / hungerConst.starvingThreshold;
+            state.hungry = Math.round(pop * ratio);
+            state.starving = pop - state.hungry;
+          }
+        },
+        snapshot(state, t) {
+          return {
+            t,
+            satiation: state.satiation,
+            fed: state.fed,
+            hungry: state.hungry,
+            starving: state.starving,
+            foodStocks: { ...state.foodStocks }
+          };
+        }
+      });
+
+      lastResult = result;
+      renderHungerResults(data, duration, pop, result);
+    }
+
+    function renderHungerResults(data, duration, pop, result) {
+      const el = document.getElementById('hungerResults');
+      charts.forEach(c => BT.Charts.destroy(c));
+      charts = [];
+
+      const foods = getFoodResources(data);
+      const foodIds = Object.keys(foods);
+      const labels = result.history.map(s => fmtTime(s.t));
+      const finalSat = result.finalState.satiation;
+      const durationMin = duration / 60;
+
+      const hungerConst = data.constants.hunger;
+      const speedPenalty = finalSat < hungerConst.starvingThreshold ? hungerConst.speedPenaltyStarving : finalSat < hungerConst.hungryThreshold ? hungerConst.speedPenaltyHungry : 0;
+      const prodPenalty = finalSat < hungerConst.starvingThreshold ? hungerConst.productionPenaltyStarving : finalSat < hungerConst.hungryThreshold ? hungerConst.productionPenaltyHungry : 0;
+
+      el.innerHTML = `
+        <div class="flex flex-wrap gap-3 mb-4">
+          <div class="card summary-card"><div class="val tabular" style="color:${finalSat >= 0.5 ? 'var(--success)' : finalSat >= 0.25 ? 'var(--warning)' : 'var(--error)'}">${pct(finalSat)}</div><div class="lbl">Final Satiation</div></div>
+          <div class="card summary-card"><div class="val tabular" style="color:var(--success)">${result.finalState.fed}</div><div class="lbl">Fed</div></div>
+          <div class="card summary-card"><div class="val tabular" style="color:var(--warning)">${result.finalState.hungry}</div><div class="lbl">Hungry</div></div>
+          <div class="card summary-card"><div class="val tabular" style="color:var(--error)">${result.finalState.starving}</div><div class="lbl">Starving</div></div>
+          <div class="card summary-card"><div class="val tabular">${speedPenalty > 0 ? '-' + pct(speedPenalty) : 'None'}</div><div class="lbl">Speed Penalty</div></div>
+          <div class="card summary-card"><div class="val tabular">${prodPenalty > 0 ? '-' + pct(prodPenalty) : 'None'}</div><div class="lbl">Production Penalty</div></div>
+        </div>
+        <div class="card mb-4" style="height:280px;"><canvas id="hungerSatiationChart"></canvas></div>
+        <div class="card mb-4" style="height:280px;"><canvas id="hungerStackedChart"></canvas></div>
+        <div class="card mb-4">
+          <div class="section-title">Food Consumption vs Production</div>
+          <table class="data-table">
+            <tr><th>Food</th><th>Produced</th><th>Consumed</th><th>Net</th><th>Final Stock</th></tr>
+            ${foodIds.map(fId => {
+              const p = result.finalState.totalFoodProduced[fId] || 0;
+              const c = result.finalState.totalFoodConsumed[fId] || 0;
+              const stock = result.finalState.foodStocks[fId] || 0;
+              return `<tr><td>${foods[fId].label}</td><td class="tabular">${p}</td><td class="tabular">${fmt(c, 0)}</td><td class="tabular" style="color:${p - c >= 0 ? 'var(--success)' : 'var(--error)'}">${fmt(p - c, 1)}</td><td class="tabular">${fmt(stock, 0)}</td></tr>`;
+            }).join('')}
+          </table>
+        </div>
+      `;
+
+      // Satiation line chart with thresholds
+      BT.Charts.createLineChart('hungerSatiationChart', labels, [
+        { label: 'Avg Satiation', data: result.history.map(s => s.satiation), color: '#60a5fa' },
+        { label: 'Hungry Threshold', data: result.history.map(() => data.constants.hunger.hungryThreshold), color: '#f59e0b', borderDash: [5, 3], borderWidth: 1 },
+        { label: 'Starving Threshold', data: result.history.map(() => data.constants.hunger.starvingThreshold), color: '#ef4444', borderDash: [5, 3], borderWidth: 1 }
+      ], { title: 'Average Satiation Over Time', yTitle: 'Satiation', yMax: 1.05 });
+      charts.push('hungerSatiationChart');
+
+      // Stacked area: fed/hungry/starving
+      BT.Charts.createStackedArea('hungerStackedChart', labels, [
+        { label: 'Fed', data: result.history.map(s => s.fed), color: '#22c55e' },
+        { label: 'Hungry', data: result.history.map(s => s.hungry), color: '#f59e0b' },
+        { label: 'Starving', data: result.history.map(s => s.starving), color: '#ef4444' }
+      ], { title: 'Population Status Over Time', yTitle: 'Units' });
+      charts.push('hungerStackedChart');
+    }
+
+    function activate() {}
+
+    return { init, activate };
+  })();
+
+  // ============================================================
+  // TAB 5: STARTING RESOURCES ANALYZER
+  // ============================================================
+  BT.TabStarting = (function() {
+    let charts = [];
+
+    function init(container, data) {
+      const difficulties = ['easy', 'normal', 'hard'];
+      const allResInStart = new Set();
+      for (const diff of difficulties) {
+        for (const item of data.startingResources[diff]) allResInStart.add(item.resource);
+      }
+      const resIds = [...allResInStart].sort();
+
+      let customTableHTML = resIds.map(r => `<div class="flex items-center gap-2 mb-1">
+        <span class="w-24 text-xs truncate">${data.resources[r]?.label || r}</span>
+        <input type="number" min="0" max="100" value="0" step="1" class="input-num w-14" data-custom-res="${r}">
+      </div>`).join('');
+
+      const buildOrders = {
+        aggressive: 'Aggressive (Hard AI)',
+        balanced: 'Balanced (Normal AI)',
+        economic: 'Economic (Easy AI)'
+      };
+
+      container.innerHTML = `<div class="flex h-full tab-layout" style="flex-direction:row;">
+        <div class="tab-sidebar scrollable p-3 border-r" style="width:320px; border-color:var(--grid); flex-shrink:0;">
+          <div class="section-title">Difficulty</div>
+          <div class="flex flex-wrap gap-2 mb-3">
+            ${difficulties.map(d => `<label class="cb"><input type="radio" name="startDiff" value="${d}" ${d === 'normal' ? 'checked' : ''} class="accent-blue-400"> ${d.charAt(0).toUpperCase() + d.slice(1)}</label>`).join('')}
+            <label class="cb"><input type="radio" name="startDiff" value="custom" class="accent-blue-400"> Custom</label>
+          </div>
+          <div id="customResPanel" class="card mb-3 scrollable hidden" style="max-height:200px;">
+            <div class="section-title">Custom Resources</div>
+            ${customTableHTML}
+          </div>
+          <div class="section-title">Build Order Preset</div>
+          <select class="sel w-full mb-3" id="startBuildOrder">
+            ${Object.entries(buildOrders).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}
+          </select>
+          <button class="btn w-full mb-2" id="startAnalyzeBtn">Analyze</button>
+          <button class="btn btn-sm btn-outline w-full" id="startExportBtn">Export Results</button>
+        </div>
+        <div class="tab-main flex-1 scrollable p-4">
+          <div id="startResults" class="space-y-4">
+            ${renderHelpCard('starting')}
+          </div>
+        </div>
+      </div>`;
+
+      // Show/hide custom panel
+      document.querySelectorAll('[name="startDiff"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+          document.getElementById('customResPanel').classList.toggle('hidden', radio.value !== 'custom' || !radio.checked);
+        });
+      });
+
+      document.getElementById('startAnalyzeBtn').addEventListener('click', () => analyze(data));
+      document.getElementById('startExportBtn').addEventListener('click', () => {
+        exportJSON({ tab: 'starting_resources', results: lastResult }, 'starting_resources.json');
+      });
+    }
+
+    let lastResult = null;
+
+    function getResMap(data, diff) {
+      const map = {};
+      if (diff === 'custom') {
+        document.querySelectorAll('[data-custom-res]').forEach(el => {
+          const v = parseInt(el.value);
+          if (v > 0) map[el.dataset.customRes] = v;
+        });
+      } else {
+        for (const item of (data.startingResources[diff] || [])) {
+          map[item.resource] = item.amount;
+        }
+      }
+      return map;
+    }
+
+    function analyze(data) {
+      const selectedDiff = document.querySelector('[name="startDiff"]:checked')?.value || 'normal';
+      const buildOrderKey = document.getElementById('startBuildOrder').value;
+      const diffMap = { aggressive: 'hard', balanced: 'normal', economic: 'easy' };
+      const buildDiff = diffMap[buildOrderKey] || 'normal';
+      const buildOrder = data.difficulty[buildDiff]?.buildOrder || [];
+
+      const difficulties = ['easy', 'normal', 'hard'];
+      const allRes = new Set();
+      const resMaps = {};
+      for (const d of difficulties) {
+        resMaps[d] = {};
+        for (const item of data.startingResources[d]) {
+          resMaps[d][item.resource] = item.amount;
+          allRes.add(item.resource);
+        }
+      }
+      if (selectedDiff === 'custom') {
+        resMaps['custom'] = getResMap(data, 'custom');
+        for (const r of Object.keys(resMaps['custom'])) allRes.add(r);
+      }
+
+      const resIds = [...allRes].sort();
+      const foods = getFoodResources(data);
+      const foodIds = Object.keys(foods);
+
+      // Derived metrics per difficulty
+      const metrics = {};
+      const diffs = selectedDiff === 'custom' ? [...difficulties, 'custom'] : difficulties;
+      for (const d of diffs) {
+        const rm = resMaps[d] || {};
+        let totalFood = 0;
+        let foodSatiation = 0;
+        for (const fId of foodIds) {
+          const amt = rm[fId] || 0;
+          totalFood += amt;
+          foodSatiation += amt * (foods[fId]?.satiationValue || 0);
+        }
+        // Food duration estimate: satiation / (pop * decayRate)
+        const pop = data.constants.population.castleCapacity;
+        const decayRate = data.constants.hunger.decayRate;
+        const foodDurationSec = foodSatiation / (pop * decayRate);
+
+        // Buildings affordable
+        let affordable = 0;
+        const tempRes = { ...rm };
+        for (const bId of buildOrder) {
+          const bDef = data.buildings[bId];
+          if (!bDef) continue;
+          let canAfford = true;
+          for (const c of bDef.cost) {
+            if ((tempRes[c.resource] || 0) < c.amount) { canAfford = false; break; }
+          }
+          if (canAfford) {
+            for (const c of bDef.cost) tempRes[c.resource] -= c.amount;
+            affordable++;
+          } else break;
+        }
+
+        metrics[d] = { totalFood, foodSatiation, foodDurationSec, affordable };
+      }
+
+      // Build order timeline per difficulty
+      const timelines = {};
+      for (const d of diffs) {
+        const rm = { ...(resMaps[d] || {}) };
+        const timeline = [];
+        let cumTime = 0;
+        for (const bId of buildOrder) {
+          const bDef = data.buildings[bId];
+          if (!bDef) continue;
+          let canAfford = true;
+          for (const c of bDef.cost) {
+            if ((rm[c.resource] || 0) < c.amount) { canAfford = false; break; }
+          }
+          if (!canAfford) break;
+          for (const c of bDef.cost) rm[c.resource] -= c.amount;
+          cumTime += bDef.constructionTime;
+          timeline.push({ building: bDef.label, time: cumTime, id: bId });
+        }
+        timelines[d] = timeline;
+      }
+
+      lastResult = { metrics, timelines };
+      renderStartResults(data, diffs, resIds, resMaps, metrics, timelines, buildOrder);
+    }
+
+    function renderStartResults(data, diffs, resIds, resMaps, metrics, timelines, buildOrder) {
+      const el = document.getElementById('startResults');
+      charts.forEach(c => BT.Charts.destroy(c));
+      charts = [];
+
+      const diffLabels = { easy: 'Easy', normal: 'Normal', hard: 'Hard', custom: 'Custom' };
+
+      el.innerHTML = `
+        <div class="card mb-4">
+          <div class="section-title">Side-by-Side Resource Comparison</div>
+          <div class="overflow-x-auto">
+            <table class="data-table">
+              <tr><th>Resource</th>${diffs.map(d => `<th>${diffLabels[d]}</th>`).join('')}</tr>
+              ${resIds.map(r => {
+                const vals = diffs.map(d => (resMaps[d] || {})[r] || 0);
+                const maxVal = Math.max(...vals);
+                const minVal = Math.min(...vals);
+                return `<tr><td>${data.resources[r]?.label || r}</td>${diffs.map((d, i) => {
+                  const v = vals[i];
+                  const color = v === maxVal && maxVal > 0 ? 'var(--success)' : v === minVal && minVal < maxVal ? 'var(--error)' : 'var(--text)';
+                  return `<td class="tabular" style="color:${color}">${v}</td>`;
+                }).join('')}</tr>`;
+              }).join('')}
+            </table>
+          </div>
+        </div>
+        <div class="card mb-4">
+          <div class="section-title">Derived Metrics</div>
+          <table class="data-table">
+            <tr><th>Metric</th>${diffs.map(d => `<th>${diffLabels[d]}</th>`).join('')}</tr>
+            <tr><td>Total Food Items</td>${diffs.map(d => `<td class="tabular">${metrics[d].totalFood}</td>`).join('')}</tr>
+            <tr><td>Total Satiation Value</td>${diffs.map(d => `<td class="tabular">${fmt(metrics[d].foodSatiation)}</td>`).join('')}</tr>
+            <tr><td>Est. Food Duration</td>${diffs.map(d => `<td class="tabular">${fmtTime(metrics[d].foodDurationSec)}</td>`).join('')}</tr>
+            <tr><td>Buildings Affordable</td>${diffs.map(d => `<td class="tabular font-semibold" style="color:var(--accent)">${metrics[d].affordable}</td>`).join('')}</tr>
+          </table>
+        </div>
+        <div class="card mb-4" style="height:280px;"><canvas id="startAffordableChart"></canvas></div>
+        <div class="card mb-4" style="height:320px;"><canvas id="startTimelineChart"></canvas></div>
+      `;
+
+      // Buildings affordable bar chart
+      BT.Charts.createBarChart('startAffordableChart',
+        diffs.map(d => diffLabels[d]),
+        [{ label: 'Buildings Affordable', data: diffs.map(d => metrics[d].affordable), colors: diffs.map((d, i) => PALETTE[i]) }],
+        { title: 'Buildings Affordable from Starting Resources' }
+      );
+      charts.push('startAffordableChart');
+
+      // Timeline chart
+      const maxTime = Math.max(...Object.values(timelines).map(tl => tl.length > 0 ? tl[tl.length - 1].time : 0));
+      const maxBuildings = Math.max(...Object.values(timelines).map(tl => tl.length));
+      if (maxBuildings > 0) {
+        const timeLabels = [];
+        for (let i = 0; i < maxBuildings; i++) {
+          const names = new Set();
+          for (const d of diffs) {
+            if (timelines[d][i]) names.add(timelines[d][i].building);
+          }
+          timeLabels.push([...names].join('/') || `#${i + 1}`);
+        }
+
+        BT.Charts.createLineChart('startTimelineChart', timeLabels,
+          diffs.map((d, i) => ({
+            label: diffLabels[d],
+            data: timelines[d].map(t => t.time),
+            color: PALETTE[i]
+          })),
+          { title: 'Build Order Timeline (Cumulative Construction Time)', yTitle: 'Seconds' }
+        );
+        charts.push('startTimelineChart');
+      }
+    }
+
+    function activate() {}
+
+    return { init, activate };
+  })();
+
+  // ============================================================
+  // TAB 6: MORALE & NIGHT EFFECTS
+  // ============================================================
+  BT.TabMorale = (function() {
+    let charts = [];
+
+    const PHASES = [
+      { name: 'Dawn', nightness: 0.3, duration: 180 },
+      { name: 'Morning', nightness: 0.0, duration: 180 },
+      { name: 'Midday', nightness: 0.0, duration: 180 },
+      { name: 'GoldenHour', nightness: 0.2, duration: 180 },
+      { name: 'Evening', nightness: 0.6, duration: 180 },
+      { name: 'Night', nightness: 1.0, duration: 180 }
+    ];
+
+    function calcMorale(uniqueDrinks, drinksServed, goldBars) {
+      const base = 0.50;
+      const variety = Math.min(0.20, uniqueDrinks * 0.10);
+      const volume = Math.min(0.20, drinksServed * 0.02);
+      const gold = Math.min(0.10, goldBars * 0.01);
+      return Math.min(1.0, base + variety + volume + gold);
+    }
+
+    function calcMultiplier(morale) {
+      return 0.85 + (morale - 0.50) * 0.8;
+    }
+
+    function init(container, data) {
+      container.innerHTML = `<div class="flex h-full tab-layout" style="flex-direction:row;">
+        <div class="tab-sidebar scrollable p-3 border-r" style="width:320px; border-color:var(--grid); flex-shrink:0;">
+          <div class="section-title">Morale</div>
+          <div class="card mb-3">
+            ${makeRangeRow('Unique Drinks', 'moraleUnique', 0, 2, 1, 1)}
+            ${makeRangeRow('Drinks Served', 'moraleDrinks', 0, 20, 1, 5)}
+            ${makeRangeRow('Gold Bars', 'moraleGold', 0, 10, 1, 0)}
+          </div>
+          <div class="section-title">Night Effects</div>
+          <div class="card mb-3">
+            ${makeRangeRow('Torch Towers', 'nightTorches', 0, 5, 1, 0)}
+            ${makeRangeRow('Affected Buildings', 'nightBuildings', 0, 20, 1, 10)}
+          </div>
+          <button class="btn w-full mb-2" id="moraleCalcBtn">Calculate</button>
+          <button class="btn btn-sm btn-outline w-full" id="moraleExportBtn">Export Results</button>
+        </div>
+        <div class="tab-main flex-1 scrollable p-4">
+          <div id="moraleResults" class="space-y-4">
+            ${renderHelpCard('morale')}
+          </div>
+        </div>
+      </div>`;
+
+      wireRange('moraleUnique');
+      wireRange('moraleDrinks');
+      wireRange('moraleGold');
+      wireRange('nightTorches');
+      wireRange('nightBuildings');
+
+      document.getElementById('moraleCalcBtn').addEventListener('click', () => calculate(data));
+      document.getElementById('moraleExportBtn').addEventListener('click', () => {
+        exportJSON({ tab: 'morale_night', results: lastResult }, 'morale_night_results.json');
+      });
+
+    }
+
+    let lastResult = null;
+
+    function calculate(data) {
+      const uniqueDrinks = parseInt(document.getElementById('moraleUnique').value);
+      const drinksServed = parseInt(document.getElementById('moraleDrinks').value);
+      const goldBars = parseInt(document.getElementById('moraleGold').value);
+      const torches = parseInt(document.getElementById('nightTorches').value);
+      const affectedBuildings = parseInt(document.getElementById('nightBuildings').value);
+
+      const morale = calcMorale(uniqueDrinks, drinksServed, goldBars);
+      const prodMultiplier = calcMultiplier(morale);
+      const combatMultiplier = calcMultiplier(morale);
+
+      // Morale breakdown
+      const components = {
+        base: 0.50,
+        variety: Math.min(0.20, uniqueDrinks * 0.10),
+        volume: Math.min(0.20, drinksServed * 0.02),
+        gold: Math.min(0.10, goldBars * 0.01)
+      };
+
+      // Night production over 24h cycle
+      const nightData = [];
+      const nightSlowdown = data.constants.night.productionSlowdown;
+      const torchReduction = data.constants.night.torchTowerReduction;
+      const coveredPct = affectedBuildings > 0 ? Math.min(1, torches * 5 / affectedBuildings) : 0; // rough coverage
+
+      for (let t = 0; t < 1080; t += 5) { // 1080s = 18min = full cycle
+        let phase = null;
+        let elapsed = 0;
+        for (const p of PHASES) {
+          if (t < elapsed + p.duration) { phase = p; break; }
+          elapsed += p.duration;
+        }
+        if (!phase) phase = PHASES[PHASES.length - 1];
+
+        const nightness = phase.nightness;
+        const baseRate = 1 - nightness * nightSlowdown;
+        const torchRate = 1 - nightness * nightSlowdown * (1 - torchReduction);
+        const blendedRate = baseRate * (1 - coveredPct) + torchRate * coveredPct;
+
+        nightData.push({
+          t,
+          phase: phase.name,
+          nightness,
+          baseRate,
+          torchRate,
+          blendedRate,
+          withMorale: blendedRate * prodMultiplier
+        });
+      }
+
+      lastResult = { morale, prodMultiplier, combatMultiplier, components, nightData };
+      renderMoraleResults(data, morale, prodMultiplier, combatMultiplier, components, nightData, torches);
+    }
+
+    function renderMoraleResults(data, morale, prodMultiplier, combatMultiplier, components, nightData, torches) {
+      const el = document.getElementById('moraleResults');
+      charts.forEach(c => BT.Charts.destroy(c));
+      charts = [];
+
+      const moraleColor = morale >= 0.8 ? 'var(--success)' : morale >= 0.6 ? 'var(--accent)' : morale >= 0.5 ? 'var(--warning)' : 'var(--error)';
+
+      // SVG Gauge
+      const radius = 60;
+      const circumference = 2 * Math.PI * radius;
+      const offset = circumference * (1 - morale);
+
+      el.innerHTML = `
+        <div class="flex flex-wrap gap-4 mb-4 items-start">
+          <div class="card flex flex-col items-center" style="min-width:180px;">
+            <svg width="150" height="150" viewBox="0 0 150 150">
+              <circle cx="75" cy="75" r="${radius}" fill="none" stroke="var(--grid)" stroke-width="10"/>
+              <circle cx="75" cy="75" r="${radius}" fill="none" stroke="${moraleColor}" stroke-width="10" stroke-dasharray="${circumference}" stroke-dashoffset="${offset}" class="gauge-ring" transform="rotate(-90 75 75)"/>
+              <text x="75" y="70" text-anchor="middle" fill="var(--text)" font-size="22" font-weight="700" font-family="JetBrains Mono" style="font-variant-numeric:tabular-nums">${pct(morale)}</text>
+              <text x="75" y="90" text-anchor="middle" fill="#94a3b8" font-size="10" font-family="JetBrains Mono">MORALE</text>
+            </svg>
+          </div>
+          <div class="flex flex-wrap gap-3">
+            <div class="card summary-card"><div class="val tabular" style="color:${moraleColor}">${fmt(prodMultiplier, 3)}</div><div class="lbl">Prod. Multiplier</div></div>
+            <div class="card summary-card"><div class="val tabular" style="color:${moraleColor}">${fmt(combatMultiplier, 3)}</div><div class="lbl">Combat Multiplier</div></div>
+            <div class="card summary-card"><div class="val tabular">${prodMultiplier >= 1 ? '+' : ''}${pct(prodMultiplier - 1)}</div><div class="lbl">Prod. Bonus</div></div>
+          </div>
+        </div>
+        <div class="card mb-4" style="height:220px;"><canvas id="moraleComponentsChart"></canvas></div>
+        <div class="card mb-4">
+          <div class="section-title">Morale Formula Breakdown</div>
+          <table class="data-table">
+            <tr><td>Base</td><td class="tabular">${fmt(components.base)}</td></tr>
+            <tr><td>Drink Variety (min(0.20, types x 0.10))</td><td class="tabular" style="color:var(--accent)">+${fmt(components.variety)}</td></tr>
+            <tr><td>Drink Volume (min(0.20, served x 0.02))</td><td class="tabular" style="color:var(--accent)">+${fmt(components.volume)}</td></tr>
+            <tr><td>Gold Bonus (min(0.10, bars x 0.01))</td><td class="tabular" style="color:var(--accent)">+${fmt(components.gold)}</td></tr>
+            <tr style="font-weight:700"><td>Total Morale</td><td class="tabular" style="color:${moraleColor}">${fmt(morale)}</td></tr>
+            <tr><td>Multiplier = 0.85 + (morale - 0.50) x 0.80</td><td class="tabular font-semibold">${fmt(prodMultiplier, 3)}</td></tr>
+          </table>
+        </div>
+        <div class="section-title">Day/Night Cycle Production</div>
+        <div class="card mb-4" style="height:300px;"><canvas id="nightCycleChart"></canvas></div>
+        <div class="card mb-4">
+          <div class="section-title">Night Phase Details</div>
+          <table class="data-table">
+            <tr><th>Phase</th><th>Nightness</th><th>Base Rate</th><th>With Torch</th><th>With Morale</th></tr>
+            ${PHASES.map(p => {
+              const base = 1 - p.nightness * data.constants.night.productionSlowdown;
+              const torch = 1 - p.nightness * data.constants.night.productionSlowdown * (1 - data.constants.night.torchTowerReduction);
+              return `<tr>
+                <td>${p.name}</td>
+                <td class="tabular">${fmt(p.nightness)}</td>
+                <td class="tabular">${pct(base)}</td>
+                <td class="tabular" style="color:var(--warning)">${pct(torch)}</td>
+                <td class="tabular" style="color:var(--accent)">${pct(base * prodMultiplier)}</td>
+              </tr>`;
+            }).join('')}
+          </table>
+        </div>
+      `;
+
+      // Morale components bar
+      BT.Charts.createBarChart('moraleComponentsChart',
+        ['Base', 'Drink Variety', 'Drink Volume', 'Gold Bonus'],
+        [{ label: 'Morale Component', data: [components.base, components.variety, components.volume, components.gold], colors: ['#64748b', '#f472b6', '#34d399', '#fbbf24'] }],
+        { title: 'Morale Components' }
+      );
+      charts.push('moraleComponentsChart');
+
+      // Night cycle line chart
+      const labels = nightData.map(d => d.phase + ' ' + fmtTime(d.t));
+      // Only show labels every N points
+      const skipLabels = Math.ceil(nightData.length / 20);
+      const sparseLabels = nightData.map((d, i) => i % skipLabels === 0 ? d.phase : '');
+
+      const datasets = [
+        { label: 'Base Production', data: nightData.map(d => d.baseRate), color: '#64748b' },
+        { label: 'With Morale', data: nightData.map(d => d.withMorale), color: '#60a5fa' }
+      ];
+      if (torches > 0) {
+        datasets.splice(1, 0, { label: 'With Torch', data: nightData.map(d => d.torchRate), color: '#f59e0b' });
+      }
+
+      BT.Charts.createLineChart('nightCycleChart', sparseLabels, datasets,
+        { title: 'Production Rate Over Day/Night Cycle', yTitle: 'Rate', yMax: 1.5 }
+      );
+      charts.push('nightCycleChart');
+    }
+
+    function activate() {}
+
+    return { init, activate };
+  })();
+
+  // ============================================================
+  // REGISTER TABS & BOOT
+  // ============================================================
+  const ICONS = {
+    production: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>',
+    combat: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 17.5L3 6V3h3l11.5 11.5"/><path d="M13 19l6-6"/><path d="M16 16l4 4"/><path d="M19 21l2-2"/></svg>',
+    economy: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>',
+    hunger: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><path d="M6 1v3M10 1v3M14 1v3"/></svg>',
+    starting: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>',
+    morale: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>'
+  };
+
+  BT.UI.registerTab('production', 'Production', ICONS.production, BT.TabProduction.init, BT.TabProduction.activate);
+  BT.UI.registerTab('combat', 'Combat', ICONS.combat, BT.TabCombat.init, BT.TabCombat.activate);
+  BT.UI.registerTab('economy', 'Economy', ICONS.economy, BT.TabEconomy.init, BT.TabEconomy.activate);
+  BT.UI.registerTab('hunger', 'Hunger', ICONS.hunger, BT.TabHunger.init, BT.TabHunger.activate);
+  BT.UI.registerTab('starting', 'Starting Res.', ICONS.starting, BT.TabStarting.init, BT.TabStarting.activate);
+  BT.UI.registerTab('morale', 'Morale & Night', ICONS.morale, BT.TabMorale.init, BT.TabMorale.activate);
+
+  // Help button + modal
+  const helpModal = document.getElementById('helpModal');
+  const helpModalContent = document.getElementById('helpModalContent');
+
+  document.getElementById('helpBtn').addEventListener('click', () => {
+    const tabId = BT.UI.getActiveTab();
+    if (!tabId) return;
+    helpModalContent.innerHTML = renderHelpCard(tabId, true);
+    helpModal.classList.remove('hidden');
+  });
+
+  helpModal.addEventListener('click', (e) => {
+    if (e.target === helpModal) helpModal.classList.add('hidden');
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !helpModal.classList.contains('hidden')) {
+      helpModal.classList.add('hidden');
+    }
+  });
+
+  // Export to Game button — exports current constants as BalanceConfigOverrides
+  document.getElementById('exportGameBtn').addEventListener('click', () => {
+    if (!DATA) { alert('Data not loaded yet'); return; }
+    const c = DATA.constants;
+    exportJSON({
+      _comment: 'BalanceConfigOverrides for Feudal Realm Manager. Place in public/ to apply.',
+      generatedAt: new Date().toISOString(),
+      woodcutter: c.woodcutter,
+      forester: c.forester,
+      geologist: c.geologist,
+      trees: c.trees,
+      combat: c.combat,
+      victory: c.victory,
+      population: c.population,
+      hunger: c.hunger,
+      night: c.night,
+      morale: c.morale,
+      animals: { feedInterval: c.animals.feedInterval },
+    }, 'balance_config.json');
+  });
+
+  // Load data and boot
+  fetch('balance-data.json')
+    .then(r => {
+      if (!r.ok) throw new Error('Failed to load balance-data.json');
+      return r.json();
+    })
+    .then(json => {
+      DATA = json;
+      BT.UI.render();
+      document.getElementById('loadingOverlay').style.display = 'none';
+    })
+    .catch(err => {
+      document.getElementById('loadingOverlay').innerHTML = `<div class="text-center">
+        <div class="text-xl mb-2" style="color:var(--error);">Failed to load data</div>
+        <div class="text-sm" style="color:#94a3b8;">${err.message}</div>
+        <div class="text-xs mt-2" style="color:#64748b;">Make sure balance-data.json is in the same directory.</div>
+      </div>`;
+    });
+
+})();
+</script>
+</body>
+</html>

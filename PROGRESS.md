@@ -356,5 +356,11 @@ All 17 tasks from the improvement plan are now complete. 569 tests passing, 0 er
 - [DONE] Phase 3: DashboardPanel — Fullscreen overlay (TechTree pattern) with 5 tabs: Overview (KPI cards, dual bars, pop chart, efficiency donut, bottleneck alerts), Economy (timescale selector, resource filter, dual bars, click-to-drill rate chart), Resources (stock levels line chart top 5, inventory table with trends), Population (pop/morale charts, hunger stats, unit breakdown), Buildings (efficiency donut with legend, status table, construction progress). — 2026-03-20
 - [DONE] Phase 4: Integration — Dashboard overlay div in HTML, toolbar button, nav drawer item, StatsPanel/AppBar wiring, 120 lines CSS (responsive: mobile single-column, bottom tabs, 48px touch targets). Day/night theme support. — 2026-03-20
 
+### Balance Tool — Help & Tutorial System [DONE]
+- [DONE] Help content data — HELP_CONTENT object with structured help for all 6 tabs (production, combat, economy, hunger, starting, morale): purpose, numbered workflow, results interpretation, tips. — 2026-03-20
+- [DONE] Rich help cards — renderHelpCard() generates styled cards (accent border, workflow steps, term/desc pairs, tip box) replacing one-liner placeholders in all 6 tabs. Cards naturally disappear when simulation runs. — 2026-03-20
+- [DONE] Header help button + modal — Circular `?` button in header opens modal with current tab's help content. Click-outside and Escape to dismiss. Available after results replace placeholder. — 2026-03-20
+- [DONE] Morale auto-calculate removed — setTimeout auto-calculate removed so help card stays visible until user clicks "Calculate", consistent with all other tabs. — 2026-03-20
+
 ## Blockers
 _None._

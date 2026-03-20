@@ -4,6 +4,10 @@
  * Only balance values live here — tick-frequency / system plumbing
  * constants (ROUTING_INTERVAL, SPAWN_INTERVAL, CHECK_INTERVAL, etc.)
  * stay in their respective manager files.
+ *
+ * Numeric constants use `let` so that `applyBalanceOverrides()` can
+ * patch them at runtime. ES module live bindings ensure all importers
+ * see the updated values automatically.
  */
 
 import { ResourceType } from '../ResourceType';
@@ -13,73 +17,73 @@ import type { Difficulty } from '../GameConfig';
 // ─── Woodcutter ─────────────────────────────────────────────────────────────
 
 /** Seconds the woodcutter spends chopping a tree */
-export const WOODCUTTER_CHOP_DURATION = 8.0;
+export let WOODCUTTER_CHOP_DURATION = 8.0;
 /** Seconds the woodcutter waits before searching for another tree */
-export const WOODCUTTER_IDLE_COOLDOWN = 2.0;
+export let WOODCUTTER_IDLE_COOLDOWN = 2.0;
 
 // ─── Forester ───────────────────────────────────────────────────────────────
 
 /** Seconds the forester spends planting a tree */
-export const FORESTER_PLANT_DURATION = 5.0;
+export let FORESTER_PLANT_DURATION = 5.0;
 /** Seconds the forester waits before planting another tree */
-export const FORESTER_IDLE_COOLDOWN = 3.0;
+export let FORESTER_IDLE_COOLDOWN = 3.0;
 
 // ─── Geologist ──────────────────────────────────────────────────────────────
 
 /** Seconds the geologist spends prospecting a tile */
-export const GEOLOGIST_PROSPECT_DURATION = 5.0;
+export let GEOLOGIST_PROSPECT_DURATION = 5.0;
 /** Seconds the geologist waits before prospecting another tile */
-export const GEOLOGIST_IDLE_COOLDOWN = 2.0;
+export let GEOLOGIST_IDLE_COOLDOWN = 2.0;
 
 // ─── Trees ──────────────────────────────────────────────────────────────────
 
 /** Maximum trees allowed on a single hex tile */
-export const TREES_MAX_PER_TILE = 10;
+export let TREES_MAX_PER_TILE = 10;
 /** Seconds for a sapling to grow to young stage */
-export const TREES_SAPLING_GROWTH_TIME = 60;
+export let TREES_SAPLING_GROWTH_TIME = 60;
 /** Seconds for a young tree to grow to mature stage */
-export const TREES_YOUNG_GROWTH_TIME = 90;
+export let TREES_YOUNG_GROWTH_TIME = 90;
 
 // ─── Combat ─────────────────────────────────────────────────────────────────
 
 /** Number of duel wins required for a knight to rank up */
-export const COMBAT_WINS_PER_RANK = 2;
+export let COMBAT_WINS_PER_RANK = 2;
 /** Gold bonus multiplier per gold bar in storage */
-export const COMBAT_GOLD_BONUS_PER_BAR = 0.05;
+export let COMBAT_GOLD_BONUS_PER_BAR = 0.05;
 /** Maximum gold bonus (caps at this value) */
-export const COMBAT_MAX_GOLD_BONUS = 0.5;
+export let COMBAT_MAX_GOLD_BONUS = 0.5;
 
 // ─── Building Upgrades ──────────────────────────────────────────────────────
 
 /** Maximum upgrade level per axis */
-export const UPGRADES_MAX_LEVEL = 10;
+export let UPGRADES_MAX_LEVEL = 10;
 
 /** Maximum upgrade level for work radius (+1 hex per level) */
-export const WORK_RADIUS_MAX_LEVEL = 3;
+export let WORK_RADIUS_MAX_LEVEL = 3;
 
 // ─── Victory Conditions ─────────────────────────────────────────────────────
 
 /** Fraction of total territory needed for domination victory */
-export const VICTORY_DOMINATION_THRESHOLD = 0.75;
+export let VICTORY_DOMINATION_THRESHOLD = 0.75;
 /** Gold bars needed for economic victory */
-export const VICTORY_ECONOMIC_GOLD_TARGET = 50;
+export let VICTORY_ECONOMIC_GOLD_TARGET = 50;
 /** Total processed goods needed for peaceful victory */
-export const VICTORY_PEACEFUL_GOODS_TARGET = 100;
+export let VICTORY_PEACEFUL_GOODS_TARGET = 100;
 
 // ─── Population & Housing ──────────────────────────────────────────────────
 
 /** Base population capacity provided by the Castle */
-export const CASTLE_POPULATION_CAPACITY = 15;
+export let CASTLE_POPULATION_CAPACITY = 15;
 /** Population capacity for Small House */
-export const SMALL_HOUSE_CAPACITY = 8;
+export let SMALL_HOUSE_CAPACITY = 8;
 /** Population capacity for Medium House */
-export const MEDIUM_HOUSE_CAPACITY = 16;
+export let MEDIUM_HOUSE_CAPACITY = 16;
 /** Population capacity for Large House */
-export const LARGE_HOUSE_CAPACITY = 25;
+export let LARGE_HOUSE_CAPACITY = 25;
 /** Usage ratio at which the HUD counter shows a warning color */
-export const POPULATION_WARNING_THRESHOLD = 0.9;
+export let POPULATION_WARNING_THRESHOLD = 0.9;
 /** Usage ratio below which the HUD counter is normal (green) */
-export const POPULATION_CAUTION_THRESHOLD = 0.75;
+export let POPULATION_CAUTION_THRESHOLD = 0.75;
 
 /** Population color severity based on usage ratio */
 export function getPopulationSeverity(ratio: number): 'critical' | 'warning' | 'normal' {
@@ -91,23 +95,23 @@ export function getPopulationSeverity(ratio: number): 'critical' | 'warning' | '
 // ─── Hunger / Feeding ──────────────────────────────────────────────────────
 
 /** Base satiation decay rate per second (full → starving in ~500s) */
-export const HUNGER_DECAY_RATE = 0.002;
+export let HUNGER_DECAY_RATE = 0.002;
 /** Decay multiplier when unit is working */
-export const HUNGER_WORKING_MULTIPLIER = 1.2;
+export let HUNGER_WORKING_MULTIPLIER = 1.2;
 /** Decay multiplier for garrisoned knights */
-export const HUNGER_GARRISONED_MULTIPLIER = 0.5;
+export let HUNGER_GARRISONED_MULTIPLIER = 0.5;
 /** Satiation threshold: below this = hungry penalties */
-export const HUNGER_HUNGRY_THRESHOLD = 0.50;
+export let HUNGER_HUNGRY_THRESHOLD = 0.50;
 /** Satiation threshold: below this = starving penalties */
-export const HUNGER_STARVING_THRESHOLD = 0.25;
+export let HUNGER_STARVING_THRESHOLD = 0.25;
 /** Speed penalty when hungry */
-export const HUNGER_SPEED_PENALTY_HUNGRY = 0.20;
+export let HUNGER_SPEED_PENALTY_HUNGRY = 0.20;
 /** Speed penalty when starving */
-export const HUNGER_SPEED_PENALTY_STARVING = 0.40;
+export let HUNGER_SPEED_PENALTY_STARVING = 0.40;
 /** Production penalty when hungry */
-export const HUNGER_PRODUCTION_PENALTY_HUNGRY = 0.15;
+export let HUNGER_PRODUCTION_PENALTY_HUNGRY = 0.15;
 /** Production penalty when starving */
-export const HUNGER_PRODUCTION_PENALTY_STARVING = 0.30;
+export let HUNGER_PRODUCTION_PENALTY_STARVING = 0.30;
 
 /** Get the display color for a satiation value, aligned with penalty thresholds */
 export function getSatiationColor(satiation: number): string {
@@ -126,42 +130,42 @@ export function getSatiationStatus(satiation: number): '' | 'Hungry' | 'Starving
 // ─── Day/Night ─────────────────────────────────────────────────────────────
 
 /** Maximum night production slowdown (25% slower at full night) */
-export const NIGHT_PRODUCTION_SLOWDOWN = 0.25;
+export let NIGHT_PRODUCTION_SLOWDOWN = 0.25;
 /** Night speed penalty for civilian units */
-export const NIGHT_SPEED_PENALTY_CIVILIAN = 0.40;
+export let NIGHT_SPEED_PENALTY_CIVILIAN = 0.40;
 /** Night speed penalty for transporters */
-export const NIGHT_SPEED_PENALTY_TRANSPORTER = 0.35;
+export let NIGHT_SPEED_PENALTY_TRANSPORTER = 0.35;
 /** Night speed penalty for knights */
-export const NIGHT_SPEED_PENALTY_KNIGHT = 0.15;
+export let NIGHT_SPEED_PENALTY_KNIGHT = 0.15;
 /** Night speed penalty for builders */
-export const NIGHT_SPEED_PENALTY_BUILDER = 0.30;
+export let NIGHT_SPEED_PENALTY_BUILDER = 0.30;
 /** TorchTower/FlagLight night penalty reduction (50%) */
-export const TORCH_TOWER_NIGHT_REDUCTION = 0.50;
+export let TORCH_TOWER_NIGHT_REDUCTION = 0.50;
 /** Radius in hexes for TorchTower light mitigation */
-export const TORCH_TOWER_LIGHT_RADIUS = 5;
+export let TORCH_TOWER_LIGHT_RADIUS = 5;
 
 // ─── Morale ────────────────────────────────────────────────────────────────
 
 /** Base morale value when no drinks served */
-export const MORALE_BASE = 0.50;
+export let MORALE_BASE = 0.50;
 /** Rolling window for drink events (seconds) */
-export const MORALE_WINDOW = 300;
+export let MORALE_WINDOW = 300;
 /** Maximum morale bonus from drink variety */
-export const MORALE_VARIETY_BONUS_MAX = 0.20;
+export let MORALE_VARIETY_BONUS_MAX = 0.20;
 /** Morale bonus per unique drink type served */
-export const MORALE_VARIETY_PER_TYPE = 0.10;
+export let MORALE_VARIETY_PER_TYPE = 0.10;
 /** Maximum morale bonus from drink volume */
-export const MORALE_VOLUME_BONUS_MAX = 0.20;
+export let MORALE_VOLUME_BONUS_MAX = 0.20;
 /** Morale bonus per drink served in window */
-export const MORALE_VOLUME_PER_DRINK = 0.02;
+export let MORALE_VOLUME_PER_DRINK = 0.02;
 /** Gold bar morale bonus per bar */
-export const MORALE_GOLD_BONUS_PER_BAR = 0.01;
+export let MORALE_GOLD_BONUS_PER_BAR = 0.01;
 /** Maximum gold morale bonus */
-export const MORALE_GOLD_BONUS_MAX = 0.10;
+export let MORALE_GOLD_BONUS_MAX = 0.10;
 /** Base morale-to-multiplier value (at morale=0.5) */
-export const MORALE_MULTIPLIER_BASE = 0.85;
+export let MORALE_MULTIPLIER_BASE = 0.85;
 /** Morale-to-multiplier scaling factor */
-export const MORALE_MULTIPLIER_SCALE = 0.8;
+export let MORALE_MULTIPLIER_SCALE = 0.8;
 
 // ─── Difficulty-Based Starting Resources ───────────────────────────────────
 
@@ -212,7 +216,7 @@ export function getRoadUpgradeCost(currentQuality: number): { resource: Resource
 
 // ── Animal lifecycle constants ──────────────────────────────────────────────
 /** How often animals attempt to feed (seconds) */
-export const ANIMAL_FEED_INTERVAL = 10.0;
+export let ANIMAL_FEED_INTERVAL = 10.0;
 
 export interface AnimalSpec {
   /** Resources accepted as feed (any one satisfies) */
@@ -239,3 +243,160 @@ export const ANIMAL_SPECS: Partial<Record<string, AnimalSpec>> = {
     starvationTime: 45,
   },
 };
+
+// ─── Balance Override System ──────────────────────────────────────────────
+
+export interface BalanceConfigOverrides {
+  woodcutter?: { chopDuration?: number; idleCooldown?: number };
+  forester?: { plantDuration?: number; idleCooldown?: number };
+  geologist?: { prospectDuration?: number; idleCooldown?: number };
+  trees?: { maxPerTile?: number; saplingGrowthTime?: number; youngGrowthTime?: number };
+  combat?: { winsPerRank?: number; goldBonusPerBar?: number; maxGoldBonus?: number };
+  upgrades?: { maxLevel?: number; workRadiusMaxLevel?: number };
+  victory?: { dominationThreshold?: number; economicGoldTarget?: number; peacefulGoodsTarget?: number };
+  population?: {
+    castleCapacity?: number; smallHouseCapacity?: number;
+    mediumHouseCapacity?: number; largeHouseCapacity?: number;
+    warningThreshold?: number; cautionThreshold?: number;
+  };
+  hunger?: {
+    decayRate?: number; workingMultiplier?: number; garrisonedMultiplier?: number;
+    hungryThreshold?: number; starvingThreshold?: number;
+    speedPenaltyHungry?: number; speedPenaltyStarving?: number;
+    productionPenaltyHungry?: number; productionPenaltyStarving?: number;
+  };
+  night?: {
+    productionSlowdown?: number; speedPenaltyCivilian?: number;
+    speedPenaltyTransporter?: number; speedPenaltyKnight?: number;
+    speedPenaltyBuilder?: number; torchTowerReduction?: number;
+    torchTowerRadius?: number;
+  };
+  morale?: {
+    base?: number; window?: number;
+    varietyBonusMax?: number; varietyPerType?: number;
+    volumeBonusMax?: number; volumePerDrink?: number;
+    goldBonusPerBar?: number; goldBonusMax?: number;
+    multiplierBase?: number; multiplierScale?: number;
+  };
+  animals?: { feedInterval?: number };
+}
+
+/** Apply balance overrides from a config object. Only specified values are changed. */
+export function applyBalanceOverrides(config: BalanceConfigOverrides): void {
+  // Woodcutter
+  if (config.woodcutter?.chopDuration !== undefined) WOODCUTTER_CHOP_DURATION = config.woodcutter.chopDuration;
+  if (config.woodcutter?.idleCooldown !== undefined) WOODCUTTER_IDLE_COOLDOWN = config.woodcutter.idleCooldown;
+  // Forester
+  if (config.forester?.plantDuration !== undefined) FORESTER_PLANT_DURATION = config.forester.plantDuration;
+  if (config.forester?.idleCooldown !== undefined) FORESTER_IDLE_COOLDOWN = config.forester.idleCooldown;
+  // Geologist
+  if (config.geologist?.prospectDuration !== undefined) GEOLOGIST_PROSPECT_DURATION = config.geologist.prospectDuration;
+  if (config.geologist?.idleCooldown !== undefined) GEOLOGIST_IDLE_COOLDOWN = config.geologist.idleCooldown;
+  // Trees
+  if (config.trees?.maxPerTile !== undefined) TREES_MAX_PER_TILE = config.trees.maxPerTile;
+  if (config.trees?.saplingGrowthTime !== undefined) TREES_SAPLING_GROWTH_TIME = config.trees.saplingGrowthTime;
+  if (config.trees?.youngGrowthTime !== undefined) TREES_YOUNG_GROWTH_TIME = config.trees.youngGrowthTime;
+  // Combat
+  if (config.combat?.winsPerRank !== undefined) COMBAT_WINS_PER_RANK = config.combat.winsPerRank;
+  if (config.combat?.goldBonusPerBar !== undefined) COMBAT_GOLD_BONUS_PER_BAR = config.combat.goldBonusPerBar;
+  if (config.combat?.maxGoldBonus !== undefined) COMBAT_MAX_GOLD_BONUS = config.combat.maxGoldBonus;
+  // Upgrades
+  if (config.upgrades?.maxLevel !== undefined) UPGRADES_MAX_LEVEL = config.upgrades.maxLevel;
+  if (config.upgrades?.workRadiusMaxLevel !== undefined) WORK_RADIUS_MAX_LEVEL = config.upgrades.workRadiusMaxLevel;
+  // Victory
+  if (config.victory?.dominationThreshold !== undefined) VICTORY_DOMINATION_THRESHOLD = config.victory.dominationThreshold;
+  if (config.victory?.economicGoldTarget !== undefined) VICTORY_ECONOMIC_GOLD_TARGET = config.victory.economicGoldTarget;
+  if (config.victory?.peacefulGoodsTarget !== undefined) VICTORY_PEACEFUL_GOODS_TARGET = config.victory.peacefulGoodsTarget;
+  // Population
+  if (config.population?.castleCapacity !== undefined) CASTLE_POPULATION_CAPACITY = config.population.castleCapacity;
+  if (config.population?.smallHouseCapacity !== undefined) SMALL_HOUSE_CAPACITY = config.population.smallHouseCapacity;
+  if (config.population?.mediumHouseCapacity !== undefined) MEDIUM_HOUSE_CAPACITY = config.population.mediumHouseCapacity;
+  if (config.population?.largeHouseCapacity !== undefined) LARGE_HOUSE_CAPACITY = config.population.largeHouseCapacity;
+  if (config.population?.warningThreshold !== undefined) POPULATION_WARNING_THRESHOLD = config.population.warningThreshold;
+  if (config.population?.cautionThreshold !== undefined) POPULATION_CAUTION_THRESHOLD = config.population.cautionThreshold;
+  // Hunger
+  if (config.hunger?.decayRate !== undefined) HUNGER_DECAY_RATE = config.hunger.decayRate;
+  if (config.hunger?.workingMultiplier !== undefined) HUNGER_WORKING_MULTIPLIER = config.hunger.workingMultiplier;
+  if (config.hunger?.garrisonedMultiplier !== undefined) HUNGER_GARRISONED_MULTIPLIER = config.hunger.garrisonedMultiplier;
+  if (config.hunger?.hungryThreshold !== undefined) HUNGER_HUNGRY_THRESHOLD = config.hunger.hungryThreshold;
+  if (config.hunger?.starvingThreshold !== undefined) HUNGER_STARVING_THRESHOLD = config.hunger.starvingThreshold;
+  if (config.hunger?.speedPenaltyHungry !== undefined) HUNGER_SPEED_PENALTY_HUNGRY = config.hunger.speedPenaltyHungry;
+  if (config.hunger?.speedPenaltyStarving !== undefined) HUNGER_SPEED_PENALTY_STARVING = config.hunger.speedPenaltyStarving;
+  if (config.hunger?.productionPenaltyHungry !== undefined) HUNGER_PRODUCTION_PENALTY_HUNGRY = config.hunger.productionPenaltyHungry;
+  if (config.hunger?.productionPenaltyStarving !== undefined) HUNGER_PRODUCTION_PENALTY_STARVING = config.hunger.productionPenaltyStarving;
+  // Night
+  if (config.night?.productionSlowdown !== undefined) NIGHT_PRODUCTION_SLOWDOWN = config.night.productionSlowdown;
+  if (config.night?.speedPenaltyCivilian !== undefined) NIGHT_SPEED_PENALTY_CIVILIAN = config.night.speedPenaltyCivilian;
+  if (config.night?.speedPenaltyTransporter !== undefined) NIGHT_SPEED_PENALTY_TRANSPORTER = config.night.speedPenaltyTransporter;
+  if (config.night?.speedPenaltyKnight !== undefined) NIGHT_SPEED_PENALTY_KNIGHT = config.night.speedPenaltyKnight;
+  if (config.night?.speedPenaltyBuilder !== undefined) NIGHT_SPEED_PENALTY_BUILDER = config.night.speedPenaltyBuilder;
+  if (config.night?.torchTowerReduction !== undefined) TORCH_TOWER_NIGHT_REDUCTION = config.night.torchTowerReduction;
+  if (config.night?.torchTowerRadius !== undefined) TORCH_TOWER_LIGHT_RADIUS = config.night.torchTowerRadius;
+  // Morale
+  if (config.morale?.base !== undefined) MORALE_BASE = config.morale.base;
+  if (config.morale?.window !== undefined) MORALE_WINDOW = config.morale.window;
+  if (config.morale?.varietyBonusMax !== undefined) MORALE_VARIETY_BONUS_MAX = config.morale.varietyBonusMax;
+  if (config.morale?.varietyPerType !== undefined) MORALE_VARIETY_PER_TYPE = config.morale.varietyPerType;
+  if (config.morale?.volumeBonusMax !== undefined) MORALE_VOLUME_BONUS_MAX = config.morale.volumeBonusMax;
+  if (config.morale?.volumePerDrink !== undefined) MORALE_VOLUME_PER_DRINK = config.morale.volumePerDrink;
+  if (config.morale?.goldBonusPerBar !== undefined) MORALE_GOLD_BONUS_PER_BAR = config.morale.goldBonusPerBar;
+  if (config.morale?.goldBonusMax !== undefined) MORALE_GOLD_BONUS_MAX = config.morale.goldBonusMax;
+  if (config.morale?.multiplierBase !== undefined) MORALE_MULTIPLIER_BASE = config.morale.multiplierBase;
+  if (config.morale?.multiplierScale !== undefined) MORALE_MULTIPLIER_SCALE = config.morale.multiplierScale;
+  // Animals
+  if (config.animals?.feedInterval !== undefined) ANIMAL_FEED_INTERVAL = config.animals.feedInterval;
+}
+
+/** Reset all balance constants to their default values. */
+export function resetBalanceDefaults(): void {
+  WOODCUTTER_CHOP_DURATION = 8.0;
+  WOODCUTTER_IDLE_COOLDOWN = 2.0;
+  FORESTER_PLANT_DURATION = 5.0;
+  FORESTER_IDLE_COOLDOWN = 3.0;
+  GEOLOGIST_PROSPECT_DURATION = 5.0;
+  GEOLOGIST_IDLE_COOLDOWN = 2.0;
+  TREES_MAX_PER_TILE = 10;
+  TREES_SAPLING_GROWTH_TIME = 60;
+  TREES_YOUNG_GROWTH_TIME = 90;
+  COMBAT_WINS_PER_RANK = 2;
+  COMBAT_GOLD_BONUS_PER_BAR = 0.05;
+  COMBAT_MAX_GOLD_BONUS = 0.5;
+  UPGRADES_MAX_LEVEL = 10;
+  WORK_RADIUS_MAX_LEVEL = 3;
+  VICTORY_DOMINATION_THRESHOLD = 0.75;
+  VICTORY_ECONOMIC_GOLD_TARGET = 50;
+  VICTORY_PEACEFUL_GOODS_TARGET = 100;
+  CASTLE_POPULATION_CAPACITY = 15;
+  SMALL_HOUSE_CAPACITY = 8;
+  MEDIUM_HOUSE_CAPACITY = 16;
+  LARGE_HOUSE_CAPACITY = 25;
+  POPULATION_WARNING_THRESHOLD = 0.9;
+  POPULATION_CAUTION_THRESHOLD = 0.75;
+  HUNGER_DECAY_RATE = 0.002;
+  HUNGER_WORKING_MULTIPLIER = 1.2;
+  HUNGER_GARRISONED_MULTIPLIER = 0.5;
+  HUNGER_HUNGRY_THRESHOLD = 0.50;
+  HUNGER_STARVING_THRESHOLD = 0.25;
+  HUNGER_SPEED_PENALTY_HUNGRY = 0.20;
+  HUNGER_SPEED_PENALTY_STARVING = 0.40;
+  HUNGER_PRODUCTION_PENALTY_HUNGRY = 0.15;
+  HUNGER_PRODUCTION_PENALTY_STARVING = 0.30;
+  NIGHT_PRODUCTION_SLOWDOWN = 0.25;
+  NIGHT_SPEED_PENALTY_CIVILIAN = 0.40;
+  NIGHT_SPEED_PENALTY_TRANSPORTER = 0.35;
+  NIGHT_SPEED_PENALTY_KNIGHT = 0.15;
+  NIGHT_SPEED_PENALTY_BUILDER = 0.30;
+  TORCH_TOWER_NIGHT_REDUCTION = 0.50;
+  TORCH_TOWER_LIGHT_RADIUS = 5;
+  MORALE_BASE = 0.50;
+  MORALE_WINDOW = 300;
+  MORALE_VARIETY_BONUS_MAX = 0.20;
+  MORALE_VARIETY_PER_TYPE = 0.10;
+  MORALE_VOLUME_BONUS_MAX = 0.20;
+  MORALE_VOLUME_PER_DRINK = 0.02;
+  MORALE_GOLD_BONUS_PER_BAR = 0.01;
+  MORALE_GOLD_BONUS_MAX = 0.10;
+  MORALE_MULTIPLIER_BASE = 0.85;
+  MORALE_MULTIPLIER_SCALE = 0.8;
+  ANIMAL_FEED_INTERVAL = 10.0;
+}

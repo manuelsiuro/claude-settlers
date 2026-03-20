@@ -6,6 +6,7 @@ import { Minimap } from './engine/Minimap';
 import type { GameConfig } from './game/GameConfig';
 import { BUILDING_DEFINITIONS } from './game/BuildingType';
 import { getPopulationSeverity } from './game/data/balanceConstants';
+import { loadBalanceConfig } from './game/data/BalanceConfigLoader';
 import type { SaveData } from './game/SaveLoad';
 import { loadSettings } from './game/SettingsStorage';
 import './ui/styles.css';
@@ -549,6 +550,8 @@ async function startGame(config: Partial<GameConfig>, savedData?: SaveData): Pro
     disposeFoodAlertBar();
     game.dispose();
   }
+
+  await loadBalanceConfig();
 
   game = new Game(container, config);
   (window as unknown as Record<string, unknown>).__game = game;
