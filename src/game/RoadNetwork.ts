@@ -36,6 +36,8 @@ export interface Road {
   transporterId: string | null;
   /** True for harbor water routes (not physical roads) */
   virtual?: boolean;
+  /** Road quality level: 0=path, 1=dirt, 2=stone, 3=paved */
+  quality: number;
 }
 
 let nextFlagId = 1;
@@ -160,6 +162,7 @@ export class RoadNetwork {
       flagA: flagAId,
       flagB: flagBId,
       transporterId: null,
+      quality: 0,
     };
 
     this.roads.set(road.id, road);
@@ -268,6 +271,7 @@ export class RoadNetwork {
       flagB: flagBId,
       transporterId: null,
       virtual: true,
+      quality: 0,
     };
 
     this.roads.set(road.id, road);
@@ -283,6 +287,14 @@ export class RoadNetwork {
     const road = this.roads.get(id);
     if (!road || !road.virtual) return false;
     return this.removeRoad(id);
+  }
+
+  /** Upgrade a road's quality level (0=path, 1=dirt, 2=stone, 3=paved). Returns new quality or -1 if invalid. */
+  upgradeRoad(id: string, newQuality: number): number {
+    const road = this.roads.get(id);
+    if (!road || road.virtual) return -1;
+    road.quality = Math.max(0, Math.min(3, newQuality));
+    return road.quality;
   }
 
   /** Remove a road */

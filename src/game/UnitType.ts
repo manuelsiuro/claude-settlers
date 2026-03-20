@@ -79,6 +79,8 @@ export interface UnitDefinition {
   chargeMultiplier?: number;
   /** Items required for recruitment at military buildings */
   recruitmentItems?: { resource: ResourceType; amount: number }[];
+  /** Carry capacity for transport units (default 1) */
+  carryCapacity?: number;
 }
 
 export const UNIT_DEFINITIONS: Record<UnitType, UnitDefinition> = {
@@ -88,6 +90,7 @@ export const UNIT_DEFINITIONS: Record<UnitType, UnitDefinition> = {
     category: 'civilian',
     requiredTool: null,
     moveSpeed: 0.55,
+    carryCapacity: 1,
   },
   [UnitType.Builder]: {
     type: UnitType.Builder,
@@ -386,6 +389,7 @@ export const UNIT_DEFINITIONS: Record<UnitType, UnitDefinition> = {
     category: 'transport',
     requiredTool: null,
     moveSpeed: 0.45,
+    carryCapacity: 3,
   },
   [UnitType.HorseTransport]: {
     type: UnitType.HorseTransport,
@@ -393,6 +397,7 @@ export const UNIT_DEFINITIONS: Record<UnitType, UnitDefinition> = {
     category: 'transport',
     requiredTool: null,
     moveSpeed: 0.60,
+    carryCapacity: 8,
   },
 };
 

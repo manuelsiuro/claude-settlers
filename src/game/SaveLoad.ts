@@ -33,7 +33,7 @@ import type { GoodsDistributionSettings } from './GoodsDistribution';
 import { serializeDistribution, deserializeDistribution } from './GoodsDistribution';
 
 /** Current save format version */
-const SAVE_VERSION = 10;
+const SAVE_VERSION = 11;
 
 /** localStorage key for auto-save */
 const STORAGE_KEY = 'feudal_realm_save';
@@ -68,7 +68,7 @@ export interface SaveData {
     deliveryCooldown: number;
   };
   transporterManager: {
-    transporterStates: [string, { roadId: string; targetFlagId: string; carrying: FlagGood | null; waitingAtFlagId: string | null }][];
+    transporterStates: [string, { roadId: string; targetFlagId: string; carrying: FlagGood | FlagGood[] | null; waitingAtFlagId: string | null }][];
     spawnCooldown: number;
   };
   unitManager: {
@@ -326,6 +326,15 @@ export function deserializeGame(
     workerByBuilding: data.workerByBuilding,
   });
 
+  // v11: patch roads missing quality field
+  if (data.roads) {
+    for (const r of data.roads) {
+      if ((r as unknown as Record<string, unknown>).quality === undefined) {
+        (r as unknown as Record<string, unknown>).quality = 0;
+      }
+    }
+  }
+
   // Restore road network
   roadNetwork._loadState({
     flags: data.flags,
@@ -405,6 +414,11 @@ export function deserializeGame(
     // v10: patch units missing satiation field
     if ((u as unknown as Record<string, unknown>).satiation === undefined) {
       (u as unknown as Record<string, unknown>).satiation = 1.0;
+    }
+    // v11: patch units missing cargo field
+    if ((u as unknown as Record<string, unknown>).cargo === undefined) {
+      const cr = (u as unknown as Record<string, unknown>).carryingResource;
+      (u as unknown as Record<string, unknown>).cargo = cr ? [{ resource: cr, amount: 1 }] : [];
     }
   }
 
