@@ -151,6 +151,75 @@ const resourceIcons: Record<string, { color: string; path: string }> = {
     color: '#F48FB1',
     path: 'M4 7a4 4 0 0 1 8 0c0 3-2 5-4 5S4 10 4 7zM5 5l-1-2M11 5l1-2M6 8h1M9 8h1', // Pig face
   },
+  // Expansion resources
+  grapes: {
+    color: '#7B1FA2',
+    path: 'M6 5a2 2 0 1 1 4 0M5 8a2 2 0 1 1 4 0M7 11a2 2 0 1 1 2-1M8 3v2', // Grape cluster
+  },
+  fruit: {
+    color: '#E65100',
+    path: 'M8 4a4 4 0 0 1 0 8A4 4 0 0 1 8 4zM8 2v2M10 3l-1 1', // Apple
+  },
+  water_barrel: {
+    color: '#1565C0',
+    path: 'M5 4h6v7H5zM4 6h8M4 9h8', // Barrel with bands
+  },
+  milk: {
+    color: '#F5F5F5',
+    path: 'M6 4h4l1 3v4H5V7z', // Milk jug
+  },
+  hay: {
+    color: '#C8B900',
+    path: 'M4 11h8M5 8l3-5 3 5M6 11V8M10 11V8', // Hay bale
+  },
+  wool: {
+    color: '#EEEEEE',
+    path: 'M4 8c0-2 1-4 4-4s4 2 4 4c0 3-2 4-4 4S4 11 4 8z', // Fluffy ball
+  },
+  raw_leather: {
+    color: '#8D6E63',
+    path: 'M4 4c2-1 6-1 8 0v8c-2 1-6 1-8 0z', // Hide shape
+  },
+  wine: {
+    color: '#880E4F',
+    path: 'M6 3h4l-1 4c0 2 1 2 1 3v2H6v-2c0-1 1-1 1-3z', // Wine glass
+  },
+  beer: {
+    color: '#F9A825',
+    path: 'M5 4h5v7H5zM10 6h2v3h-2M6 3h3', // Beer mug + foam
+  },
+  cheese: {
+    color: '#FFC107',
+    path: 'M3 10L8 4l5 6H3zM6 8h1M9 7h1', // Cheese wedge with holes
+  },
+  cloth: {
+    color: '#7986CB',
+    path: 'M4 5h8v6H4zM4 7h8M4 9h8', // Folded cloth
+  },
+  worked_leather: {
+    color: '#5D4037',
+    path: 'M4 4c2-1 6-1 8 0v8c-2 1-6 1-8 0zM6 6h4M6 10h4', // Stitched hide
+  },
+  arrows: {
+    color: '#455A64',
+    path: 'M4 12l8-8M12 4l-3 0M12 4l0 3', // Arrow with head
+  },
+  bow: {
+    color: '#6D4C41',
+    path: 'M4 3c0 5 0 7 0 10M4 8l7-4M4 8l7 4', // Bow + string
+  },
+  siege_ram: {
+    color: '#37474F',
+    path: 'M3 8h10M4 6h8v4H4zM13 8l1-1M13 8l1 1', // Battering ram
+  },
+  cattle: {
+    color: '#795548',
+    path: 'M4 7a4 3 0 0 1 8 0c0 3-2 4-4 4S4 10 4 7zM4 5l-1-2M12 5l1-2M6 9v2M10 9v2', // Cow
+  },
+  horses: {
+    color: '#6D4C41',
+    path: 'M5 6c0-2 2-3 4-3l2 1v3L9 10H7L5 7z M5 6l-1-2M11 7v3', // Horse head
+  },
 };
 
 /** Returns an inline SVG resource icon with colored circle background and white symbol */
