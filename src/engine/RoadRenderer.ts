@@ -13,14 +13,14 @@ const FLAG_HEIGHT = 0.6;
 const FLAG_COLOR = 0xdd3333;
 /** Flag pole color */
 const POLE_COLOR = 0x8b4513;
-/** Road default color (transporter assigned, idle) */
-const ROAD_COLOR = 0xc4a060;
+/** Road base colors by quality level (0=path, 1=dirt, 2=stone, 3=paved) */
+const ROAD_QUALITY_COLORS = [0xc4a060, 0xb08840, 0x909090, 0x707878];
+/** Road tube radius by quality level */
+const ROAD_QUALITY_RADII = [0.035, 0.045, 0.055, 0.065];
 /** Road color when transporter is actively carrying goods */
 const ROAD_COLOR_ACTIVE = 0x4caf50;
 /** Road color when no transporter is assigned yet */
 const ROAD_COLOR_UNASSIGNED = 0x999999;
-/** Road line width - used for tube radius */
-const ROAD_RADIUS = 0.04;
 
 /** Traffic state for a road segment */
 type TrafficState = 'unassigned' | 'idle' | 'active';
@@ -48,6 +48,8 @@ export class RoadRenderer {
   private flagResourceFingerprints: Map<string, string> = new Map();
   /** Cached traffic state per road to avoid unnecessary material updates */
   private roadTrafficStates: Map<string, TrafficState> = new Map();
+  /** Cached road quality to detect upgrades and rebuild mesh */
+  private roadQualities: Map<string, number> = new Map();
   private grid: HexGrid;
 
   constructor() {
@@ -105,10 +107,17 @@ export class RoadRenderer {
   private syncRoads(roads: Road[], network: RoadNetwork): void {
     const currentIds = new Set(roads.map((r) => r.id));
 
-    // Add new roads
+    // Add new roads or rebuild if quality changed
     for (const road of roads) {
+      const existingQuality = this.roadQualities.get(road.id);
       if (!this.roadMeshes.has(road.id)) {
         this.addRoad(road, network);
+        this.roadQualities.set(road.id, road.quality);
+      } else if (existingQuality !== undefined && existingQuality !== road.quality) {
+        // Quality changed — rebuild mesh with new radius/color
+        this.removeRoad(road.id);
+        this.addRoad(road, network);
+        this.roadQualities.set(road.id, road.quality);
       }
     }
 
@@ -116,6 +125,7 @@ export class RoadRenderer {
     for (const id of this.roadMeshes.keys()) {
       if (!currentIds.has(id)) {
         this.removeRoad(id);
+        this.roadQualities.delete(id);
       }
     }
   }
@@ -128,12 +138,12 @@ export class RoadRenderer {
     return 'idle';
   }
 
-  /** Get the color for a given traffic state */
-  private getTrafficColor(state: TrafficState): number {
+  /** Get the color for a given traffic state and road quality */
+  private getTrafficColor(state: TrafficState, quality: number): number {
     switch (state) {
       case 'active': return ROAD_COLOR_ACTIVE;
       case 'unassigned': return ROAD_COLOR_UNASSIGNED;
-      default: return ROAD_COLOR;
+      default: return ROAD_QUALITY_COLORS[quality] ?? ROAD_QUALITY_COLORS[0];
     }
   }
 
@@ -152,7 +162,7 @@ export class RoadRenderer {
       if (newState === oldState) continue;
 
       this.roadTrafficStates.set(road.id, newState);
-      const color = this.getTrafficColor(newState);
+      const color = this.getTrafficColor(newState, road.quality ?? 0);
 
       // Update main mesh material color
       if (mesh.material instanceof THREE.MeshLambertMaterial) {
@@ -216,12 +226,16 @@ export class RoadRenderer {
     const yA = tileA ? MapRenderer.getTileY(tileA) + 0.03 : 0.03;
     const yB = tileB ? MapRenderer.getTileY(tileB) + 0.03 : 0.03;
 
-    // Create a tube between the two points
+    // Create a tube between the two points, sized/colored by road quality
+    const quality = road.quality ?? 0;
+    const radius = ROAD_QUALITY_RADII[quality] ?? ROAD_QUALITY_RADII[0];
+    const baseColor = ROAD_QUALITY_COLORS[quality] ?? ROAD_QUALITY_COLORS[0];
     const start = new THREE.Vector3(posA.x, yA, posA.z);
     const end = new THREE.Vector3(posB.x, yB, posB.z);
     const path = new THREE.LineCurve3(start, end);
-    const tubeGeom = new THREE.TubeGeometry(path, 1, ROAD_RADIUS, 4, false);
-    const tubeMat = new THREE.MeshLambertMaterial({ color: ROAD_COLOR });
+    const segments = quality >= 2 ? 3 : 1; // smoother tubes for stone/paved
+    const tubeGeom = new THREE.TubeGeometry(path, segments, radius, quality >= 2 ? 6 : 4, false);
+    const tubeMat = new THREE.MeshLambertMaterial({ color: baseColor });
     const mesh = new THREE.Mesh(tubeGeom, tubeMat);
     mesh.name = `road_${road.id}`;
 
@@ -348,6 +362,7 @@ export class RoadRenderer {
     this.flagResourceMeshes.clear();
     this.flagResourceFingerprints.clear();
     this.roadTrafficStates.clear();
+    this.roadQualities.clear();
 
     this.flagGroup.removeFromParent();
     this.roadGroup.removeFromParent();
