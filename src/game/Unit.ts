@@ -54,6 +54,10 @@ export interface Unit {
   pendingDismissal: boolean;
   /** Satiation level 0.0–1.0 (1.0 = fully fed) */
   satiation: number;
+  /** Time alive in seconds (transport animals only, for lifespan tracking) */
+  animalAge: number;
+  /** Seconds since last fed (transport animals only, for starvation tracking) */
+  animalHungerTimer: number;
 }
 
 let nextUnitId = 1;
@@ -82,6 +86,8 @@ export function createUnit(
     carriedTool: null,
     pendingDismissal: false,
     satiation: 1.0,
+    animalAge: 0,
+    animalHungerTimer: 0,
   };
 }
 

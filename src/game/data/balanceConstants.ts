@@ -7,6 +7,7 @@
  */
 
 import { ResourceType } from '../ResourceType';
+import { UnitType } from '../UnitType';
 import type { Difficulty } from '../GameConfig';
 
 // ─── Woodcutter ─────────────────────────────────────────────────────────────
@@ -194,3 +195,33 @@ export const ROAD_UPGRADE_TIMES = [5, 10, 15]; // seconds per upgrade level
 export function getRoadUpgradeCost(currentQuality: number): { resource: ResourceType; amount: number }[] {
   return ROAD_UPGRADE_COSTS[currentQuality] ?? [];
 }
+
+// ── Animal lifecycle constants ──────────────────────────────────────────────
+/** How often animals attempt to feed (seconds) */
+export const ANIMAL_FEED_INTERVAL = 10.0;
+
+export interface AnimalSpec {
+  /** Resources accepted as feed (any one satisfies) */
+  feedResources: ResourceType[];
+  /** Seconds between required feedings */
+  feedRate: number;
+  /** Maximum lifespan in seconds */
+  lifespan: number;
+  /** Seconds without food before death */
+  starvationTime: number;
+}
+
+export const ANIMAL_SPECS: Partial<Record<string, AnimalSpec>> = {
+  [UnitType.Donkey]: {
+    feedResources: [ResourceType.Hay, ResourceType.Grain],
+    feedRate: 120,
+    lifespan: 1200, // 20 min
+    starvationTime: 60,
+  },
+  [UnitType.HorseTransport]: {
+    feedResources: [ResourceType.Hay, ResourceType.Grain],
+    feedRate: 90,
+    lifespan: 900, // 15 min
+    starvationTime: 45,
+  },
+};

@@ -1459,6 +1459,7 @@ describe('Integration: Save/Load Round-Trip', () => {
         harborManager: new HarborManager(gs2, rn2, grid2),
         feedingManager: new FeedingManager(gs2),
         moraleManager: new MoraleManager(gs2),
+        animalLifecycleManager: { _loadState: () => {} },
       },
       [ai2],
     );
@@ -1555,6 +1556,7 @@ describe('Integration: Save/Load Round-Trip', () => {
         harborManager: new HarborManager(gs2, rn2, grid2),
         feedingManager: new FeedingManager(gs2),
         moraleManager: new MoraleManager(gs2),
+        animalLifecycleManager: { _loadState: () => {} },
       },
       [ai2],
     );
@@ -1635,6 +1637,7 @@ describe('Integration: Save/Load Round-Trip', () => {
         harborManager: new HarborManager(gs2, rn2, grid2),
         feedingManager: new FeedingManager(gs2),
         moraleManager: new MoraleManager(gs2),
+        animalLifecycleManager: { _loadState: () => {} },
       },
       [ai2],
     );

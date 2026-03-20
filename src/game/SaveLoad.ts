@@ -156,6 +156,9 @@ export interface SaveData {
     drinkEvents: [number, { drinkType: string; timestamp: number }[]][];
     elapsedTime: number;
   };
+  animalLifecycleManager?: {
+    feedCooldown: number;
+  };
 
   // Economy settings
   goodsDistribution?: ReturnType<typeof serializeDistribution>;
@@ -201,6 +204,7 @@ export function serializeGame(
     harborManager: HarborManager;
     feedingManager: FeedingManager;
     moraleManager: MoraleManager;
+    animalLifecycleManager?: { _getState(): { feedCooldown: number } };
   },
   aiPlayers: AIPlayer[],
   camera: { frustum: number; position: { x: number; y: number; z: number }; target: { x: number; y: number; z: number } },
@@ -272,6 +276,7 @@ export function serializeGame(
 
     feedingManager: managers.feedingManager._getState(),
     moraleManager: managers.moraleManager._getState(),
+    animalLifecycleManager: managers.animalLifecycleManager?._getState(),
 
     goodsDistribution: distributionSettings ? serializeDistribution(distributionSettings) : undefined,
 
@@ -311,6 +316,7 @@ export function deserializeGame(
     harborManager: HarborManager;
     feedingManager: FeedingManager;
     moraleManager: MoraleManager;
+    animalLifecycleManager?: { _loadState(state: { feedCooldown: number }): void };
   },
   aiPlayers: AIPlayer[],
 ): GoodsDistributionSettings | null {
@@ -380,6 +386,9 @@ export function deserializeGame(
   if (data.moraleManager) {
     managers.moraleManager._loadState(data.moraleManager);
   }
+  if (data.animalLifecycleManager && managers.animalLifecycleManager) {
+    managers.animalLifecycleManager._loadState(data.animalLifecycleManager);
+  }
 
   // Backward compat: patch buildings missing fields from older versions
   for (const b of data.buildings) {
@@ -414,6 +423,13 @@ export function deserializeGame(
     // v10: patch units missing satiation field
     if ((u as unknown as Record<string, unknown>).satiation === undefined) {
       (u as unknown as Record<string, unknown>).satiation = 1.0;
+    }
+    // v11: patch units missing animal lifecycle fields
+    if ((u as unknown as Record<string, unknown>).animalAge === undefined) {
+      (u as unknown as Record<string, unknown>).animalAge = 0;
+    }
+    if ((u as unknown as Record<string, unknown>).animalHungerTimer === undefined) {
+      (u as unknown as Record<string, unknown>).animalHungerTimer = 0;
     }
     // v11: patch units missing cargo field
     if ((u as unknown as Record<string, unknown>).cargo === undefined) {

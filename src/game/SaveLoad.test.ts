@@ -93,6 +93,7 @@ function createManagers(gameState: GameState, roadNetwork: RoadNetwork, territor
     harborManager: new HarborManager(gameState, roadNetwork, gameState.getGrid()),
     feedingManager: new FeedingManager(gameState),
     moraleManager: new MoraleManager(gameState),
+    animalLifecycleManager: { _getState: () => ({ feedCooldown: 10 }), _loadState: () => {} },
   };
 }
 

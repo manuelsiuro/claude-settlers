@@ -66,6 +66,7 @@ import { WorkAreaRenderer } from './WorkAreaRenderer';
 import { PopulationManager } from '../game/PopulationManager';
 import { FeedingManager } from '../game/FeedingManager';
 import { MoraleManager } from '../game/MoraleManager';
+import { AnimalLifecycleManager } from '../game/AnimalLifecycleManager';
 
 export const ShadowQuality = {
   Off: 'off',
@@ -140,6 +141,7 @@ export class Game {
   private workAreaRenderer: WorkAreaRenderer;
   private populationManager: PopulationManager;
   private feedingManager: FeedingManager;
+  private animalLifecycleManager: AnimalLifecycleManager;
   private moraleManager: MoraleManager;
   private aiPlayers: AIPlayer[] = [];
   private roadRenderer: RoadRenderer;
@@ -254,6 +256,7 @@ export class Game {
     this.constructionManager = new ConstructionManager(this.gameState, this.populationManager);
     this.roadNetwork = new RoadNetwork(this.grid);
     this.transporterManager = new TransporterManager(this.gameState, this.roadNetwork, this.populationManager);
+    this.animalLifecycleManager = new AnimalLifecycleManager(this.gameState, this.roadNetwork, this.transporterManager);
     this.logisticsManager = new LogisticsManager(this.gameState, this.roadNetwork);
     this.harborManager = new HarborManager(this.gameState, this.roadNetwork, this.grid);
     this.territoryManager = new TerritoryManager(this.gameState);
@@ -559,6 +562,7 @@ export class Game {
           harborManager: this.harborManager,
           feedingManager: this.feedingManager,
           moraleManager: this.moraleManager,
+          animalLifecycleManager: this.animalLifecycleManager,
         },
         this.aiPlayers,
       );
@@ -710,6 +714,7 @@ export class Game {
       }
       this.feedingManager.update(deltaTime);
       this.moraleManager.update(deltaTime);
+      this.animalLifecycleManager.update(deltaTime);
       this.economyTracker.update(deltaTime);
       this.roadRenderer.sync(this.roadNetwork, (id) => this.gameState.getUnit(id));
       this.territoryRenderer.sync(this.territoryManager);
@@ -1394,6 +1399,7 @@ export class Game {
         harborManager: this.harborManager,
         feedingManager: this.feedingManager,
         moraleManager: this.moraleManager,
+        animalLifecycleManager: this.animalLifecycleManager,
       },
       this.aiPlayers,
       {
