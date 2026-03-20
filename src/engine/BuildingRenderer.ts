@@ -49,39 +49,39 @@ export const BUILDING_SCALE: Record<string, number> = {
   [BuildingType.Harbor]: 0.12,
 
   // ── Housing ──
-  [BuildingType.SmallHouse]: 0.15,
-  [BuildingType.MediumHouse]: 0.15,
-  [BuildingType.LargeHouse]: 0.15,
+  [BuildingType.SmallHouse]: 2.5,
+  [BuildingType.MediumHouse]: 2.1,
+  [BuildingType.LargeHouse]: 1.7,
 
   // ── Expansion: Food & Farming ──
-  [BuildingType.Well]: 0.25,
-  [BuildingType.Orchard]: 0.18,
-  [BuildingType.Vineyard]: 0.20,
-  [BuildingType.Winery]: 0.18,
-  [BuildingType.Brewery]: 0.20,
-  [BuildingType.DairyFarm]: 0.18,
-  [BuildingType.CheeseMakerBuilding]: 0.22,
-  [BuildingType.Hayfield]: 0.24,
+  [BuildingType.Well]: 0.18,
+  [BuildingType.Orchard]: 0.16,
+  [BuildingType.Vineyard]: 0.18,
+  [BuildingType.Winery]: 0.17,
+  [BuildingType.Brewery]: 0.18,
+  [BuildingType.DairyFarm]: 0.16,
+  [BuildingType.CheeseMakerBuilding]: 0.20,
+  [BuildingType.Hayfield]: 0.16,
 
   // ── Expansion: Crafting & Animals ──
   [BuildingType.Tannery]: 0.18,
-  [BuildingType.WeaversHut]: 0.22,
+  [BuildingType.WeaversHut]: 0.20,
   [BuildingType.CharcoalBurner]: 0.18,
   [BuildingType.FletchersWorkshop]: 0.18,
   [BuildingType.SiegeWorkshop]: 0.15,
   [BuildingType.Stable]: 0.16,
-  [BuildingType.CattleRanch]: 0.18,
-  [BuildingType.SheepFarm]: 0.18,
-  [BuildingType.Butchery]: 0.20,
+  [BuildingType.CattleRanch]: 0.16,
+  [BuildingType.SheepFarm]: 0.16,
+  [BuildingType.Butchery]: 0.18,
 
   // ── Expansion: Military ──
-  [BuildingType.Fortress]: 0.22,
+  [BuildingType.Fortress]: 0.12,
   [BuildingType.ArcheryRange]: 0.16,
-  [BuildingType.TorchTower]: 0.80,
+  [BuildingType.TorchTower]: 0.20,
 
   // ── Expansion: Special ──
   [BuildingType.InnTavern]: 0.17,
-  [BuildingType.Market]: 0.35,
+  [BuildingType.Market]: 0.16,
 };
 
 const DEFAULT_BUILDING_SCALE = 0.15;
