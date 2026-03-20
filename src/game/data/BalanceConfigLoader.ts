@@ -4,6 +4,7 @@ import type { BalanceConfigOverrides } from './balanceConstants';
 const VALID_SECTIONS = new Set([
   'woodcutter', 'forester', 'geologist', 'trees', 'combat', 'upgrades',
   'victory', 'population', 'hunger', 'night', 'morale', 'animals',
+  'startingResources',
 ]);
 
 /** Validate a balance config JSON object. Returns an array of error strings. */
@@ -16,8 +17,44 @@ export function validateBalanceConfig(config: unknown): string[] {
 
   const obj = config as Record<string, unknown>;
   for (const key of Object.keys(obj)) {
+    // Skip metadata fields (e.g. _comment, generatedAt)
+    if (key.startsWith('_') || key === 'generatedAt') continue;
     if (!VALID_SECTIONS.has(key)) {
       errors.push(`Unknown section: "${key}"`);
+      continue;
+    }
+    if (key === 'startingResources') {
+      const sr = obj[key];
+      if (typeof sr !== 'object' || sr === null || Array.isArray(sr)) {
+        errors.push('startingResources must be a non-null object');
+        continue;
+      }
+      const validDiffs = new Set(['easy', 'normal', 'hard']);
+      for (const [diff, items] of Object.entries(sr as Record<string, unknown>)) {
+        if (!validDiffs.has(diff)) {
+          errors.push(`startingResources: unknown difficulty "${diff}"`);
+          continue;
+        }
+        if (!Array.isArray(items)) {
+          errors.push(`startingResources.${diff} must be an array`);
+          continue;
+        }
+        for (let i = 0; i < items.length; i++) {
+          const item = items[i] as Record<string, unknown>;
+          if (typeof item !== 'object' || item === null) {
+            errors.push(`startingResources.${diff}[${i}] must be an object`);
+            continue;
+          }
+          if (typeof item.resource !== 'string') {
+            errors.push(`startingResources.${diff}[${i}].resource must be a string`);
+          }
+          if (typeof item.amount !== 'number' || !Number.isInteger(item.amount)) {
+            errors.push(`startingResources.${diff}[${i}].amount must be an integer`);
+          } else if (item.amount < 0) {
+            errors.push(`startingResources.${diff}[${i}].amount must be >= 0`);
+          }
+        }
+      }
       continue;
     }
     const section = obj[key];

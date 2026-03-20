@@ -170,7 +170,7 @@ export let MORALE_MULTIPLIER_SCALE = 0.8;
 // ─── Difficulty-Based Starting Resources ───────────────────────────────────
 
 /** Resource types included in all starting configurations (order matters for readability) */
-const STARTING_RESOURCE_TYPES = [
+export const STARTING_RESOURCE_TYPES = [
   ResourceType.Wood, ResourceType.Stone, ResourceType.Planks,
   ResourceType.Fish, ResourceType.Bread, ResourceType.IronBars,
   ResourceType.Axe, ResourceType.Pickaxe, ResourceType.Saw,
@@ -279,6 +279,7 @@ export interface BalanceConfigOverrides {
     multiplierBase?: number; multiplierScale?: number;
   };
   animals?: { feedInterval?: number };
+  startingResources?: Partial<Record<Difficulty, { resource: string; amount: number }[]>>;
 }
 
 /** Apply balance overrides from a config object. Only specified values are changed. */
@@ -345,6 +346,17 @@ export function applyBalanceOverrides(config: BalanceConfigOverrides): void {
   if (config.morale?.multiplierScale !== undefined) MORALE_MULTIPLIER_SCALE = config.morale.multiplierScale;
   // Animals
   if (config.animals?.feedInterval !== undefined) ANIMAL_FEED_INTERVAL = config.animals.feedInterval;
+  // Starting Resources
+  if (config.startingResources) {
+    for (const [diff, items] of Object.entries(config.startingResources)) {
+      if (items) {
+        CASTLE_STARTING_RESOURCES_BY_DIFFICULTY[diff as Difficulty] = items.map(item => ({
+          resource: item.resource as ResourceType,
+          amount: item.amount,
+        }));
+      }
+    }
+  }
 }
 
 /** Reset all balance constants to their default values. */
@@ -399,4 +411,8 @@ export function resetBalanceDefaults(): void {
   MORALE_MULTIPLIER_BASE = 0.85;
   MORALE_MULTIPLIER_SCALE = 0.8;
   ANIMAL_FEED_INTERVAL = 10.0;
+  // Starting Resources
+  CASTLE_STARTING_RESOURCES_BY_DIFFICULTY.easy = buildResourceList(STARTING_AMOUNTS.easy);
+  CASTLE_STARTING_RESOURCES_BY_DIFFICULTY.normal = buildResourceList(STARTING_AMOUNTS.normal);
+  CASTLE_STARTING_RESOURCES_BY_DIFFICULTY.hard = buildResourceList(STARTING_AMOUNTS.hard);
 }

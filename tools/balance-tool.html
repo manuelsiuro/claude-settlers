@@ -53,6 +53,15 @@
   table.data-table td { padding: 5px 8px; border-bottom: 1px solid rgba(45,45,68,0.5); }
   table.data-table tr:hover td { background: rgba(96,165,250,0.05); }
   .gauge-ring { stroke-linecap: round; transition: stroke-dashoffset 0.3s ease; }
+  .const-modified { background: rgba(245,158,11,0.10) !important; border-color: var(--warning) !important; }
+  .const-modified .input-num { border-color: var(--warning); }
+  .const-row { position: relative; }
+  .const-reset-btn { display: none; background: none; border: none; color: var(--warning); cursor: pointer; font-size: 14px; padding: 0 4px; line-height: 1; }
+  .const-row:hover .const-reset-btn { display: inline-block; }
+  .const-section-body.collapsed { display: none; }
+  .const-section-toggle { cursor: pointer; user-select: none; }
+  .const-section-toggle .chevron { display: inline-block; transition: transform 0.15s; }
+  .const-section-toggle.collapsed .chevron { transform: rotate(-90deg); }
   @media (max-width: 768px) {
     .tab-layout { flex-direction: column !important; }
     .tab-sidebar { width: 100% !important; max-height: 40vh; }
@@ -504,12 +513,13 @@ window.BT = {};
       ]
     },
     starting: {
-      title: 'Starting Resources Analyzer',
-      purpose: 'How long do starting resources last? What can I build first?',
+      title: 'Starting Resources Analyzer & Editor',
+      purpose: 'How long do starting resources last? Edit them and export overrides.',
       workflow: [
         'Select a difficulty: Easy, Normal, Hard, or Custom',
-        'Pick a build order preset (matches AI difficulty strategies)',
-        'Click "Analyze" to compare'
+        'Edit starting amounts in the "Edit Starting Amounts" table in the sidebar',
+        'Pick a build order preset and click "Analyze" to compare',
+        'Edited values are included in "Export to Game" as startingResources overrides'
       ],
       results: [
         { term: 'Comparison table', desc: 'Side-by-side resource amounts. Green = highest, white = middle, red = lowest.' },
@@ -519,7 +529,28 @@ window.BT = {};
       tips: [
         'Easy gives ~6 affordable buildings vs Hard\'s ~3',
         'Food duration tells you how urgently you need a Fisherman Hut',
-        'Use "Custom" mode to test hypothetical starting configurations'
+        'Edit starting amounts then re-analyze to see the impact instantly',
+        'Modified starting resources are included in the Export to Game download'
+      ]
+    },
+    constants: {
+      title: 'Constants Editor',
+      purpose: 'Edit every tunable game constant in one place, then export to your game.',
+      workflow: [
+        'Browse sections (Woodcutter, Hunger, Morale, etc.) or use the search box',
+        'Edit values — amber highlight shows which values differ from defaults',
+        'Switch to other tabs (Combat, Hunger, Morale) to simulate with your edits',
+        'Click "Export to Game" in the header to download balance_config.json'
+      ],
+      results: [
+        { term: 'Modified badge', desc: 'Counter in the sidebar showing how many constants have been changed from defaults.' },
+        { term: 'Amber highlight', desc: 'Changed fields get an amber background. Per-field reset buttons appear on hover.' },
+        { term: 'Default badge', desc: 'Each field shows (d:X) with the original default value for quick reference.' }
+      ],
+      tips: [
+        'Edits are live — switching to the Combat tab immediately uses your new combat constants',
+        'Use "Reset All" in the sidebar to restore every constant to its default',
+        'The search box filters across all sections to quickly find a specific constant'
       ]
     },
     morale: {
@@ -850,17 +881,19 @@ window.BT = {};
 
     const MILITARY_TYPES = ['knight', 'archer', 'cavalry', 'siege_operator', 'scout'];
 
-    function calcStrength(unit, rank, goldBars, morale, isCharging) {
+    function calcStrength(unit, rank, goldBars, morale, isCharging, data) {
       const base = unit.combatStrength;
-      const goldBonus = 1 + Math.min(goldBars * 0.05, 0.5);
-      const moraleMultiplier = 0.85 + (morale - 0.5) * 0.8;
+      const cc = data ? data.constants.combat : { goldBonusPerBar: 0.05, maxGoldBonus: 0.5 };
+      const mc = data ? data.constants.morale : { multiplierBase: 0.85, multiplierScale: 0.8 };
+      const goldBonus = 1 + Math.min(goldBars * cc.goldBonusPerBar, cc.maxGoldBonus);
+      const moraleMultiplier = mc.multiplierBase + (morale - 0.5) * mc.multiplierScale;
       const charge = (isCharging && unit.chargeMultiplier > 0) ? unit.chargeMultiplier : 1;
       return rank * base * goldBonus * moraleMultiplier * charge;
     }
 
-    function runDuels(attacker, aRank, aGold, aMorale, defender, dRank, dGold, dMorale, n) {
-      const aStr = calcStrength(attacker, aRank, aGold, aMorale, true);
-      const dStr = calcStrength(defender, dRank, dGold, dMorale, false);
+    function runDuels(attacker, aRank, aGold, aMorale, defender, dRank, dGold, dMorale, n, data) {
+      const aStr = calcStrength(attacker, aRank, aGold, aMorale, true, data);
+      const dStr = calcStrength(defender, dRank, dGold, dMorale, false, data);
       const winProb = aStr / (aStr + dStr);
       let wins = 0;
       for (let i = 0; i < n; i++) {
@@ -931,7 +964,7 @@ window.BT = {};
 
       const attacker = data.units[atkType];
       const defender = data.units[defType];
-      const result = runDuels(attacker, aRank, aGold, aMorale, defender, dRank, dGold, dMorale, 10000);
+      const result = runDuels(attacker, aRank, aGold, aMorale, defender, dRank, dGold, dMorale, 10000, data);
       lastResult = { type: 'duel', ...result, atkType, defType };
 
       const el = document.getElementById('combatResults');
@@ -954,8 +987,8 @@ window.BT = {};
             <tr><th></th><th>Attacker (${attacker.label})</th><th>Defender (${defender.label})</th></tr>
             <tr><td>Base Strength</td><td class="tabular">${attacker.combatStrength}</td><td class="tabular">${defender.combatStrength}</td></tr>
             <tr><td>Rank</td><td class="tabular">${aRank}</td><td class="tabular">${dRank}</td></tr>
-            <tr><td>Gold Bonus</td><td class="tabular">+${pct(Math.min(aGold * 0.05, 0.5))}</td><td class="tabular">+${pct(Math.min(dGold * 0.05, 0.5))}</td></tr>
-            <tr><td>Morale Mult.</td><td class="tabular">x${fmt(0.85 + (aMorale - 0.5) * 0.8)}</td><td class="tabular">x${fmt(0.85 + (dMorale - 0.5) * 0.8)}</td></tr>
+            <tr><td>Gold Bonus</td><td class="tabular">+${pct(Math.min(aGold * data.constants.combat.goldBonusPerBar, data.constants.combat.maxGoldBonus))}</td><td class="tabular">+${pct(Math.min(dGold * data.constants.combat.goldBonusPerBar, data.constants.combat.maxGoldBonus))}</td></tr>
+            <tr><td>Morale Mult.</td><td class="tabular">x${fmt(data.constants.morale.multiplierBase + (aMorale - 0.5) * data.constants.morale.multiplierScale)}</td><td class="tabular">x${fmt(data.constants.morale.multiplierBase + (dMorale - 0.5) * data.constants.morale.multiplierScale)}</td></tr>
             <tr><td>Charge Bonus</td><td class="tabular">${attacker.chargeMultiplier > 0 ? 'x' + attacker.chargeMultiplier : '-'}</td><td class="tabular">-</td></tr>
             <tr style="font-weight:600"><td>Effective</td><td class="tabular" style="color:var(--accent)">${fmt(result.attackerStr)}</td><td class="tabular" style="color:var(--accent)">${fmt(result.defenderStr)}</td></tr>
             <tr><td>Theoretical Win%</td><td class="tabular">${pct(result.winProb)}</td><td class="tabular">${pct(1 - result.winProb)}</td></tr>
@@ -984,8 +1017,8 @@ window.BT = {};
         for (const defId of MILITARY_TYPES) {
           const atk = data.units[atkId];
           const def = data.units[defId];
-          const aStr = calcStrength(atk, rank, gold, morale, true);
-          const dStr = calcStrength(def, rank, gold, morale, false);
+          const aStr = calcStrength(atk, rank, gold, morale, true, data);
+          const dStr = calcStrength(def, rank, gold, morale, false, data);
           row.push(aStr / (aStr + dStr));
         }
         matrix.push(row);
@@ -1578,10 +1611,30 @@ window.BT = {};
       }
       const resIds = [...allResInStart].sort();
 
+      // Snapshot original starting resources
+      if (!BT.START_DEFAULTS) {
+        BT.START_DEFAULTS = JSON.parse(JSON.stringify(data.startingResources));
+      }
+
       let customTableHTML = resIds.map(r => `<div class="flex items-center gap-2 mb-1">
         <span class="w-24 text-xs truncate">${data.resources[r]?.label || r}</span>
         <input type="number" min="0" max="100" value="0" step="1" class="input-num w-14" data-custom-res="${r}">
       </div>`).join('');
+
+      // Build editable starting amounts table
+      let editTableHTML = `<table style="width:100%;border-collapse:collapse;font-size:11px;">
+        <tr><th class="text-left" style="padding:2px 4px;">Resource</th>
+        ${difficulties.map(d => `<th style="padding:2px 4px;text-align:center;">${d.charAt(0).toUpperCase() + d.slice(1)}</th>`).join('')}</tr>`;
+      for (const r of resIds) {
+        editTableHTML += `<tr><td class="text-xs truncate" style="padding:2px 4px;max-width:80px;" title="${data.resources[r]?.label || r}">${data.resources[r]?.label || r}</td>`;
+        for (const d of difficulties) {
+          const item = data.startingResources[d].find(i => i.resource === r);
+          const val = item ? item.amount : 0;
+          editTableHTML += `<td style="padding:2px 4px;text-align:center;"><input type="number" min="0" max="200" value="${val}" step="1" class="input-num start-edit-input" data-start-edit="${d}.${r}" style="width:50px;font-size:11px;text-align:center;"></td>`;
+        }
+        editTableHTML += '</tr>';
+      }
+      editTableHTML += '</table>';
 
       const buildOrders = {
         aggressive: 'Aggressive (Hard AI)',
@@ -1600,6 +1653,12 @@ window.BT = {};
             <div class="section-title">Custom Resources</div>
             ${customTableHTML}
           </div>
+          <div class="section-title">Edit Starting Amounts</div>
+          <div class="card mb-3 scrollable" style="max-height:280px;">
+            ${editTableHTML}
+          </div>
+          <div id="startEditIndicator" class="text-xs mb-2 hidden" style="color:var(--warning);">Modified — will be included in export</div>
+          <button class="btn btn-sm btn-outline w-full mb-3" id="startResetEditBtn">Reset to Defaults</button>
           <div class="section-title">Build Order Preset</div>
           <select class="sel w-full mb-3" id="startBuildOrder">
             ${Object.entries(buildOrders).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}
@@ -1621,6 +1680,44 @@ window.BT = {};
         });
       });
 
+      // Wire edit inputs — check for modifications
+      function checkStartEdited() {
+        let modified = false;
+        container.querySelectorAll('.start-edit-input').forEach(inp => {
+          const [d, r] = inp.dataset.startEdit.split('.');
+          const origItem = BT.START_DEFAULTS[d]?.find(i => i.resource === r);
+          const origVal = origItem ? origItem.amount : 0;
+          if (parseInt(inp.value) !== origVal) modified = true;
+        });
+        document.getElementById('startEditIndicator').classList.toggle('hidden', !modified);
+      }
+      container.querySelectorAll('.start-edit-input').forEach(inp => {
+        inp.addEventListener('input', () => {
+          // Update data.startingResources in-place
+          const [d, r] = inp.dataset.startEdit.split('.');
+          const arr = data.startingResources[d];
+          const item = arr.find(i => i.resource === r);
+          if (item) {
+            item.amount = parseInt(inp.value) || 0;
+          } else {
+            arr.push({ resource: r, amount: parseInt(inp.value) || 0 });
+          }
+          checkStartEdited();
+        });
+      });
+
+      // Wire reset button
+      document.getElementById('startResetEditBtn').addEventListener('click', () => {
+        for (const d of difficulties) {
+          data.startingResources[d] = JSON.parse(JSON.stringify(BT.START_DEFAULTS[d]));
+          for (const item of data.startingResources[d]) {
+            const inp = container.querySelector(`[data-start-edit="${d}.${item.resource}"]`);
+            if (inp) inp.value = item.amount;
+          }
+        }
+        checkStartEdited();
+      });
+
       document.getElementById('startAnalyzeBtn').addEventListener('click', () => analyze(data));
       document.getElementById('startExportBtn').addEventListener('click', () => {
         exportJSON({ tab: 'starting_resources', results: lastResult }, 'starting_resources.json');
@@ -1637,6 +1734,7 @@ window.BT = {};
           if (v > 0) map[el.dataset.customRes] = v;
         });
       } else {
+        // Read from data.startingResources which may have been edited
         for (const item of (data.startingResources[diff] || [])) {
           map[item.resource] = item.amount;
         }
@@ -1809,6 +1907,28 @@ window.BT = {};
     return { init, activate };
   })();
 
+  /** Returns starting resource overrides for export, or null if unchanged. */
+  BT.getStartingResourceOverrides = function() {
+    if (!BT.START_DEFAULTS || !DATA) return null;
+    const diffs = ['easy', 'normal', 'hard'];
+    const overrides = {};
+    let hasChanges = false;
+    for (const d of diffs) {
+      const current = DATA.startingResources[d];
+      const original = BT.START_DEFAULTS[d];
+      // Check if this difficulty changed
+      const changed = current.length !== original.length || current.some((item, i) => {
+        const orig = original[i];
+        return !orig || item.resource !== orig.resource || item.amount !== orig.amount;
+      });
+      if (changed) {
+        overrides[d] = current.map(item => ({ resource: item.resource, amount: item.amount }));
+        hasChanges = true;
+      }
+    }
+    return hasChanges ? overrides : null;
+  };
+
   // ============================================================
   // TAB 6: MORALE & NIGHT EFFECTS
   // ============================================================
@@ -1824,16 +1944,18 @@ window.BT = {};
       { name: 'Night', nightness: 1.0, duration: 180 }
     ];
 
-    function calcMorale(uniqueDrinks, drinksServed, goldBars) {
-      const base = 0.50;
-      const variety = Math.min(0.20, uniqueDrinks * 0.10);
-      const volume = Math.min(0.20, drinksServed * 0.02);
-      const gold = Math.min(0.10, goldBars * 0.01);
+    function calcMorale(uniqueDrinks, drinksServed, goldBars, data) {
+      const mc = data ? data.constants.morale : { base: 0.50, varietyBonusMax: 0.20, varietyPerType: 0.10, volumeBonusMax: 0.20, volumePerDrink: 0.02, goldBonusMax: 0.10, goldBonusPerBar: 0.01 };
+      const base = mc.base;
+      const variety = Math.min(mc.varietyBonusMax, uniqueDrinks * mc.varietyPerType);
+      const volume = Math.min(mc.volumeBonusMax, drinksServed * mc.volumePerDrink);
+      const gold = Math.min(mc.goldBonusMax, goldBars * mc.goldBonusPerBar);
       return Math.min(1.0, base + variety + volume + gold);
     }
 
-    function calcMultiplier(morale) {
-      return 0.85 + (morale - 0.50) * 0.8;
+    function calcMultiplier(morale, data) {
+      const mc = data ? data.constants.morale : { multiplierBase: 0.85, multiplierScale: 0.8 };
+      return mc.multiplierBase + (morale - 0.50) * mc.multiplierScale;
     }
 
     function init(container, data) {
@@ -1882,16 +2004,17 @@ window.BT = {};
       const torches = parseInt(document.getElementById('nightTorches').value);
       const affectedBuildings = parseInt(document.getElementById('nightBuildings').value);
 
-      const morale = calcMorale(uniqueDrinks, drinksServed, goldBars);
-      const prodMultiplier = calcMultiplier(morale);
-      const combatMultiplier = calcMultiplier(morale);
+      const morale = calcMorale(uniqueDrinks, drinksServed, goldBars, data);
+      const prodMultiplier = calcMultiplier(morale, data);
+      const combatMultiplier = calcMultiplier(morale, data);
 
       // Morale breakdown
+      const mc = data.constants.morale;
       const components = {
-        base: 0.50,
-        variety: Math.min(0.20, uniqueDrinks * 0.10),
-        volume: Math.min(0.20, drinksServed * 0.02),
-        gold: Math.min(0.10, goldBars * 0.01)
+        base: mc.base,
+        variety: Math.min(mc.varietyBonusMax, uniqueDrinks * mc.varietyPerType),
+        volume: Math.min(mc.volumeBonusMax, drinksServed * mc.volumePerDrink),
+        gold: Math.min(mc.goldBonusMax, goldBars * mc.goldBonusPerBar)
       };
 
       // Night production over 24h cycle
@@ -1933,6 +2056,7 @@ window.BT = {};
       const el = document.getElementById('moraleResults');
       charts.forEach(c => BT.Charts.destroy(c));
       charts = [];
+      const mc = data.constants.morale;
 
       const moraleColor = morale >= 0.8 ? 'var(--success)' : morale >= 0.6 ? 'var(--accent)' : morale >= 0.5 ? 'var(--warning)' : 'var(--error)';
 
@@ -1962,11 +2086,11 @@ window.BT = {};
           <div class="section-title">Morale Formula Breakdown</div>
           <table class="data-table">
             <tr><td>Base</td><td class="tabular">${fmt(components.base)}</td></tr>
-            <tr><td>Drink Variety (min(0.20, types x 0.10))</td><td class="tabular" style="color:var(--accent)">+${fmt(components.variety)}</td></tr>
-            <tr><td>Drink Volume (min(0.20, served x 0.02))</td><td class="tabular" style="color:var(--accent)">+${fmt(components.volume)}</td></tr>
-            <tr><td>Gold Bonus (min(0.10, bars x 0.01))</td><td class="tabular" style="color:var(--accent)">+${fmt(components.gold)}</td></tr>
+            <tr><td>Drink Variety (min(${fmt(mc.varietyBonusMax)}, types x ${fmt(mc.varietyPerType)}))</td><td class="tabular" style="color:var(--accent)">+${fmt(components.variety)}</td></tr>
+            <tr><td>Drink Volume (min(${fmt(mc.volumeBonusMax)}, served x ${fmt(mc.volumePerDrink)}))</td><td class="tabular" style="color:var(--accent)">+${fmt(components.volume)}</td></tr>
+            <tr><td>Gold Bonus (min(${fmt(mc.goldBonusMax)}, bars x ${fmt(mc.goldBonusPerBar)}))</td><td class="tabular" style="color:var(--accent)">+${fmt(components.gold)}</td></tr>
             <tr style="font-weight:700"><td>Total Morale</td><td class="tabular" style="color:${moraleColor}">${fmt(morale)}</td></tr>
-            <tr><td>Multiplier = 0.85 + (morale - 0.50) x 0.80</td><td class="tabular font-semibold">${fmt(prodMultiplier, 3)}</td></tr>
+            <tr><td>Multiplier = ${fmt(mc.multiplierBase)} + (morale - 0.50) x ${fmt(mc.multiplierScale)}</td><td class="tabular font-semibold">${fmt(prodMultiplier, 3)}</td></tr>
           </table>
         </div>
         <div class="section-title">Day/Night Cycle Production</div>
@@ -2024,6 +2148,261 @@ window.BT = {};
   })();
 
   // ============================================================
+  // FIELD_META — metadata for every editable constant
+  // ============================================================
+  const FIELD_META = {
+    woodcutter: {
+      _label: 'Woodcutter', _icon: '\u{1FAB5}',
+      chopDuration: { label: 'Chop Duration', min: 1, max: 30, step: 0.5, suffix: 's', desc: 'Seconds to chop a tree' },
+      idleCooldown: { label: 'Idle Cooldown', min: 0, max: 10, step: 0.5, suffix: 's', desc: 'Wait before next tree search' },
+    },
+    forester: {
+      _label: 'Forester', _icon: '\u{1F332}',
+      plantDuration: { label: 'Plant Duration', min: 1, max: 20, step: 0.5, suffix: 's', desc: 'Seconds to plant a tree' },
+      idleCooldown: { label: 'Idle Cooldown', min: 0, max: 10, step: 0.5, suffix: 's', desc: 'Wait before next planting' },
+    },
+    geologist: {
+      _label: 'Geologist', _icon: '\u{1F48E}',
+      prospectDuration: { label: 'Prospect Duration', min: 1, max: 20, step: 0.5, suffix: 's', desc: 'Seconds to prospect a tile' },
+      idleCooldown: { label: 'Idle Cooldown', min: 0, max: 10, step: 0.5, suffix: 's', desc: 'Wait before next prospect' },
+    },
+    trees: {
+      _label: 'Trees', _icon: '\u{1F333}',
+      maxPerTile: { label: 'Max Per Tile', min: 1, max: 20, step: 1, suffix: '', desc: 'Maximum trees per hex tile' },
+      saplingGrowthTime: { label: 'Sapling Growth', min: 10, max: 300, step: 5, suffix: 's', desc: 'Sapling to young stage' },
+      youngGrowthTime: { label: 'Young Growth', min: 10, max: 300, step: 5, suffix: 's', desc: 'Young to mature stage' },
+    },
+    combat: {
+      _label: 'Combat', _icon: '\u2694\uFE0F',
+      winsPerRank: { label: 'Wins Per Rank', min: 1, max: 10, step: 1, suffix: '', desc: 'Duel wins needed to rank up' },
+      goldBonusPerBar: { label: 'Gold Bonus/Bar', min: 0, max: 0.2, step: 0.01, suffix: '', desc: 'Combat bonus per gold bar' },
+      maxGoldBonus: { label: 'Max Gold Bonus', min: 0, max: 2, step: 0.05, suffix: '', desc: 'Gold bonus cap' },
+    },
+    upgrades: {
+      _label: 'Upgrades', _icon: '\u2B06\uFE0F',
+      maxLevel: { label: 'Max Level', min: 1, max: 20, step: 1, suffix: '', desc: 'Maximum upgrade level per axis' },
+      workRadiusMaxLevel: { label: 'Work Radius Max', min: 1, max: 10, step: 1, suffix: '', desc: 'Max work radius upgrade level' },
+    },
+    victory: {
+      _label: 'Victory', _icon: '\u{1F3C6}',
+      dominationThreshold: { label: 'Domination %', min: 0.1, max: 1.0, step: 0.05, suffix: '', desc: 'Territory fraction for domination' },
+      economicGoldTarget: { label: 'Economic Gold', min: 10, max: 200, step: 5, suffix: '', desc: 'Gold bars for economic victory' },
+      peacefulGoodsTarget: { label: 'Peaceful Goods', min: 10, max: 500, step: 10, suffix: '', desc: 'Goods for peaceful victory' },
+    },
+    population: {
+      _label: 'Population', _icon: '\u{1F465}',
+      castleCapacity: { label: 'Castle Capacity', min: 5, max: 50, step: 1, suffix: '', desc: 'Base castle population cap' },
+      smallHouseCapacity: { label: 'Small House', min: 1, max: 30, step: 1, suffix: '', desc: 'Small house pop capacity' },
+      mediumHouseCapacity: { label: 'Medium House', min: 1, max: 50, step: 1, suffix: '', desc: 'Medium house pop capacity' },
+      largeHouseCapacity: { label: 'Large House', min: 1, max: 80, step: 1, suffix: '', desc: 'Large house pop capacity' },
+      warningThreshold: { label: 'Warning Threshold', min: 0.5, max: 1.0, step: 0.05, suffix: '', desc: 'Pop ratio for warning color' },
+      cautionThreshold: { label: 'Caution Threshold', min: 0.3, max: 1.0, step: 0.05, suffix: '', desc: 'Pop ratio for normal color' },
+    },
+    hunger: {
+      _label: 'Hunger', _icon: '\u{1F355}',
+      decayRate: { label: 'Decay Rate', min: 0, max: 0.02, step: 0.0005, suffix: '/s', desc: 'Base satiation decay per second' },
+      workingMultiplier: { label: 'Working Mult.', min: 0.5, max: 3, step: 0.1, suffix: 'x', desc: 'Decay multiplier when working' },
+      garrisonedMultiplier: { label: 'Garrisoned Mult.', min: 0, max: 2, step: 0.1, suffix: 'x', desc: 'Decay multiplier when garrisoned' },
+      hungryThreshold: { label: 'Hungry Threshold', min: 0.1, max: 0.9, step: 0.05, suffix: '', desc: 'Below this = hungry penalties' },
+      starvingThreshold: { label: 'Starving Threshold', min: 0.05, max: 0.5, step: 0.05, suffix: '', desc: 'Below this = starving penalties' },
+      speedPenaltyHungry: { label: 'Speed Pen. Hungry', min: 0, max: 1, step: 0.05, suffix: '', desc: 'Speed penalty when hungry' },
+      speedPenaltyStarving: { label: 'Speed Pen. Starving', min: 0, max: 1, step: 0.05, suffix: '', desc: 'Speed penalty when starving' },
+      productionPenaltyHungry: { label: 'Prod. Pen. Hungry', min: 0, max: 1, step: 0.05, suffix: '', desc: 'Production penalty when hungry' },
+      productionPenaltyStarving: { label: 'Prod. Pen. Starving', min: 0, max: 1, step: 0.05, suffix: '', desc: 'Production penalty when starving' },
+    },
+    night: {
+      _label: 'Night', _icon: '\u{1F319}',
+      productionSlowdown: { label: 'Prod. Slowdown', min: 0, max: 1, step: 0.05, suffix: '', desc: 'Max night production slowdown' },
+      speedPenaltyCivilian: { label: 'Civilian Speed', min: 0, max: 1, step: 0.05, suffix: '', desc: 'Night speed penalty (civilian)' },
+      speedPenaltyTransporter: { label: 'Transporter Speed', min: 0, max: 1, step: 0.05, suffix: '', desc: 'Night speed penalty (transport)' },
+      speedPenaltyKnight: { label: 'Knight Speed', min: 0, max: 1, step: 0.05, suffix: '', desc: 'Night speed penalty (knight)' },
+      speedPenaltyBuilder: { label: 'Builder Speed', min: 0, max: 1, step: 0.05, suffix: '', desc: 'Night speed penalty (builder)' },
+      torchTowerReduction: { label: 'Torch Reduction', min: 0, max: 1, step: 0.05, suffix: '', desc: 'Torch tower night penalty reduction' },
+      torchTowerRadius: { label: 'Torch Radius', min: 1, max: 15, step: 1, suffix: ' hex', desc: 'Torch tower light radius' },
+    },
+    morale: {
+      _label: 'Morale', _icon: '\u{1F37A}',
+      base: { label: 'Base Morale', min: 0, max: 1, step: 0.05, suffix: '', desc: 'Morale with no drinks served' },
+      window: { label: 'Window', min: 30, max: 600, step: 30, suffix: 's', desc: 'Rolling window for drink events' },
+      varietyBonusMax: { label: 'Variety Max', min: 0, max: 0.5, step: 0.05, suffix: '', desc: 'Max morale from drink variety' },
+      varietyPerType: { label: 'Variety/Type', min: 0, max: 0.3, step: 0.01, suffix: '', desc: 'Morale per unique drink type' },
+      volumeBonusMax: { label: 'Volume Max', min: 0, max: 0.5, step: 0.05, suffix: '', desc: 'Max morale from drink volume' },
+      volumePerDrink: { label: 'Volume/Drink', min: 0, max: 0.1, step: 0.005, suffix: '', desc: 'Morale per drink served' },
+      goldBonusPerBar: { label: 'Gold Bonus/Bar', min: 0, max: 0.1, step: 0.005, suffix: '', desc: 'Morale bonus per gold bar' },
+      goldBonusMax: { label: 'Gold Max', min: 0, max: 0.3, step: 0.01, suffix: '', desc: 'Max gold morale bonus' },
+      multiplierBase: { label: 'Multiplier Base', min: 0.5, max: 1.0, step: 0.05, suffix: '', desc: 'Base morale-to-multiplier value' },
+      multiplierScale: { label: 'Multiplier Scale', min: 0.1, max: 2.0, step: 0.1, suffix: '', desc: 'Morale-to-multiplier scaling' },
+    },
+    animals: {
+      _label: 'Animals', _icon: '\u{1F434}',
+      feedInterval: { label: 'Feed Interval', min: 1, max: 30, step: 1, suffix: 's', desc: 'Seconds between animal feed attempts' },
+    },
+  };
+
+  // ============================================================
+  // TAB 7: CONSTANTS EDITOR
+  // ============================================================
+  BT.TabConstants = (function() {
+    function init(container, data) {
+      // Snapshot defaults at first init
+      if (!BT.DEFAULTS) BT.DEFAULTS = JSON.parse(JSON.stringify(data.constants));
+
+      const sections = Object.keys(FIELD_META);
+
+      // Build sidebar nav
+      let sidebarNav = sections.map(sec => {
+        const meta = FIELD_META[sec];
+        return `<button class="btn btn-sm btn-outline w-full mb-1 text-left const-nav-btn" data-section="${sec}" style="font-size:11px;">
+          ${meta._icon} ${meta._label}
+        </button>`;
+      }).join('');
+
+      // Build main field grid
+      let mainHTML = '';
+      for (const sec of sections) {
+        const meta = FIELD_META[sec];
+        const fields = Object.entries(meta).filter(([k]) => !k.startsWith('_'));
+        mainHTML += `<div class="card mb-3" id="const-section-${sec}">
+          <div class="const-section-toggle flex items-center gap-2 mb-2" data-section="${sec}">
+            <span class="chevron">&#9660;</span>
+            <span class="font-semibold text-sm">${meta._icon} ${meta._label}</span>
+            <span class="text-xs" style="color:#64748b">(${fields.length} fields)</span>
+          </div>
+          <div class="const-section-body" data-section-body="${sec}">
+            ${fields.map(([key, fm]) => {
+              const val = data.constants[sec]?.[key];
+              const def = BT.DEFAULTS[sec]?.[key];
+              return `<div class="const-row flex items-center gap-2 mb-1 px-1 py-1 rounded" data-const="${sec}.${key}" style="border:1px solid transparent;">
+                <span class="w-36 text-xs truncate" title="${fm.desc}">${fm.label}</span>
+                <input type="number" min="${fm.min}" max="${fm.max}" step="${fm.step}" value="${val}" class="input-num const-input" style="width:90px;" data-const-key="${sec}.${key}">
+                <span class="text-xs" style="color:#64748b;min-width:20px;">${fm.suffix}</span>
+                <span class="text-xs" style="color:#64748b;">(d:${def})</span>
+                <button class="const-reset-btn" data-const-reset="${sec}.${key}" title="Reset to default">\u21A9</button>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>`;
+      }
+
+      container.innerHTML = `<div class="flex h-full tab-layout" style="flex-direction:row;">
+        <div class="tab-sidebar scrollable p-3 border-r" style="width:240px; border-color:var(--grid); flex-shrink:0;">
+          <div class="section-title">Search</div>
+          <input type="text" id="constSearch" placeholder="Filter constants..." class="input-num w-full mb-3" style="width:100%;text-align:left;">
+          <div class="section-title">Sections</div>
+          ${sidebarNav}
+          <div class="mt-3 flex items-center gap-2">
+            <span class="text-xs" style="color:#94a3b8;">Modified:</span>
+            <span id="constModifiedBadge" class="text-xs font-bold tabular" style="color:var(--warning);">0</span>
+          </div>
+          <button class="btn btn-sm btn-outline w-full mt-2" id="constResetAllBtn">Reset All</button>
+        </div>
+        <div class="tab-main flex-1 scrollable p-4">
+          <div id="constFields">${mainHTML}</div>
+        </div>
+      </div>`;
+
+      // Wire section nav buttons — scroll to section
+      container.querySelectorAll('.const-nav-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const el = document.getElementById('const-section-' + btn.dataset.section);
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+      });
+
+      // Wire section toggle (collapse/expand)
+      container.querySelectorAll('.const-section-toggle').forEach(toggle => {
+        toggle.addEventListener('click', () => {
+          const body = container.querySelector(`[data-section-body="${toggle.dataset.section}"]`);
+          if (body) body.classList.toggle('collapsed');
+          toggle.classList.toggle('collapsed');
+        });
+      });
+
+      // Wire all inputs: on change → update DATA.constants, toggle modified
+      container.querySelectorAll('.const-input').forEach(input => {
+        input.addEventListener('input', () => {
+          const [sec, key] = input.dataset.constKey.split('.');
+          const newVal = Number(input.value);
+          data.constants[sec][key] = newVal;
+          const def = BT.DEFAULTS[sec]?.[key];
+          const row = input.closest('.const-row');
+          if (row) row.classList.toggle('const-modified', newVal !== def);
+          updateBadge();
+        });
+      });
+
+      // Wire per-field reset buttons
+      container.querySelectorAll('.const-reset-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const [sec, key] = btn.dataset.constReset.split('.');
+          const def = BT.DEFAULTS[sec]?.[key];
+          if (def === undefined) return;
+          data.constants[sec][key] = def;
+          const input = container.querySelector(`[data-const-key="${sec}.${key}"]`);
+          if (input) input.value = def;
+          const row = btn.closest('.const-row');
+          if (row) row.classList.remove('const-modified');
+          updateBadge();
+        });
+      });
+
+      // Wire search
+      document.getElementById('constSearch').addEventListener('input', (e) => {
+        const q = e.target.value.toLowerCase();
+        container.querySelectorAll('.const-row').forEach(row => {
+          const label = row.querySelector('span')?.textContent?.toLowerCase() || '';
+          const key = row.dataset.const?.toLowerCase() || '';
+          row.style.display = (q === '' || label.includes(q) || key.includes(q)) ? '' : 'none';
+        });
+        // Show sections that have visible rows
+        container.querySelectorAll('.const-section-body').forEach(body => {
+          const hasVisible = [...body.querySelectorAll('.const-row')].some(r => r.style.display !== 'none');
+          body.closest('.card').style.display = hasVisible ? '' : 'none';
+        });
+      });
+
+      // Wire Reset All
+      document.getElementById('constResetAllBtn').addEventListener('click', () => {
+        for (const sec of Object.keys(FIELD_META)) {
+          for (const [key] of Object.entries(FIELD_META[sec]).filter(([k]) => !k.startsWith('_'))) {
+            const def = BT.DEFAULTS[sec]?.[key];
+            if (def === undefined) continue;
+            data.constants[sec][key] = def;
+            const input = container.querySelector(`[data-const-key="${sec}.${key}"]`);
+            if (input) input.value = def;
+          }
+        }
+        container.querySelectorAll('.const-row').forEach(r => r.classList.remove('const-modified'));
+        updateBadge();
+      });
+    }
+
+    function updateBadge() {
+      let count = 0;
+      document.querySelectorAll('.const-row.const-modified').forEach(() => count++);
+      const badge = document.getElementById('constModifiedBadge');
+      if (badge) badge.textContent = count;
+    }
+
+    function activate(data) {
+      // Re-scan for modified indicators on tab switch
+      if (!BT.DEFAULTS) return;
+      document.querySelectorAll('.const-row').forEach(row => {
+        const key = row.dataset.const;
+        if (!key) return;
+        const [sec, field] = key.split('.');
+        const current = data.constants[sec]?.[field];
+        const def = BT.DEFAULTS[sec]?.[field];
+        row.classList.toggle('const-modified', current !== def);
+      });
+      updateBadge();
+    }
+
+    return { init, activate };
+  })();
+
+  // ============================================================
   // REGISTER TABS & BOOT
   // ============================================================
   const ICONS = {
@@ -2032,7 +2411,8 @@ window.BT = {};
     economy: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>',
     hunger: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><path d="M6 1v3M10 1v3M14 1v3"/></svg>',
     starting: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>',
-    morale: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>'
+    morale: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
+    constants: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z"/><circle cx="12" cy="12" r="3"/></svg>'
   };
 
   BT.UI.registerTab('production', 'Production', ICONS.production, BT.TabProduction.init, BT.TabProduction.activate);
@@ -2041,6 +2421,7 @@ window.BT = {};
   BT.UI.registerTab('hunger', 'Hunger', ICONS.hunger, BT.TabHunger.init, BT.TabHunger.activate);
   BT.UI.registerTab('starting', 'Starting Res.', ICONS.starting, BT.TabStarting.init, BT.TabStarting.activate);
   BT.UI.registerTab('morale', 'Morale & Night', ICONS.morale, BT.TabMorale.init, BT.TabMorale.activate);
+  BT.UI.registerTab('constants', 'Constants', ICONS.constants, BT.TabConstants.init, BT.TabConstants.activate);
 
   // Help button + modal
   const helpModal = document.getElementById('helpModal');
@@ -2067,7 +2448,7 @@ window.BT = {};
   document.getElementById('exportGameBtn').addEventListener('click', () => {
     if (!DATA) { alert('Data not loaded yet'); return; }
     const c = DATA.constants;
-    exportJSON({
+    const result = {
       _comment: 'BalanceConfigOverrides for Feudal Realm Manager. Place in public/ to apply.',
       generatedAt: new Date().toISOString(),
       woodcutter: c.woodcutter,
@@ -2075,13 +2456,17 @@ window.BT = {};
       geologist: c.geologist,
       trees: c.trees,
       combat: c.combat,
+      upgrades: c.upgrades,
       victory: c.victory,
       population: c.population,
       hunger: c.hunger,
       night: c.night,
       morale: c.morale,
       animals: { feedInterval: c.animals.feedInterval },
-    }, 'balance_config.json');
+    };
+    const srOverrides = BT.getStartingResourceOverrides();
+    if (srOverrides) result.startingResources = srOverrides;
+    exportJSON(result, 'balance_config.json');
   });
 
   // Load data and boot
@@ -2092,6 +2477,7 @@ window.BT = {};
     })
     .then(json => {
       DATA = json;
+      if (!BT.DEFAULTS) BT.DEFAULTS = JSON.parse(JSON.stringify(json.constants));
       BT.UI.render();
       document.getElementById('loadingOverlay').style.display = 'none';
     })

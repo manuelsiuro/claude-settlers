@@ -9,6 +9,7 @@ import {
   WOODCUTTER_CHOP_DURATION,
   VICTORY_DOMINATION_THRESHOLD,
   CASTLE_POPULATION_CAPACITY,
+  CASTLE_STARTING_RESOURCES_BY_DIFFICULTY,
   applyBalanceOverrides,
   resetBalanceDefaults,
 } from './balanceConstants';
@@ -117,6 +118,92 @@ describe('validateBalanceConfig', () => {
       hunger: { decayRate: -1, workingMultiplier: 'nope' },
     });
     expect(errors.length).toBe(3);
+  });
+
+  it('should skip metadata fields like _comment and generatedAt', () => {
+    const errors = validateBalanceConfig({
+      _comment: 'BalanceConfigOverrides for Feudal Realm Manager.',
+      generatedAt: '2026-03-20T19:23:50.985Z',
+      hunger: { decayRate: 0.005 },
+    });
+    expect(errors).toHaveLength(0);
+  });
+});
+
+describe('startingResources validation', () => {
+  it('should accept valid startingResources config', () => {
+    const errors = validateBalanceConfig({
+      startingResources: {
+        easy: [{ resource: 'wood', amount: 20 }, { resource: 'stone', amount: 10 }],
+      },
+    });
+    expect(errors).toHaveLength(0);
+  });
+
+  it('should reject unknown difficulty key', () => {
+    const errors = validateBalanceConfig({
+      startingResources: { nightmare: [{ resource: 'wood', amount: 5 }] },
+    });
+    expect(errors.length).toBeGreaterThan(0);
+    expect(errors[0]).toContain('unknown difficulty');
+  });
+
+  it('should reject non-array difficulty value', () => {
+    const errors = validateBalanceConfig({
+      startingResources: { easy: 'not-an-array' },
+    });
+    expect(errors.length).toBeGreaterThan(0);
+    expect(errors[0]).toContain('must be an array');
+  });
+
+  it('should reject non-integer amount', () => {
+    const errors = validateBalanceConfig({
+      startingResources: { easy: [{ resource: 'wood', amount: 5.5 }] },
+    });
+    expect(errors.length).toBeGreaterThan(0);
+    expect(errors[0]).toContain('must be an integer');
+  });
+
+  it('should reject negative amount', () => {
+    const errors = validateBalanceConfig({
+      startingResources: { easy: [{ resource: 'wood', amount: -1 }] },
+    });
+    expect(errors.length).toBeGreaterThan(0);
+    expect(errors[0]).toContain('must be >= 0');
+  });
+
+  it('should accept zero amount', () => {
+    const errors = validateBalanceConfig({
+      startingResources: { normal: [{ resource: 'wood', amount: 0 }] },
+    });
+    expect(errors).toHaveLength(0);
+  });
+});
+
+describe('startingResources override and reset', () => {
+  afterEach(() => resetBalanceDefaults());
+
+  it('should override starting resources for specified difficulty', () => {
+    applyBalanceOverrides({
+      startingResources: {
+        easy: [{ resource: 'wood', amount: 99 }],
+      },
+    });
+    expect(CASTLE_STARTING_RESOURCES_BY_DIFFICULTY.easy).toHaveLength(1);
+    expect(CASTLE_STARTING_RESOURCES_BY_DIFFICULTY.easy[0].amount).toBe(99);
+    // Other difficulties should be unchanged
+    expect(CASTLE_STARTING_RESOURCES_BY_DIFFICULTY.normal[0].amount).not.toBe(99);
+  });
+
+  it('should restore defaults on reset', () => {
+    applyBalanceOverrides({
+      startingResources: {
+        easy: [{ resource: 'wood', amount: 99 }],
+      },
+    });
+    resetBalanceDefaults();
+    expect(CASTLE_STARTING_RESOURCES_BY_DIFFICULTY.easy.length).toBeGreaterThan(1);
+    expect(CASTLE_STARTING_RESOURCES_BY_DIFFICULTY.easy[0].amount).toBe(16); // wood default for easy
   });
 });
 
