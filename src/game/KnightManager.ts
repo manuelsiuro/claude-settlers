@@ -1,11 +1,21 @@
 import type { Building } from './Building';
 import { BuildingState, getInventoryAmount, removeFromInventory } from './Building';
-import { BUILDING_DEFINITIONS } from './BuildingType';
+import { BuildingType, BUILDING_DEFINITIONS } from './BuildingType';
 import { ResourceType } from './ResourceType';
 import type { GameState } from './GameState';
-import { UnitType } from './UnitType';
+import { UnitType, UNIT_DEFINITIONS } from './UnitType';
 import { UnitState } from './Unit';
 import { COMBAT_GOLD_BONUS_PER_BAR, COMBAT_MAX_GOLD_BONUS } from './data/balanceConstants';
+
+/**
+ * Mapping from building type to the military unit type it recruits.
+ * Buildings not listed here use the default Knight recruitment.
+ */
+const BUILDING_RECRUIT_TYPE: Partial<Record<string, UnitType>> = {
+  [BuildingType.ArcheryRange]: UnitType.Archer,
+  // Guard huts, watchtowers, barracks, fortress recruit Knights by default
+  // Barracks and Fortress can also recruit Cavalry and Siege (checked below)
+};
 
 /**
  * Manages knight recruitment and stationing in military buildings.
@@ -53,8 +63,54 @@ export class KnightManager {
   }
 
   /**
+   * Determine which unit type a military building should recruit.
+   * Barracks/Fortress check for Cavalry (Horse+Sword+Shield) and Siege (SiegeRam)
+   * before falling back to Knight (Sword+Shield).
+   */
+  private getRecruitType(building: Building): UnitType | null {
+    // ArcheryRange always recruits Archers
+    const fixedType = BUILDING_RECRUIT_TYPE[building.type];
+    if (fixedType) return fixedType;
+
+    // Guard huts only recruit Knights and Scouts
+    if (building.type === BuildingType.GuardHut || building.type === BuildingType.Watchtower) {
+      // Scout: no items needed (serf promotion)
+      const scoutDef = UNIT_DEFINITIONS[UnitType.Scout];
+      if (scoutDef.recruitmentItems && scoutDef.recruitmentItems.length === 0) {
+        // Only recruit scout if we don't have enough items for a knight
+        const knightDef = UNIT_DEFINITIONS[UnitType.Knight];
+        const canKnight = knightDef.recruitmentItems?.every(
+          item => getInventoryAmount(building.inputInventory, item.resource) >= item.amount,
+        );
+        if (!canKnight) return null; // Don't auto-recruit scouts — only knights at guard huts
+      }
+      return UnitType.Knight;
+    }
+
+    // Barracks/Fortress: try Cavalry first, then Siege, then Knight
+    if (building.type === BuildingType.Barracks || building.type === BuildingType.Fortress) {
+      // Check Cavalry requirements (Horse + Sword + Shield)
+      const cavalryDef = UNIT_DEFINITIONS[UnitType.Cavalry];
+      const canCavalry = cavalryDef.recruitmentItems?.every(
+        item => getInventoryAmount(building.inputInventory, item.resource) >= item.amount,
+      );
+      if (canCavalry) return UnitType.Cavalry;
+
+      // Check Siege requirements (SiegeRam)
+      const siegeDef = UNIT_DEFINITIONS[UnitType.SiegeOperator];
+      const canSiege = siegeDef.recruitmentItems?.every(
+        item => getInventoryAmount(building.inputInventory, item.resource) >= item.amount,
+      );
+      if (canSiege) return UnitType.SiegeOperator;
+    }
+
+    // Default: Knight
+    return UnitType.Knight;
+  }
+
+  /**
    * Check all active military buildings for recruitment opportunities.
-   * Requires: Sword + Shield in building's inputInventory, empty knight slot.
+   * Each building type recruits a specific military unit based on available items.
    */
   private recruitKnights(): void {
     const buildings = this.gameState.getAllBuildings();
@@ -68,26 +124,34 @@ export class KnightManager {
       // Check for available slots
       if (building.knightIds.length >= def.knightSlots) continue;
 
-      // Check for Sword + Shield in input inventory
-      const swords = getInventoryAmount(building.inputInventory, ResourceType.Swords);
-      const shields = getInventoryAmount(building.inputInventory, ResourceType.Shields);
+      // Determine which unit type to recruit
+      const recruitType = this.getRecruitType(building);
+      if (!recruitType) continue;
 
-      if (swords < 1 || shields < 1) continue;
+      const unitDef = UNIT_DEFINITIONS[recruitType];
+      const items = unitDef.recruitmentItems ?? [];
+
+      // Check all required items are available
+      const canRecruit = items.every(
+        item => getInventoryAmount(building.inputInventory, item.resource) >= item.amount,
+      );
+      if (!canRecruit) continue;
 
       // Consume resources
-      removeFromInventory(building.inputInventory, ResourceType.Swords, 1);
-      removeFromInventory(building.inputInventory, ResourceType.Shields, 1);
+      for (const item of items) {
+        removeFromInventory(building.inputInventory, item.resource, item.amount);
+      }
 
-      // Spawn knight at the building
-      const knight = this.gameState.spawnUnit(
-        UnitType.Knight,
+      // Spawn military unit at the building
+      const unit = this.gameState.spawnUnit(
+        recruitType,
         { ...building.coord },
         building.playerId,
       );
-      knight.assignedBuildingId = building.id;
-      knight.state = UnitState.Working; // stationed
+      unit.assignedBuildingId = building.id;
+      unit.state = UnitState.Working; // stationed
 
-      building.knightIds.push(knight.id);
+      building.knightIds.push(unit.id);
 
       this.onKnightRecruited?.(building);
     }
@@ -130,17 +194,21 @@ export class KnightManager {
   }
 
   /**
-   * Calculate a knight's combat strength.
-   * Base strength from rank + global gold bonus.
+   * Calculate a military unit's combat strength.
+   * Base strength from rank × unit combat modifier × gold bonus.
+   * Works for Knights, Archers, Cavalry, Siege Operators, and Scouts.
    */
   getKnightStrength(knightId: string): number {
-    const knight = this.gameState.getUnit(knightId);
-    if (!knight || knight.type !== UnitType.Knight) return 0;
+    const unit = this.gameState.getUnit(knightId);
+    if (!unit) return 0;
+    const unitDef = UNIT_DEFINITIONS[unit.type];
+    if (unitDef.category !== 'military') return 0;
 
-    const baseStrength = knight.knightRank; // rank 1-5
-    const goldBonus = this.getGoldBonus(knight.playerId);
+    const baseStrength = unit.knightRank; // rank 1-5
+    const combatMod = unitDef.combatStrength ?? 1.0;
+    const goldBonus = this.getGoldBonus(unit.playerId);
 
-    return baseStrength * goldBonus;
+    return baseStrength * combatMod * goldBonus;
   }
 
   /**

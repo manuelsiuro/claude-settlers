@@ -7,8 +7,17 @@ import type { TerritoryManager } from './TerritoryManager';
 import type { DuelAnimationManager } from './DuelAnimationManager';
 import type { Unit } from './Unit';
 import { UnitState, setUnitPath, clearUnitPath } from './Unit';
-import { UnitType } from './UnitType';
+import { UnitType, UNIT_DEFINITIONS } from './UnitType';
 import { findPath } from './Pathfinding';
+
+/** All unit types that can be ordered to attack */
+const ATTACKABLE_TYPES = new Set<UnitType>([
+  UnitType.Knight,
+  UnitType.Archer,
+  UnitType.Cavalry,
+  UnitType.SiegeOperator,
+  UnitType.Scout,
+]);
 
 /**
  * An active attack: a knight walking toward an enemy building.
@@ -80,7 +89,7 @@ export class AttackManager {
    */
   orderAttack(knightId: string, targetBuildingId: string): boolean {
     const knight = this.gameState.getUnit(knightId);
-    if (!knight || knight.type !== UnitType.Knight) return false;
+    if (!knight || !ATTACKABLE_TYPES.has(knight.type)) return false;
 
     const target = this.gameState.getBuilding(targetBuildingId);
     if (!target) return false;
@@ -178,6 +187,24 @@ export class AttackManager {
 
         // If knight is currently in a duel animation, wait
         if (this.duelAnimationManager && this.duelAnimationManager.isInDuel(attack.knightId)) {
+          continue;
+        }
+
+        const unitDef = UNIT_DEFINITIONS[knight.type];
+
+        // Siege operators damage buildings directly instead of fighting defenders
+        if (unitDef.buildingDamage && unitDef.buildingDamage > 0) {
+          const newHp = this.combatManager.applySiegeDamage(attack.knightId, target);
+          if (newHp <= 0) {
+            // Building HP depleted — capture it
+            this.captureBuilding(target, knight.playerId);
+            knight.assignedBuildingId = target.id;
+            knight.state = UnitState.Working;
+            target.knightIds.push(knight.id);
+            target.hp = 1.0; // restore after capture
+            toRemove.push(i);
+          }
+          // Otherwise keep sieging next tick
           continue;
         }
 

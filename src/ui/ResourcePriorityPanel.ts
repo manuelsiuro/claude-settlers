@@ -15,14 +15,26 @@ import { resourceIcon, icon } from './icons';
 
 /** All resource types in display order */
 const ALL_RESOURCES: ResourceType[] = [
+  // Core raw materials
   ResourceType.Wood, ResourceType.Stone, ResourceType.Planks,
   ResourceType.Grain, ResourceType.Fish, ResourceType.Flour,
   ResourceType.Bread, ResourceType.Meat,
+  // Expansion raw
+  ResourceType.Grapes, ResourceType.Fruit, ResourceType.WaterBarrel,
+  ResourceType.Milk, ResourceType.Hay, ResourceType.Wool, ResourceType.RawLeather,
+  // Ores & metals
   ResourceType.IronOre, ResourceType.CoalOre, ResourceType.GoldOre,
   ResourceType.IronBars, ResourceType.GoldBars,
+  // Military
   ResourceType.Swords, ResourceType.Shields,
+  ResourceType.Arrows, ResourceType.Bow, ResourceType.SiegeRam,
+  // Expansion processed
+  ResourceType.Wine, ResourceType.Beer, ResourceType.Cheese,
+  ResourceType.Cloth, ResourceType.WorkedLeather,
+  // Tools
   ...TOOL_TYPES,
-  ResourceType.Pigs,
+  // Animals
+  ResourceType.Pigs, ResourceType.Cattle, ResourceType.Horses,
 ];
 
 const CATEGORY_META: Record<keyof CategoryWeights, { label: string; colorClass: string }> = {

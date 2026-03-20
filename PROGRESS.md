@@ -114,6 +114,24 @@
 - [DONE] B4: MoraleManager — rolling 5-min drink event window, getMorale() = base(0.5) + variety + volume + gold, production/combat multipliers. 9 tests — 2026-03-19
 - Save version bumped to 10, backward compat for satiation field. AssetLoader, BuildingModels, UnitModels, BuildingRenderer all updated with new types. Balance constants for hunger/night/morale added. 637 tests passing.
 
+### Expansion Phase C-D: Content Integration + UI [DONE]
+- [DONE] C1: StatsPanel resource lists — Added 14 raw (Grapes, Fruit, WaterBarrel, Milk, Hay, Wool, RawLeather, Cattle, Horses) and 8 processed (Wine, Beer, Cheese, Cloth, WorkedLeather, Arrows, Bow, SiegeRam) to RAW_RESOURCES/PROCESSED_RESOURCES arrays — 2026-03-19
+- [DONE] C2: ResourcePriorityPanel — Added all 17 new resources to ALL_RESOURCES in logical display order (core raw, expansion raw, ores, military, expansion processed, tools, animals) — 2026-03-19
+- [DONE] C3: AI build order updates — Aggressive: added FletchersWorkshop, ArcheryRange, Fortress. Balanced: added Well, Brewery, Hayfield, DairyFarm, CheeseMakerBuilding, InnTavern. Economic: added Orchard, Vineyard, Winery, CattleRanch, SheepFarm, Tannery, WeaversHut, Stable, Market — 2026-03-19
+- [DONE] C4: InfoPanel satiation display — Worker satiation bar (green >75%, amber 25-75%, red <25%) with live percentage updates — 2026-03-19
+- [DONE] D5: Morale HUD indicator — Shield icon + percentage in game controls bar, color-coded (green >=70%, red <40%). 1-second update interval — 2026-03-19
+- [DONE] D6: StatsPanel morale section — Military tab: morale bar, production/combat bonus percentages, drink supply count. Population tab: average satiation bar with color coding — 2026-03-19
+- [DONE] D7: Production chain verification tests — 11 tests: DAG validity (all inputs have producers), 7 specific chain verifications (Hay→Milk→Cheese, Cattle→Meat+Leather, Charcoal, Vineyard→Wine, Beer morale chain, Wool→Cloth, Fletcher, Stable, SiegeWorkshop), producer coverage — 2026-03-19
+- 648 tests passing, build clean, lint clean.
+
+### Expansion Phase E: Military Expansion [DONE]
+- [DONE] E1: Scout Unit — Scout UnitType with 12-hex visionRadius, 2.0 moveSpeed, 0.2 combatStrength, empty recruitmentItems (serf promotion). FogOfWarManager now uses UNIT_DEFINITIONS visionRadius for all unit types — 2026-03-20
+- [DONE] E2: Archer + Ranged Combat — Archer UnitType with 3-hex attackRange, 0.6 combatStrength, Bow+Arrows recruitment. ArcheryRange building auto-recruits Archers. CombatManager extended for all military unit types (not just Knight) — 2026-03-20
+- [DONE] E3: Cavalry + Charge — Cavalry UnitType with 1.3 combatStrength, 1.3 chargeMultiplier (first engagement), 1.8 moveSpeed, Horse+Sword+Shield recruitment. Barracks/Fortress prioritize Cavalry over Knight when Horse available. Charge bonus in CombatManager — 2026-03-20
+- [DONE] E4: Siege Operator + Building Damage — SiegeOperator UnitType with 3.0 buildingDamage, 0.5 combatStrength, SiegeRam recruitment. Building.hp field added (default 1.0). CombatManager.applySiegeDamage() reduces building HP. AttackManager siege logic bypasses defenders to damage building directly — 2026-03-20
+- [DONE] E5: Fortress Integration — Verified 20 knightSlots, influenceRadius 10, visionRadius 12. Fortress/Barracks recruit Cavalry → Siege → Knight by priority. AttackManager accepts all military types for attack orders — 2026-03-20
+- UnitDefinition extended with combatStrength, attackRange, visionRadius, buildingDamage, chargeMultiplier, recruitmentItems. KnightManager refactored for type-aware recruitment. SaveLoad backward compat for building hp field. 21 new tests, 669 total passing.
+
 ## Completed
 - **2026-03-19**: Population Management System — 10 phases. PopulationManager (stateless query), spawn gating on UnitManager/TransporterManager/ConstructionManager, 3 housing buildings (Small/Medium/Large House), HUD population counter with color states, Housing build tab, enhanced Stats Population tab, AI reactive housing, difficulty-based starting resources, save/load v9, 3 Blender house models. 1 new file, 27 modified, 3 GLB assets. 615 tests passing.
 - **2026-03-12**: Polish Phase — Ambient Life, Military Visibility, Economy UX, Performance. 13 new files created, 12 files modified. ParticleSystem (smoke/sparks/dust), BuildingAnimator (windmill/furnace/sawmill/construction/destruction), TreeSwayShader (GPU wind), PlayerColors (shared), Knight visuals (faction color + rank chevrons + Fighting state), CombatAnimationState + CombatRenderer (duel phases, attack warnings, capture banners), GoodsDistribution (priority routing), TooltipController (hover/long-press tooltips), BuildingStatusOverlay (icon sprites), EconomyTracker (production/consumption rates), ProductionChainOverlay (supply chain lines), Minimap enhancements (unit dots + construction), Pathfinding binary heap optimization. 16 new tests, 496 total passing.

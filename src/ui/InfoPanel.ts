@@ -344,6 +344,19 @@ function generateInfoHTML(building: Building): string {
         <span class="info-value">${toolProps.label}</span>
       </div>`;
     }
+    // Worker satiation bar
+    if (primaryWorker) {
+      const sat = primaryWorker.satiation;
+      const satPct = Math.round(sat * 100);
+      const satColor = sat > 0.75 ? '#4CAF50' : sat > 0.25 ? '#FFB74D' : '#EF5350';
+      html += `<div class="info-row">
+        <span class="info-label">Satiation</span>
+        <span class="info-value" data-field="worker-sat-pct" style="color:${satColor}">${satPct}%</span>
+      </div>
+      <div style="background:var(--color-progress-bg);border-radius:4px;height:6px;margin:2px 0 4px">
+        <div data-field="worker-sat-bar" style="width:${satPct}%;height:100%;border-radius:4px;background:${satColor};transition:width 0.3s"></div>
+      </div>`;
+    }
     html += '</div>';
   }
 
@@ -683,7 +696,7 @@ function updateInfoValues(building: Building): void {
     }
   }
 
-  // Worker count
+  // Worker count + satiation
   if (def.worker) {
     const gameState = getGame().getGameState();
     const primaryWorker = gameState.getWorkerForBuilding(building.id);
@@ -691,6 +704,12 @@ function updateInfoValues(building: Building): void {
     const assignedCount = (primaryWorker ? 1 : 0) + (building.extraWorkerIds ?? []).filter((id) => gameState.getUnit(id)).length;
     updater.setText('worker-count', `${assignedCount}/${maxW}`);
     updater.setClass('worker-count', `info-value ${assignedCount >= maxW ? 'state-active' : 'state-planned'}`);
+    if (primaryWorker) {
+      const sat = primaryWorker.satiation;
+      const satPct = Math.round(sat * 100);
+      updater.setText('worker-sat-pct', `${satPct}%`);
+      updater.setWidth('worker-sat-bar', `${satPct}%`);
+    }
   }
 
   // Production (skip for toolQueue buildings — handled by tool queue update below)

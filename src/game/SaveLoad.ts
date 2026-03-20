@@ -390,6 +390,8 @@ export function deserializeGame(
         (inv as Record<string, number>)['hammer_tool'] = ((inv as Record<string, number>)['hammer_tool'] ?? 0) + amount;
       }
     }
+    // v11: building HP field
+    if (b.hp === undefined) b.hp = 1.0;
   }
   // v8: patch units missing carriedTool field
   for (const u of data.units) {

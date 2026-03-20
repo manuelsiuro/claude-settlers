@@ -67,6 +67,18 @@ export interface UnitDefinition {
   requiredTool: ResourceType | null;
   /** Movement speed in hexes per second */
   moveSpeed: number;
+  /** Combat strength (military units only; 0 = non-combat) */
+  combatStrength?: number;
+  /** Attack range in hexes (0 = melee, >0 = ranged) */
+  attackRange?: number;
+  /** Fog of war vision radius override (default 2 for civilians, varies for military) */
+  visionRadius?: number;
+  /** Damage multiplier against buildings (siege units) */
+  buildingDamage?: number;
+  /** First-strike charge damage multiplier (cavalry) */
+  chargeMultiplier?: number;
+  /** Items required for recruitment at military buildings */
+  recruitmentItems?: { resource: ResourceType; amount: number }[];
 }
 
 export const UNIT_DEFINITIONS: Record<UnitType, UnitDefinition> = {
@@ -303,6 +315,13 @@ export const UNIT_DEFINITIONS: Record<UnitType, UnitDefinition> = {
     category: 'military',
     requiredTool: null,
     moveSpeed: 1.2,
+    combatStrength: 1.0,
+    attackRange: 0,
+    visionRadius: 3,
+    recruitmentItems: [
+      { resource: ResourceType.Swords, amount: 1 },
+      { resource: ResourceType.Shields, amount: 1 },
+    ],
   },
   [UnitType.Archer]: {
     type: UnitType.Archer,
@@ -310,6 +329,13 @@ export const UNIT_DEFINITIONS: Record<UnitType, UnitDefinition> = {
     category: 'military',
     requiredTool: null,
     moveSpeed: 1.0,
+    combatStrength: 0.6,
+    attackRange: 3,
+    visionRadius: 5,
+    recruitmentItems: [
+      { resource: ResourceType.Bow, amount: 1 },
+      { resource: ResourceType.Arrows, amount: 1 },
+    ],
   },
   [UnitType.Cavalry]: {
     type: UnitType.Cavalry,
@@ -317,6 +343,15 @@ export const UNIT_DEFINITIONS: Record<UnitType, UnitDefinition> = {
     category: 'military',
     requiredTool: null,
     moveSpeed: 1.8,
+    combatStrength: 1.3,
+    attackRange: 0,
+    visionRadius: 4,
+    chargeMultiplier: 1.3,
+    recruitmentItems: [
+      { resource: ResourceType.Horses, amount: 1 },
+      { resource: ResourceType.Swords, amount: 1 },
+      { resource: ResourceType.Shields, amount: 1 },
+    ],
   },
   [UnitType.SiegeOperator]: {
     type: UnitType.SiegeOperator,
@@ -324,6 +359,13 @@ export const UNIT_DEFINITIONS: Record<UnitType, UnitDefinition> = {
     category: 'military',
     requiredTool: null,
     moveSpeed: 0.6,
+    combatStrength: 0.5,
+    attackRange: 0,
+    visionRadius: 2,
+    buildingDamage: 3.0,
+    recruitmentItems: [
+      { resource: ResourceType.SiegeRam, amount: 1 },
+    ],
   },
   [UnitType.Scout]: {
     type: UnitType.Scout,
@@ -331,6 +373,10 @@ export const UNIT_DEFINITIONS: Record<UnitType, UnitDefinition> = {
     category: 'military',
     requiredTool: null,
     moveSpeed: 2.0,
+    combatStrength: 0.2,
+    attackRange: 0,
+    visionRadius: 12,
+    recruitmentItems: [],  // serf promotion, no items needed
   },
 
   // Transport
