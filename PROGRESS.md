@@ -132,6 +132,14 @@
 - [DONE] E5: Fortress Integration — Verified 20 knightSlots, influenceRadius 10, visionRadius 12. Fortress/Barracks recruit Cavalry → Siege → Knight by priority. AttackManager accepts all military types for attack orders — 2026-03-20
 - UnitDefinition extended with combatStrength, attackRange, visionRadius, buildingDamage, chargeMultiplier, recruitmentItems. KnightManager refactored for type-aware recruitment. SaveLoad backward compat for building hp field. 21 new tests, 669 total passing.
 
+### Expansion Phase F: Polish & UI Integration [DONE]
+- [DONE] F1: AI military adaptation — AIPlayer.getAvailableKnights() now includes all military unit types (Knight, Archer, Cavalry, SiegeOperator, Scout) for attack orders — 2026-03-20
+- [DONE] F2: Tooltip satiation — Building tooltips show worker satiation percentage with color coding — 2026-03-20
+- [DONE] F3: Tooltip garrison details — Military building tooltips show unit type breakdown (e.g., "2 Knights, 1 Cavalry") instead of just count — 2026-03-20
+- [DONE] F4: InfoPanel garrison labels — Military building info panel shows unit type names (Knight/Archer/Cavalry/etc.) instead of generic "Knight" for all — 2026-03-20
+- [DONE] F5: StatsPanel military breakdown — Military tab shows unit counts by type (Knights, Archers, Cavalry, etc.) and badge counts all military types — 2026-03-20
+- 669 tests passing, build clean, lint clean.
+
 ## Completed
 - **2026-03-19**: Population Management System — 10 phases. PopulationManager (stateless query), spawn gating on UnitManager/TransporterManager/ConstructionManager, 3 housing buildings (Small/Medium/Large House), HUD population counter with color states, Housing build tab, enhanced Stats Population tab, AI reactive housing, difficulty-based starting resources, save/load v9, 3 Blender house models. 1 new file, 27 modified, 3 GLB assets. 615 tests passing.
 - **2026-03-12**: Polish Phase — Ambient Life, Military Visibility, Economy UX, Performance. 13 new files created, 12 files modified. ParticleSystem (smoke/sparks/dust), BuildingAnimator (windmill/furnace/sawmill/construction/destruction), TreeSwayShader (GPU wind), PlayerColors (shared), Knight visuals (faction color + rank chevrons + Fighting state), CombatAnimationState + CombatRenderer (duel phases, attack warnings, capture banners), GoodsDistribution (priority routing), TooltipController (hover/long-press tooltips), BuildingStatusOverlay (icon sprites), EconomyTracker (production/consumption rates), ProductionChainOverlay (supply chain lines), Minimap enhancements (unit dots + construction), Pathfinding binary heap optimization. 16 new tests, 496 total passing.

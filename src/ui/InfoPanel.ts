@@ -4,6 +4,7 @@ import { BuildingType, BUILDING_DEFINITIONS } from '../game/BuildingType';
 import { BuildingState, getInventoryAmount, getInventoryTotal } from '../game/Building';
 import type { Building, ResourceInventory } from '../game/Building';
 import { RESOURCE_PROPERTIES, ResourceType, TOOL_TYPES } from '../game/ResourceType';
+import { UNIT_DEFINITIONS } from '../game/UnitType';
 import { getDistanceMultiplier, getDistanceRating } from '../game/ProductionManager';
 import {
   BUILDING_UPGRADES,
@@ -527,10 +528,10 @@ function generateInfoHTML(building: Building): string {
     html += '</div>';
   }
 
-  // Knight slots (military buildings)
+  // Military unit slots
   if (def.knightSlots > 0) {
     html += `<div class="info-section">
-      <div class="info-section-label">${icon('shield_icon')} Knights</div>
+      <div class="info-section-label">${icon('shield_icon')} Garrison</div>
       <div class="info-row">
         <span class="info-label">Stationed</span>
         <span class="info-value" data-field="knight-stationed">${building.knightIds.length} / ${def.knightSlots}</span>
@@ -539,11 +540,12 @@ function generateInfoHTML(building: Building): string {
     if (building.knightIds.length > 0) {
       const gameState = getGame().getGameState();
       for (let i = 0; i < building.knightIds.length; i++) {
-        const knight = gameState.getUnit(building.knightIds[i]);
-        if (knight) {
+        const unit = gameState.getUnit(building.knightIds[i]);
+        if (unit) {
+          const unitDef = UNIT_DEFINITIONS[unit.type];
           html += `<div class="info-resource-row">
-            <span class="info-resource-name">Knight</span>
-            <span class="info-resource-amount" data-field="knight-${i}-rank">Rank ${knight.knightRank}</span>
+            <span class="info-resource-name">${unitDef?.label ?? unit.type}</span>
+            <span class="info-resource-amount" data-field="knight-${i}-rank">Rank ${unit.knightRank}</span>
           </div>`;
         }
       }
@@ -769,14 +771,14 @@ function updateInfoValues(building: Building): void {
     }
   }
 
-  // Knights
+  // Military units
   if (def.knightSlots > 0) {
     updater.setText('knight-stationed', `${building.knightIds.length} / ${def.knightSlots}`);
     const gameState = getGame().getGameState();
     for (let i = 0; i < building.knightIds.length; i++) {
-      const knight = gameState.getUnit(building.knightIds[i]);
-      if (knight) {
-        updater.setText(`knight-${i}-rank`, `Rank ${knight.knightRank}`);
+      const unit = gameState.getUnit(building.knightIds[i]);
+      if (unit) {
+        updater.setText(`knight-${i}-rank`, `Rank ${unit.knightRank}`);
       }
     }
   }

@@ -3,6 +3,7 @@ import type { Game } from './Game';
 import type { Building } from '../game/Building';
 import { BuildingState } from '../game/Building';
 import { BUILDING_DEFINITIONS } from '../game/BuildingType';
+import { UNIT_DEFINITIONS } from '../game/UnitType';
 import { getMaxWorkers } from '../game/BuildingUpgrade';
 import { HexGrid } from '../game/HexGrid';
 
@@ -160,6 +161,11 @@ export class TooltipController {
       const maxW = getMaxWorkers(building);
       const assignedCount = (primaryWorker ? 1 : 0) + (building.extraWorkerIds ?? []).filter((id) => gameState.getUnit(id)).length;
       html += `<br>Workers: ${assignedCount}/${maxW}`;
+      if (primaryWorker) {
+        const satPct = Math.round(primaryWorker.satiation * 100);
+        const satColor = primaryWorker.satiation > 0.75 ? '#4CAF50' : primaryWorker.satiation > 0.25 ? '#FFB74D' : '#EF5350';
+        html += `<br>Satiation: <span style="color:${satColor}">${satPct}%</span>`;
+      }
     }
 
     // Production progress
@@ -187,9 +193,19 @@ export class TooltipController {
       html += `<br>Out: ${items}`;
     }
 
-    // Knights
+    // Military units stationed
     if (building.knightIds.length > 0) {
-      html += `<br>Knights: ${building.knightIds.length}/${def.knightSlots}`;
+      const gameState = this.game.getGameState();
+      const typeCounts = new Map<string, number>();
+      for (const id of building.knightIds) {
+        const unit = gameState.getUnit(id);
+        if (unit) {
+          const label = UNIT_DEFINITIONS[unit.type]?.label ?? unit.type;
+          typeCounts.set(label, (typeCounts.get(label) ?? 0) + 1);
+        }
+      }
+      const parts = [...typeCounts.entries()].map(([label, count]) => count > 1 ? `${count} ${label}s` : `${count} ${label}`);
+      html += `<br>Garrison: ${parts.join(', ')} (${building.knightIds.length}/${def.knightSlots})`;
     }
 
     // Upgrade levels

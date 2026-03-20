@@ -393,8 +393,12 @@ export class AIPlayer {
    * Knights with no assigned building are treated as available (unstationed).
    */
   private getAvailableKnights() {
+    const militaryTypes: Set<UnitType> = new Set([
+      UnitType.Knight, UnitType.Archer, UnitType.Cavalry,
+      UnitType.SiegeOperator, UnitType.Scout,
+    ]);
     return this.gameState.getUnitsByPlayer(this.playerId).filter((u) => {
-      if (u.type !== UnitType.Knight || u.state !== UnitState.Working) return false;
+      if (!militaryTypes.has(u.type) || u.state !== UnitState.Working) return false;
       if (!u.assignedBuildingId) return true; // unassigned — available
       const b = this.gameState.getBuilding(u.assignedBuildingId);
       return !b || b.playerId === this.playerId; // exclude if assigned to enemy building

@@ -135,7 +135,10 @@ function renderStatsTabs(): void {
     resources: Object.values(getAllPlayerResources()).reduce((s, v) => s + (v ?? 0), 0),
     population: gameState.getUnitsByPlayer(pid).length,
     buildings: gameState.getBuildingsByPlayer(pid).filter(b => b.state === BuildingState.Active).length,
-    military: gameState.getUnitsByPlayer(pid).filter(u => u.type === UnitType.Knight).length,
+    military: gameState.getUnitsByPlayer(pid).filter(u => {
+      const d = UNIT_DEFINITIONS[u.type];
+      return d.category === 'military';
+    }).length,
     economy: null,
     priority: null,
   };
@@ -383,19 +386,34 @@ function generateStatsHTML(): string {
     }
     html += '</div>';
   } else if (activeStatsTab === 'military') {
-    const knights = gameState.getUnitsByPlayer(pid).filter(u => u.type === UnitType.Knight);
+    const allMilitary = gameState.getUnitsByPlayer(pid).filter(u => {
+      const d = UNIT_DEFINITIONS[u.type];
+      return d.category === 'military';
+    });
     const goldBars = resources[ResourceType.GoldBars] ?? 0;
     html += '<div class="info-section">';
     html += `<div class="stat-highlight">
-      <span class="info-label">Knights</span>
-      <span class="stat-highlight-value" data-field="mil-knights">${knights.length}</span>
+      <span class="info-label">Military Units</span>
+      <span class="stat-highlight-value" data-field="mil-knights">${allMilitary.length}</span>
     </div>`;
+    // Breakdown by type
+    const typeCounts = new Map<string, number>();
+    for (const u of allMilitary) {
+      typeCounts.set(u.type, (typeCounts.get(u.type) ?? 0) + 1);
+    }
+    for (const [type, count] of typeCounts) {
+      const label = UNIT_DEFINITIONS[type as UnitType]?.label ?? type;
+      html += `<div class="info-resource-row">
+        <span class="info-resource-name">${label}</span>
+        <span class="info-resource-amount" data-field="mil-type-${type}">${count}</span>
+      </div>`;
+    }
     html += `<div class="info-row">
       <span class="info-label">Gold Bars</span>
       <span class="info-value" data-field="mil-gold">${goldBars}</span>
     </div>`;
-    if (knights.length > 0) {
-      const avgRank = knights.reduce((sum, k) => sum + k.knightRank, 0) / knights.length;
+    if (allMilitary.length > 0) {
+      const avgRank = allMilitary.reduce((sum, k) => sum + k.knightRank, 0) / allMilitary.length;
       html += `<div class="info-row">
         <span class="info-label">Avg Rank</span>
         <span class="info-value" data-field="mil-avg-rank">${avgRank.toFixed(1)}</span>
@@ -494,13 +512,23 @@ function updateStatsValues(): void {
       updater.setText(`bld-${type}`, `${count}`);
     }
   } else if (activeStatsTab === 'military') {
-    const knights = gameState.getUnitsByPlayer(pid).filter((u) => u.type === UnitType.Knight);
+    const allMilitary = gameState.getUnitsByPlayer(pid).filter((u) => {
+      const d = UNIT_DEFINITIONS[u.type];
+      return d.category === 'military';
+    });
     const goldBars = resources[ResourceType.GoldBars] ?? 0;
-    updater.setText('mil-knights', `${knights.length}`);
+    updater.setText('mil-knights', `${allMilitary.length}`);
     updater.setText('mil-gold', `${goldBars}`);
-    if (knights.length > 0) {
-      const avgRank = knights.reduce((sum, k) => sum + k.knightRank, 0) / knights.length;
+    if (allMilitary.length > 0) {
+      const avgRank = allMilitary.reduce((sum, k) => sum + k.knightRank, 0) / allMilitary.length;
       updater.setText('mil-avg-rank', avgRank.toFixed(1));
+    }
+    const typeCounts = new Map<string, number>();
+    for (const u of allMilitary) {
+      typeCounts.set(u.type, (typeCounts.get(u.type) ?? 0) + 1);
+    }
+    for (const [type, count] of typeCounts) {
+      updater.setText(`mil-type-${type}`, `${count}`);
     }
     // Morale updates
     const morale = getGame().getMoraleManager().getMorale(pid);
