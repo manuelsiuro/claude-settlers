@@ -3,10 +3,10 @@ import { audioManager } from '../engine/AudioManager';
 import { icon, resourceIcon } from './icons';
 import { BuildingType, BUILDING_DEFINITIONS } from '../game/BuildingType';
 import { BuildingState } from '../game/Building';
-import { RESOURCE_PROPERTIES, ResourceType, TOOL_TYPES } from '../game/ResourceType';
+import { RESOURCE_PROPERTIES, ResourceType, TOOL_TYPES, isFood } from '../game/ResourceType';
 import { UNIT_DEFINITIONS, UnitType } from '../game/UnitType';
 import { renderEconomySection, drawEconomySparklines } from './EconomyPanel';
-import { getPopulationSeverity } from '../game/data/balanceConstants';
+import { getPopulationSeverity, getSatiationColor, HUNGER_HUNGRY_THRESHOLD, HUNGER_STARVING_THRESHOLD } from '../game/data/balanceConstants';
 import { renderPriorityHTML, attachPriorityListeners } from './ResourcePriorityPanel';
 import { showTechTreePanel } from './TechTreePanel';
 import { PanelUpdater } from './PanelUpdater';
@@ -207,6 +207,16 @@ function getStatsStructureKey(): string {
       .map(b => b.type).sort();
     parts.push('h:' + housingTypes.join(','));
     parts.push('idle:' + gameState.getIdleUnitsAtCastle(pid).length);
+    // Food supply: track which food types are present + hungry/starving presence
+    const allRes = getAllPlayerResources();
+    const foodKeys = Object.entries(allRes)
+      .filter(([res, amt]) => amt && amt > 0 && isFood(res as ResourceType))
+      .map(([res]) => res).sort().join(',');
+    parts.push('fk:' + foodKeys);
+    const units = gameState.getUnitsByPlayer(pid);
+    const hasHungry = units.some(u => u.satiation < HUNGER_HUNGRY_THRESHOLD && u.satiation >= HUNGER_STARVING_THRESHOLD);
+    const hasStarving = units.some(u => u.satiation < HUNGER_STARVING_THRESHOLD);
+    parts.push('fh:' + (hasHungry ? '1' : '0') + (hasStarving ? '1' : '0'));
   } else if (activeStatsTab === 'buildings') {
     const buildings = gameState.getBuildingsByPlayer(pid);
     const buildingTypes = [...new Set(buildings.map((b) => b.type))].sort();
@@ -325,19 +335,65 @@ function generateStatsHTML(): string {
     }
     html += '</div>';
 
-    // Average Satiation
+    // Average Food
     const allUnits = gameState.getUnitsByPlayer(pid);
     if (allUnits.length > 0) {
       const avgSat = allUnits.reduce((sum, u) => sum + u.satiation, 0) / allUnits.length;
       const avgSatPct = Math.round(avgSat * 100);
-      const satColor = avgSat > 0.75 ? '#4CAF50' : avgSat > 0.25 ? '#FFB74D' : '#EF5350';
+      const satColor = getSatiationColor(avgSat);
       html += `<div class="info-row" style="margin-top:4px">
-        <span class="info-label">Avg Satiation</span>
+        <span class="info-label">Avg Food</span>
         <span class="info-value" data-field="pop-avg-sat" style="color:${satColor}">${avgSatPct}%</span>
       </div>
       <div style="background:var(--color-progress-bg);border-radius:4px;height:6px;margin:2px 0 8px">
         <div data-field="pop-avg-sat-bar" style="width:${avgSatPct}%;height:100%;border-radius:4px;background:${satColor};transition:width 0.3s"></div>
       </div>`;
+    }
+
+    // Food Supply section
+    if (allUnits.length > 0) {
+      const resources = getAllPlayerResources();
+      // Count food in storage
+      const foodItems: { resource: ResourceType; amount: number }[] = [];
+      let totalFood = 0;
+      for (const [res, amount] of Object.entries(resources)) {
+        if (amount && amount > 0 && isFood(res as ResourceType)) {
+          foodItems.push({ resource: res as ResourceType, amount });
+          totalFood += amount;
+        }
+      }
+      foodItems.sort((a, b) => b.amount - a.amount);
+
+      // Count hungry/starving units
+      const hungryCount = allUnits.filter(u => u.satiation < HUNGER_HUNGRY_THRESHOLD && u.satiation >= HUNGER_STARVING_THRESHOLD).length;
+      const starvingCount = allUnits.filter(u => u.satiation < HUNGER_STARVING_THRESHOLD).length;
+
+      html += '<div class="info-section"><div class="info-section-label">Food Supply</div>';
+      const totalFoodColor = totalFood > 0 ? '#4CAF50' : '#EF5350';
+      html += `<div class="info-resource-row">
+        <span class="info-resource-name">In Storage</span>
+        <span class="info-resource-amount" data-field="pop-food-total" style="color:${totalFoodColor}">${totalFood}</span>
+      </div>`;
+      for (const item of foodItems) {
+        const props = RESOURCE_PROPERTIES[item.resource];
+        html += `<div class="info-resource-row" style="padding-left:12px">
+          <span class="info-resource-name">${resourceIcon(item.resource)} ${props.label}</span>
+          <span class="info-resource-amount" data-field="pop-food-${item.resource}">${item.amount}</span>
+        </div>`;
+      }
+      if (hungryCount > 0) {
+        html += `<div class="info-resource-row">
+          <span class="info-resource-name" style="color:#FFB74D">Hungry Units</span>
+          <span class="info-resource-amount" data-field="pop-hungry-count" style="color:#FFB74D">${hungryCount}</span>
+        </div>`;
+      }
+      if (starvingCount > 0) {
+        html += `<div class="info-resource-row">
+          <span class="info-resource-name" style="color:#EF5350">Starving Units</span>
+          <span class="info-resource-amount" data-field="pop-starving-count" style="color:#EF5350">${starvingCount}</span>
+        </div>`;
+      }
+      html += '</div>';
     }
 
     // Unit Roster
@@ -480,13 +536,33 @@ function updateStatsValues(): void {
     const ratio = capacity > 0 ? current / capacity : 1;
     updater.setText('pop-total', `${current}/${capacity}`);
     updater.setWidth('pop-bar', `${Math.min(ratio * 100, 100)}%`);
-    // Average satiation
+    // Average food + dynamic colors
     const allUnits = gameState.getUnitsByPlayer(pid);
     if (allUnits.length > 0) {
       const avgSat = allUnits.reduce((sum, u) => sum + u.satiation, 0) / allUnits.length;
       const avgSatPct = Math.round(avgSat * 100);
+      const satColor = getSatiationColor(avgSat);
       updater.setText('pop-avg-sat', `${avgSatPct}%`);
       updater.setWidth('pop-avg-sat-bar', `${avgSatPct}%`);
+      updater.setColor('pop-avg-sat', satColor);
+      updater.setBackground('pop-avg-sat-bar', satColor);
+
+      // Food supply values
+      const resources = getAllPlayerResources();
+      let totalFood = 0;
+      for (const [res, amount] of Object.entries(resources)) {
+        if (amount && amount > 0 && isFood(res as ResourceType)) {
+          totalFood += amount;
+          updater.setText(`pop-food-${res}`, `${amount}`);
+        }
+      }
+      updater.setText('pop-food-total', `${totalFood}`);
+      updater.setColor('pop-food-total', totalFood > 0 ? '#4CAF50' : '#EF5350');
+
+      const hungryCount = allUnits.filter(u => u.satiation < HUNGER_HUNGRY_THRESHOLD && u.satiation >= HUNGER_STARVING_THRESHOLD).length;
+      const starvingCount = allUnits.filter(u => u.satiation < HUNGER_STARVING_THRESHOLD).length;
+      if (hungryCount > 0) updater.setText('pop-hungry-count', `${hungryCount}`);
+      if (starvingCount > 0) updater.setText('pop-starving-count', `${starvingCount}`);
     }
     const idleCount = gameState.getIdleUnitsAtCastle(pid).length;
     updater.setText('pop-idle', `${idleCount}`);

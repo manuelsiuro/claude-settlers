@@ -5,6 +5,7 @@ import { BuildingState } from '../game/Building';
 import { BUILDING_DEFINITIONS } from '../game/BuildingType';
 import { UNIT_DEFINITIONS } from '../game/UnitType';
 import { getMaxWorkers } from '../game/BuildingUpgrade';
+import { getSatiationColor, getSatiationStatus } from '../game/data/balanceConstants';
 import { HexGrid } from '../game/HexGrid';
 
 /**
@@ -163,8 +164,10 @@ export class TooltipController {
       html += `<br>Workers: ${assignedCount}/${maxW}`;
       if (primaryWorker) {
         const satPct = Math.round(primaryWorker.satiation * 100);
-        const satColor = primaryWorker.satiation > 0.75 ? '#4CAF50' : primaryWorker.satiation > 0.25 ? '#FFB74D' : '#EF5350';
-        html += `<br>Satiation: <span style="color:${satColor}">${satPct}%</span>`;
+        const satColor = getSatiationColor(primaryWorker.satiation);
+        const satStatus = getSatiationStatus(primaryWorker.satiation);
+        const statusSuffix = satStatus ? ` (${satStatus}${satStatus === 'Starving' ? '!' : ''})` : '';
+        html += `<br>Food: <span style="color:${satColor}">${satPct}%${statusSuffix}</span>`;
       }
     }
 

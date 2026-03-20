@@ -63,4 +63,20 @@ export class PanelUpdater {
       el.className = className;
     }
   }
+
+  /** Set style.color of [data-field] element, compare-before-set */
+  setColor(field: string, color: string): void {
+    const el = this.container.querySelector(`[data-field="${field}"]`) as HTMLElement | null;
+    if (el && el.style.color !== color) {
+      el.style.color = color;
+    }
+  }
+
+  /** Set style.background of [data-field] element, compare-before-set */
+  setBackground(field: string, color: string): void {
+    const el = this.container.querySelector(`[data-field="${field}"]`) as HTMLElement | null;
+    if (el && el.style.background !== color) {
+      el.style.background = color;
+    }
+  }
 }

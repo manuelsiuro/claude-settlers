@@ -29,6 +29,9 @@ export class FeedingManager {
   private gameState: GameState;
   private feedingCooldown = FEEDING_INTERVAL;
 
+  /** Callback fired when food is consumed from storage (for economy tracking) */
+  onFoodConsumed: ((resource: ResourceType, amount: number) => void) | null = null;
+
   constructor(gameState: GameState) {
     this.gameState = gameState;
   }
@@ -93,6 +96,7 @@ export class FeedingManager {
             const props = RESOURCE_PROPERTIES[foodResource];
             removeFromInventory(storage.outputInventory, foodResource, 1);
             unit.satiation = Math.min(1.0, unit.satiation + props.satiationValue);
+            this.onFoodConsumed?.(foodResource, 1);
             break;
           }
         }

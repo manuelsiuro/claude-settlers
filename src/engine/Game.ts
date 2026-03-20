@@ -85,6 +85,7 @@ export type GameNotificationType =
   | 'combat_result'
   | 'tool_waiting'
   | 'population_cap'
+  | 'food_warning'
   | 'victory'
   | 'defeat';
 
@@ -309,6 +310,11 @@ export class Game {
       this.flagLightSystem.setNightness(nightness);
       this.postProcessing.setBloomStrength(0.3 + 0.2 * nightness);
     };
+    // Wire food consumption to economy tracker
+    this.feedingManager.onFoodConsumed = (resource, amount) => {
+      this.economyTracker.recordConsumption(resource, amount);
+    };
+
     // Wire production events to economy tracker and morale system
     const trackProduction = (inputs: { resource: ResourceType; amount: number }[], outputs: { resource: ResourceType; amount: number }[], building?: import('../game/Building').Building) => {
       for (const input of inputs) {
@@ -1083,6 +1089,7 @@ export class Game {
     this.aiPlayers = [];
 
     // Clean up manager callbacks to prevent memory leaks
+    this.feedingManager.onFoodConsumed = null;
     this.constructionManager.onBuildingActivated = null;
     this.gameState.onBuildingRemoved = null;
     this.gameState.onMinePlaced = null;

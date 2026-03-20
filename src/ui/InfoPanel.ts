@@ -20,7 +20,16 @@ import { startAttackTargeting, isAttackModeActive } from './BuildPanel';
 import { showDemolishConfirm } from './DemolishDialog';
 import { PanelUpdater } from './PanelUpdater';
 import type { Flag } from '../game/RoadNetwork';
-import { ROAD_QUALITY_NAMES, getRoadUpgradeCost } from '../game/data/balanceConstants';
+import {
+  ROAD_QUALITY_NAMES,
+  getRoadUpgradeCost,
+  getSatiationColor,
+  getSatiationStatus,
+  HUNGER_SPEED_PENALTY_HUNGRY,
+  HUNGER_SPEED_PENALTY_STARVING,
+  HUNGER_PRODUCTION_PENALTY_HUNGRY,
+  HUNGER_PRODUCTION_PENALTY_STARVING,
+} from '../game/data/balanceConstants';
 
 let infoPanel: HTMLElement;
 let infoPanelTitle: HTMLElement;
@@ -244,6 +253,15 @@ function getInfoStructureKey(building: Building): string {
     parts.push('tw:' + building.waitingForTool);
   }
 
+  // Hunger state bucket (controls hint row visibility)
+  if (def.worker) {
+    const worker = getGame().getGameState().getWorkerForBuilding(building.id);
+    if (worker) {
+      const status = getSatiationStatus(worker.satiation);
+      parts.push('hs:' + (status || 'ok'));
+    }
+  }
+
   // Tool queue state (structure changes when current production or non-zero counts change)
   if (building.toolQueue !== undefined) {
     const curTool = building.currentToolProduction ?? 'none';
@@ -382,18 +400,48 @@ function generateInfoHTML(building: Building): string {
         <span class="info-value">${toolProps.label}</span>
       </div>`;
     }
-    // Worker satiation bar
+    // Worker food bar
     if (primaryWorker) {
       const sat = primaryWorker.satiation;
       const satPct = Math.round(sat * 100);
-      const satColor = sat > 0.75 ? '#4CAF50' : sat > 0.25 ? '#FFB74D' : '#EF5350';
+      const satColor = getSatiationColor(sat);
+      const satStatus = getSatiationStatus(sat);
       html += `<div class="info-row">
-        <span class="info-label">Satiation</span>
-        <span class="info-value" data-field="worker-sat-pct" style="color:${satColor}">${satPct}%</span>
+        <span class="info-label">Food</span>
+        <span class="info-value" data-field="worker-sat-pct" style="color:${satColor}">${satPct}%${satStatus ? ` (${satStatus})` : ''}</span>
       </div>
       <div style="background:var(--color-progress-bg);border-radius:4px;height:6px;margin:2px 0 4px">
         <div data-field="worker-sat-bar" style="width:${satPct}%;height:100%;border-radius:4px;background:${satColor};transition:width 0.3s"></div>
       </div>`;
+      // Hunger status hint
+      if (satStatus) {
+        const speedPenalty = satStatus === 'Starving'
+          ? Math.round(HUNGER_SPEED_PENALTY_STARVING * 100)
+          : Math.round(HUNGER_SPEED_PENALTY_HUNGRY * 100);
+        const prodPenalty = satStatus === 'Starving'
+          ? Math.round(HUNGER_PRODUCTION_PENALTY_STARVING * 100)
+          : Math.round(HUNGER_PRODUCTION_PENALTY_HUNGRY * 100);
+        const penaltyColor = satStatus === 'Starving' ? '#EF5350' : '#FFB74D';
+        html += `<div style="font-size:0.75rem;color:${penaltyColor};margin-bottom:4px">
+          ${satStatus === 'Starving' ? 'Starving!' : 'Hungry'} — speed -${speedPenalty}%, production -${prodPenalty}%
+        </div>`;
+        // Smart hint: check if food exists in storage
+        const gameState = getGame().getGameState();
+        const storageBuildings = gameState.getBuildingsByPlayer(building.playerId)
+          .filter(b => b.state === BuildingState.Active && (b.type === BuildingType.Castle || b.type === BuildingType.Warehouse));
+        let totalFood = 0;
+        for (const sb of storageBuildings) {
+          for (const [res, amount] of Object.entries(sb.outputInventory)) {
+            if (amount && amount > 0 && RESOURCE_PROPERTIES[res as ResourceType].satiationValue > 0) {
+              totalFood += amount;
+            }
+          }
+        }
+        const hint = totalFood > 0
+          ? 'Food available in storage — check road connections'
+          : 'Build food buildings (Fisherman\'s Hut, Farm, Bakery)';
+        html += `<div style="font-size:0.7rem;color:var(--color-on-surface-faint);margin-bottom:4px">${hint}</div>`;
+      }
     }
     html += '</div>';
   }
@@ -785,8 +833,12 @@ function updateInfoValues(building: Building): void {
     if (primaryWorker) {
       const sat = primaryWorker.satiation;
       const satPct = Math.round(sat * 100);
-      updater.setText('worker-sat-pct', `${satPct}%`);
+      const satColor = getSatiationColor(sat);
+      const satStatus = getSatiationStatus(sat);
+      updater.setText('worker-sat-pct', `${satPct}%${satStatus ? ` (${satStatus})` : ''}`);
       updater.setWidth('worker-sat-bar', `${satPct}%`);
+      updater.setColor('worker-sat-pct', satColor);
+      updater.setBackground('worker-sat-bar', satColor);
     }
   }
 
