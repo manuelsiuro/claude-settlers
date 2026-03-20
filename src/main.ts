@@ -55,6 +55,7 @@ import { initDemolishDialog } from './ui/DemolishDialog';
 import { initTechTreePanel } from './ui/TechTreePanel';
 import { initDashboard } from './ui/DashboardPanel';
 import { generateQrSvg } from './ui/QrCode';
+import { initVictoryProgressHUD, disposeVictoryProgressHUD } from './ui/VictoryProgressHUD';
 
 // ============================================================
 // Theme initialization (before DOM to avoid FOUC)
@@ -185,6 +186,7 @@ app.innerHTML = `
     <span id="pop-counter" class="pop-counter" title="Population">${icon('people')} <span id="pop-counter-text">0/15</span></span>
     <div class="game-controls-divider"></div>
     <span id="morale-counter" class="morale-counter" title="Morale">${icon('shield_icon')} <span id="morale-counter-text">50%</span></span>
+    <span id="victory-progress" class="victory-progress"></span>
   </div>
 
   <!-- Build Toolbar (desktop only) -->
@@ -388,33 +390,57 @@ app.innerHTML = `
         </div>
       </div>
 
-      <div class="setup-section-toggle" id="setup-victory-toggle">
+      <div class="setup-section-toggle expanded" id="setup-victory-toggle">
         <span class="setup-section-icon">${icon('trophy')}</span>
         <span class="setup-section-label">Victory Conditions</span>
         <span class="setup-section-chevron" id="setup-victory-chevron">${icon('chevron_right')}</span>
       </div>
-      <div id="setup-victory-list" class="setup-victory-list">
-        <div class="setup-victory-item">
+      <div id="setup-victory-list" class="setup-victory-list expanded">
+        <label class="setup-victory-item">
           <span class="setup-victory-icon">${icon('skull')}</span>
-          <div>
+          <div class="setup-victory-text">
             <div class="setup-victory-name">Elimination</div>
-            <div class="setup-victory-desc">Destroy all enemy castles — last player standing wins</div>
+            <div class="setup-victory-desc">Destroy all enemy castles — last player standing wins (multiplayer only)</div>
           </div>
-        </div>
-        <div class="setup-victory-item">
+          <input type="checkbox" id="victory-elimination" class="setup-toggle" checked>
+        </label>
+        <label class="setup-victory-item">
           <span class="setup-victory-icon">${icon('map')}</span>
-          <div>
+          <div class="setup-victory-text">
             <div class="setup-victory-name">Domination</div>
             <div class="setup-victory-desc">Control 75%+ of all claimable land</div>
           </div>
-        </div>
-        <div class="setup-victory-item">
+          <input type="checkbox" id="victory-domination" class="setup-toggle" checked>
+        </label>
+        <label class="setup-victory-item">
           <span class="setup-victory-icon">${icon('crown')}</span>
-          <div>
+          <div class="setup-victory-text">
             <div class="setup-victory-name">Economic</div>
             <div class="setup-victory-desc">Accumulate 50+ gold bars across your buildings</div>
           </div>
+          <input type="checkbox" id="victory-economic" class="setup-toggle" checked>
+        </label>
+        <label class="setup-victory-item">
+          <span class="setup-victory-icon">${icon('clock')}</span>
+          <div class="setup-victory-text">
+            <div class="setup-victory-name">Timed</div>
+            <div class="setup-victory-desc">Time limit — player with most territory wins</div>
+          </div>
+          <input type="checkbox" id="victory-timed" class="setup-toggle">
+        </label>
+        <div class="setup-victory-sub hidden" id="victory-timed-options">
+          <label class="setup-victory-sub-label">Time limit (minutes)
+            <input type="number" id="victory-timed-minutes" class="setup-field-input-small" value="30" min="5" max="120" step="5">
+          </label>
         </div>
+        <label class="setup-victory-item">
+          <span class="setup-victory-icon">${icon('grain')}</span>
+          <div class="setup-victory-text">
+            <div class="setup-victory-name">Peaceful</div>
+            <div class="setup-victory-desc">First to 100+ goods stored in Castle/Warehouse</div>
+          </div>
+          <input type="checkbox" id="victory-peaceful" class="setup-toggle">
+        </label>
       </div>
 
       <button id="setup-start-btn" class="btn-filled setup-start-btn">
@@ -497,6 +523,7 @@ initSetupScreen(startGame);
 async function startGame(config: Partial<GameConfig>, savedData?: SaveData): Promise<void> {
   // Clean up any active UI state from the previous game
   disposeDayCycleWidget();
+  disposeVictoryProgressHUD();
   stopInfoPanelUpdates();
   stopStatsPanelUpdates();
   stopBuildPanelUpdates();
@@ -664,6 +691,7 @@ async function startGame(config: Partial<GameConfig>, savedData?: SaveData): Pro
   const minimapContainer = document.getElementById('minimap-container')!;
   currentMinimap = new Minimap(game, minimapContainer);
   initDayCycleWidget(getGame, minimapContainer);
+  initVictoryProgressHUD(getGame);
   setupGameControlsPosition(minimapContainer);
 
   populateBuildPanel();

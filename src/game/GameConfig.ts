@@ -26,12 +26,31 @@ export const Scenario = {
 
 export type Scenario = (typeof Scenario)[keyof typeof Scenario];
 
+export interface VictoryConfig {
+  elimination: boolean;
+  domination: boolean;
+  economic: boolean;
+  timed: boolean;
+  timedLimitMinutes: number; // range 5–120
+  peaceful: boolean;
+}
+
+export const DEFAULT_VICTORY_CONFIG: VictoryConfig = {
+  elimination: true,
+  domination: true,
+  economic: true,
+  timed: false,
+  timedLimitMinutes: 30,
+  peaceful: false,
+};
+
 export interface GameConfig {
   seed: number;
   mapSize: MapSize;
   numPlayers: number; // 1–4
   difficulty: Difficulty;
   scenario: Scenario;
+  victory?: VictoryConfig;
 }
 
 export const DEFAULT_CONFIG: GameConfig = {
@@ -40,6 +59,7 @@ export const DEFAULT_CONFIG: GameConfig = {
   numPlayers: 1,
   difficulty: Difficulty.Normal,
   scenario: Scenario.Default,
+  victory: DEFAULT_VICTORY_CONFIG,
 };
 
 /** Terrain balance overrides per scenario */

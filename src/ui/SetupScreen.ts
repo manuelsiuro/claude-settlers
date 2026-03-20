@@ -1,4 +1,4 @@
-import type { GameConfig } from '../game/GameConfig';
+import type { GameConfig, VictoryConfig } from '../game/GameConfig';
 import type { SaveData } from '../game/SaveLoad';
 import { hasSave, loadFromLocalStorage, loadFromFile } from '../game/SaveLoad';
 import { showSnackbar } from './Snackbar';
@@ -38,6 +38,13 @@ export function initSetupScreen(startGame: StartGameFn): void {
   const playerColorsContainer = document.getElementById('setup-player-colors')!;
   const victoryToggle = document.getElementById('setup-victory-toggle')!;
   const victoryList = document.getElementById('setup-victory-list')!;
+  const victoryElimination = document.getElementById('victory-elimination') as HTMLInputElement;
+  const victoryDomination = document.getElementById('victory-domination') as HTMLInputElement;
+  const victoryEconomic = document.getElementById('victory-economic') as HTMLInputElement;
+  const victoryTimed = document.getElementById('victory-timed') as HTMLInputElement;
+  const victoryTimedMinutes = document.getElementById('victory-timed-minutes') as HTMLInputElement;
+  const victoryTimedOptions = document.getElementById('victory-timed-options')!;
+  const victoryPeaceful = document.getElementById('victory-peaceful') as HTMLInputElement;
 
   // Show "Continue Saved Game" button if a save exists in localStorage
   if (hasSave()) {
@@ -62,7 +69,7 @@ export function initSetupScreen(startGame: StartGameFn): void {
     difficultyDesc.textContent = DIFFICULTY_DESCRIPTIONS[setupDifficultySelect.value] ?? '';
   });
 
-  // Player color dots
+  // Player color dots + elimination auto-disable
   function updatePlayerColorDots(): void {
     const count = Number(setupPlayersSelect.value);
     let html = '';
@@ -72,6 +79,14 @@ export function initSetupScreen(startGame: StartGameFn): void {
       html += `<span class="setup-color-dot${cls}" style="background:${PLAYER_CSS_COLORS[i]};" title="Player ${i + 1} (${label})"></span>`;
     }
     playerColorsContainer.innerHTML = html;
+
+    // Disable elimination for single-player
+    if (count <= 1) {
+      victoryElimination.checked = false;
+      victoryElimination.disabled = true;
+    } else {
+      victoryElimination.disabled = false;
+    }
   }
   setupPlayersSelect.addEventListener('change', updatePlayerColorDots);
   updatePlayerColorDots();
@@ -82,14 +97,43 @@ export function initSetupScreen(startGame: StartGameFn): void {
     victoryList.classList.toggle('expanded');
   });
 
+  // Timed checkbox → show/hide minutes input
+  victoryTimed.addEventListener('change', () => {
+    victoryTimedOptions.classList.toggle('hidden', !victoryTimed.checked);
+  });
+
+  // Prevent checkbox label clicks from toggling the section toggle
+  for (const cb of [victoryElimination, victoryDomination, victoryEconomic, victoryTimed, victoryPeaceful]) {
+    cb.addEventListener('click', (e) => e.stopPropagation());
+  }
+
   setupStartBtn.addEventListener('click', () => {
+    // Validate at least 1 non-Elimination condition is enabled
+    const hasNonElimination = victoryDomination.checked || victoryEconomic.checked || victoryTimed.checked || victoryPeaceful.checked;
+    if (!hasNonElimination && !victoryElimination.checked) {
+      showSnackbar('Enable at least one victory condition', 'warning');
+      return;
+    }
+
     const rawSeed = Number(setupSeedInput.value);
+    const numPlayers = Number(setupPlayersSelect.value);
+
+    const victory: VictoryConfig = {
+      elimination: numPlayers > 1 && victoryElimination.checked,
+      domination: victoryDomination.checked,
+      economic: victoryEconomic.checked,
+      timed: victoryTimed.checked,
+      timedLimitMinutes: Number(victoryTimedMinutes.value) || 30,
+      peaceful: victoryPeaceful.checked,
+    };
+
     const config: Partial<GameConfig> = {
       seed: rawSeed > 0 ? Math.floor(rawSeed) : 42,
       mapSize: Number(setupMapSizeSelect.value) as GameConfig['mapSize'],
-      numPlayers: Number(setupPlayersSelect.value),
+      numPlayers,
       scenario: setupLandscapeSelect.value as GameConfig['scenario'],
       difficulty: setupDifficultySelect.value as GameConfig['difficulty'],
+      victory,
     };
 
     setupOverlay.classList.add('hidden');

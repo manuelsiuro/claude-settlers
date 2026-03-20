@@ -9,6 +9,8 @@ import {
   VICTORY_ECONOMIC_GOLD_TARGET,
   VICTORY_PEACEFUL_GOODS_TARGET,
 } from './data/balanceConstants';
+import type { VictoryConfig } from './GameConfig';
+import { DEFAULT_VICTORY_CONFIG } from './GameConfig';
 
 export const VictoryCondition = {
   /** All enemy Castles destroyed — last player standing */
@@ -35,11 +37,9 @@ export interface DefeatResult {
   reason: 'castle_destroyed';
 }
 
-/** Options for configuring optional victory conditions */
+/** @deprecated Use VictoryConfig from GameConfig instead */
 export interface VictoryManagerOptions {
-  /** Time limit in seconds. 0 = disabled (default). When elapsed, player with most territory wins. */
   timedLimit?: number;
-  /** Enable the peaceful victory condition (first to 100+ total goods in Castle/Warehouse). Default false. */
   peacefulEnabled?: boolean;
 }
 
@@ -78,14 +78,18 @@ export class VictoryManager {
   static ECONOMIC_GOLD_TARGET = VICTORY_ECONOMIC_GOLD_TARGET;
   static PEACEFUL_GOODS_TARGET = VICTORY_PEACEFUL_GOODS_TARGET;
 
+  /** Per-condition enabled flags */
+  private eliminationEnabled: boolean;
+  private dominationEnabled: boolean;
+  private economicEnabled: boolean;
+  private timedEnabled: boolean;
+  private peacefulEnabled: boolean;
+
   /** Timed victory: limit in seconds (0 = disabled) */
   private timedLimit: number;
 
   /** Total elapsed game time in seconds */
   private elapsedTime = 0;
-
-  /** Whether the peaceful victory condition is enabled */
-  private peacefulEnabled: boolean;
 
   /** Callbacks */
   onVictory: ((result: VictoryResult) => void) | null = null;
@@ -95,13 +99,31 @@ export class VictoryManager {
     gameState: GameState,
     territoryManager: TerritoryManager,
     playerIds: number[],
-    options?: VictoryManagerOptions,
+    config?: VictoryConfig | VictoryManagerOptions,
   ) {
     this.gameState = gameState;
     this.territoryManager = territoryManager;
     this.playerIds = playerIds;
-    this.timedLimit = options?.timedLimit ?? 0;
-    this.peacefulEnabled = options?.peacefulEnabled ?? false;
+
+    // Support both new VictoryConfig and legacy VictoryManagerOptions
+    if (config && 'elimination' in config) {
+      // VictoryConfig
+      this.eliminationEnabled = config.elimination;
+      this.dominationEnabled = config.domination;
+      this.economicEnabled = config.economic;
+      this.timedEnabled = config.timed;
+      this.timedLimit = config.timed ? config.timedLimitMinutes * 60 : 0;
+      this.peacefulEnabled = config.peaceful;
+    } else {
+      // Legacy VictoryManagerOptions or undefined
+      const defaults = DEFAULT_VICTORY_CONFIG;
+      this.eliminationEnabled = defaults.elimination;
+      this.dominationEnabled = defaults.domination;
+      this.economicEnabled = defaults.economic;
+      this.timedEnabled = (config as VictoryManagerOptions)?.timedLimit ? true : false;
+      this.timedLimit = (config as VictoryManagerOptions)?.timedLimit ?? 0;
+      this.peacefulEnabled = (config as VictoryManagerOptions)?.peacefulEnabled ?? false;
+    }
   }
 
   /** Serialization: get internal state for save */
@@ -149,6 +171,37 @@ export class VictoryManager {
   /** Check whether the peaceful victory condition is enabled */
   isPeacefulEnabled(): boolean {
     return this.peacefulEnabled;
+  }
+
+  /** Check whether the elimination victory condition is enabled */
+  isEliminationEnabled(): boolean {
+    return this.eliminationEnabled;
+  }
+
+  /** Check whether the domination victory condition is enabled */
+  isDominationEnabled(): boolean {
+    return this.dominationEnabled;
+  }
+
+  /** Check whether the economic victory condition is enabled */
+  isEconomicEnabled(): boolean {
+    return this.economicEnabled;
+  }
+
+  /** Check whether the timed victory condition is enabled */
+  isTimedEnabled(): boolean {
+    return this.timedEnabled;
+  }
+
+  /** Get list of currently enabled victory conditions */
+  getEnabledConditions(): VictoryCondition[] {
+    const conditions: VictoryCondition[] = [];
+    if (this.eliminationEnabled) conditions.push(VictoryCondition.Elimination);
+    if (this.dominationEnabled) conditions.push(VictoryCondition.Domination);
+    if (this.economicEnabled) conditions.push(VictoryCondition.Economic);
+    if (this.timedEnabled) conditions.push(VictoryCondition.Timed);
+    if (this.peacefulEnabled) conditions.push(VictoryCondition.Peaceful);
+    return conditions;
   }
 
   update(deltaTime: number): void {
@@ -269,7 +322,7 @@ export class VictoryManager {
     const activePlayers = this.getActivePlayers();
 
     // Elimination victory: only one player left
-    if (activePlayers.length === 1 && this.playerIds.length > 1) {
+    if (this.eliminationEnabled && activePlayers.length === 1 && this.playerIds.length > 1) {
       const victoryResult: VictoryResult = {
         winnerId: activePlayers[0],
         condition: VictoryCondition.Elimination,
@@ -284,7 +337,7 @@ export class VictoryManager {
     if (activePlayers.length === 0) return;
 
     // Timed victory: when the time limit expires, player with the most territory hexes wins
-    if (this.timedLimit > 0 && this.elapsedTime >= this.timedLimit) {
+    if (this.timedEnabled && this.timedLimit > 0 && this.elapsedTime >= this.timedLimit) {
       let bestPlayer = activePlayers[0];
       let bestCount = 0;
       for (const playerId of activePlayers) {
@@ -307,8 +360,8 @@ export class VictoryManager {
     // Check domination, economic, and peaceful for each active player
     for (const playerId of activePlayers) {
       // Domination check
-      const fraction = this.getPlayerTerritoryFraction(playerId);
-      if (fraction >= VictoryManager.DOMINATION_THRESHOLD) {
+      const fraction = this.dominationEnabled ? this.getPlayerTerritoryFraction(playerId) : 0;
+      if (this.dominationEnabled && fraction >= VictoryManager.DOMINATION_THRESHOLD) {
         const victoryResult: VictoryResult = {
           winnerId: playerId,
           condition: VictoryCondition.Domination,
@@ -320,8 +373,7 @@ export class VictoryManager {
       }
 
       // Economic check
-      const goldBars = this.getPlayerGoldBars(playerId);
-      if (goldBars >= VictoryManager.ECONOMIC_GOLD_TARGET) {
+      if (this.economicEnabled && this.getPlayerGoldBars(playerId) >= VictoryManager.ECONOMIC_GOLD_TARGET) {
         const victoryResult: VictoryResult = {
           winnerId: playerId,
           condition: VictoryCondition.Economic,

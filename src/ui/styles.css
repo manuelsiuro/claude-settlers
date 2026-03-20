@@ -389,11 +389,13 @@ html, body {
 }
 
 /* ============================================================
-   Floating Game Controls Bar (below minimap)
+   Floating Game Controls Bar (centered below app bar)
    ============================================================ */
 .game-controls-bar {
   position: fixed;
-  right: 8px;
+  top: 56px;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: var(--z-minimap);
   display: inline-flex;
   align-items: center;
@@ -2075,11 +2077,22 @@ html[data-theme="night"] .state-destroyed {
 
 .setup-victory-item {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 10px;
   padding: 8px 12px;
   border-radius: 6px;
   background: var(--color-surface-container);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.setup-victory-item:hover {
+  background: var(--color-surface-container-highest);
+}
+
+.setup-victory-text {
+  flex: 1;
+  min-width: 0;
 }
 
 .setup-victory-icon {
@@ -2107,6 +2120,115 @@ html[data-theme="night"] .state-destroyed {
   color: var(--color-on-surface-faint);
   line-height: 1.35;
   margin-top: 2px;
+}
+
+/* CSS-only toggle switch */
+.setup-toggle {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 36px;
+  height: 20px;
+  background: var(--color-surface-container-highest);
+  border-radius: 10px;
+  position: relative;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s;
+  border: none;
+  outline: none;
+}
+
+.setup-toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-on-surface-faint);
+  transition: transform 0.2s, background 0.2s;
+}
+
+.setup-toggle:checked {
+  background: var(--color-medieval-gold);
+}
+
+.setup-toggle:checked::after {
+  transform: translateX(16px);
+  background: #fff;
+}
+
+.setup-toggle:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Timed sub-options row */
+.setup-victory-sub {
+  padding: 6px 12px 6px 40px;
+}
+
+.setup-victory-sub.hidden {
+  display: none;
+}
+
+.setup-victory-sub-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  color: var(--color-on-surface-muted);
+}
+
+.setup-field-input-small {
+  width: 60px;
+  padding: 4px 6px;
+  border: 1px solid var(--color-outline);
+  border-radius: 6px;
+  background: var(--color-surface-container);
+  color: var(--color-on-surface);
+  font-size: 0.8125rem;
+  text-align: center;
+}
+
+/* Victory progress pills in game controls bar */
+.victory-progress {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 4px;
+}
+
+.victory-progress:empty {
+  display: none;
+}
+
+.victory-progress:not(:empty)::before {
+  content: '';
+  display: block;
+  width: 1px;
+  height: 16px;
+  background: var(--color-outline);
+  opacity: 0.3;
+  margin-right: 2px;
+}
+
+.victory-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.625rem;
+  color: var(--color-on-surface-muted);
+  white-space: nowrap;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.06);
+}
+
+.victory-pill-close {
+  color: var(--color-medieval-gold);
+  background: rgba(184, 134, 11, 0.15);
 }
 
 @media (max-width: 768px) {
@@ -2169,7 +2291,7 @@ html[data-theme="night"] .state-destroyed {
   }
 
   .game-controls-bar {
-    right: 4px;
+    top: 52px;
   }
 
   .game-over-card {

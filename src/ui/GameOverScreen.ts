@@ -75,6 +75,8 @@ export function showGameOver(result: VictoryResult): void {
     [VictoryCondition.Elimination]: 'All enemies have been defeated',
     [VictoryCondition.Domination]: 'Territorial domination achieved',
     [VictoryCondition.Economic]: 'Economic supremacy reached',
+    [VictoryCondition.Timed]: 'Time limit reached — most territory wins',
+    [VictoryCondition.Peaceful]: 'Trade empire established',
   };
   gameOverCondition.textContent = conditionLabels[result.condition] ?? result.condition;
 

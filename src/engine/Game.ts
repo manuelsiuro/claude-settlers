@@ -28,7 +28,7 @@ import { HarborManager } from '../game/HarborManager';
 import { DepositRenderer } from './DepositRenderer';
 import { TreeRenderer } from './TreeRenderer';
 import type { GameConfig, GraphicsSettings } from '../game/GameConfig';
-import { DEFAULT_CONFIG, SCENARIO_TERRAIN_BALANCE } from '../game/GameConfig';
+import { DEFAULT_CONFIG, DEFAULT_VICTORY_CONFIG, SCENARIO_TERRAIN_BALANCE } from '../game/GameConfig';
 import { RoadRenderer } from './RoadRenderer';
 import { TerritoryRenderer } from './TerritoryRenderer';
 import { MapRenderer } from './MapRenderer';
@@ -277,7 +277,9 @@ export class Game {
       },
     );
     const playerIds = Array.from({ length: this.config.numPlayers }, (_, i) => i + 1);
-    this.victoryManager = new VictoryManager(this.gameState, this.territoryManager, playerIds);
+    const vc = { ...(this.config.victory ?? DEFAULT_VICTORY_CONFIG) };
+    if (this.config.numPlayers <= 1) vc.elimination = false;
+    this.victoryManager = new VictoryManager(this.gameState, this.territoryManager, playerIds, vc);
     this.geologistManager = new GeologistManager(this.gameState);
     this.treeManager = new TreeManager();
     this.treeRenderer = new TreeRenderer();

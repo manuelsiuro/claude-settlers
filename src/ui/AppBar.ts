@@ -256,46 +256,13 @@ export function initAppBar(
   }
 }
 
-let controlsBarObserver: ResizeObserver | null = null;
-let controlsBarMutationObserver: MutationObserver | null = null;
-
-function positionControlsBar(
-  bar: HTMLElement,
-  minimapContainer: HTMLElement,
+/** Set up the floating game controls bar (now CSS-centered, no dynamic positioning needed) */
+export function setupGameControlsPosition(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _minimapContainer: HTMLElement,
 ): void {
-  // Find the cycle widget (positioned below minimap)
-  const cycleWidget = document.querySelector('.cycle-widget') as HTMLElement | null;
-  const cycleVisible = cycleWidget && !cycleWidget.classList.contains('hidden');
-
-  let bottomRef: number;
-  if (cycleVisible) {
-    bottomRef = cycleWidget.getBoundingClientRect().bottom;
-  } else {
-    bottomRef = minimapContainer.getBoundingClientRect().bottom;
-  }
-  bar.style.top = `${bottomRef + 4}px`;
-}
-
-/** Set up dynamic positioning of the floating game controls bar below the minimap/cycle widget */
-export function setupGameControlsPosition(minimapContainer: HTMLElement): void {
-  // Clean up previous observers
-  controlsBarObserver?.disconnect();
-  controlsBarMutationObserver?.disconnect();
-
   const bar = document.getElementById('game-controls-bar');
   if (!bar) return;
-
-  const reposition = () => positionControlsBar(bar, minimapContainer);
-  reposition();
-
-  // Reposition when minimap resizes
-  controlsBarObserver = new ResizeObserver(reposition);
-  controlsBarObserver.observe(minimapContainer);
-
-  // Watch for cycle widget visibility changes (class changes)
-  controlsBarMutationObserver = new MutationObserver(reposition);
-  const cycleWidget = document.querySelector('.cycle-widget');
-  if (cycleWidget) {
-    controlsBarMutationObserver.observe(cycleWidget, { attributes: true, attributeFilter: ['class'] });
-  }
+  // Clear any leftover inline top from previous positioning logic
+  bar.style.top = '';
 }

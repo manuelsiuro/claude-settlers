@@ -583,4 +583,199 @@ describe('VictoryManager', () => {
       expect(timedVictory2.getElapsedTime()).toBeCloseTo(42);
     });
   });
+
+  // --- VictoryConfig integration tests ---
+
+  describe('VictoryConfig', () => {
+    it('should not trigger domination when domination is disabled', () => {
+      const largeGrid = makeGrid(24, 24);
+      const gs = new GameState(largeGrid);
+      const tm = new TerritoryManager(gs);
+      const vm = new VictoryManager(gs, tm, [1, 2], {
+        elimination: true,
+        domination: false,
+        economic: true,
+        timed: false,
+        timedLimitMinutes: 30,
+        peaceful: false,
+      });
+      const v: VictoryResult[] = [];
+      vm.onVictory = (r) => v.push(r);
+
+      gs.placeBuilding(BuildingType.Castle, { q: 12, r: 12 }, 1);
+      gs.placeBuilding(BuildingType.Castle, { q: 0, r: 0 }, 2);
+
+      const positions = [
+        { q: 5, r: 5 }, { q: 18, r: 5 }, { q: 5, r: 18 }, { q: 18, r: 18 },
+        { q: 12, r: 5 }, { q: 12, r: 18 }, { q: 5, r: 12 }, { q: 18, r: 12 },
+      ];
+      for (const pos of positions) {
+        const result = gs.placeBuilding(BuildingType.GuardHut, pos, 1);
+        if (result.ok) result.building.state = BuildingState.Active;
+      }
+      tm.update();
+
+      // Player 1 should dominate territory, but condition is disabled
+      expect(vm.getPlayerTerritoryFraction(1)).toBeGreaterThanOrEqual(0.75);
+      vm.checkNow();
+      expect(v).toHaveLength(0);
+    });
+
+    it('should trigger only enabled conditions', () => {
+      // Enable only Economic — disable everything else
+      const vm = new VictoryManager(gameState, territory, [1, 2], {
+        elimination: false,
+        domination: false,
+        economic: true,
+        timed: false,
+        timedLimitMinutes: 30,
+        peaceful: false,
+      });
+      const v: VictoryResult[] = [];
+      vm.onVictory = (r) => v.push(r);
+
+      // Set up player 2 to be eliminated (but elimination is disabled)
+      const r1 = gameState.placeBuilding(BuildingType.Castle, { q: 5, r: 5 }, 1);
+      const r2 = gameState.placeBuilding(BuildingType.Castle, { q: 15, r: 15 }, 2);
+      expect(r1.ok && r2.ok).toBe(true);
+      if (r2.ok) gameState.removeBuilding(r2.building.id);
+
+      vm.checkNow();
+      // Elimination is disabled, so no victory even though only 1 player remains
+      expect(v).toHaveLength(0);
+
+      // Now reach Economic threshold
+      const castle = gameState.findCastle(1)!;
+      addToInventory(castle.outputInventory, ResourceType.GoldBars, 50);
+      vm.checkNow();
+
+      expect(v).toHaveLength(1);
+      expect(v[0].condition).toBe(VictoryCondition.Economic);
+    });
+
+    it('should auto-disable elimination for single-player (via getEnabledConditions)', () => {
+      const vm = new VictoryManager(gameState, territory, [1], {
+        elimination: false, // would be set by Game.ts for single player
+        domination: true,
+        economic: true,
+        timed: false,
+        timedLimitMinutes: 30,
+        peaceful: false,
+      });
+
+      const enabled = vm.getEnabledConditions();
+      expect(enabled).not.toContain(VictoryCondition.Elimination);
+      expect(enabled).toContain(VictoryCondition.Domination);
+      expect(enabled).toContain(VictoryCondition.Economic);
+    });
+
+    it('should return correct enabled conditions list', () => {
+      const vm = new VictoryManager(gameState, territory, [1, 2], {
+        elimination: true,
+        domination: false,
+        economic: true,
+        timed: true,
+        timedLimitMinutes: 15,
+        peaceful: true,
+      });
+
+      const enabled = vm.getEnabledConditions();
+      expect(enabled).toContain(VictoryCondition.Elimination);
+      expect(enabled).not.toContain(VictoryCondition.Domination);
+      expect(enabled).toContain(VictoryCondition.Economic);
+      expect(enabled).toContain(VictoryCondition.Timed);
+      expect(enabled).toContain(VictoryCondition.Peaceful);
+      expect(enabled).toHaveLength(4);
+    });
+
+    it('should convert timedLimitMinutes to seconds correctly', () => {
+      const vm = new VictoryManager(gameState, territory, [1, 2], {
+        elimination: true,
+        domination: true,
+        economic: true,
+        timed: true,
+        timedLimitMinutes: 5,
+        peaceful: false,
+      });
+
+      gameState.placeBuilding(BuildingType.Castle, { q: 5, r: 5 }, 1);
+      gameState.placeBuilding(BuildingType.Castle, { q: 15, r: 15 }, 2);
+      territory.update();
+
+      expect(vm.getTimedLimit()).toBe(300); // 5 * 60
+
+      const v: VictoryResult[] = [];
+      vm.onVictory = (r) => v.push(r);
+
+      // 299 seconds — not yet
+      vm.update(299);
+      expect(v).toHaveLength(0);
+
+      // 2 more seconds → 301 total
+      vm.update(2);
+      expect(v).toHaveLength(1);
+      expect(v[0].condition).toBe(VictoryCondition.Timed);
+    });
+
+    it('should preserve backward compatibility with no config (defaults)', () => {
+      // No config → defaults (elimination, domination, economic enabled; timed, peaceful disabled)
+      const vm = new VictoryManager(gameState, territory, [1, 2]);
+
+      const enabled = vm.getEnabledConditions();
+      expect(enabled).toContain(VictoryCondition.Elimination);
+      expect(enabled).toContain(VictoryCondition.Domination);
+      expect(enabled).toContain(VictoryCondition.Economic);
+      expect(enabled).not.toContain(VictoryCondition.Timed);
+      expect(enabled).not.toContain(VictoryCondition.Peaceful);
+    });
+
+    it('should never fire victory when all conditions are disabled', () => {
+      const vm = new VictoryManager(gameState, territory, [1, 2], {
+        elimination: false,
+        domination: false,
+        economic: false,
+        timed: false,
+        timedLimitMinutes: 30,
+        peaceful: false,
+      });
+      const v: VictoryResult[] = [];
+      vm.onVictory = (r) => v.push(r);
+
+      const r1 = gameState.placeBuilding(BuildingType.Castle, { q: 5, r: 5 }, 1);
+      const r2 = gameState.placeBuilding(BuildingType.Castle, { q: 15, r: 15 }, 2);
+      expect(r1.ok && r2.ok).toBe(true);
+
+      // Trigger conditions that would normally win
+      const castle = gameState.findCastle(1)!;
+      addToInventory(castle.outputInventory, ResourceType.GoldBars, 100);
+
+      if (r2.ok) gameState.removeBuilding(r2.building.id);
+
+      vm.update(100000);
+      expect(v).toHaveLength(0);
+      expect(vm.isGameOver()).toBe(false);
+    });
+
+    it('should not trigger economic when economic is disabled', () => {
+      const vm = new VictoryManager(gameState, territory, [1, 2], {
+        elimination: true,
+        domination: true,
+        economic: false,
+        timed: false,
+        timedLimitMinutes: 30,
+        peaceful: false,
+      });
+      const v: VictoryResult[] = [];
+      vm.onVictory = (r) => v.push(r);
+
+      gameState.placeBuilding(BuildingType.Castle, { q: 5, r: 5 }, 1);
+      gameState.placeBuilding(BuildingType.Castle, { q: 15, r: 15 }, 2);
+
+      const castle = gameState.findCastle(1)!;
+      addToInventory(castle.outputInventory, ResourceType.GoldBars, 100);
+
+      vm.checkNow();
+      expect(v).toHaveLength(0);
+    });
+  });
 });
