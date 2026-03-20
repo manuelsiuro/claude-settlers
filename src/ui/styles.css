@@ -489,13 +489,19 @@ html, body {
 }
 
 /* ============================================================
-   Tool Alert Bar
+   Alert Bar (unified container for tool, capacity, food alerts)
    ============================================================ */
-.tool-alert-bar {
+.alert-bar {
   position: fixed;
   top: 56px;
   left: 12px;
-  z-index: var(--z-panel);
+  z-index: var(--z-panels);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  pointer-events: none;
+}
+.alert-bar > * {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -553,29 +559,16 @@ html, body {
 }
 
 @media (max-width: 768px) {
-  .tool-alert-bar {
+  .alert-bar {
     top: auto;
     bottom: 150px;
     left: 8px;
   }
-  .tool-alert-chip {
+  .tool-alert-chip,
+  .capacity-alert-chip {
     padding: 6px 12px;
     font-size: 13px;
   }
-}
-
-/* ============================================================
-   Capacity Alert Bar
-   ============================================================ */
-.capacity-alert-bar {
-  position: fixed;
-  top: 56px;
-  left: 220px;
-  z-index: var(--z-panel);
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  pointer-events: auto;
 }
 
 .capacity-alert-chip {
@@ -641,17 +634,17 @@ html, body {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-@media (max-width: 768px) {
-  .capacity-alert-bar {
-    top: auto;
-    bottom: 150px;
-    left: 8px;
-  }
-  .capacity-alert-chip {
-    padding: 6px 12px;
-    font-size: 13px;
-  }
+/* Food alert severity */
+.food-alert-warning {
+  border-color: rgba(255, 183, 77, 0.4);
+  background: rgba(255, 183, 77, 0.12);
 }
+.food-alert-warning .capacity-alert-icon { color: #FFB74D; }
+.food-alert-critical {
+  border-color: rgba(239, 83, 80, 0.4);
+  background: rgba(239, 83, 80, 0.12);
+}
+.food-alert-critical .capacity-alert-icon { color: #EF5350; }
 
 /* ============================================================
    Build Panel

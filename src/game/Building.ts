@@ -219,8 +219,8 @@ export const CASTLE_STARTING_RESOURCES: { resource: ResourceType; amount: number
   { resource: ResourceType.Wood, amount: 12 },
   { resource: ResourceType.Stone, amount: 8 },
   { resource: ResourceType.Planks, amount: 6 },
-  { resource: ResourceType.Fish, amount: 4 },
-  { resource: ResourceType.Bread, amount: 4 },
+  { resource: ResourceType.Fish, amount: 8 },
+  { resource: ResourceType.Bread, amount: 8 },
   { resource: ResourceType.IronBars, amount: 8 },
   // Individual tools for bootstrapping
   { resource: ResourceType.Axe, amount: 2 },

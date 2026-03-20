@@ -33,8 +33,8 @@ describe('FeedingManager', () => {
       expect(unit.satiation).toBe(1.0);
 
       feedingManager.update(10.0); // 10 seconds
-      // Base decay: 0.005/s * 10s = 0.05
-      expect(unit.satiation).toBeCloseTo(0.95, 2);
+      // Base decay: 0.002/s * 10s = 0.02
+      expect(unit.satiation).toBeCloseTo(0.98, 2);
     });
 
     it('should decay faster for working units', () => {
@@ -42,8 +42,8 @@ describe('FeedingManager', () => {
       unit.state = UnitState.Working;
 
       feedingManager.update(10.0);
-      // Working decay: 0.005 * 1.2 * 10 = 0.06
-      expect(unit.satiation).toBeCloseTo(0.94, 2);
+      // Working decay: 0.002 * 1.2 * 10 = 0.024
+      expect(unit.satiation).toBeCloseTo(0.976, 2);
     });
 
     it('should decay slower for garrisoned knights', () => {
@@ -52,8 +52,8 @@ describe('FeedingManager', () => {
       unit.assignedBuildingId = 'building_1';
 
       feedingManager.update(10.0);
-      // Garrisoned decay: 0.005 * 0.5 * 10 = 0.025
-      expect(unit.satiation).toBeCloseTo(0.975, 2);
+      // Garrisoned decay: 0.002 * 0.5 * 10 = 0.01
+      expect(unit.satiation).toBeCloseTo(0.99, 2);
     });
 
     it('should not go below 0', () => {

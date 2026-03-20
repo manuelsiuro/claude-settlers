@@ -90,8 +90,8 @@ export function getPopulationSeverity(ratio: number): 'critical' | 'warning' | '
 
 // ─── Hunger / Feeding ──────────────────────────────────────────────────────
 
-/** Base satiation decay rate per second (full → starving in ~200s) */
-export const HUNGER_DECAY_RATE = 0.005;
+/** Base satiation decay rate per second (full → starving in ~500s) */
+export const HUNGER_DECAY_RATE = 0.002;
 /** Decay multiplier when unit is working */
 export const HUNGER_WORKING_MULTIPLIER = 1.2;
 /** Decay multiplier for garrisoned knights */
@@ -108,6 +108,20 @@ export const HUNGER_SPEED_PENALTY_STARVING = 0.40;
 export const HUNGER_PRODUCTION_PENALTY_HUNGRY = 0.15;
 /** Production penalty when starving */
 export const HUNGER_PRODUCTION_PENALTY_STARVING = 0.30;
+
+/** Get the display color for a satiation value, aligned with penalty thresholds */
+export function getSatiationColor(satiation: number): string {
+  if (satiation >= HUNGER_HUNGRY_THRESHOLD) return '#4CAF50';   // green: no penalties
+  if (satiation >= HUNGER_STARVING_THRESHOLD) return '#FFB74D'; // amber: hungry
+  return '#EF5350';                                              // red: starving
+}
+
+/** Get the status label for a satiation value */
+export function getSatiationStatus(satiation: number): '' | 'Hungry' | 'Starving' {
+  if (satiation >= HUNGER_HUNGRY_THRESHOLD) return '';
+  if (satiation >= HUNGER_STARVING_THRESHOLD) return 'Hungry';
+  return 'Starving';
+}
 
 // ─── Day/Night ─────────────────────────────────────────────────────────────
 
@@ -162,9 +176,9 @@ const STARTING_RESOURCE_TYPES = [
 
 /** Per-difficulty starting amounts (same order as STARTING_RESOURCE_TYPES) */
 const STARTING_AMOUNTS: Record<Difficulty, readonly number[]> = {
-  easy:   [16, 10, 8, 6, 6, 10, 3, 3, 1, 1, 1, 3, 1, 1],
-  normal: [12,  8, 6, 4, 4,  8, 2, 2, 1, 1, 1, 2, 1, 1],
-  hard:   [ 8,  5, 4, 2, 2,  4, 1, 1, 1, 1, 1, 1, 1, 1],
+  easy:   [16, 10, 8, 10, 10, 10, 3, 3, 1, 1, 1, 3, 1, 1],
+  normal: [12,  8, 6,  8,  8,  8, 2, 2, 1, 1, 1, 2, 1, 1],
+  hard:   [ 8,  5, 4,  4,  4,  4, 1, 1, 1, 1, 1, 1, 1, 1],
 };
 
 function buildResourceList(amounts: readonly number[]): { resource: ResourceType; amount: number }[] {
