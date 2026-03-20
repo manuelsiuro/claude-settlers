@@ -350,5 +350,11 @@ All 17 tasks from the improvement plan are now complete. 569 tests passing, 0 er
 - [DONE] Phase 9: Save/Load — Version bumped to 9. Backward compat patch for `pendingDismissal` field. Old saves work (no houses but Castle provides capacity). — 2026-03-19
 - [DONE] Phase 10: 3D Models — 3 house GLBs created via Blender MCP (Small House 11KB, Medium House 14KB, Large House 16KB). AssetLoader, BuildingModels, BuildingRenderer scale entries. Visual descriptions added to docs/buildings.md. — 2026-03-19
 
+### Statistics Dashboard [DONE]
+- [DONE] Phase 1: DashboardTracker data layer — RingBuffer (Float32Array-backed circular buffer), DashboardTracker class (30s snapshots, 120 points = 60min history), tracks population, capacity, satiation, morale, military count/rank, per-resource stock levels, building efficiency (5 categories). EconomyTracker MAX_HISTORY bumped 10→120, added getGameTime() getter. Game.ts wiring. 10 tests. — 2026-03-20
+- [DONE] Phase 2: ChartRenderer — Canvas-based chart rendering (DPI-aware, theme-aware): drawLineChart (multi-series, area fill, grid, labels, zero-line), drawDualBarChart (production vs consumption horizontal bars), drawDonutChart (efficiency visualization with center text), generateTimeLabels helper. — 2026-03-20
+- [DONE] Phase 3: DashboardPanel — Fullscreen overlay (TechTree pattern) with 5 tabs: Overview (KPI cards, dual bars, pop chart, efficiency donut, bottleneck alerts), Economy (timescale selector, resource filter, dual bars, click-to-drill rate chart), Resources (stock levels line chart top 5, inventory table with trends), Population (pop/morale charts, hunger stats, unit breakdown), Buildings (efficiency donut with legend, status table, construction progress). — 2026-03-20
+- [DONE] Phase 4: Integration — Dashboard overlay div in HTML, toolbar button, nav drawer item, StatsPanel/AppBar wiring, 120 lines CSS (responsive: mobile single-column, bottom tabs, 48px touch targets). Day/night theme support. — 2026-03-20
+
 ## Blockers
 _None._

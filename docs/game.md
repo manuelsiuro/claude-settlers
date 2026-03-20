@@ -383,6 +383,12 @@ Unlocking a new building often requires resources produced by previous buildings
     - **Under Construction** (blue hammer) — lowest priority
     - Icons use cached `CanvasTexture` (5 textures shared across all buildings). Update every 500ms.
 - **Production Chain Visualization:** Selecting a building shows animated dashed lines to upstream (input source buildings, blue) and downstream (output consumer buildings, orange). Cone arrows at endpoints. Max 10 connections.
+- **Statistics Dashboard:** Fullscreen overlay with 5 tabs and Canvas-based charts (accessible via toolbar button or nav drawer):
+    - **Overview:** KPI cards (population, total resources, efficiency %, morale %), production balance dual-bar chart, population line chart, efficiency donut, bottleneck alerts.
+    - **Economy:** Time scale selector (5m/15m/30m/1hr), resource filter (All/Raw/Processed/Food/Military), production vs consumption dual-bar chart, click-to-drill rate-over-time line chart, rate details table.
+    - **Resources:** Stock levels over time (top 5 line chart), full inventory table with trend arrows, production/consumption rates.
+    - **Population:** Population & capacity over time (line chart), morale over time (line chart), hunger stats (satiation, hungry/starving counts), food supply, unit breakdown by type.
+    - **Buildings:** Efficiency donut (producing/waiting input/waiting output/no worker/paused), building status table (per-type counts), under-construction progress bars.
 
 ## 7. Winning Conditions
 

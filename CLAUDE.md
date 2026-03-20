@@ -42,7 +42,8 @@ All design specs live in `docs/`:
 - **Day/night effects**: night production slowdown (25%), civilian speed penalty (40%), torch tower mitigation (50% reduction in 5-hex radius).
 - **Animal lifecycle**: `AnimalLifecycleManager` tracks Donkey/HorseTransport feeding, aging, starvation death. Cargo drops at nearest flag on death.
 - **Goods distribution**: per-resource priority (1-5) and per-building importance (1-5) control routing scores. `LogisticsManager` uses composite `importance × priority / distance` when deciding where to send output goods.
-- **Economy tracking**: `EconomyTracker` maintains a rolling 5-minute window of production/consumption events, providing per-resource rates, net balance, and bottleneck detection.
+- **Economy tracking**: `EconomyTracker` maintains a rolling 5-minute window of production/consumption events, providing per-resource rates, net balance, and bottleneck detection. Stores up to 120 history snapshots (60 minutes at 30s intervals) for dashboard charts.
+- **Dashboard analytics**: `DashboardTracker` takes periodic aggregate snapshots every 30 game-seconds into `RingBuffer` (Float32Array-backed circular buffers, 120 points). Tracks: population & capacity, average satiation, morale, military count & rank, per-resource stock levels, and building efficiency (producing/waitingInput/waitingOutput/noWorker/paused). `DashboardPanel` renders a fullscreen 5-tab overlay (Overview, Economy, Resources, Population, Buildings) with Canvas-based charts (`ChartRenderer`: line charts, dual bar charts, donut charts). Updates every 2s when visible.
 
 ### Visual & Animation Systems
 
@@ -123,7 +124,7 @@ This project uses `PROGRESS.md` at the repo root as the single source of truth f
 
 ### Development Phases
 
-Phases 1–9 and all expansion phases (A–J) are complete. The game now has 50 building types, 44 resource types, 39 unit types, hunger/morale systems, military expansion (5 unit types), advanced transport (multi-carry, road quality tiers), animal lifecycle, and balance tuning. See `PROGRESS.md` for full history. 693 tests passing.
+Phases 1–9 and all expansion phases (A–J) are complete. The game now has 50 building types, 44 resource types, 39 unit types, hunger/morale systems, military expansion (5 unit types), advanced transport (multi-carry, road quality tiers), animal lifecycle, balance tuning, and a full statistics dashboard with Canvas-based charts. See `PROGRESS.md` for full history. 703 tests passing.
 
 ### Verification
 

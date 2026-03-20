@@ -67,6 +67,7 @@ import { PopulationManager } from '../game/PopulationManager';
 import { FeedingManager } from '../game/FeedingManager';
 import { MoraleManager } from '../game/MoraleManager';
 import { AnimalLifecycleManager } from '../game/AnimalLifecycleManager';
+import { DashboardTracker } from '../game/DashboardTracker';
 
 export const ShadowQuality = {
   Off: 'off',
@@ -144,6 +145,7 @@ export class Game {
   private feedingManager: FeedingManager;
   private animalLifecycleManager: AnimalLifecycleManager;
   private moraleManager: MoraleManager;
+  private dashboardTracker: DashboardTracker;
   private aiPlayers: AIPlayer[] = [];
   private roadRenderer: RoadRenderer;
   private territoryRenderer: TerritoryRenderer;
@@ -302,6 +304,9 @@ export class Game {
       this.baseColorGrading = { ...params, warmTint: [...params.warmTint] };
       this.applyColorGradingWithWeather(params);
     };
+    this.dashboardTracker = new DashboardTracker(
+      this.gameState, this.populationManager, this.moraleManager, this.humanPlayerId,
+    );
     this.weatherController = new WeatherController();
     this.flagLightSystem = new FlagLightSystem();
     this.workAreaRenderer = new WorkAreaRenderer();
@@ -722,6 +727,7 @@ export class Game {
       this.moraleManager.update(deltaTime);
       this.animalLifecycleManager.update(deltaTime);
       this.economyTracker.update(deltaTime);
+      this.dashboardTracker.update(deltaTime);
       this.roadRenderer.sync(this.roadNetwork, (id) => this.gameState.getUnit(id));
       this.territoryRenderer.sync(this.territoryManager);
       this.fogOfWarManager.markDirty(); // Units move every frame
@@ -1259,6 +1265,10 @@ export class Game {
 
   getEconomyTracker(): EconomyTracker {
     return this.economyTracker;
+  }
+
+  getDashboardTracker(): DashboardTracker {
+    return this.dashboardTracker;
   }
 
   /** Get the count of idle (unassigned) serfs at the Castle */

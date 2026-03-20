@@ -3,8 +3,8 @@ import type { ResourceType } from './ResourceType';
 /** Time window for rolling rate calculations (seconds) */
 const RATE_WINDOW = 300; // 5 minutes
 
-/** Max history points for sparklines */
-const MAX_HISTORY = 10;
+/** Max history points for sparklines and dashboard charts */
+const MAX_HISTORY = 120;
 
 /** Sample interval for history snapshots (seconds) */
 const HISTORY_INTERVAL = 30;
@@ -99,6 +99,11 @@ export class EconomyTracker {
   /** Get consumption history for sparkline */
   getConsumptionHistory(resource: ResourceType): number[] {
     return this.consumptionHistory.get(resource) ?? [];
+  }
+
+  /** Get current game time in seconds */
+  getGameTime(): number {
+    return this.gameTime;
   }
 
   /** Get all resources that have any activity */

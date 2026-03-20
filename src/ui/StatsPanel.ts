@@ -9,6 +9,7 @@ import { renderEconomySection, drawEconomySparklines } from './EconomyPanel';
 import { getPopulationSeverity, getSatiationColor, HUNGER_HUNGRY_THRESHOLD, HUNGER_STARVING_THRESHOLD } from '../game/data/balanceConstants';
 import { renderPriorityHTML, attachPriorityListeners } from './ResourcePriorityPanel';
 import { showTechTreePanel } from './TechTreePanel';
+import { showDashboard } from './DashboardPanel';
 import { PanelUpdater } from './PanelUpdater';
 
 let statsPanel: HTMLElement;
@@ -73,6 +74,11 @@ export function initStatsPanel(
 
     if (panel === 'techtree') {
       showTechTreePanel();
+      return;
+    }
+
+    if (panel === 'dashboard') {
+      showDashboard();
       return;
     }
 
