@@ -19,6 +19,8 @@ import {
 import { startAttackTargeting, isAttackModeActive } from './BuildPanel';
 import { showDemolishConfirm } from './DemolishDialog';
 import { PanelUpdater } from './PanelUpdater';
+import type { Flag } from '../game/RoadNetwork';
+import { ROAD_QUALITY_NAMES, getRoadUpgradeCost } from '../game/data/balanceConstants';
 
 let infoPanel: HTMLElement;
 let infoPanelTitle: HTMLElement;
@@ -99,6 +101,31 @@ export function initInfoPanel(
     if (demolishBtn?.dataset.buildingId) {
       const building = getGame().getGameState().getBuilding(demolishBtn.dataset.buildingId);
       if (building) showDemolishConfirm(building);
+    }
+
+    // Road upgrade buttons
+    const roadUpgradeBtn = (e.target as HTMLElement).closest('.road-upgrade-btn') as HTMLElement | null;
+    if (roadUpgradeBtn?.dataset.roadId && roadUpgradeBtn?.dataset.quality) {
+      const roadId = roadUpgradeBtn.dataset.roadId;
+      const targetQuality = Number(roadUpgradeBtn.dataset.quality);
+      const rn = getGame().getRoadNetwork();
+      const road = rn.getRoad(roadId);
+      if (road) {
+        const cost = getRoadUpgradeCost(road.quality);
+        const castle = getGame().getGameState().findCastle(getGame().getHumanPlayerId());
+        if (castle) {
+          // Check and deduct resources
+          const canAfford = cost.every(c => getInventoryAmount(castle.outputInventory, c.resource) >= c.amount);
+          if (canAfford) {
+            for (const c of cost) {
+              const current = castle.outputInventory[c.resource] ?? 0;
+              castle.outputInventory[c.resource] = current - c.amount;
+            }
+            rn.upgradeRoad(roadId, targetQuality);
+            updater.reset(); // Force rebuild to show new quality
+          }
+        }
+      }
     }
 
     // Tool queue +/- buttons
@@ -915,4 +942,108 @@ export function stopInfoPanelUpdates(): void {
 /** Hide the info panel element (without deselecting) */
 export function hideInfoPanelElement(): void {
   infoPanel.classList.add('hidden');
+}
+
+// ── Road/Flag Info Panel ──────────────────────────────────────────────────
+
+/** Generate HTML for a flag's connected roads with upgrade buttons */
+function generateFlagInfoHTML(flag: Flag): string {
+  const rn = getGame().getRoadNetwork();
+  const roads = rn.getAllRoads().filter(r => r.flagA === flag.id || r.flagB === flag.id);
+
+  let html = '';
+
+  // Flag info
+  html += `<div class="info-section">
+    <div class="info-row">
+      <span class="info-label">Position</span>
+      <span class="info-value">(${flag.coord.q}, ${flag.coord.r})</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Goods</span>
+      <span class="info-value" data-field="flag-goods">${flag.goods.length}/8</span>
+    </div>`;
+  if (flag.buildingId) {
+    const building = getGame().getGameState().getBuilding(flag.buildingId);
+    if (building) {
+      const def = BUILDING_DEFINITIONS[building.type];
+      html += `<div class="info-row">
+        <span class="info-label">Building</span>
+        <span class="info-value">${def.label}</span>
+      </div>`;
+    }
+  }
+  html += '</div>';
+
+  // Connected roads
+  if (roads.length > 0) {
+    html += '<div class="info-section"><div class="info-section-label">Connected Roads</div>';
+    for (const road of roads) {
+      if (road.virtual) continue;
+      const qualityName = ROAD_QUALITY_NAMES[road.quality] ?? 'Path';
+      const otherFlagId = road.flagA === flag.id ? road.flagB : road.flagA;
+      const otherFlag = rn.getFlag(otherFlagId);
+      let otherLabel = 'Flag';
+      if (otherFlag?.buildingId) {
+        const otherBuilding = getGame().getGameState().getBuilding(otherFlag.buildingId);
+        if (otherBuilding) {
+          otherLabel = BUILDING_DEFINITIONS[otherBuilding.type]?.label ?? 'Flag';
+        }
+      }
+
+      html += `<div class="info-resource-row" style="flex-wrap:wrap;gap:4px">
+        <span class="info-resource-name">→ ${otherLabel}</span>
+        <span class="info-resource-amount" data-field="road-q-${road.id}">${qualityName}</span>
+      </div>`;
+
+      // Upgrade button if not max quality
+      if (road.quality < 3) {
+        const cost = getRoadUpgradeCost(road.quality);
+        const nextName = ROAD_QUALITY_NAMES[road.quality + 1];
+        const castle = getGame().getGameState().findCastle(flag.playerId);
+        const canAfford = castle ? cost.every(c => getInventoryAmount(castle.outputInventory, c.resource) >= c.amount) : false;
+        const costStr = cost.map(c => `${c.amount} ${RESOURCE_PROPERTIES[c.resource].label}`).join(', ');
+        html += `<button class="btn-outlined road-upgrade-btn" data-road-id="${road.id}" data-quality="${road.quality + 1}" style="width:100%;margin:2px 0 8px;font-size:0.75rem;padding:4px 8px"${canAfford ? '' : ' disabled'}>
+          Upgrade to ${nextName} (${costStr})
+        </button>`;
+      }
+    }
+    html += '</div>';
+  }
+
+  return html;
+}
+
+/** Show the info panel for a flag (road info + upgrade controls) */
+export function showFlagInfoPanel(flag: Flag): void {
+  selectedBuildingId = null;
+  infoPanelTitle.textContent = 'Flag';
+  updater.reset();
+  updater.update(
+    `flag:${flag.id}:${flag.goods.length}`,
+    () => generateFlagInfoHTML(flag),
+    () => {
+      updater.setText('flag-goods', `${flag.goods.length}/8`);
+    },
+  );
+  infoPanel.classList.remove('hidden');
+  closeBuildPanelFn();
+  closeStatsPanelFn();
+
+  // Live updates
+  stopInfoPanelUpdates();
+  infoPanelUpdateInterval = setInterval(() => {
+    const currentFlag = getGame().getRoadNetwork().getFlag(flag.id);
+    if (currentFlag) {
+      updater.update(
+        `flag:${flag.id}:${currentFlag.goods.length}`,
+        () => generateFlagInfoHTML(currentFlag),
+        () => {
+          updater.setText('flag-goods', `${currentFlag.goods.length}/8`);
+        },
+      );
+    } else {
+      closeInfoPanel();
+    }
+  }, 500);
 }

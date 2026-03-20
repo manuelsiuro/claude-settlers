@@ -37,6 +37,7 @@ import {
 import {
   initInfoPanel,
   showInfoPanel,
+  showFlagInfoPanel,
   closeInfoPanel,
   stopInfoPanelUpdates,
   hideInfoPanelElement,
@@ -589,6 +590,14 @@ async function startGame(config: Partial<GameConfig>, savedData?: SaveData): Pro
         stopInfoPanelUpdates();
         g.getProductionChainOverlay().clear();
         g.hideWorkArea();
+      }
+    };
+    selection.onFlagSelected = (flag) => {
+      if (flag) {
+        showFlagInfoPanel(flag);
+      } else {
+        hideInfoPanelElement();
+        stopInfoPanelUpdates();
       }
     };
   }

@@ -175,3 +175,22 @@ export const CASTLE_STARTING_RESOURCES_BY_DIFFICULTY: Record<Difficulty, { resou
   normal: buildResourceList(STARTING_AMOUNTS.normal),
   hard: buildResourceList(STARTING_AMOUNTS.hard),
 };
+
+// ── Road upgrade costs ──────────────────────────────────────────────────────
+export const ROAD_QUALITY_NAMES = ['Path', 'Dirt Road', 'Stone Road', 'Paved Road'];
+
+export const ROAD_UPGRADE_COSTS: { resource: ResourceType; amount: number }[][] = [
+  // 0→1: Dirt Road
+  [{ resource: ResourceType.Planks, amount: 1 }],
+  // 1→2: Stone Road
+  [{ resource: ResourceType.Stone, amount: 2 }],
+  // 2→3: Paved Road
+  [{ resource: ResourceType.Stone, amount: 2 }, { resource: ResourceType.Planks, amount: 1 }],
+];
+
+export const ROAD_UPGRADE_TIMES = [5, 10, 15]; // seconds per upgrade level
+
+/** Get upgrade cost for a road at the given quality level. Returns [] if already max. */
+export function getRoadUpgradeCost(currentQuality: number): { resource: ResourceType; amount: number }[] {
+  return ROAD_UPGRADE_COSTS[currentQuality] ?? [];
+}
