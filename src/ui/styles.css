@@ -1810,7 +1810,7 @@ html[data-theme="night"] .state-destroyed {
   color: var(--color-on-surface);
   border-radius: 24px;
   padding: 32px 40px;
-  width: 420px;
+  width: 600px;
   max-width: calc(100vw - 32px);
   max-height: calc(100vh - 32px);
   overflow-y: auto;
@@ -1848,6 +1848,40 @@ html[data-theme="night"] .state-destroyed {
   height: 2px;
   background: linear-gradient(90deg, transparent, var(--color-medieval-gold), transparent);
   margin: 0 auto 20px;
+}
+
+.setup-section {
+  background: var(--color-surface-container);
+  border: 1px solid var(--color-outline-variant);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.setup-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.setup-section-header .setup-section-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-on-surface-muted);
+}
+
+.setup-section-header .setup-section-icon {
+  color: var(--color-medieval-gold);
+  display: inline-flex;
+  align-items: center;
+}
+
+.setup-section-header .setup-section-icon svg {
+  width: 18px;
+  height: 18px;
 }
 
 .setup-field {
@@ -2016,9 +2050,9 @@ html[data-theme="night"] .state-destroyed {
   align-items: center;
   gap: 8px;
   padding: 10px 12px;
-  margin-top: 16px;
-  border-radius: 8px;
-  background: var(--color-surface-container);
+  margin: -16px -16px 0;
+  border-radius: 12px 12px 0 0;
+  background: transparent;
   cursor: pointer;
   user-select: none;
   transition: background 0.15s;
@@ -2066,13 +2100,13 @@ html[data-theme="night"] .state-destroyed {
 
 .setup-victory-list {
   display: none;
-  flex-direction: column;
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
   padding: 10px 0 0;
 }
 
 .setup-victory-list.expanded {
-  display: flex;
+  display: grid;
 }
 
 .setup-victory-item {
@@ -2081,7 +2115,7 @@ html[data-theme="night"] .state-destroyed {
   gap: 10px;
   padding: 8px 12px;
   border-radius: 6px;
-  background: var(--color-surface-container);
+  background: var(--color-surface);
   cursor: pointer;
   transition: background 0.15s;
 }
@@ -2167,6 +2201,7 @@ html[data-theme="night"] .state-destroyed {
 /* Timed sub-options row */
 .setup-victory-sub {
   padding: 6px 12px 6px 40px;
+  grid-column: 1 / -1;
 }
 
 .setup-victory-sub.hidden {
@@ -2315,6 +2350,14 @@ html[data-theme="night"] .state-destroyed {
   }
 
   .setup-options-row {
+    grid-template-columns: 1fr;
+  }
+
+  .setup-section {
+    padding: 12px;
+  }
+
+  .setup-victory-list.expanded {
     grid-template-columns: 1fr;
   }
 

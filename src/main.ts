@@ -337,33 +337,39 @@ app.innerHTML = `
       <p class="setup-subtitle">Configure your world and begin your conquest</p>
       <div class="setup-divider"></div>
 
-      <!-- Map Source Tabs -->
-      <div class="setup-map-tabs">
-        <button class="setup-map-tab active" id="setup-tab-generated">${icon('map')} Generated</button>
-        <button class="setup-map-tab" id="setup-tab-custom">${icon('construction')} Custom Map</button>
-      </div>
-
-      <!-- Generated map fields -->
-      <div id="setup-generated-fields">
-        <div class="setup-field">
-          <label class="setup-field-label" for="setup-seed">Map Seed</label>
-          <div class="setup-seed-row">
-            <input type="number" id="setup-seed" value="42" min="1" max="999999">
-            <button id="setup-random-seed" type="button" title="Random seed">&#x1f3b2;</button>
-          </div>
+      <!-- Section 1: World -->
+      <div class="setup-section">
+        <div class="setup-section-header">
+          <span class="setup-section-icon">${icon('map')}</span>
+          <span class="setup-section-label">World</span>
         </div>
 
-        <div class="setup-options-row">
-          <div class="setup-field">
-            <label class="setup-field-label" for="setup-map-size">Map Size</label>
-            <select id="setup-map-size">
-              <option value="24">Small (24x24)</option>
-              <option value="32" selected>Medium (32x32)</option>
-              <option value="48">Large (48x48)</option>
-              <option value="64">Huge (64x64)</option>
-            </select>
-          </div>
+        <!-- Map Source Tabs -->
+        <div class="setup-map-tabs">
+          <button class="setup-map-tab active" id="setup-tab-generated">${icon('map')} Generated</button>
+          <button class="setup-map-tab" id="setup-tab-custom">${icon('construction')} Custom Map</button>
+        </div>
 
+        <!-- Generated map fields -->
+        <div id="setup-generated-fields">
+          <div class="setup-options-row">
+            <div class="setup-field">
+              <label class="setup-field-label" for="setup-seed">Map Seed</label>
+              <div class="setup-seed-row">
+                <input type="number" id="setup-seed" value="42" min="1" max="999999">
+                <button id="setup-random-seed" type="button" title="Random seed">&#x1f3b2;</button>
+              </div>
+            </div>
+            <div class="setup-field">
+              <label class="setup-field-label" for="setup-map-size">Map Size</label>
+              <select id="setup-map-size">
+                <option value="24">Small (24x24)</option>
+                <option value="32" selected>Medium (32x32)</option>
+                <option value="48">Large (48x48)</option>
+                <option value="64">Huge (64x64)</option>
+              </select>
+            </div>
+          </div>
           <div class="setup-field">
             <label class="setup-field-label" for="setup-landscape">Landscape</label>
             <select id="setup-landscape">
@@ -375,95 +381,102 @@ app.innerHTML = `
             <div id="setup-landscape-desc" class="setup-field-desc">Balanced mix of all terrain types</div>
           </div>
         </div>
-      </div>
 
-      <!-- Custom map fields -->
-      <div id="setup-custom-fields" class="hidden">
-        <div id="setup-map-gallery" style="margin-bottom:8px;"></div>
-        <div style="display:flex;gap:6px;">
-          <button class="btn-outlined btn-sm" id="setup-import-map-btn">${icon('folder_open')} Import</button>
-          <button class="btn-filled btn-sm" id="setup-editor-btn">${icon('construction')} Map Editor</button>
-        </div>
-      </div>
-
-      <div class="setup-options-row">
-        <div class="setup-field">
-          <label class="setup-field-label" for="setup-players">Players</label>
-          <select id="setup-players">
-            <option value="1" selected>1 Player</option>
-            <option value="2">2 Players</option>
-            <option value="3">3 Players</option>
-            <option value="4">4 Players</option>
-          </select>
-          <div id="setup-player-colors" class="setup-player-colors">
-            <span class="setup-color-dot setup-color-you" style="background:#4488ff;" title="Player 1 (You)"></span>
+        <!-- Custom map fields -->
+        <div id="setup-custom-fields" class="hidden">
+          <div id="setup-map-gallery" style="margin-bottom:8px;"></div>
+          <div style="display:flex;gap:6px;">
+            <button class="btn-outlined btn-sm" id="setup-import-map-btn">${icon('folder_open')} Import</button>
+            <button class="btn-filled btn-sm" id="setup-editor-btn">${icon('construction')} Map Editor</button>
           </div>
         </div>
       </div>
 
-      <div class="setup-options-row">
-        <div class="setup-field">
-          <label class="setup-field-label" for="setup-difficulty">Difficulty</label>
-          <select id="setup-difficulty">
-            <option value="easy">Easy</option>
-            <option value="normal" selected>Normal</option>
-            <option value="hard">Hard</option>
-          </select>
-          <div id="setup-difficulty-desc" class="setup-field-desc">Balanced AI with mixed economy and military</div>
+      <!-- Section 2: Game -->
+      <div class="setup-section">
+        <div class="setup-section-header">
+          <span class="setup-section-icon">${icon('tune')}</span>
+          <span class="setup-section-label">Game</span>
+        </div>
+        <div class="setup-options-row">
+          <div class="setup-field">
+            <label class="setup-field-label" for="setup-players">Players</label>
+            <select id="setup-players">
+              <option value="1" selected>1 Player</option>
+              <option value="2">2 Players</option>
+              <option value="3">3 Players</option>
+              <option value="4">4 Players</option>
+            </select>
+            <div id="setup-player-colors" class="setup-player-colors">
+              <span class="setup-color-dot setup-color-you" style="background:#4488ff;" title="Player 1 (You)"></span>
+            </div>
+          </div>
+          <div class="setup-field">
+            <label class="setup-field-label" for="setup-difficulty">Difficulty</label>
+            <select id="setup-difficulty">
+              <option value="easy">Easy</option>
+              <option value="normal" selected>Normal</option>
+              <option value="hard">Hard</option>
+            </select>
+            <div id="setup-difficulty-desc" class="setup-field-desc">Balanced AI with mixed economy and military</div>
+          </div>
         </div>
       </div>
 
-      <div class="setup-section-toggle expanded" id="setup-victory-toggle">
-        <span class="setup-section-icon">${icon('trophy')}</span>
-        <span class="setup-section-label">Victory Conditions</span>
-        <span class="setup-section-chevron" id="setup-victory-chevron">${icon('chevron_right')}</span>
-      </div>
-      <div id="setup-victory-list" class="setup-victory-list expanded">
-        <label class="setup-victory-item">
-          <span class="setup-victory-icon">${icon('skull')}</span>
-          <div class="setup-victory-text">
-            <div class="setup-victory-name">Elimination</div>
-            <div class="setup-victory-desc">Destroy all enemy castles — last player standing wins (multiplayer only)</div>
+      <!-- Section 3: Victory Conditions -->
+      <div class="setup-section">
+        <div class="setup-section-toggle expanded" id="setup-victory-toggle">
+          <span class="setup-section-icon">${icon('trophy')}</span>
+          <span class="setup-section-label">Victory Conditions</span>
+          <span class="setup-section-chevron" id="setup-victory-chevron">${icon('chevron_right')}</span>
+        </div>
+        <div id="setup-victory-list" class="setup-victory-list expanded">
+          <label class="setup-victory-item">
+            <span class="setup-victory-icon">${icon('skull')}</span>
+            <div class="setup-victory-text">
+              <div class="setup-victory-name">Elimination</div>
+              <div class="setup-victory-desc">Destroy all enemy castles — last player standing wins (multiplayer only)</div>
+            </div>
+            <input type="checkbox" id="victory-elimination" class="setup-toggle" checked>
+          </label>
+          <label class="setup-victory-item">
+            <span class="setup-victory-icon">${icon('map')}</span>
+            <div class="setup-victory-text">
+              <div class="setup-victory-name">Domination</div>
+              <div class="setup-victory-desc">Control 75%+ of all claimable land</div>
+            </div>
+            <input type="checkbox" id="victory-domination" class="setup-toggle" checked>
+          </label>
+          <label class="setup-victory-item">
+            <span class="setup-victory-icon">${icon('crown')}</span>
+            <div class="setup-victory-text">
+              <div class="setup-victory-name">Economic</div>
+              <div class="setup-victory-desc">Accumulate 50+ gold bars across your buildings</div>
+            </div>
+            <input type="checkbox" id="victory-economic" class="setup-toggle" checked>
+          </label>
+          <label class="setup-victory-item">
+            <span class="setup-victory-icon">${icon('clock')}</span>
+            <div class="setup-victory-text">
+              <div class="setup-victory-name">Timed</div>
+              <div class="setup-victory-desc">Time limit — player with most territory wins</div>
+            </div>
+            <input type="checkbox" id="victory-timed" class="setup-toggle">
+          </label>
+          <div class="setup-victory-sub hidden" id="victory-timed-options">
+            <label class="setup-victory-sub-label">Time limit (minutes)
+              <input type="number" id="victory-timed-minutes" class="setup-field-input-small" value="30" min="5" max="120" step="5">
+            </label>
           </div>
-          <input type="checkbox" id="victory-elimination" class="setup-toggle" checked>
-        </label>
-        <label class="setup-victory-item">
-          <span class="setup-victory-icon">${icon('map')}</span>
-          <div class="setup-victory-text">
-            <div class="setup-victory-name">Domination</div>
-            <div class="setup-victory-desc">Control 75%+ of all claimable land</div>
-          </div>
-          <input type="checkbox" id="victory-domination" class="setup-toggle" checked>
-        </label>
-        <label class="setup-victory-item">
-          <span class="setup-victory-icon">${icon('crown')}</span>
-          <div class="setup-victory-text">
-            <div class="setup-victory-name">Economic</div>
-            <div class="setup-victory-desc">Accumulate 50+ gold bars across your buildings</div>
-          </div>
-          <input type="checkbox" id="victory-economic" class="setup-toggle" checked>
-        </label>
-        <label class="setup-victory-item">
-          <span class="setup-victory-icon">${icon('clock')}</span>
-          <div class="setup-victory-text">
-            <div class="setup-victory-name">Timed</div>
-            <div class="setup-victory-desc">Time limit — player with most territory wins</div>
-          </div>
-          <input type="checkbox" id="victory-timed" class="setup-toggle">
-        </label>
-        <div class="setup-victory-sub hidden" id="victory-timed-options">
-          <label class="setup-victory-sub-label">Time limit (minutes)
-            <input type="number" id="victory-timed-minutes" class="setup-field-input-small" value="30" min="5" max="120" step="5">
+          <label class="setup-victory-item">
+            <span class="setup-victory-icon">${icon('grain')}</span>
+            <div class="setup-victory-text">
+              <div class="setup-victory-name">Peaceful</div>
+              <div class="setup-victory-desc">First to 100+ goods stored in Castle/Warehouse</div>
+            </div>
+            <input type="checkbox" id="victory-peaceful" class="setup-toggle">
           </label>
         </div>
-        <label class="setup-victory-item">
-          <span class="setup-victory-icon">${icon('grain')}</span>
-          <div class="setup-victory-text">
-            <div class="setup-victory-name">Peaceful</div>
-            <div class="setup-victory-desc">First to 100+ goods stored in Castle/Warehouse</div>
-          </div>
-          <input type="checkbox" id="victory-peaceful" class="setup-toggle">
-        </label>
       </div>
 
       <button id="setup-start-btn" class="btn-filled setup-start-btn">
