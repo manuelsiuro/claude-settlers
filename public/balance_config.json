@@ -79,23 +79,23 @@
     "normal": [
       {
         "resource": "wood",
-        "amount": 16
+        "amount": 32
       },
       {
         "resource": "stone",
-        "amount": 14
+        "amount": 32
       },
       {
         "resource": "planks",
-        "amount": 12
+        "amount": 32
       },
       {
         "resource": "fish",
-        "amount": 10
+        "amount": 32
       },
       {
         "resource": "bread",
-        "amount": 10
+        "amount": 32
       },
       {
         "resource": "iron_bars",
@@ -103,27 +103,27 @@
       },
       {
         "resource": "axe",
-        "amount": 2
+        "amount": 4
       },
       {
         "resource": "pickaxe",
-        "amount": 2
+        "amount": 4
       },
       {
         "resource": "saw",
-        "amount": 1
+        "amount": 2
       },
       {
         "resource": "scythe",
-        "amount": 1
+        "amount": 2
       },
       {
         "resource": "fishing_rod",
-        "amount": 2
+        "amount": 4
       },
       {
         "resource": "hammer_tool",
-        "amount": 2
+        "amount": 4
       },
       {
         "resource": "shovel",
