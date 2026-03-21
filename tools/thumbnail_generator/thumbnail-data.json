@@ -1,0 +1,917 @@
+{
+  "generatedAt": "2026-03-21T10:41:15.698Z",
+  "config": {
+    "size": 256,
+    "camera": {
+      "angle": [
+        1,
+        1,
+        1
+      ],
+      "padding": 1.15
+    },
+    "lighting": {
+      "ambient": {
+        "color": "#ffffff",
+        "intensity": 0.6
+      },
+      "main": {
+        "color": "#fff5e6",
+        "intensity": 0.9,
+        "position": [
+          5,
+          8,
+          5
+        ]
+      },
+      "rim": {
+        "color": "#aaccff",
+        "intensity": 0.3,
+        "position": [
+          -3,
+          2,
+          -5
+        ]
+      }
+    },
+    "materials": {
+      "maxMetalness": 0.3,
+      "minRoughness": 0.5
+    },
+    "output": {
+      "format": "png",
+      "directory": "public/thumbnails"
+    }
+  },
+  "categories": {
+    "buildings": {
+      "modelDir": "buildings",
+      "items": [
+        {
+          "id": "castle",
+          "label": "Castle",
+          "category": "core",
+          "tier": 0,
+          "modelFile": "castle.glb"
+        },
+        {
+          "id": "woodcutter_hut",
+          "label": "Woodcutter's Hut",
+          "category": "gathering",
+          "tier": 1,
+          "modelFile": "woodcutter_hut.glb"
+        },
+        {
+          "id": "forester_hut",
+          "label": "Forester's Hut",
+          "category": "gathering",
+          "tier": 1,
+          "modelFile": "foresters_hut.glb"
+        },
+        {
+          "id": "quarry",
+          "label": "Quarry",
+          "category": "gathering",
+          "tier": 1,
+          "modelFile": "quarry.glb"
+        },
+        {
+          "id": "fisherman_hut",
+          "label": "Fisherman's Hut",
+          "category": "gathering",
+          "tier": 1,
+          "modelFile": "fisherman_hut.glb"
+        },
+        {
+          "id": "guard_hut",
+          "label": "Guard Hut",
+          "category": "military",
+          "tier": 1,
+          "modelFile": "guard_hut.glb"
+        },
+        {
+          "id": "sawmill",
+          "label": "Sawmill",
+          "category": "processing",
+          "tier": 2,
+          "modelFile": "sawmill.glb"
+        },
+        {
+          "id": "farm",
+          "label": "Farm",
+          "category": "gathering",
+          "tier": 2,
+          "modelFile": "farm.glb"
+        },
+        {
+          "id": "geologist_hut",
+          "label": "Geologist's Hut",
+          "category": "gathering",
+          "tier": 2,
+          "modelFile": "geologist_hut.glb"
+        },
+        {
+          "id": "iron_mine",
+          "label": "Iron Mine",
+          "category": "gathering",
+          "tier": 2,
+          "modelFile": "iron_mine.glb"
+        },
+        {
+          "id": "coal_mine",
+          "label": "Coal Mine",
+          "category": "gathering",
+          "tier": 2,
+          "modelFile": "coal_mine.glb"
+        },
+        {
+          "id": "gold_mine",
+          "label": "Gold Mine",
+          "category": "gathering",
+          "tier": 2,
+          "modelFile": "gold_mine.glb"
+        },
+        {
+          "id": "stone_mine",
+          "label": "Stone Mine",
+          "category": "gathering",
+          "tier": 2,
+          "modelFile": "stone_mine.glb"
+        },
+        {
+          "id": "watchtower",
+          "label": "Watchtower",
+          "category": "military",
+          "tier": 2,
+          "modelFile": "watchtower.glb"
+        },
+        {
+          "id": "windmill",
+          "label": "Windmill",
+          "category": "processing",
+          "tier": 3,
+          "modelFile": "windmill.glb"
+        },
+        {
+          "id": "bakery",
+          "label": "Bakery",
+          "category": "processing",
+          "tier": 3,
+          "modelFile": "bakery.glb"
+        },
+        {
+          "id": "pig_farm",
+          "label": "Pig Farm",
+          "category": "processing",
+          "tier": 3,
+          "modelFile": "pig_farm.glb"
+        },
+        {
+          "id": "slaughterhouse",
+          "label": "Slaughterhouse",
+          "category": "processing",
+          "tier": 3,
+          "modelFile": "slaughterhouse.glb"
+        },
+        {
+          "id": "iron_smelter",
+          "label": "Iron Smelter",
+          "category": "processing",
+          "tier": 3,
+          "modelFile": "iron_smelter.glb"
+        },
+        {
+          "id": "toolmaker_workshop",
+          "label": "Toolmaker's Workshop",
+          "category": "processing",
+          "tier": 3,
+          "modelFile": "toolmaker_workshop.glb"
+        },
+        {
+          "id": "goldsmith_mint",
+          "label": "Goldsmith / Mint",
+          "category": "processing",
+          "tier": 3,
+          "modelFile": "goldsmith_mint.glb"
+        },
+        {
+          "id": "blacksmith_armory",
+          "label": "Blacksmith / Armory",
+          "category": "processing",
+          "tier": 3,
+          "modelFile": "blacksmith_armory.glb"
+        },
+        {
+          "id": "barracks",
+          "label": "Barracks",
+          "category": "military",
+          "tier": 3,
+          "modelFile": "barracks.glb"
+        },
+        {
+          "id": "warehouse",
+          "label": "Warehouse",
+          "category": "logistics",
+          "tier": 2,
+          "modelFile": "warehouse.glb"
+        },
+        {
+          "id": "harbor",
+          "label": "Harbor",
+          "category": "logistics",
+          "tier": 2,
+          "modelFile": "harbor.glb"
+        },
+        {
+          "id": "small_house",
+          "label": "Small House",
+          "category": "housing",
+          "tier": 1,
+          "modelFile": "small_house.glb"
+        },
+        {
+          "id": "medium_house",
+          "label": "Medium House",
+          "category": "housing",
+          "tier": 2,
+          "modelFile": "medium_house.glb"
+        },
+        {
+          "id": "large_house",
+          "label": "Large House",
+          "category": "housing",
+          "tier": 3,
+          "modelFile": "large_house.glb"
+        },
+        {
+          "id": "well",
+          "label": "Well",
+          "category": "gathering",
+          "tier": 1,
+          "modelFile": "well.glb"
+        },
+        {
+          "id": "orchard",
+          "label": "Orchard",
+          "category": "gathering",
+          "tier": 2,
+          "modelFile": "orchard.glb"
+        },
+        {
+          "id": "vineyard",
+          "label": "Vineyard",
+          "category": "gathering",
+          "tier": 2,
+          "modelFile": "vineyard.glb"
+        },
+        {
+          "id": "winery",
+          "label": "Winery",
+          "category": "processing",
+          "tier": 3,
+          "modelFile": "winery.glb"
+        },
+        {
+          "id": "brewery",
+          "label": "Brewery",
+          "category": "processing",
+          "tier": 2,
+          "modelFile": "brewery.glb"
+        },
+        {
+          "id": "dairy_farm",
+          "label": "Dairy Farm",
+          "category": "gathering",
+          "tier": 2,
+          "modelFile": "dairy_farm.glb"
+        },
+        {
+          "id": "cheese_maker_building",
+          "label": "Cheese Maker",
+          "category": "processing",
+          "tier": 3,
+          "modelFile": "cheese_maker_building.glb"
+        },
+        {
+          "id": "hayfield",
+          "label": "Hayfield",
+          "category": "gathering",
+          "tier": 1,
+          "modelFile": "hayfield.glb"
+        },
+        {
+          "id": "tannery",
+          "label": "Tannery",
+          "category": "processing",
+          "tier": 3,
+          "modelFile": "tannery.glb"
+        },
+        {
+          "id": "weavers_hut",
+          "label": "Weaver's Hut",
+          "category": "processing",
+          "tier": 3,
+          "modelFile": "weavers_hut.glb"
+        },
+        {
+          "id": "charcoal_burner",
+          "label": "Charcoal Burner",
+          "category": "processing",
+          "tier": 2,
+          "modelFile": "charcoal_burner.glb"
+        },
+        {
+          "id": "fletchers_workshop",
+          "label": "Fletcher's Workshop",
+          "category": "processing",
+          "tier": 3,
+          "modelFile": "fletchers_workshop.glb"
+        },
+        {
+          "id": "siege_workshop",
+          "label": "Siege Workshop",
+          "category": "processing",
+          "tier": 3,
+          "modelFile": "siege_workshop.glb"
+        },
+        {
+          "id": "stable",
+          "label": "Stable",
+          "category": "processing",
+          "tier": 3,
+          "modelFile": "stable.glb"
+        },
+        {
+          "id": "cattle_ranch",
+          "label": "Cattle Ranch",
+          "category": "gathering",
+          "tier": 2,
+          "modelFile": "cattle_ranch.glb"
+        },
+        {
+          "id": "sheep_farm",
+          "label": "Sheep Farm",
+          "category": "gathering",
+          "tier": 2,
+          "modelFile": "sheep_farm.glb"
+        },
+        {
+          "id": "butchery",
+          "label": "Butchery",
+          "category": "processing",
+          "tier": 3,
+          "modelFile": "butchery.glb"
+        },
+        {
+          "id": "fortress",
+          "label": "Fortress",
+          "category": "military",
+          "tier": 3,
+          "modelFile": "fortress.glb"
+        },
+        {
+          "id": "archery_range",
+          "label": "Archery Range",
+          "category": "military",
+          "tier": 3,
+          "modelFile": "archery_range.glb"
+        },
+        {
+          "id": "torch_tower",
+          "label": "Torch Tower",
+          "category": "military",
+          "tier": 2,
+          "modelFile": "torch_tower.glb"
+        },
+        {
+          "id": "inn_tavern",
+          "label": "Inn & Tavern",
+          "category": "processing",
+          "tier": 3,
+          "modelFile": "inn_tavern.glb"
+        },
+        {
+          "id": "market",
+          "label": "Market",
+          "category": "logistics",
+          "tier": 2,
+          "modelFile": "market.glb"
+        }
+      ]
+    },
+    "units": {
+      "modelDir": "units",
+      "items": [
+        {
+          "id": "transporter",
+          "label": "Transporter",
+          "category": "civilian",
+          "modelFile": "transporter.glb"
+        },
+        {
+          "id": "builder",
+          "label": "Builder",
+          "category": "civilian",
+          "modelFile": "builder.glb"
+        },
+        {
+          "id": "woodcutter",
+          "label": "Woodcutter",
+          "category": "civilian",
+          "modelFile": "woodcutter.glb"
+        },
+        {
+          "id": "forester",
+          "label": "Forester",
+          "category": "civilian",
+          "modelFile": "forester.glb"
+        },
+        {
+          "id": "stonemason",
+          "label": "Stonemason",
+          "category": "civilian",
+          "modelFile": "stonemason.glb"
+        },
+        {
+          "id": "miner",
+          "label": "Miner",
+          "category": "civilian",
+          "modelFile": "miner.glb"
+        },
+        {
+          "id": "farmer",
+          "label": "Farmer",
+          "category": "civilian",
+          "modelFile": "farmer.glb"
+        },
+        {
+          "id": "fisherman",
+          "label": "Fisherman",
+          "category": "civilian",
+          "modelFile": "fisherman.glb"
+        },
+        {
+          "id": "geologist",
+          "label": "Geologist",
+          "category": "civilian",
+          "modelFile": "geologist.glb"
+        },
+        {
+          "id": "sawmill_worker",
+          "label": "Sawmill Worker",
+          "category": "civilian",
+          "modelFile": "sawmill_worker.glb"
+        },
+        {
+          "id": "miller",
+          "label": "Miller",
+          "category": "civilian",
+          "modelFile": "miller.glb"
+        },
+        {
+          "id": "baker",
+          "label": "Baker",
+          "category": "civilian",
+          "modelFile": "baker.glb"
+        },
+        {
+          "id": "pig_farmer",
+          "label": "Pig Farmer",
+          "category": "civilian",
+          "modelFile": "pig_farmer.glb"
+        },
+        {
+          "id": "butcher",
+          "label": "Butcher",
+          "category": "civilian",
+          "modelFile": "butcher.glb"
+        },
+        {
+          "id": "smelter_worker",
+          "label": "Smelter Worker",
+          "category": "civilian",
+          "modelFile": "smelter_worker.glb"
+        },
+        {
+          "id": "goldsmith",
+          "label": "Goldsmith",
+          "category": "civilian",
+          "modelFile": "goldsmith.glb"
+        },
+        {
+          "id": "toolmaker",
+          "label": "Toolmaker",
+          "category": "civilian",
+          "modelFile": "toolmaker.glb"
+        },
+        {
+          "id": "blacksmith",
+          "label": "Blacksmith",
+          "category": "civilian",
+          "modelFile": "blacksmith.glb"
+        },
+        {
+          "id": "orchardist",
+          "label": "Orchardist",
+          "category": "civilian",
+          "modelFile": "orchardist.glb"
+        },
+        {
+          "id": "vintner",
+          "label": "Vintner",
+          "category": "civilian",
+          "modelFile": "vintner.glb"
+        },
+        {
+          "id": "winemaker",
+          "label": "Winemaker",
+          "category": "civilian",
+          "modelFile": "winemaker.glb"
+        },
+        {
+          "id": "brewer",
+          "label": "Brewer",
+          "category": "civilian",
+          "modelFile": "brewer.glb"
+        },
+        {
+          "id": "dairymaid",
+          "label": "Dairymaid",
+          "category": "civilian",
+          "modelFile": "dairymaid.glb"
+        },
+        {
+          "id": "cheese_maker",
+          "label": "Cheese Maker",
+          "category": "civilian",
+          "modelFile": "cheese_maker.glb"
+        },
+        {
+          "id": "tanner",
+          "label": "Tanner",
+          "category": "civilian",
+          "modelFile": "tanner.glb"
+        },
+        {
+          "id": "weaver",
+          "label": "Weaver",
+          "category": "civilian",
+          "modelFile": "weaver.glb"
+        },
+        {
+          "id": "charcoal_burner",
+          "label": "Charcoal Burner",
+          "category": "civilian",
+          "modelFile": "charcoal_burner_unit.glb"
+        },
+        {
+          "id": "fletcher",
+          "label": "Fletcher",
+          "category": "civilian",
+          "modelFile": "fletcher.glb"
+        },
+        {
+          "id": "engineer",
+          "label": "Engineer",
+          "category": "civilian",
+          "modelFile": "engineer.glb"
+        },
+        {
+          "id": "stablehand",
+          "label": "Stablehand",
+          "category": "civilian",
+          "modelFile": "stablehand.glb"
+        },
+        {
+          "id": "rancher",
+          "label": "Rancher",
+          "category": "civilian",
+          "modelFile": "rancher.glb"
+        },
+        {
+          "id": "shepherd",
+          "label": "Shepherd",
+          "category": "civilian",
+          "modelFile": "shepherd.glb"
+        },
+        {
+          "id": "knight",
+          "label": "Knight",
+          "category": "military",
+          "modelFile": "knight.glb"
+        },
+        {
+          "id": "archer",
+          "label": "Archer",
+          "category": "military",
+          "modelFile": "archer.glb"
+        },
+        {
+          "id": "cavalry",
+          "label": "Cavalry",
+          "category": "military",
+          "modelFile": "cavalry.glb"
+        },
+        {
+          "id": "siege_operator",
+          "label": "Siege Operator",
+          "category": "military",
+          "modelFile": "siege_operator.glb"
+        },
+        {
+          "id": "scout",
+          "label": "Scout",
+          "category": "military",
+          "modelFile": "scout.glb"
+        },
+        {
+          "id": "donkey",
+          "label": "Donkey",
+          "category": "transport",
+          "modelFile": "donkey.glb"
+        },
+        {
+          "id": "horse_transport",
+          "label": "Horse Cart",
+          "category": "transport",
+          "modelFile": "horse_transport.glb"
+        },
+        {
+          "id": "serf_base",
+          "label": "Serf",
+          "category": "civilian",
+          "modelFile": "serf_base.glb"
+        }
+      ]
+    },
+    "resources": {
+      "modelDir": "resources",
+      "items": [
+        {
+          "id": "wood",
+          "label": "Wood",
+          "category": "raw",
+          "modelFile": "wood.glb"
+        },
+        {
+          "id": "stone",
+          "label": "Stone",
+          "category": "raw",
+          "modelFile": "stone.glb"
+        },
+        {
+          "id": "grain",
+          "label": "Grain",
+          "category": "raw",
+          "modelFile": "grain.glb"
+        },
+        {
+          "id": "fish",
+          "label": "Fish",
+          "category": "raw",
+          "modelFile": "fish.glb"
+        },
+        {
+          "id": "iron_ore",
+          "label": "Iron Ore",
+          "category": "raw",
+          "modelFile": "iron_ore.glb"
+        },
+        {
+          "id": "coal_ore",
+          "label": "Coal",
+          "category": "raw",
+          "modelFile": "coal_ore.glb"
+        },
+        {
+          "id": "gold_ore",
+          "label": "Gold Ore",
+          "category": "raw",
+          "modelFile": "gold_ore.glb"
+        },
+        {
+          "id": "grapes",
+          "label": "Grapes",
+          "category": "raw",
+          "modelFile": "grapes.glb"
+        },
+        {
+          "id": "fruit",
+          "label": "Fruit",
+          "category": "raw",
+          "modelFile": "fruit.glb"
+        },
+        {
+          "id": "water_barrel",
+          "label": "Water Barrel",
+          "category": "raw",
+          "modelFile": "water_barrel.glb"
+        },
+        {
+          "id": "milk",
+          "label": "Milk",
+          "category": "raw",
+          "modelFile": "milk.glb"
+        },
+        {
+          "id": "hay",
+          "label": "Hay",
+          "category": "raw",
+          "modelFile": "hay.glb"
+        },
+        {
+          "id": "wool",
+          "label": "Wool",
+          "category": "raw",
+          "modelFile": "wool.glb"
+        },
+        {
+          "id": "raw_leather",
+          "label": "Raw Leather",
+          "category": "raw",
+          "modelFile": "raw_leather.glb"
+        },
+        {
+          "id": "planks",
+          "label": "Planks",
+          "category": "processed",
+          "modelFile": "planks.glb"
+        },
+        {
+          "id": "flour",
+          "label": "Flour",
+          "category": "processed",
+          "modelFile": "flour.glb"
+        },
+        {
+          "id": "bread",
+          "label": "Bread",
+          "category": "processed",
+          "modelFile": "bread.glb"
+        },
+        {
+          "id": "meat",
+          "label": "Meat",
+          "category": "processed",
+          "modelFile": "meat.glb"
+        },
+        {
+          "id": "iron_bars",
+          "label": "Iron Bars",
+          "category": "processed",
+          "modelFile": "iron_bars.glb"
+        },
+        {
+          "id": "gold_bars",
+          "label": "Gold Bars",
+          "category": "processed",
+          "modelFile": "gold_bars.glb"
+        },
+        {
+          "id": "swords",
+          "label": "Swords",
+          "category": "processed",
+          "modelFile": "swords.glb"
+        },
+        {
+          "id": "shields",
+          "label": "Shields",
+          "category": "processed",
+          "modelFile": "shields.glb"
+        },
+        {
+          "id": "wine",
+          "label": "Wine",
+          "category": "processed",
+          "modelFile": "wine.glb"
+        },
+        {
+          "id": "beer",
+          "label": "Beer",
+          "category": "processed",
+          "modelFile": "beer.glb"
+        },
+        {
+          "id": "cheese",
+          "label": "Cheese",
+          "category": "processed",
+          "modelFile": "cheese.glb"
+        },
+        {
+          "id": "cloth",
+          "label": "Cloth",
+          "category": "processed",
+          "modelFile": "cloth.glb"
+        },
+        {
+          "id": "worked_leather",
+          "label": "Worked Leather",
+          "category": "processed",
+          "modelFile": "worked_leather.glb"
+        },
+        {
+          "id": "arrows",
+          "label": "Arrows",
+          "category": "processed",
+          "modelFile": "arrows.glb"
+        },
+        {
+          "id": "bow",
+          "label": "Bow",
+          "category": "processed",
+          "modelFile": "bow.glb"
+        },
+        {
+          "id": "siege_ram",
+          "label": "Siege Ram",
+          "category": "processed",
+          "modelFile": "siege_ram.glb"
+        },
+        {
+          "id": "axe",
+          "label": "Axe",
+          "category": "processed",
+          "modelFile": "axe.glb"
+        },
+        {
+          "id": "pickaxe",
+          "label": "Pickaxe",
+          "category": "processed",
+          "modelFile": "pickaxe.glb"
+        },
+        {
+          "id": "saw",
+          "label": "Saw",
+          "category": "processed",
+          "modelFile": "saw.glb"
+        },
+        {
+          "id": "scythe",
+          "label": "Scythe",
+          "category": "processed",
+          "modelFile": "scythe.glb"
+        },
+        {
+          "id": "fishing_rod",
+          "label": "Fishing Rod",
+          "category": "processed",
+          "modelFile": "fishing_rod.glb"
+        },
+        {
+          "id": "hammer_tool",
+          "label": "Hammer",
+          "category": "processed",
+          "modelFile": "hammer_tool.glb"
+        },
+        {
+          "id": "shovel",
+          "label": "Shovel",
+          "category": "processed",
+          "modelFile": "shovel.glb"
+        },
+        {
+          "id": "rolling_pin",
+          "label": "Rolling Pin",
+          "category": "processed",
+          "modelFile": "rolling_pin.glb"
+        },
+        {
+          "id": "cleaver",
+          "label": "Cleaver",
+          "category": "processed",
+          "modelFile": "cleaver.glb"
+        },
+        {
+          "id": "crucible",
+          "label": "Crucible",
+          "category": "processed",
+          "modelFile": "crucible.glb"
+        },
+        {
+          "id": "tongs",
+          "label": "Tongs",
+          "category": "processed",
+          "modelFile": "tongs.glb"
+        },
+        {
+          "id": "pigs",
+          "label": "Pigs",
+          "category": "animal",
+          "modelFile": "pigs.glb"
+        },
+        {
+          "id": "cattle",
+          "label": "Cattle",
+          "category": "animal",
+          "modelFile": "cattle.glb"
+        },
+        {
+          "id": "horses",
+          "label": "Horses",
+          "category": "animal",
+          "modelFile": "horses.glb"
+        }
+      ]
+    }
+  }
+}

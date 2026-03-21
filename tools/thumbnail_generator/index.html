@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thumbnail Generator — Feudal Realm Manager</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; }
+    .thumb-card { transition: opacity 0.2s; }
+    .thumb-card.pending { opacity: 0.4; }
+    .thumb-card.rendered { opacity: 0.8; }
+    .thumb-card.saved { opacity: 1; }
+    .thumb-card.failed { opacity: 1; border-color: #ef4444 !important; }
+    #log { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; }
+    #log div { padding: 1px 0; }
+    .log-ok { color: #22c55e; }
+    .log-err { color: #ef4444; }
+    .log-info { color: #6b7280; }
+  </style>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.175.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.175.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen">
+  <!-- Header -->
+  <header class="bg-gray-800 border-b border-gray-700 px-6 py-4">
+    <div class="flex items-center justify-between max-w-7xl mx-auto">
+      <div>
+        <h1 class="text-xl font-bold text-white">Thumbnail Generator</h1>
+        <p class="text-sm text-gray-400">Feudal Realm Manager — 3D Model Thumbnails</p>
+      </div>
+      <div id="stats" class="text-sm text-gray-400 text-right">
+        <div>Total: <span id="stat-total">-</span></div>
+        <div>Rendered: <span id="stat-rendered" class="text-blue-400">0</span> · Saved: <span id="stat-saved" class="text-green-400">0</span> · Failed: <span id="stat-failed" class="text-red-400">0</span></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Progress bar -->
+  <div class="h-1 bg-gray-800">
+    <div id="progress-bar" class="h-full bg-green-500 transition-all duration-200" style="width: 0%"></div>
+  </div>
+
+  <!-- Controls -->
+  <div class="bg-gray-800/50 border-b border-gray-700 px-6 py-3">
+    <div class="flex items-center gap-3 max-w-7xl mx-auto flex-wrap">
+      <button id="btn-render-all" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium text-sm">
+        Render All
+      </button>
+      <button data-category="buildings" class="btn-category px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-gray-200 rounded text-sm">
+        Buildings
+      </button>
+      <button data-category="units" class="btn-category px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-gray-200 rounded text-sm">
+        Units
+      </button>
+      <button data-category="resources" class="btn-category px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-gray-200 rounded text-sm">
+        Resources
+      </button>
+      <div class="ml-auto flex items-center gap-2">
+        <label class="text-sm text-gray-400">Size:</label>
+        <select id="size-select" class="bg-gray-700 text-gray-200 rounded px-2 py-1 text-sm border border-gray-600">
+          <option value="128">128</option>
+          <option value="256">256</option>
+          <option value="512">512</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main content -->
+  <div class="max-w-7xl mx-auto px-6 py-6 flex gap-6">
+    <!-- Thumbnail grid -->
+    <div class="flex-1">
+      <div id="grid" class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3"></div>
+    </div>
+
+    <!-- Log panel -->
+    <div class="w-72 flex-shrink-0">
+      <div class="bg-gray-800 rounded border border-gray-700 p-3 sticky top-6">
+        <h3 class="text-sm font-medium text-gray-300 mb-2">Log</h3>
+        <div id="log" class="h-96 overflow-y-auto space-y-0.5"></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+    // ── State ──────────────────────────────────────────────────────
+    let manifestData = null;
+    let renderSize = 256;
+    let isRendering = false;
+
+    const counts = { total: 0, rendered: 0, saved: 0, failed: 0 };
+    const items = []; // flat list of { id, label, category, categoryKey, modelDir, modelFile, status }
+
+    // ── DOM refs ───────────────────────────────────────────────────
+    const $grid = document.getElementById('grid');
+    const $log = document.getElementById('log');
+    const $progress = document.getElementById('progress-bar');
+    const $statTotal = document.getElementById('stat-total');
+    const $statRendered = document.getElementById('stat-rendered');
+    const $statSaved = document.getElementById('stat-saved');
+    const $statFailed = document.getElementById('stat-failed');
+    const $sizeSelect = document.getElementById('size-select');
+
+    // ── Logging ────────────────────────────────────────────────────
+    function log(msg, cls = 'log-info') {
+      const d = document.createElement('div');
+      d.className = cls;
+      d.textContent = `${new Date().toLocaleTimeString()} ${msg}`;
+      $log.appendChild(d);
+      $log.scrollTop = $log.scrollHeight;
+    }
+
+    function updateStats() {
+      $statTotal.textContent = counts.total;
+      $statRendered.textContent = counts.rendered;
+      $statSaved.textContent = counts.saved;
+      $statFailed.textContent = counts.failed;
+      const pct = counts.total > 0 ? ((counts.saved + counts.failed) / counts.total * 100) : 0;
+      $progress.style.width = `${pct}%`;
+    }
+
+    // ── Load manifest ──────────────────────────────────────────────
+    async function loadManifest() {
+      try {
+        const resp = await fetch('/thumbnail-data.json');
+        manifestData = await resp.json();
+        log(`Loaded manifest (generated ${new Date(manifestData.generatedAt).toLocaleString()})`);
+
+        renderSize = manifestData.config.size;
+        $sizeSelect.value = String(renderSize);
+
+        // Build flat item list
+        for (const [catKey, catData] of Object.entries(manifestData.categories)) {
+          for (const item of catData.items) {
+            items.push({
+              ...item,
+              categoryKey: catKey,
+              modelDir: catData.modelDir,
+              status: 'pending',
+            });
+          }
+        }
+
+        counts.total = items.length;
+        updateStats();
+        log(`${counts.total} items: ${manifestData.categories.buildings.items.length} buildings, ${manifestData.categories.units.items.length} units, ${manifestData.categories.resources.items.length} resources`);
+
+        buildGrid();
+      } catch (err) {
+        log(`Failed to load manifest: ${err.message}`, 'log-err');
+      }
+    }
+
+    // ── Build thumbnail grid ───────────────────────────────────────
+    function buildGrid() {
+      $grid.innerHTML = '';
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const card = document.createElement('div');
+        card.id = `card-${i}`;
+        card.className = 'thumb-card pending bg-gray-800 rounded border border-gray-700 p-1 text-center';
+        card.innerHTML = `
+          <div class="relative aspect-square bg-gray-900 rounded overflow-hidden mb-1">
+            <img id="img-${i}" class="w-full h-full object-contain hidden" alt="${item.label}">
+            <div id="placeholder-${i}" class="w-full h-full flex items-center justify-center text-gray-600 text-xs">${item.categoryKey[0].toUpperCase()}</div>
+          </div>
+          <div class="text-xs text-gray-400 truncate" title="${item.label}">${item.label}</div>
+          <button id="rebtn-${i}" class="mt-1 text-xs text-blue-400 hover:text-blue-300 hidden" onclick="window.rerender(${i})">re-render</button>
+        `;
+        $grid.appendChild(card);
+      }
+    }
+
+    // ── Three.js renderer setup ────────────────────────────────────
+    let renderer = null;
+    const loader = new GLTFLoader();
+
+    function ensureRenderer(size) {
+      if (renderer && renderer._thumbSize === size) return;
+      if (renderer) renderer.dispose();
+      renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, preserveDrawingBuffer: true });
+      renderer.setSize(size, size);
+      renderer.setPixelRatio(1);
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer._thumbSize = size;
+    }
+
+    // ── Render a single model ──────────────────────────────────────
+    async function renderItem(index) {
+      const item = items[index];
+      const cfg = manifestData.config;
+      const size = renderSize;
+
+      ensureRenderer(size);
+
+      // Scene
+      const scene = new THREE.Scene();
+
+      // Lighting from config
+      const ambient = new THREE.AmbientLight(cfg.lighting.ambient.color, cfg.lighting.ambient.intensity);
+      scene.add(ambient);
+
+      const mainLight = new THREE.DirectionalLight(cfg.lighting.main.color, cfg.lighting.main.intensity);
+      mainLight.position.set(...cfg.lighting.main.position);
+      scene.add(mainLight);
+
+      const rimLight = new THREE.DirectionalLight(cfg.lighting.rim.color, cfg.lighting.rim.intensity);
+      rimLight.position.set(...cfg.lighting.rim.position);
+      scene.add(rimLight);
+
+      // Load model
+      const modelUrl = `/models/${item.modelDir}/${item.modelFile}`;
+      let gltf;
+      try {
+        gltf = await loader.loadAsync(modelUrl);
+      } catch (err) {
+        log(`Load failed: ${item.label} (${modelUrl}): ${err.message}`, 'log-err');
+        item.status = 'failed';
+        counts.failed++;
+        updateCardStatus(index);
+        updateStats();
+        return null;
+      }
+
+      const model = gltf.scene;
+
+      // Hide particle/effect meshes that inflate bounding boxes
+      // (Spark, SmokePuff, Flame, etc. are positioned far from the building for in-game animations)
+      const effectPattern = /^(Spark|SmokePuff|Smoke|Flame|Fire|Ember|Particle)/i;
+      model.traverse((child) => {
+        if (child.isMesh && effectPattern.test(child.name)) {
+          child.visible = false;
+        }
+      });
+
+      // Normalize materials (replicate AssetLoader.normalizeGLTFMaterials)
+      model.traverse((child) => {
+        if (child.isMesh && child.visible && child.material && child.material.isMeshStandardMaterial) {
+          if (child.material.metalness > cfg.materials.maxMetalness) {
+            child.material.metalness = cfg.materials.maxMetalness;
+          }
+          child.material.roughness = Math.max(child.material.roughness, cfg.materials.minRoughness);
+        }
+      });
+
+      // Apply per-item rotation if specified
+      if (item.rotationY != null) {
+        model.rotation.y = item.rotationY * (Math.PI / 180);
+      }
+
+      scene.add(model);
+
+      // Compute bounding box from visible meshes only
+      const box = new THREE.Box3();
+      model.traverse((child) => {
+        if (child.isMesh && child.visible) {
+          const childBox = new THREE.Box3().setFromObject(child);
+          box.union(childBox);
+        }
+      });
+      if (box.isEmpty()) box.setFromObject(model); // fallback
+      const center = box.getCenter(new THREE.Vector3());
+      model.position.sub(center);
+      model.updateMatrixWorld(true);
+
+      // Recompute after centering (visible meshes only)
+      box.makeEmpty();
+      model.traverse((child) => {
+        if (child.isMesh && child.visible) {
+          const childBox = new THREE.Box3().setFromObject(child);
+          box.union(childBox);
+        }
+      });
+      if (box.isEmpty()) box.setFromObject(model);
+
+      // Camera direction from config
+      const camDir = new THREE.Vector3(...cfg.camera.angle).normalize();
+
+      // Orthographic camera: auto-fit to bounding box projection
+      const boxSize = box.getSize(new THREE.Vector3());
+      const maxDim = Math.max(boxSize.x, boxSize.y, boxSize.z);
+      const camDist = Math.max(maxDim * 3, 10);
+      const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, camDist * 3);
+
+      // Get camera basis vectors (right, up relative to view)
+      const camUp = new THREE.Vector3(0, 1, 0);
+      const camRight = new THREE.Vector3().crossVectors(camUp, camDir).normalize();
+      const camUpCorrected = new THREE.Vector3().crossVectors(camDir, camRight).normalize();
+
+      // Project all 8 corners of bounding box onto view plane
+      const corners = [
+        new THREE.Vector3(box.min.x, box.min.y, box.min.z),
+        new THREE.Vector3(box.max.x, box.min.y, box.min.z),
+        new THREE.Vector3(box.min.x, box.max.y, box.min.z),
+        new THREE.Vector3(box.max.x, box.max.y, box.min.z),
+        new THREE.Vector3(box.min.x, box.min.y, box.max.z),
+        new THREE.Vector3(box.max.x, box.min.y, box.max.z),
+        new THREE.Vector3(box.min.x, box.max.y, box.max.z),
+        new THREE.Vector3(box.max.x, box.max.y, box.max.z),
+      ];
+
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+      for (const corner of corners) {
+        const x = corner.dot(camRight);
+        const y = corner.dot(camUpCorrected);
+        minX = Math.min(minX, x);
+        maxX = Math.max(maxX, x);
+        minY = Math.min(minY, y);
+        maxY = Math.max(maxY, y);
+      }
+
+      // Apply padding and make square
+      const padding = cfg.camera.padding;
+      const extentX = (maxX - minX) * padding;
+      const extentY = (maxY - minY) * padding;
+      const extent = Math.max(extentX, extentY) / 2;
+      const cx = (minX + maxX) / 2;
+      const cy = (minY + maxY) / 2;
+
+      camera.left = cx - extent;
+      camera.right = cx + extent;
+      camera.top = cy + extent;
+      camera.bottom = cy - extent;
+      // Position camera along direction, far enough to see everything
+      camera.position.copy(camDir.clone().multiplyScalar(camDist));
+      camera.lookAt(0, 0, 0);
+      camera.updateProjectionMatrix();
+
+      // Handle per-item camera override
+      if (item.cameraOverride) {
+        const ov = item.cameraOverride;
+        if (ov.angle) {
+          const ovDir = new THREE.Vector3(...ov.angle).normalize();
+          camera.position.copy(ovDir.multiplyScalar(camDist));
+          camera.lookAt(0, 0, 0);
+          camera.updateProjectionMatrix();
+        }
+      }
+
+      // Render
+      renderer.render(scene, camera);
+
+      // Extract PNG as blob
+      const blob = await new Promise((resolve) => renderer.domElement.toBlob(resolve, 'image/png'));
+
+      // Dispose
+      model.traverse((child) => {
+        if (child.isMesh) {
+          child.geometry?.dispose();
+          if (Array.isArray(child.material)) {
+            child.material.forEach(m => m.dispose());
+          } else if (child.material) {
+            child.material.dispose();
+          }
+        }
+      });
+
+      item.status = 'rendered';
+      counts.rendered++;
+      updateCardStatus(index, blob);
+      updateStats();
+
+      return blob;
+    }
+
+    // ── Save thumbnail to server ───────────────────────────────────
+    async function saveBlob(index, blob) {
+      const item = items[index];
+      const filename = item.id + '.png';
+
+      try {
+        const base64 = await blobToBase64(blob);
+        const resp = await fetch('/save-thumbnail', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            category: item.categoryKey,
+            filename,
+            data: base64,
+          }),
+        });
+
+        const result = await resp.json();
+        if (result.ok) {
+          item.status = 'saved';
+          counts.saved++;
+          log(`Saved: ${item.categoryKey}/${filename}`, 'log-ok');
+        } else {
+          item.status = 'failed';
+          counts.failed++;
+          log(`Save failed: ${item.label}: ${result.error}`, 'log-err');
+        }
+      } catch (err) {
+        item.status = 'failed';
+        counts.failed++;
+        log(`Save error: ${item.label}: ${err.message}`, 'log-err');
+      }
+
+      updateCardStatus(index);
+      updateStats();
+    }
+
+    function blobToBase64(blob) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    // ── Update card visual ─────────────────────────────────────────
+    function updateCardStatus(index, blob) {
+      const card = document.getElementById(`card-${index}`);
+      const img = document.getElementById(`img-${index}`);
+      const placeholder = document.getElementById(`placeholder-${index}`);
+      const rebtn = document.getElementById(`rebtn-${index}`);
+      const item = items[index];
+
+      card.className = `thumb-card ${item.status} bg-gray-800 rounded border border-gray-700 p-1 text-center`;
+
+      if (blob && img) {
+        const url = URL.createObjectURL(blob);
+        img.src = url;
+        img.classList.remove('hidden');
+        placeholder.classList.add('hidden');
+      }
+
+      if (item.status === 'saved' || item.status === 'failed') {
+        rebtn.classList.remove('hidden');
+      }
+    }
+
+    // ── Batch render ───────────────────────────────────────────────
+    async function renderCategory(categoryKey) {
+      if (isRendering) return;
+      isRendering = true;
+      disableButtons(true);
+
+      const toRender = items
+        .map((item, i) => ({ item, i }))
+        .filter(({ item }) => categoryKey === 'all' || item.categoryKey === categoryKey);
+
+      log(`Starting render: ${toRender.length} items (${categoryKey})`);
+
+      for (const { i } of toRender) {
+        const blob = await renderItem(i);
+        if (blob) {
+          await saveBlob(i, blob);
+        }
+      }
+
+      // Signal completion
+      try {
+        await fetch('/save-all-complete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ total: counts.total, saved: counts.saved, failed: counts.failed }),
+        });
+      } catch { /* ignore */ }
+
+      log(`Done: ${counts.saved} saved, ${counts.failed} failed`, counts.failed > 0 ? 'log-err' : 'log-ok');
+      isRendering = false;
+      disableButtons(false);
+    }
+
+    // ── Re-render single item ──────────────────────────────────────
+    window.rerender = async function(index) {
+      if (isRendering) return;
+      isRendering = true;
+
+      // Reset counts for this item
+      const item = items[index];
+      if (item.status === 'saved') counts.saved--;
+      if (item.status === 'failed') counts.failed--;
+      if (item.status === 'rendered' || item.status === 'saved' || item.status === 'failed') counts.rendered--;
+      item.status = 'pending';
+      updateStats();
+
+      const blob = await renderItem(index);
+      if (blob) await saveBlob(index, blob);
+
+      isRendering = false;
+    };
+
+    // ── Button state ───────────────────────────────────────────────
+    function disableButtons(disabled) {
+      document.getElementById('btn-render-all').disabled = disabled;
+      document.querySelectorAll('.btn-category').forEach(b => b.disabled = disabled);
+      if (disabled) {
+        document.getElementById('btn-render-all').classList.add('opacity-50');
+        document.querySelectorAll('.btn-category').forEach(b => b.classList.add('opacity-50'));
+      } else {
+        document.getElementById('btn-render-all').classList.remove('opacity-50');
+        document.querySelectorAll('.btn-category').forEach(b => b.classList.remove('opacity-50'));
+      }
+    }
+
+    // ── Event listeners ────────────────────────────────────────────
+    document.getElementById('btn-render-all').addEventListener('click', () => renderCategory('all'));
+    document.querySelectorAll('.btn-category').forEach(btn => {
+      btn.addEventListener('click', () => renderCategory(btn.dataset.category));
+    });
+    $sizeSelect.addEventListener('change', (e) => {
+      renderSize = parseInt(e.target.value, 10);
+      log(`Size changed to ${renderSize}px`);
+    });
+
+    // ── Init ───────────────────────────────────────────────────────
+    loadManifest();
+  </script>
+</body>
+</html>

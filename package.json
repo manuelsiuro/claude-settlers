@@ -9,7 +9,9 @@
     "preview": "vite preview",
     "lint": "eslint src --ext .ts",
     "test": "vitest run",
-    "balance-data": "npx tsx tools/generate-balance-data.ts"
+    "balance-data": "npx tsx tools/generate-balance-data.ts",
+    "thumbnail-data": "npx tsx tools/generate-thumbnail-data.ts",
+    "thumbnail-tool": "npx tsx tools/thumbnail_generator/server.ts"
   },
   "dependencies": {
     "qrcode-generator": "^2.0.4",
