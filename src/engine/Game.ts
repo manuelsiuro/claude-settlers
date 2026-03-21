@@ -186,6 +186,9 @@ export class Game {
   /** Current nightness level 0.0–1.0 from atmosphere controller */
   private currentNightness = 0;
 
+  /** Whether WebGL context is currently lost (Android backgrounding) */
+  private contextLost = false;
+
   /** Notification callback — subscribe to receive game event alerts */
   onNotification: ((notification: GameNotification) => void) | null = null;
 
@@ -203,6 +206,21 @@ export class Game {
     this.renderer.toneMapping = THREE.AgXToneMapping;
     this.renderer.toneMappingExposure = 1.0;
     container.appendChild(this.renderer.domElement);
+
+    // Handle WebGL context loss (Android may kill context when backgrounded)
+    this.renderer.domElement.addEventListener('webglcontextlost', (e) => {
+      e.preventDefault();
+      this.contextLost = true;
+      if (this.animationId !== null) {
+        cancelAnimationFrame(this.animationId);
+        this.animationId = null;
+      }
+    });
+    this.renderer.domElement.addEventListener('webglcontextrestored', () => {
+      this.contextLost = false;
+      this.setupEnvironment();
+      this.renderer.shadowMap.needsUpdate = true;
+    });
 
     // Scene with fog for atmospheric depth
     this.scene = new THREE.Scene();
@@ -685,6 +703,7 @@ export class Game {
     const clock = new THREE.Clock();
     const animate = (): void => {
       this.animationId = requestAnimationFrame(animate);
+      if (this.contextLost) return;
       this.performanceMonitor.tick();
       const rawDelta = Math.min(clock.getDelta(), 0.1); // Cap at 100ms to prevent teleporting
 

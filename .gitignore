@@ -45,3 +45,10 @@ coverage/
 
 # Blender temp files
 *.blend1
+
+# Capacitor native projects
+android/
+ios/
+
+# Tauri build output
+src-tauri/target/

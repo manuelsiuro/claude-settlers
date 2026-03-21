@@ -1,8 +1,15 @@
 # Project Progress
 
-## Current Phase: PNG Thumbnail UI Integration — Complete
+## Current Phase: Standalone App Packaging — Complete
 
 ## Task Board
+
+### Standalone App Packaging [COMPLETE]
+- [DONE] Phase 1: Capacitor (Android + iOS) — Installed @capacitor/core, @capacitor/cli, @capacitor/app, @capacitor/android, @capacitor/ios. Created capacitor.config.ts with https scheme, splash screen, status bar config. Generated android/ and ios/ native projects. Added npm scripts (cap:sync, cap:android, cap:ios, cap:run:android). Added WebGL context loss/restore handlers in Game.ts for Android backgrounding. Added Android back button handler via @capacitor/app to close panels instead of navigating away. — 2026-03-21
+- [DONE] Phase 2: Tauri v2 (Desktop) — Created src-tauri/ with tauri.conf.json (1280x720 window, CSP config, all bundle targets), Cargo.toml, main.rs, lib.rs, build.rs. Installed @tauri-apps/cli. Added tauri:dev and tauri:build npm scripts. Note: Rust toolchain needed for actual builds. — 2026-03-21
+- [DONE] Phase 3: PWA Enhancement — Replaced manual sw.js stub with vite-plugin-pwa (Workbox auto-generation). Configured globPatterns for all asset types, 10MB size limit for GLB models, CacheFirst strategy for .glb files, autoUpdate registration. Removed manual SW registration from main.ts. — 2026-03-21
+- [DONE] .gitignore updated — Added android/, ios/, src-tauri/target/ — 2026-03-21
+- [DONE] Build + lint + 745 tests pass — 2026-03-21
 
 ### PNG Thumbnail UI Integration [COMPLETE]
 - [DONE] Replace SVG resource icons with PNG thumbnails — resourceIcon() now returns `<img>` tags pointing to `/thumbnails/resources/*.png`, deleted ~180 lines of hand-drawn SVG data from icons.ts — 2026-03-21

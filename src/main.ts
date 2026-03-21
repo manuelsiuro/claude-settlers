@@ -13,9 +13,41 @@ import { MapEditorUI } from './editor/MapEditorUI';
 import type { MapData } from './game/MapData';
 import './ui/styles.css';
 
-// Register service worker for PWA installability
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch(() => {});
+// PWA service worker registration is handled by vite-plugin-pwa (Workbox auto-update)
+
+// Capacitor back button handling (Android hardware back)
+import { Capacitor } from '@capacitor/core';
+if (Capacitor.isNativePlatform()) {
+  import('@capacitor/app').then(({ App }) => {
+    App.addListener('backButton', ({ canGoBack }) => {
+      // Close panels in priority order instead of navigating away
+      const panels = [
+        'dashboard-overlay', 'techtree-overlay', 'info-panel',
+        'stats-panel', 'build-panel', 'game-over-overlay',
+        'demolish-overlay', 'pause-overlay',
+      ];
+      for (const id of panels) {
+        const el = document.getElementById(id);
+        if (el && !el.classList.contains('hidden')) {
+          el.classList.add('hidden');
+          return;
+        }
+      }
+      // Close nav drawer if open
+      const nav = document.getElementById('side-panel');
+      if (nav?.classList.contains('open')) {
+        nav.classList.remove('open');
+        document.getElementById('nav-overlay')?.classList.remove('active');
+        return;
+      }
+      // If on setup screen, minimize app; otherwise go back
+      if (canGoBack) {
+        window.history.back();
+      } else {
+        App.minimizeApp();
+      }
+    });
+  });
 }
 
 // UI modules
