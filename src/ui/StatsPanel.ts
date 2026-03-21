@@ -1,6 +1,6 @@
 import type { Game } from '../engine/Game';
 import { audioManager } from '../engine/AudioManager';
-import { icon, resourceIcon } from './icons';
+import { icon, resourceIcon, buildingIcon, unitIcon } from './icons';
 import { BuildingType, BUILDING_DEFINITIONS } from '../game/BuildingType';
 import { BuildingState } from '../game/Building';
 import { RESOURCE_PROPERTIES, ResourceType, TOOL_TYPES, isFood } from '../game/ResourceType';
@@ -413,7 +413,7 @@ function generateStatsHTML(): string {
     }
     for (const p of population) {
       html += `<div class="info-resource-row">
-        <span class="info-resource-name">${p.label}</span>
+        <span class="info-resource-name">${unitIcon(p.type, 16)} ${p.label}</span>
         <span class="info-resource-amount" data-field="pop-${p.type}">${p.count}</span>
       </div>`;
     }
@@ -442,7 +442,7 @@ function generateStatsHTML(): string {
     for (const [type, count] of buildingCounts) {
       const def = BUILDING_DEFINITIONS[type as BuildingType];
       html += `<div class="info-resource-row">
-        <span class="info-resource-name">${def?.label ?? type}</span>
+        <span class="info-resource-name">${buildingIcon(type, 16)} ${def?.label ?? type}</span>
         <span class="info-resource-amount" data-field="bld-${type}">${count}</span>
       </div>`;
     }
@@ -466,7 +466,7 @@ function generateStatsHTML(): string {
     for (const [type, count] of typeCounts) {
       const label = UNIT_DEFINITIONS[type as UnitType]?.label ?? type;
       html += `<div class="info-resource-row">
-        <span class="info-resource-name">${label}</span>
+        <span class="info-resource-name">${unitIcon(type, 16)} ${label}</span>
         <span class="info-resource-amount" data-field="mil-type-${type}">${count}</span>
       </div>`;
     }

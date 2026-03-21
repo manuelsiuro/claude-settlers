@@ -11,7 +11,7 @@ import type { CategoryWeights } from '../game/GoodsDistribution';
 import { BuildingState } from '../game/Building';
 import type { Building } from '../game/Building';
 import { BUILDING_DEFINITIONS } from '../game/BuildingType';
-import { resourceIcon, icon } from './icons';
+import { resourceIcon, icon, buildingIcon } from './icons';
 
 /** All resource types in display order */
 const ALL_RESOURCES: ResourceType[] = [
@@ -153,7 +153,7 @@ export function renderPriorityHTML(game: Game): string {
         const imp = getBuildingImportance(settings, c.building.id);
         html += `<div class="priority-building-row">
           <div class="priority-building-name-col">
-            <span class="priority-building-name">${c.label}</span>
+            <span class="priority-building-name">${buildingIcon(c.building.type, 16)} ${c.label}</span>
             ${c.otherInputs.length > 0 ? `<span class="priority-building-hint">also uses: ${c.otherInputs.map(r2 => RESOURCE_PROPERTIES[r2].label).join(', ')}</span>` : ''}
           </div>
           ${renderImportanceDots(c.building.id, imp)}

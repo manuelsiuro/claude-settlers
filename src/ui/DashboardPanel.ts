@@ -1,5 +1,5 @@
 import type { Game } from '../engine/Game';
-import { icon, resourceIcon } from './icons';
+import { icon, resourceIcon, buildingIcon, unitIcon } from './icons';
 import { audioManager } from '../engine/AudioManager';
 import { RESOURCE_PROPERTIES, ResourceType, isFood } from '../game/ResourceType';
 import { UNIT_DEFINITIONS, UnitType } from '../game/UnitType';
@@ -417,13 +417,13 @@ function renderPopulation(el: HTMLElement): void {
   if (civilian.length > 0) {
     breakdownHtml += '<div class="dashboard-section-label" style="margin-top:8px">Civilian</div>';
     for (const u of civilian) {
-      breakdownHtml += `<div class="dashboard-unit-row"><span>${u.label}</span><span>${u.count}</span></div>`;
+      breakdownHtml += `<div class="dashboard-unit-row"><span>${unitIcon(u.type, 16)} ${u.label}</span><span>${u.count}</span></div>`;
     }
   }
   if (military.length > 0) {
     breakdownHtml += '<div class="dashboard-section-label" style="margin-top:8px">Military</div>';
     for (const u of military) {
-      breakdownHtml += `<div class="dashboard-unit-row"><span>${u.label}</span><span>${u.count}</span></div>`;
+      breakdownHtml += `<div class="dashboard-unit-row"><span>${unitIcon(u.type, 16)} ${u.label}</span><span>${u.count}</span></div>`;
     }
   }
 
@@ -508,7 +508,7 @@ function renderBuildings(el: HTMLElement): void {
   for (const [type, info] of typeCounts) {
     const def = BUILDING_DEFINITIONS[type as BuildingType];
     tableHtml += `<div class="dashboard-unit-row">
-      <span>${def?.label ?? type}</span>
+      <span>${buildingIcon(type, 16)} ${def?.label ?? type}</span>
       <span>${info.count}</span>
       <span>${info.active}</span>
       <span>${info.constructing > 0 ? info.constructing : '-'}</span>
@@ -524,7 +524,7 @@ function renderBuildings(el: HTMLElement): void {
     const def = BUILDING_DEFINITIONS[b.type];
     const pct = Math.round(b.constructionProgress * 100);
     constructionHtml += `<div class="dashboard-construction-row">
-      <span>${def.label}</span>
+      <span>${buildingIcon(b.type, 16)} ${def.label}</span>
       <div class="dashboard-progress-bar"><div class="dashboard-progress-fill" style="width:${pct}%"></div></div>
       <span>${pct}%</span>
     </div>`;

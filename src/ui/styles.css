@@ -903,6 +903,13 @@ html, body {
   transform: none;
 }
 
+.build-tile-thumb {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 2px;
+}
+
 .build-tile-name {
   font-size: 0.75rem;
   font-weight: 600;

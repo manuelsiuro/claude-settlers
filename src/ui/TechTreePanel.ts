@@ -1,6 +1,6 @@
 import { BUILDING_DEFINITIONS, type BuildingDefinition } from '../game/BuildingType';
 import { RESOURCE_PROPERTIES, TOOL_TYPES, type ResourceType } from '../game/ResourceType';
-import { icon, resourceIcon } from './icons';
+import { icon, resourceIcon, buildingIcon } from './icons';
 import { audioManager } from '../engine/AudioManager';
 
 // ============================================================
@@ -379,7 +379,7 @@ function renderTechTreeHTML(): string {
     nodeHTML += `
       <div class="techtree-node${dimClass}${highClass}" data-building="${node.type}"
            style="left:${pos.x}px;top:${pos.y}px;border-left:3px solid ${catColor};touch-action:none">
-        <div class="techtree-node-name">${node.def.label}</div>
+        <div class="techtree-node-name">${buildingIcon(node.type, 20)} ${node.def.label}</div>
         <div class="techtree-node-cat">${capitalize(node.def.category)} · T${node.def.tier}</div>
         ${recipeHTML}
       </div>`;

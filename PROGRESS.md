@@ -1,8 +1,16 @@
 # Project Progress
 
-## Current Phase: Map Level Editor — Complete
+## Current Phase: PNG Thumbnail UI Integration — Complete
 
 ## Task Board
+
+### PNG Thumbnail UI Integration [COMPLETE]
+- [DONE] Replace SVG resource icons with PNG thumbnails — resourceIcon() now returns `<img>` tags pointing to `/thumbnails/resources/*.png`, deleted ~180 lines of hand-drawn SVG data from icons.ts — 2026-03-21
+- [DONE] Add buildingIcon() and unitIcon() helpers — new functions in icons.ts for building and unit PNG thumbnails — 2026-03-21
+- [DONE] Add building thumbnails to BuildPanel (48px in tiles, 24px in expanded detail), InfoPanel (24px header), StatsPanel (buildings tab), DashboardPanel (building status/construction), TechTreePanel (node names), ResourcePriorityPanel (consumer rows), CapacityAlertBar (alert chips) — 2026-03-21
+- [DONE] Add unit thumbnails to InfoPanel (garrison rows), StatsPanel (population/military tabs), DashboardPanel (unit breakdown) — 2026-03-21
+- [DONE] Auto-propagated resource thumbnails to EconomyPanel, DemolishDialog, ToolAlertBar via resourceIcon() change — 2026-03-21
+- [DONE] Add .build-tile-thumb CSS, build + lint + 745 tests pass — 2026-03-21
 
 ### Map Level Editor [COMPLETE]
 - [DONE] Data Layer — MapData.ts (interfaces, validation, grid conversion), MapStorage.ts (localStorage CRUD, file I/O, bundled maps), GameConfig.customMapId — 2026-03-20

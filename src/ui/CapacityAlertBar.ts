@@ -9,7 +9,7 @@ import type { Building } from '../game/Building';
 import { BUILDING_DEFINITIONS, BuildingType } from '../game/BuildingType';
 import { getEffectiveStorageCapacity } from '../game/BuildingUpgrade';
 import { HexGrid } from '../game/HexGrid';
-import { icon } from './icons';
+import { buildingIcon } from './icons';
 
 type Severity = 'output_full' | 'input_full' | 'near_full';
 
@@ -129,7 +129,7 @@ function updateAlerts(): void {
     const dotClass = isCritical ? 'capacity-alert-status-critical' : 'capacity-alert-status-warning';
 
     html += `<div class="capacity-alert-chip capacity-alert-${group.severity}" data-group="${group.buildingType}|${group.severity}" data-buildings="${group.buildingIds.join(',')}">
-      ${icon('warning', 'capacity-alert-icon')}
+      ${buildingIcon(group.buildingType, 16)}
       <span class="capacity-alert-text">${count > 1 ? `${count}× ` : ''}${label} — ${SEVERITY_LABEL[group.severity]}</span>
       <span class="${dotClass}"></span>
     </div>`;

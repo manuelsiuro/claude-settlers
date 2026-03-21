@@ -1,5 +1,5 @@
 import type { Game } from '../engine/Game';
-import { icon, resourceIcon } from './icons';
+import { icon, resourceIcon, buildingIcon, unitIcon } from './icons';
 import { BuildingType, BUILDING_DEFINITIONS } from '../game/BuildingType';
 import { BuildingState, getInventoryAmount, getInventoryTotal } from '../game/Building';
 import type { Building, ResourceInventory } from '../game/Building';
@@ -629,7 +629,7 @@ function generateInfoHTML(building: Building): string {
         if (unit) {
           const unitDef = UNIT_DEFINITIONS[unit.type];
           html += `<div class="info-resource-row">
-            <span class="info-resource-name">${unitDef?.label ?? unit.type}</span>
+            <span class="info-resource-name">${unitIcon(unit.type, 16)} ${unitDef?.label ?? unit.type}</span>
             <span class="info-resource-amount" data-field="knight-${i}-rank">Rank ${unit.knightRank}</span>
           </div>`;
         }
@@ -992,7 +992,7 @@ function updateInfoValues(building: Building): void {
 export function showInfoPanel(building: Building): void {
   selectedBuildingId = building.id;
   const def = BUILDING_DEFINITIONS[building.type];
-  infoPanelTitle.textContent = def.label;
+  infoPanelTitle.innerHTML = `${buildingIcon(building.type, 24)} ${def.label}`;
   updater.reset();
   updater.update(
     getInfoStructureKey(building),

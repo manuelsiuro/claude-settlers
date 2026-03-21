@@ -4,7 +4,7 @@ import { BuildingType, BUILDING_DEFINITIONS, getBuildingsByTier } from '../game/
 import type { BuildingDefinition } from '../game/BuildingType';
 import { BuildingState } from '../game/Building';
 import { RESOURCE_PROPERTIES, ResourceType } from '../game/ResourceType';
-import { resourceIcon } from './icons';
+import { resourceIcon, buildingIcon } from './icons';
 import { showSnackbar } from './Snackbar';
 import { PanelUpdater } from './PanelUpdater';
 
@@ -448,6 +448,7 @@ function generateBuildHTML(): string {
       const affordable = canAfford(def, available);
       const tileClass = affordable ? 'build-tile' : 'build-tile build-tile-disabled';
       html += `<button class="${tileClass}" data-field="build-${def.type}" data-building-type="${def.type}">
+        <div class="build-tile-thumb">${buildingIcon(def.type, 48)}</div>
         <span class="build-tile-name">${def.label}</span>
         <div class="build-tile-cost">${formatCost(def, available, true)}</div>
       </button>`;
@@ -475,7 +476,7 @@ function generateExpandedDetailHTML(
     : '';
 
   return `<div class="build-tile-expanded">
-    <div class="build-tile-expanded-name">${def.label}</div>
+    <div class="build-tile-expanded-name">${buildingIcon(def.type, 24)} ${def.label}</div>
     <div class="build-tile-expanded-desc">${def.description}</div>
     <div class="build-item-section">
       <span class="build-item-section-label">Cost</span>
