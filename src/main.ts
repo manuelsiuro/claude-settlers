@@ -20,6 +20,13 @@ import { Capacitor } from '@capacitor/core';
 if (Capacitor.isNativePlatform()) {
   import('@capacitor/app').then(({ App }) => {
     App.addListener('backButton', ({ canGoBack }) => {
+      // Close building detail sheet first (mobile)
+      const detailSheet = document.getElementById('building-detail-sheet');
+      if (detailSheet && !detailSheet.classList.contains('hidden')) {
+        detailSheet.classList.add('hidden');
+        return;
+      }
+
       // Close panels in priority order instead of navigating away
       const panels = [
         'dashboard-overlay', 'techtree-overlay', 'info-panel',
@@ -259,18 +266,40 @@ app.innerHTML = `
     </button>
   </div>
 
-  <!-- Stats FAB (mobile only) -->
+  <!-- Stats FAB (mobile only — hidden when mobile toolbar active) -->
   <button id="stats-fab" class="btn-filled stats-fab">
     ${icon('bar_chart')}
   </button>
 
-  <!-- Build FAB (mobile only) -->
+  <!-- Build FAB (mobile only — hidden when mobile toolbar active) -->
   <button id="build-fab" class="btn-filled build-fab">
     ${icon('construction')}
   </button>
 
+  <!-- Mobile Bottom Toolbar (replaces FABs on mobile) -->
+  <div id="mobile-toolbar" class="mobile-toolbar">
+    <button class="mobile-toolbar-btn" id="mt-build" title="Build">
+      ${icon('construction')}
+      <span class="mobile-toolbar-label">Build</span>
+    </button>
+    <button class="mobile-toolbar-btn" id="mt-stats" title="Statistics">
+      ${icon('bar_chart')}
+      <span class="mobile-toolbar-label">Stats</span>
+    </button>
+    <div class="mobile-toolbar-recents" id="mt-recents"></div>
+    <button class="mobile-toolbar-btn" id="mt-speed" title="Game Speed">
+      ${icon('fast_forward')}
+      <span class="mobile-toolbar-label" id="mt-speed-label">1x</span>
+    </button>
+    <button class="mobile-toolbar-btn" id="mt-menu" title="Menu">
+      ${icon('menu')}
+      <span class="mobile-toolbar-label">Menu</span>
+    </button>
+  </div>
+
   <!-- Building Menu Panel -->
   <div id="build-panel" class="build-panel hidden">
+    <div class="bottom-sheet-handle"></div>
     <div class="build-panel-header">
       <span class="build-panel-title">Build</span>
       <button class="icon-btn" id="build-close-btn">${icon('close')}</button>
@@ -282,8 +311,15 @@ app.innerHTML = `
   <!-- Build Tooltip (desktop hover) -->
   <div id="build-tooltip" class="build-tooltip"></div>
 
+  <!-- Building Detail Sheet (mobile: slides up when tapping a building tile) -->
+  <div id="building-detail-sheet" class="building-detail-sheet hidden">
+    <div class="bottom-sheet-handle"></div>
+    <div id="building-detail-content" class="building-detail-content"></div>
+  </div>
+
   <!-- Building Info Panel (shown when a building is selected) -->
   <div id="info-panel" class="info-panel hidden">
+    <div class="bottom-sheet-handle"></div>
     <div class="info-panel-header">
       <span id="info-panel-title" class="info-panel-title"></span>
       <button class="icon-btn" id="info-close-btn">${icon('close')}</button>
@@ -299,6 +335,7 @@ app.innerHTML = `
 
   <!-- Statistics Panel (tabbed: resources, pop, buildings, military, economy, priority) -->
   <div id="stats-panel" class="stats-panel hidden">
+    <div class="bottom-sheet-handle"></div>
     <div class="stats-panel-header">
       <span class="stats-panel-title">Statistics</span>
       <button class="icon-btn" id="stats-close-btn">${icon('close')}</button>
@@ -568,6 +605,53 @@ initTechTreePanel();
 initDashboard(getGame);
 initSetupScreen(startGame, openMapEditor);
 
+// ============================================================
+// Mobile Bottom Toolbar
+// ============================================================
+{
+  const mtBuild = document.getElementById('mt-build')!;
+  const mtStats = document.getElementById('mt-stats')!;
+  const mtSpeed = document.getElementById('mt-speed')!;
+  const mtMenu = document.getElementById('mt-menu')!;
+
+  mtBuild.addEventListener('click', () => {
+    audioManager.play('ui_click');
+    toggleBuildPanel();
+  });
+
+  mtStats.addEventListener('click', () => {
+    audioManager.play('ui_click');
+    if (document.getElementById('stats-panel')!.classList.contains('hidden')) {
+      showStatsPanel('economy');
+    } else {
+      closeStatsPanel();
+    }
+  });
+
+  mtSpeed.addEventListener('click', () => {
+    if (!game) return;
+    audioManager.play('ui_click');
+    if (game.paused) {
+      game.setPaused(false);
+    } else {
+      game.cycleSpeed();
+    }
+  });
+
+  mtMenu.addEventListener('click', () => {
+    audioManager.play('ui_click');
+    const sidePanel = document.getElementById('side-panel')!;
+    const navOverlay = document.getElementById('nav-overlay')!;
+    if (sidePanel.classList.contains('open')) {
+      sidePanel.classList.remove('open');
+      navOverlay.classList.remove('open');
+    } else {
+      sidePanel.classList.add('open');
+      navOverlay.classList.add('open');
+    }
+  });
+}
+
 // Initialize settings UI from persisted values
 {
   const saved = loadSettings();
@@ -707,6 +791,9 @@ async function startGame(config: Partial<GameConfig>, savedData?: SaveData): Pro
       if (active) {
         closeInfoPanel();
       }
+      // Coordinate with camera: suppress single-finger pan during placement
+      const cam = game?.getCameraController();
+      if (cam) cam.placementActive = active;
     };
     placement.onPreviewUpdated = () => {
       const dist = placement.placementDistance;

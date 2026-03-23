@@ -34,6 +34,9 @@ export class CameraController {
   private lastPinchDist = 0;
   private keys = new Set<string>();
 
+  /** When true, single-finger touch pan is suppressed (placement mode active) */
+  placementActive = false;
+
   // Camera target point (what the camera looks at)
   private target: THREE.Vector3;
   // Isometric direction vector (normalized)
@@ -241,7 +244,8 @@ export class CameraController {
     e.preventDefault();
 
     if (this.activeTouches.length === 1) {
-      // Single finger: pan
+      // Single finger: pan (skip when placement mode is active — PlacementController handles it)
+      if (this.placementActive) return;
       const touch = e.changedTouches[0];
       const prev = this.activeTouches[0];
       const dx = (touch.clientX - prev.x) * TOUCH_PAN_SPEED;

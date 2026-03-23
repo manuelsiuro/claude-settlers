@@ -30,6 +30,7 @@ import {
   HUNGER_PRODUCTION_PENALTY_HUNGRY,
   HUNGER_PRODUCTION_PENALTY_STARVING,
 } from '../game/data/balanceConstants';
+import { BottomSheetController } from './BottomSheetController';
 
 let infoPanel: HTMLElement;
 let infoPanelTitle: HTMLElement;
@@ -42,9 +43,31 @@ let closeBuildPanelFn: () => void;
 let closeStatsPanelFn: () => void;
 let selectedBuildingId: string | null = null;
 
+/** Mobile bottom sheet controller (null on desktop) */
+let bottomSheet: BottomSheetController | null = null;
+let isDesktop = false;
+
 function getSelectedBuilding(): Building | undefined {
   if (!selectedBuildingId) return undefined;
   return getGame().getGameState().getBuilding(selectedBuildingId);
+}
+
+function setupBottomSheet(): void {
+  if (bottomSheet) return;
+  bottomSheet = new BottomSheetController(infoPanel, {
+    snapPoints: [30, 75],
+    onDismiss: () => {
+      stopInfoPanelUpdates();
+      updater.reset();
+      if (!isAttackModeActive()) {
+        const selection = getGame().getSelectionController();
+        if (selection?.selected) {
+          selection.deselect();
+        }
+      }
+      selectedBuildingId = null;
+    },
+  });
 }
 
 export function initInfoPanel(
@@ -64,8 +87,56 @@ export function initInfoPanel(
 
   infoCloseBtn.addEventListener('click', closeInfoPanel);
 
+  // Set up responsive mode and bottom sheet for mobile
+  const mq = window.matchMedia('(min-width: 769px)');
+  isDesktop = mq.matches;
+  mq.addEventListener('change', (e) => {
+    isDesktop = e.matches;
+    if (isDesktop) {
+      // Switching to desktop — destroy mobile sheet, clear inline styles
+      bottomSheet?.destroy();
+      bottomSheet = null;
+      infoPanel.style.transform = '';
+      infoPanel.style.visibility = '';
+      infoPanel.style.pointerEvents = '';
+      infoPanel.style.transition = '';
+      infoPanel.style.maxHeight = '';
+    } else {
+      setupBottomSheet();
+    }
+    closeInfoPanel();
+  });
+  if (!isDesktop) {
+    setupBottomSheet();
+  }
+
   // Event delegation for info panel buttons
   infoPanelContent.addEventListener('click', (e) => {
+    // Quick action buttons (mobile)
+    const quickAction = (e.target as HTMLElement).closest('.info-quick-action') as HTMLElement | null;
+    if (quickAction?.dataset.action && quickAction?.dataset.buildingId) {
+      const bid = quickAction.dataset.buildingId;
+      const action = quickAction.dataset.action;
+      if (action === 'demolish') {
+        const bld = getGame().getGameState().getBuilding(bid);
+        if (bld) showDemolishConfirm(bld);
+      } else if (action === 'toggle-pause') {
+        const bld = getGame().getGameState().getBuilding(bid);
+        if (bld) {
+          bld.productionPaused = !bld.productionPaused;
+          updater.reset();
+          updater.update(
+            getInfoStructureKey(bld),
+            () => generateInfoHTML(bld),
+            () => updateInfoValues(bld),
+          );
+        }
+      } else if (action === 'attack') {
+        startAttackTargeting(bid);
+      }
+      return;
+    }
+
     const target = (e.target as HTMLElement).closest('.info-attack-btn') as HTMLElement | null;
     if (target?.dataset.buildingId) {
       startAttackTargeting(target.dataset.buildingId);
@@ -283,11 +354,46 @@ function getInfoStructureKey(building: Building): string {
 }
 
 /** Generate the info panel HTML string for a building */
+function generateQuickActionsHTML(building: Building): string {
+  if (isDesktop) return '';
+  const def = BUILDING_DEFINITIONS[building.type];
+  const actions: string[] = [];
+
+  // Pause/Resume (for active production buildings)
+  if (building.state === BuildingState.Active && def.production) {
+    const isPaused = building.productionPaused;
+    actions.push(`<button class="info-quick-action" data-action="toggle-pause" data-building-id="${building.id}">
+      ${icon(isPaused ? 'play_arrow' : 'pause')}
+      <span>${isPaused ? 'Resume' : 'Pause'}</span>
+    </button>`);
+  }
+
+  // Attack (for military buildings with knight slots)
+  if (def.knightSlots > 0 && building.state === BuildingState.Active) {
+    actions.push(`<button class="info-quick-action" data-action="attack" data-building-id="${building.id}">
+      ${icon('shield_icon')}
+      <span>Attack</span>
+    </button>`);
+  }
+
+  // Demolish (always available)
+  actions.push(`<button class="info-quick-action info-quick-action-danger" data-action="demolish" data-building-id="${building.id}">
+    ${icon('close')}
+    <span>Demolish</span>
+  </button>`);
+
+  if (actions.length === 0) return '';
+  return `<div class="info-quick-actions">${actions.join('')}</div>`;
+}
+
 function generateInfoHTML(building: Building): string {
   const def = BUILDING_DEFINITIONS[building.type];
   const stateDisplay = getStateDisplay(building.state);
 
   let html = '';
+
+  // Quick actions row (mobile only)
+  html += generateQuickActionsHTML(building);
 
   // Status
   html += `<div class="info-section">
@@ -999,7 +1105,13 @@ export function showInfoPanel(building: Building): void {
     () => generateInfoHTML(building),
     () => updateInfoValues(building),
   );
-  infoPanel.classList.remove('hidden');
+
+  // Open panel: bottom sheet on mobile, classList on desktop
+  if (!isDesktop && bottomSheet) {
+    bottomSheet.open(0); // Open at peek snap (30vh)
+  } else {
+    infoPanel.classList.remove('hidden');
+  }
 
   // Close other panels when info panel opens
   closeBuildPanelFn();
@@ -1022,13 +1134,19 @@ export function showInfoPanel(building: Building): void {
 }
 
 export function closeInfoPanel(): void {
-  infoPanel.classList.add('hidden');
-  stopInfoPanelUpdates();
-  updater.reset();
-  if (!isAttackModeActive()) {
-    const selection = getGame().getSelectionController();
-    if (selection?.selected) {
-      selection.deselect();
+  if (!isDesktop && bottomSheet?.isOpen) {
+    // Mobile: animated dismiss via bottom sheet
+    bottomSheet.dismiss();
+    // Cleanup is handled by onDismiss callback
+  } else {
+    infoPanel.classList.add('hidden');
+    stopInfoPanelUpdates();
+    updater.reset();
+    if (!isAttackModeActive()) {
+      const selection = getGame().getSelectionController();
+      if (selection?.selected) {
+        selection.deselect();
+      }
     }
   }
 }
@@ -1042,7 +1160,11 @@ export function stopInfoPanelUpdates(): void {
 
 /** Hide the info panel element (without deselecting) */
 export function hideInfoPanelElement(): void {
-  infoPanel.classList.add('hidden');
+  if (!isDesktop && bottomSheet?.isOpen) {
+    bottomSheet.dismiss();
+  } else {
+    infoPanel.classList.add('hidden');
+  }
 }
 
 // ── Road/Flag Info Panel ──────────────────────────────────────────────────

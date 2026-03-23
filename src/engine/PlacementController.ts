@@ -105,6 +105,7 @@ export class PlacementController {
     window.addEventListener('keydown', this.onKeyDown);
     // Touch support
     this.canvas.addEventListener('touchstart', this.onTouchStart, { passive: false });
+    this.canvas.addEventListener('touchmove', this.onTouchMove, { passive: false });
     this.canvas.addEventListener('touchend', this.onTouchEnd);
   }
 
@@ -150,6 +151,14 @@ export class PlacementController {
     const touch = e.touches[0];
     this.mouseDownPos = { x: touch.clientX, y: touch.clientY };
     this.mouseIsDown = true;
+    this.updatePreview(touch.clientX, touch.clientY);
+  };
+
+  /** Touch move: ghost preview follows finger across hexes in real-time */
+  private onTouchMove = (e: TouchEvent): void => {
+    if (!this.selectedType) return;
+    e.preventDefault(); // Prevent camera pan (CameraController also checks placementActive)
+    const touch = e.touches[0];
     this.updatePreview(touch.clientX, touch.clientY);
   };
 

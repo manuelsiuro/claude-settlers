@@ -27,10 +27,85 @@ let buildFilterCategory: string = 'all';
 let isDesktop = false;
 /** Active toolbar tab on desktop (null = panel closed) */
 let activeToolbarCategory: string | null = null;
-/** Mobile: which tile is expanded */
+/** Mobile: which tile is expanded (desktop only now — kept for compatibility) */
 let expandedTileType: BuildingType | null = null;
 
 let getGame: () => Game;
+
+/** Building detail sheet elements (mobile) */
+let buildingDetailSheet: HTMLElement;
+let buildingDetailContent: HTMLElement;
+
+/** Recently placed building types (max 5), persisted to localStorage */
+const RECENT_STORAGE_KEY = 'feudal-recent-buildings';
+let recentBuildings: BuildingType[] = [];
+
+function loadRecentBuildings(): void {
+  try {
+    const stored = localStorage.getItem(RECENT_STORAGE_KEY);
+    if (stored) {
+      const arr = JSON.parse(stored) as string[];
+      // Validate that stored types are still valid BuildingTypes
+      recentBuildings = arr.filter((t) => t in BUILDING_DEFINITIONS) as BuildingType[];
+    }
+  } catch { /* ignore */ }
+}
+
+function saveRecentBuildings(): void {
+  localStorage.setItem(RECENT_STORAGE_KEY, JSON.stringify(recentBuildings));
+}
+
+function addToRecents(type: BuildingType): void {
+  recentBuildings = [type, ...recentBuildings.filter((t) => t !== type)].slice(0, 5);
+  saveRecentBuildings();
+  updateMobileToolbarRecents();
+}
+
+/** Get recent buildings for mobile toolbar */
+export function getRecentBuildings(): BuildingType[] {
+  return recentBuildings;
+}
+
+/** Update the recent building thumbnails in the mobile toolbar */
+function updateMobileToolbarRecents(): void {
+  const container = document.getElementById('mt-recents');
+  if (!container) return;
+  const recents = recentBuildings.slice(0, 3);
+  container.innerHTML = recents.map((type) =>
+    `<button class="mobile-toolbar-recent-btn" data-building-type="${type}" title="${BUILDING_DEFINITIONS[type].label}">
+      ${buildingIcon(type, 28)}
+    </button>`
+  ).join('');
+}
+
+/** Show the building detail sheet for a specific building type (mobile) */
+function showBuildingDetail(type: BuildingType): void {
+  const def = BUILDING_DEFINITIONS[type];
+  const available = getPlayerResources();
+  const affordable = canAfford(def, available);
+  const prodSummary = formatProductionSummary(def);
+  const milInfo = def.knightSlots > 0
+    ? `<div class="build-item-section"><span class="build-item-section-label">Military</span><div class="build-item-section-content"><span class="build-item-military">${def.knightSlots} knight slot${def.knightSlots > 1 ? 's' : ''} \u00b7 range ${def.influenceRadius}</span></div></div>`
+    : '';
+
+  buildingDetailContent.innerHTML = `
+    <div class="building-detail-name">${buildingIcon(type, 28)} ${def.label}</div>
+    <div class="building-detail-desc">${def.description}</div>
+    <div class="build-item-section">
+      <span class="build-item-section-label">Cost</span>
+      <div class="build-item-section-content">${formatCost(def, available)}</div>
+    </div>
+    ${prodSummary ? `<div class="build-item-section"><span class="build-item-section-label">Production</span><div class="build-item-section-content">${prodSummary}</div></div>` : ''}
+    ${milInfo}
+    <button class="building-detail-place-btn" data-building-type="${type}" ${!affordable ? 'disabled' : ''}>Place ${def.label}</button>
+  `;
+
+  buildingDetailSheet.classList.remove('hidden');
+}
+
+function closeBuildingDetail(): void {
+  buildingDetailSheet.classList.add('hidden');
+}
 
 /** Attack targeting state */
 let attackSourceBuildingId: string | null = null;
@@ -72,10 +147,39 @@ export function initBuildPanel(
     closeBuildPanel();
   });
 
-  // Mobile FAB
+  // Mobile FAB (still wired for fallback, but hidden by toolbar CSS)
   buildFab.addEventListener('click', toggleBuildPanel);
   buildCloseBtn.addEventListener('click', closeBuildPanel);
   placementCancelBtn.addEventListener('click', cancelPlacement);
+
+  // Building detail sheet (mobile)
+  buildingDetailSheet = document.getElementById('building-detail-sheet')!;
+  buildingDetailContent = document.getElementById('building-detail-content')!;
+
+  // Detail sheet: place button click
+  buildingDetailContent.addEventListener('click', (e) => {
+    const placeBtn = (e.target as HTMLElement).closest('.building-detail-place-btn') as HTMLElement | null;
+    if (placeBtn?.dataset.buildingType) {
+      audioManager.play('ui_click');
+      startPlacement(placeBtn.dataset.buildingType as BuildingType);
+    }
+  });
+
+  // Load recent buildings from localStorage
+  loadRecentBuildings();
+  updateMobileToolbarRecents();
+
+  // Mobile toolbar recents click handler
+  const mtRecents = document.getElementById('mt-recents');
+  if (mtRecents) {
+    mtRecents.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest('.mobile-toolbar-recent-btn') as HTMLElement | null;
+      if (btn?.dataset.buildingType) {
+        audioManager.play('ui_click');
+        startPlacement(btn.dataset.buildingType as BuildingType);
+      }
+    });
+  }
 
   // Click outside panel to close (desktop)
   document.addEventListener('mousedown', (e) => {
@@ -143,14 +247,8 @@ export function initBuildPanel(
         // Desktop: immediate placement
         startPlacement(type);
       } else {
-        // Mobile: tap to expand, tap again to place
-        if (expandedTileType === type) {
-          startPlacement(type);
-        } else {
-          expandedTileType = type;
-          updater.reset();
-          populateBuildPanel();
-        }
+        // Mobile: show building detail sheet with all info + Place button
+        showBuildingDetail(type);
       }
       return;
     }
@@ -554,6 +652,7 @@ export function toggleBuildPanel(): void {
 
 export function closeBuildPanel(): void {
   buildPanel.classList.add('hidden');
+  closeBuildingDetail();
   hideBuildTooltip();
   stopBuildPanelUpdates();
   updater.reset();
@@ -584,6 +683,7 @@ export function disposeBuildPanel(): void {
 
 /** Enter building placement mode */
 function startPlacement(type: BuildingType): void {
+  closeBuildingDetail();
   closeBuildPanel();
   closeInfoPanelFn();
   cancelRoadPlacement();
@@ -595,6 +695,9 @@ function startPlacement(type: BuildingType): void {
   placement.selectBuilding(type);
   placementLabel.textContent = `Placing: ${def.label}`;
   placementBar.classList.remove('hidden');
+
+  // Track recent placements for mobile toolbar
+  addToRecents(type);
 }
 
 /** Enter flag placement mode */

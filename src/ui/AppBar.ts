@@ -23,6 +23,11 @@ export function updatePauseSpeedUI(paused: boolean, speed: number): void {
   playIcon.classList.toggle('hidden', !paused);
   speedLabel.textContent = `${speed}x`;
   pauseOverlay.classList.toggle('hidden', !paused);
+  // Also update mobile toolbar speed label
+  const mtSpeedLabel = document.getElementById('mt-speed-label');
+  if (mtSpeedLabel) {
+    mtSpeedLabel.textContent = paused ? '||' : `${speed}x`;
+  }
 }
 
 export function initAppBar(
