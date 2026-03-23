@@ -70,6 +70,7 @@ import { WorkAreaRenderer } from './WorkAreaRenderer';
 import { PopulationManager } from '../game/PopulationManager';
 import { FeedingManager } from '../game/FeedingManager';
 import { MoraleManager } from '../game/MoraleManager';
+import { MarketplaceManager } from '../game/MarketplaceManager';
 import { AnimalLifecycleManager } from '../game/AnimalLifecycleManager';
 import { DashboardTracker } from '../game/DashboardTracker';
 
@@ -149,6 +150,7 @@ export class Game {
   private feedingManager: FeedingManager;
   private animalLifecycleManager: AnimalLifecycleManager;
   private moraleManager: MoraleManager;
+  private marketplaceManager: MarketplaceManager;
   private dashboardTracker: DashboardTracker;
   private aiPlayers: AIPlayer[] = [];
   private roadRenderer: RoadRenderer;
@@ -293,6 +295,7 @@ export class Game {
     this.populationManager = new PopulationManager(this.gameState);
     this.feedingManager = new FeedingManager(this.gameState);
     this.moraleManager = new MoraleManager(this.gameState);
+    this.marketplaceManager = new MarketplaceManager(this.gameState);
     this.mapRenderer = new MapRenderer();
     this.buildingRenderer = new BuildingRenderer();
     this.unitRenderer = new UnitRenderer();
@@ -335,6 +338,7 @@ export class Game {
     this.combatRenderer = new CombatRenderer();
     this.productionChainOverlay = new ProductionChainOverlay();
     this.economyTracker = new EconomyTracker();
+    this.marketplaceManager.setEconomyTracker(this.economyTracker);
     this.upgradeManager = new UpgradeManager(this.gameState);
     this.toolProductionManager = new ToolProductionManager(this.gameState);
     this.fogOfWarManager = new FogOfWarManager(this.gameState);
@@ -618,6 +622,7 @@ export class Game {
           harborManager: this.harborManager,
           feedingManager: this.feedingManager,
           moraleManager: this.moraleManager,
+          marketplaceManager: this.marketplaceManager,
           animalLifecycleManager: this.animalLifecycleManager,
         },
         this.aiPlayers,
@@ -780,6 +785,7 @@ export class Game {
       }
       this.feedingManager.update(deltaTime);
       this.moraleManager.update(deltaTime);
+      this.marketplaceManager.update(deltaTime);
       this.animalLifecycleManager.update(deltaTime);
       this.economyTracker.update(deltaTime);
       this.dashboardTracker.update(deltaTime);
@@ -861,6 +867,7 @@ export class Game {
           this.buildingRenderer.addBuilding(building, grid);
         },
       );
+      ai.setMarketplaceManager(this.marketplaceManager);
       this.aiPlayers.push(ai);
     }
   }
@@ -1263,6 +1270,10 @@ export class Game {
     return this.moraleManager;
   }
 
+  getMarketplaceManager(): MarketplaceManager {
+    return this.marketplaceManager;
+  }
+
   getGameState(): GameState {
     return this.gameState;
   }
@@ -1525,6 +1536,7 @@ export class Game {
         harborManager: this.harborManager,
         feedingManager: this.feedingManager,
         moraleManager: this.moraleManager,
+        marketplaceManager: this.marketplaceManager,
         animalLifecycleManager: this.animalLifecycleManager,
       },
       this.aiPlayers,

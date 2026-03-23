@@ -32,6 +32,7 @@ import { HarborManager } from './HarborManager';
 import { PopulationManager } from './PopulationManager';
 import { FeedingManager } from './FeedingManager';
 import { MoraleManager } from './MoraleManager';
+import { MarketplaceManager } from './MarketplaceManager';
 import { serializeGame, deserializeGame } from './SaveLoad';
 import type { SaveData } from './SaveLoad';
 
@@ -1271,6 +1272,7 @@ describe('Integration: Save/Load Round-Trip', () => {
   let harborManager: HarborManager;
   let feedingManager: FeedingManager;
   let moraleManager: MoraleManager;
+  let marketplaceManager: MarketplaceManager;
   let aiPlayer: AIPlayer;
 
   function createManagers() {
@@ -1293,6 +1295,7 @@ describe('Integration: Save/Load Round-Trip', () => {
       harborManager,
       feedingManager,
       moraleManager,
+      marketplaceManager,
     };
   }
 
@@ -1344,6 +1347,7 @@ describe('Integration: Save/Load Round-Trip', () => {
     harborManager = new HarborManager(gameState, roadNetwork, grid);
     feedingManager = new FeedingManager(gameState);
     moraleManager = new MoraleManager(gameState);
+    marketplaceManager = new MarketplaceManager(gameState);
 
     gameState.territoryCheck = (q, r, pid) => territoryManager.isOwnedBy(q, r, pid);
 
@@ -1462,6 +1466,7 @@ describe('Integration: Save/Load Round-Trip', () => {
         harborManager: new HarborManager(gs2, rn2, grid2),
         feedingManager: new FeedingManager(gs2),
         moraleManager: new MoraleManager(gs2),
+        marketplaceManager: new MarketplaceManager(gs2),
         animalLifecycleManager: { _loadState: () => {} },
       },
       [ai2],
@@ -1559,6 +1564,7 @@ describe('Integration: Save/Load Round-Trip', () => {
         harborManager: new HarborManager(gs2, rn2, grid2),
         feedingManager: new FeedingManager(gs2),
         moraleManager: new MoraleManager(gs2),
+        marketplaceManager: new MarketplaceManager(gs2),
         animalLifecycleManager: { _loadState: () => {} },
       },
       [ai2],
@@ -1640,6 +1646,7 @@ describe('Integration: Save/Load Round-Trip', () => {
         harborManager: new HarborManager(gs2, rn2, grid2),
         feedingManager: new FeedingManager(gs2),
         moraleManager: new MoraleManager(gs2),
+        marketplaceManager: new MarketplaceManager(gs2),
         animalLifecycleManager: { _loadState: () => {} },
       },
       [ai2],

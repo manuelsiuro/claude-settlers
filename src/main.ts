@@ -816,6 +816,15 @@ async function startGame(config: Partial<GameConfig>, savedData?: SaveData): Pro
     };
   }
 
+  // Wire marketplace merchant arrival notification
+  const marketplace = game.getMarketplaceManager();
+  const humanPid = game.getHumanPlayerId();
+  marketplace.onMerchantArrival = (playerId) => {
+    if (playerId === humanPid) {
+      showSnackbar('A traveling merchant has arrived at your Market!', 'info');
+    }
+  };
+
   // Wire selection controller
   const selection = game.getSelectionController();
   if (selection) {

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-20T17:56:36.270Z",
+  "generatedAt": "2026-03-23T20:34:11.451Z",
   "version": "1.0.0",
   "constants": {
     "woodcutter": {
@@ -42,15 +42,15 @@
       "cautionThreshold": 0.75
     },
     "hunger": {
-      "decayRate": 0.002,
-      "workingMultiplier": 1.2,
+      "decayRate": 0.001,
+      "workingMultiplier": 1,
       "garrisonedMultiplier": 0.5,
-      "hungryThreshold": 0.5,
-      "starvingThreshold": 0.25,
-      "speedPenaltyHungry": 0.2,
-      "speedPenaltyStarving": 0.4,
-      "productionPenaltyHungry": 0.15,
-      "productionPenaltyStarving": 0.3
+      "hungryThreshold": 0.35,
+      "starvingThreshold": 0.15,
+      "speedPenaltyHungry": 0.1,
+      "speedPenaltyStarving": 0.25,
+      "productionPenaltyHungry": 0.05,
+      "productionPenaltyStarving": 0.15
     },
     "night": {
       "productionSlowdown": 0.25,
@@ -94,6 +94,81 @@
           "lifespan": 900,
           "starvationTime": 45
         }
+      }
+    },
+    "marketplace": {
+      "fee": 0.1,
+      "tradeCooldown": 3,
+      "maxTradeSize": 10,
+      "restockInterval": 60,
+      "npcStockMin": 3,
+      "npcStockMax": 8,
+      "offeredResourceCount": 12,
+      "scarcityBonus": 0.5,
+      "priceShiftBuy": 0.05,
+      "priceShiftSell": 0.03,
+      "priceDecayRate": 0.002,
+      "priceMin": 0.5,
+      "priceMax": 2,
+      "castleTradeFee": 0.25,
+      "castleTradeCooldown": 10,
+      "castleTradeMaxSize": 5,
+      "castleTradeEnabled": true,
+      "merchantVisitInterval": 300,
+      "merchantVisitDuration": 60,
+      "merchantDealCount": 3,
+      "merchantDiscount": 0.2,
+      "autoTradeCheckInterval": 15,
+      "autoTradeMaxRules": 8,
+      "aiTradeCheckInterval": 30,
+      "aiTradeSurplusThreshold": 1.5,
+      "aiTradeShortageThreshold": 0.5,
+      "aiTradePriceSensitivity": 1.3,
+      "baseValues": {
+        "wood": 2,
+        "stone": 3,
+        "grain": 2,
+        "fish": 3,
+        "iron_ore": 4,
+        "coal_ore": 3,
+        "gold_ore": 6,
+        "grapes": 3,
+        "fruit": 2,
+        "water_barrel": 1,
+        "milk": 3,
+        "hay": 1,
+        "wool": 3,
+        "raw_leather": 3,
+        "planks": 4,
+        "flour": 4,
+        "bread": 7,
+        "meat": 8,
+        "iron_bars": 8,
+        "gold_bars": 15,
+        "swords": 12,
+        "shields": 12,
+        "wine": 8,
+        "beer": 6,
+        "cheese": 7,
+        "cloth": 6,
+        "worked_leather": 7,
+        "arrows": 5,
+        "bow": 10,
+        "siege_ram": 20,
+        "axe": 6,
+        "pickaxe": 6,
+        "saw": 6,
+        "scythe": 6,
+        "fishing_rod": 6,
+        "hammer_tool": 6,
+        "shovel": 6,
+        "rolling_pin": 6,
+        "cleaver": 6,
+        "crucible": 6,
+        "tongs": 6,
+        "pigs": 8,
+        "cattle": 10,
+        "horses": 12
       }
     }
   },
@@ -424,7 +499,7 @@
             "amount": 1
           }
         ],
-        "productionTime": 18
+        "productionTime": 14
       },
       "knightSlots": 0,
       "influenceRadius": 0,
@@ -511,7 +586,7 @@
             "amount": 1
           }
         ],
-        "productionTime": 25
+        "productionTime": 20
       },
       "knightSlots": 0,
       "influenceRadius": 0,
@@ -1304,7 +1379,7 @@
             "amount": 1
           }
         ],
-        "productionTime": 22
+        "productionTime": 16
       },
       "knightSlots": 0,
       "influenceRadius": 0,
@@ -2072,12 +2147,12 @@
           "amount": 2
         }
       ],
-      "worker": null,
+      "worker": "Merchant",
       "workerTool": null,
       "production": null,
       "knightSlots": 0,
       "influenceRadius": 0,
-      "storageCapacity": 12,
+      "storageCapacity": 20,
       "constructionTime": 30,
       "workRadius": 0,
       "populationCapacity": 0
@@ -2105,7 +2180,7 @@
     "fish": {
       "label": "Fish",
       "category": "raw",
-      "satiationValue": 0.4,
+      "satiationValue": 0.5,
       "isDrink": false
     },
     "iron_ore": {
@@ -2135,7 +2210,7 @@
     "fruit": {
       "label": "Fruit",
       "category": "raw",
-      "satiationValue": 0.35,
+      "satiationValue": 0.45,
       "isDrink": false
     },
     "water_barrel": {
@@ -2183,13 +2258,13 @@
     "bread": {
       "label": "Bread",
       "category": "processed",
-      "satiationValue": 0.6,
+      "satiationValue": 0.7,
       "isDrink": false
     },
     "meat": {
       "label": "Meat",
       "category": "processed",
-      "satiationValue": 0.8,
+      "satiationValue": 0.9,
       "isDrink": false
     },
     "iron_bars": {
@@ -2219,19 +2294,19 @@
     "wine": {
       "label": "Wine",
       "category": "processed",
-      "satiationValue": 0.3,
+      "satiationValue": 0.35,
       "isDrink": true
     },
     "beer": {
       "label": "Beer",
       "category": "processed",
-      "satiationValue": 0.25,
+      "satiationValue": 0.3,
       "isDrink": true
     },
     "cheese": {
       "label": "Cheese",
       "category": "processed",
-      "satiationValue": 0.55,
+      "satiationValue": 0.6,
       "isDrink": false
     },
     "cloth": {
@@ -2755,6 +2830,19 @@
     },
     "shepherd": {
       "label": "Shepherd",
+      "category": "civilian",
+      "requiredTool": null,
+      "moveSpeed": 1,
+      "combatStrength": 0,
+      "attackRange": 0,
+      "visionRadius": 2,
+      "buildingDamage": 0,
+      "chargeMultiplier": 0,
+      "recruitmentItems": [],
+      "carryCapacity": 1
+    },
+    "merchant": {
+      "label": "Merchant",
       "category": "civilian",
       "requiredTool": null,
       "moveSpeed": 1,

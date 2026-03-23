@@ -1866,6 +1866,333 @@ html[data-theme="night"] .state-destroyed {
 }
 
 /* ============================================================
+   Trade Panel (within Info Panel)
+   ============================================================ */
+.trade-fee-notice {
+  font-size: 0.75rem;
+  color: #FF9800;
+  margin-bottom: 8px;
+  padding: 4px 8px;
+  background: rgba(255, 152, 0, 0.08);
+  border-radius: 6px;
+}
+
+.trade-row-label {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-on-surface-muted);
+  margin: 8px 0 4px;
+}
+
+.trade-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.trade-resource-select {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--color-outline-variant);
+  border-radius: 8px;
+  background: var(--color-surface-container);
+  color: var(--color-on-surface);
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.trade-resource-select:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -1px;
+}
+
+.trade-amount-controls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.trade-amt-btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--color-outline-variant);
+  border-radius: 6px;
+  background: var(--color-surface-container);
+  color: var(--color-on-surface);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.trade-amt-btn:hover {
+  background: var(--color-icon-btn-hover);
+}
+
+.trade-amt-btn:active {
+  background: var(--color-icon-btn-active);
+}
+
+.trade-amount {
+  min-width: 24px;
+  text-align: center;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-on-surface);
+}
+
+.trade-exchange-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 6px 0;
+  color: var(--color-on-surface-muted);
+  font-size: 0.75rem;
+}
+
+.trade-exchange-icon {
+  font-size: 1.25rem;
+  color: var(--color-primary);
+}
+
+.trade-exchange-rate,
+.trade-fee {
+  font-variant-numeric: tabular-nums;
+}
+
+.trade-result {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: rgba(76, 175, 80, 0.08);
+  border-radius: 8px;
+  border: 1px solid rgba(76, 175, 80, 0.2);
+}
+
+.trade-result-amount {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #4CAF50;
+  font-variant-numeric: tabular-nums;
+}
+
+.trade-impact {
+  font-size: 0.6875rem;
+  text-align: right;
+  margin: 4px 0 8px;
+}
+
+.trade-confirm-btn {
+  width: 100%;
+  margin-top: 4px;
+  font-size: 0.8125rem;
+  padding: 10px 12px;
+}
+
+.trade-merchant-section .info-section-label {
+  color: #FFB300;
+}
+
+.trade-merchant-timer {
+  margin-left: auto;
+  font-size: 0.6875rem;
+  font-weight: 400;
+  color: var(--color-on-surface-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.trade-deal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--color-outline-soft);
+}
+
+.trade-deal:last-child {
+  border-bottom: none;
+}
+
+.trade-deal-offer {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8125rem;
+  flex-wrap: wrap;
+}
+
+.trade-deal-arrow {
+  color: var(--color-primary);
+  font-weight: 600;
+  margin: 0 2px;
+}
+
+.trade-deal-btn {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  padding: 4px 10px;
+}
+
+/* Auto-trade rules */
+.autotrade-rule {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--color-outline-soft);
+}
+
+.autotrade-rule:last-of-type {
+  border-bottom: none;
+}
+
+.autotrade-rule-disabled {
+  opacity: 0.5;
+}
+
+.autotrade-rule-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.autotrade-rule-action {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-on-surface);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.autotrade-rule-detail {
+  font-size: 0.6875rem;
+  color: var(--color-on-surface-muted);
+  margin-top: 1px;
+}
+
+.autotrade-rule-controls {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.autotrade-toggle-btn,
+.autotrade-delete-btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--color-outline-variant);
+  border-radius: 6px;
+  background: var(--color-surface-container);
+  color: var(--color-on-surface);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background 0.1s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.autotrade-toggle-btn:hover {
+  background: var(--color-icon-btn-hover);
+}
+
+.autotrade-delete-btn:hover {
+  background: rgba(239, 83, 80, 0.15);
+  color: #EF5350;
+}
+
+.autotrade-add-form {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-outline-soft);
+}
+
+.autotrade-add-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.autotrade-select {
+  flex: 1;
+  min-width: 0;
+}
+
+.autotrade-label {
+  flex: 1;
+  font-size: 0.6875rem;
+  color: var(--color-on-surface-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.autotrade-input {
+  padding: 6px 8px;
+  border: 1px solid var(--color-outline-variant);
+  border-radius: 8px;
+  background: var(--color-surface-container);
+  color: var(--color-on-surface);
+  font-size: 0.8125rem;
+  width: 100%;
+}
+
+.autotrade-input:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -1px;
+}
+
+@media (max-width: 768px) {
+  .trade-amt-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 0.875rem;
+  }
+
+  .trade-selector {
+    flex-wrap: wrap;
+  }
+
+  .trade-resource-select {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 0.875rem;
+  }
+
+  .trade-amount-controls {
+    width: 100%;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  .trade-confirm-btn {
+    padding: 14px 12px;
+    font-size: 0.875rem;
+  }
+
+  .trade-deal {
+    flex-wrap: wrap;
+  }
+
+  .trade-deal-btn {
+    width: 100%;
+    text-align: center;
+    padding: 8px;
+  }
+}
+
+/* ============================================================
    Statistics Panel
    ============================================================ */
 .stats-panel {

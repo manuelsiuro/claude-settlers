@@ -10,6 +10,10 @@ import {
   VICTORY_DOMINATION_THRESHOLD,
   CASTLE_POPULATION_CAPACITY,
   CASTLE_STARTING_RESOURCES_BY_DIFFICULTY,
+  MARKETPLACE_FEE,
+  MARKETPLACE_TRADE_COOLDOWN,
+  MARKETPLACE_BASE_VALUES,
+  CASTLE_TRADE_ENABLED,
   applyBalanceOverrides,
   resetBalanceDefaults,
 } from './balanceConstants';
@@ -25,7 +29,7 @@ describe('applyBalanceOverrides', () => {
 
   it('should leave unspecified values at defaults', () => {
     applyBalanceOverrides({ hunger: { decayRate: 0.005 } });
-    expect(HUNGER_WORKING_MULTIPLIER).toBe(1.2);
+    expect(HUNGER_WORKING_MULTIPLIER).toBe(1.0);
   });
 
   it('should override multiple sections at once', () => {
@@ -57,6 +61,25 @@ describe('applyBalanceOverrides', () => {
     expect(VICTORY_DOMINATION_THRESHOLD).toBe(0.9);
     expect(CASTLE_POPULATION_CAPACITY).toBe(20);
   });
+
+  it('should override marketplace constants', () => {
+    applyBalanceOverrides({
+      marketplace: { fee: 0.15, tradeCooldown: 5.0, castleTradeEnabled: false },
+    });
+    expect(MARKETPLACE_FEE).toBe(0.15);
+    expect(MARKETPLACE_TRADE_COOLDOWN).toBe(5.0);
+    expect(CASTLE_TRADE_ENABLED).toBe(false);
+  });
+
+  it('should override marketplace base values partially', () => {
+    applyBalanceOverrides({
+      marketplace: { baseValues: { wood: 5, stone: 10 } },
+    });
+    expect(MARKETPLACE_BASE_VALUES['wood']).toBe(5);
+    expect(MARKETPLACE_BASE_VALUES['stone']).toBe(10);
+    // Unchanged values should remain at defaults
+    expect(MARKETPLACE_BASE_VALUES['iron_bars']).toBe(8);
+  });
 });
 
 describe('resetBalanceDefaults', () => {
@@ -67,7 +90,7 @@ describe('resetBalanceDefaults', () => {
       morale: { base: 0.6 },
     });
     resetBalanceDefaults();
-    expect(HUNGER_DECAY_RATE).toBe(0.002);
+    expect(HUNGER_DECAY_RATE).toBe(0.001);
     expect(COMBAT_WINS_PER_RANK).toBe(2);
     expect(MORALE_BASE).toBe(0.50);
   });
@@ -224,6 +247,6 @@ describe('balance-data.json sync', () => {
     const json = JSON.parse(fs.readFileSync('tools/balance-data.json', 'utf-8'));
     expect(Object.keys(json.buildings)).toHaveLength(50);
     expect(Object.keys(json.resources)).toHaveLength(44);
-    expect(Object.keys(json.units)).toHaveLength(39);
+    expect(Object.keys(json.units)).toHaveLength(40);
   });
 });

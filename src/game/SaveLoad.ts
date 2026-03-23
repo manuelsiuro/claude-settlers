@@ -28,6 +28,7 @@ import type { AIPlayer } from './AIPlayer';
 import type { HarborManager, WaterRoute } from './HarborManager';
 import type { FeedingManager } from './FeedingManager';
 import type { MoraleManager } from './MoraleManager';
+import type { MarketplaceManager, MarketplaceState } from './MarketplaceManager';
 import { TerrainType } from './TerrainType';
 import type { GoodsDistributionSettings } from './GoodsDistribution';
 import { serializeDistribution, deserializeDistribution } from './GoodsDistribution';
@@ -159,6 +160,7 @@ export interface SaveData {
   animalLifecycleManager?: {
     feedCooldown: number;
   };
+  marketplaceManager?: MarketplaceState;
 
   // Economy settings
   goodsDistribution?: ReturnType<typeof serializeDistribution>;
@@ -204,6 +206,7 @@ export function serializeGame(
     harborManager: HarborManager;
     feedingManager: FeedingManager;
     moraleManager: MoraleManager;
+    marketplaceManager: MarketplaceManager;
     animalLifecycleManager?: { _getState(): { feedCooldown: number } };
   },
   aiPlayers: AIPlayer[],
@@ -279,6 +282,7 @@ export function serializeGame(
 
     feedingManager: managers.feedingManager._getState(),
     moraleManager: managers.moraleManager._getState(),
+    marketplaceManager: managers.marketplaceManager._getState(),
     animalLifecycleManager: managers.animalLifecycleManager?._getState(),
 
     goodsDistribution: distributionSettings ? serializeDistribution(distributionSettings) : undefined,
@@ -319,6 +323,7 @@ export function deserializeGame(
     harborManager: HarborManager;
     feedingManager: FeedingManager;
     moraleManager: MoraleManager;
+    marketplaceManager: MarketplaceManager;
     animalLifecycleManager?: { _loadState(state: { feedCooldown: number }): void };
   },
   aiPlayers: AIPlayer[],
@@ -388,6 +393,9 @@ export function deserializeGame(
   }
   if (data.moraleManager) {
     managers.moraleManager._loadState(data.moraleManager);
+  }
+  if (data.marketplaceManager) {
+    managers.marketplaceManager._loadState(data.marketplaceManager);
   }
   if (data.animalLifecycleManager && managers.animalLifecycleManager) {
     managers.animalLifecycleManager._loadState(data.animalLifecycleManager);

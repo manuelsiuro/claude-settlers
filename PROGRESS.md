@@ -1,8 +1,21 @@
 # Project Progress
 
-## Current Phase: Mobile UI Overhaul — Complete
+## Current Phase: Marketplace System — Complete
 
 ## Task Board
+
+### Marketplace System [COMPLETE]
+- [DONE] Design document — Full barter marketplace design at `docs/marketplace.md`. Covers: barter exchange, dynamic pricing, NPC stock, traveling merchants, auto-trade rules, Castle fallback trading, AI integration, data-driven constants, UI design. — 2026-03-23
+- [DONE] Phase 1: Core Manager & Data — Created `MarketplaceManager.ts` (barter trades, dynamic pricing, NPC stock restock, traveling merchants, auto-trade rules, save/load). Added 25+ constants to `balanceConstants.ts` with override support. Updated Market building (Merchant worker, storage 20). Added Merchant unit type. Integrated into Game.ts + SaveLoad.ts. 24 new tests. 779 tests passing. — 2026-03-23
+- [DONE] Phase 2: Trade UI — Created `TradePanel.ts` with resource selectors, amount controls (+/-5/+/-1), exchange rate preview, price impact indicator, confirm trade button, NPC stock display, traveling merchant deals, and price trends. Integrated into InfoPanel via structure key + HTML generation + event delegation (click + change). Added 180+ lines CSS (responsive: mobile bottom sheet + desktop sidebar). 779 tests passing. — 2026-03-23
+- [DONE] Phase 3: Merchant Notifications — Added `onMerchantArrival` callback to MarketplaceManager, wired in main.ts to show snackbar "A traveling merchant has arrived at your Market!" for human player. Updated TradePanel to use proper `showSnackbar` from Snackbar module. — 2026-03-23
+- [DONE] Phase 4: Auto-Trade UI — Added auto-trade rule editor section to Market panel: displays existing rules with toggle (✓/○) and delete (×) buttons, add form with action/resource/threshold/exchange dropdowns, "0/8" counter. Rules persist via MarketplaceManager. 100+ lines CSS for rule display, controls, and form layout. 779 tests passing. — 2026-03-23
+- [DONE] Phase 5: AI Trading — Added `tryTrade()` to AIPlayer: evaluates surplus/shortage every 30s, trades via market (if built) or castle fallback, respects price sensitivity (won't trade if price multiplier > 1.3x), trades modest amounts (max 5, 30% of surplus). Wired via `setMarketplaceManager()` in Game.ts. — 2026-03-23
+- [DONE] Phase 6: Dashboard Integration — Added `setEconomyTracker()` to MarketplaceManager. All trades (manual, merchant deals) record consumption (sold resource) and production (received resource) events in EconomyTracker, so Dashboard charts reflect trade flow alongside production. — 2026-03-23
+- [DONE] Phase 7: Visual Polish — Added placeholder merchant.glb model and thumbnail (copies shepherd as base — replace with custom Blender model when Blender MCP is available). Model loads without errors. 779 tests passing. — 2026-03-23
+
+### Food System Rebalance [COMPLETE]
+- [DONE] Food system rebalance — Halved decay rate (0.002→0.001), removed working penalty (1.2→1.0), added food producer protection (0.5x decay + priority 1.5 feeding), lowered feed threshold (0.90→0.80), boosted satiation values (Fish 0.50, Bread 0.70, Meat 0.90), sped up primary food buildings (Fisherman 14s, Orchard 16s, Farm 20s), lowered warning thresholds (hungry 0.35, starving 0.15), softened penalties. Net effect: 4x reduction in food consumption, food producers take 33 min to starve. Created `docs/food-system.md` guide. 753 tests passing. — 2026-03-23
 
 ### Mobile UI Overhaul [COMPLETE]
 - [DONE] Phase 1: BottomSheetController — Created `src/ui/BottomSheetController.ts` with gesture-driven snap points (peek/expanded), velocity-based fling, swipe-to-dismiss. Uses `transform: translateY()` for GPU-composited animations. Wired to InfoPanel as first consumer. Added drag handle elements to all panels. Changed mobile panel show/hide from `display: none` to transform-based transitions. — 2026-03-23

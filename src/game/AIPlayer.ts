@@ -22,6 +22,13 @@ import {
 import { autoConnectBuilding } from './AutoRoad';
 import type { RoadNetwork } from './RoadNetwork';
 import type { PopulationManager } from './PopulationManager';
+import type { MarketplaceManager } from './MarketplaceManager';
+import {
+  AI_TRADE_CHECK_INTERVAL,
+  AI_TRADE_SURPLUS_THRESHOLD,
+  AI_TRADE_SHORTAGE_THRESHOLD,
+  AI_TRADE_PRICE_SENSITIVITY,
+} from './data/balanceConstants';
 
 /** Callback to render a newly placed building. */
 export type BuildingPlacedCallback = (building: Building, grid: HexGrid) => void;
@@ -74,6 +81,12 @@ export class AIPlayer {
   /** Set to true when the AI is under attack; halves attack cooldown for one cycle. */
   private underThreat = false;
 
+  /** Marketplace manager reference (set after construction) */
+  private marketplaceManager: MarketplaceManager | null = null;
+
+  /** Timer for AI trade evaluations */
+  private tradeCooldown = AI_TRADE_CHECK_INTERVAL;
+
   constructor(
     playerId: number,
     difficulty: Difficulty,
@@ -108,6 +121,11 @@ export class AIPlayer {
     this.attackCooldown = this.attackInterval * 0.6; // first attack slightly before the full interval
   }
 
+  /** Set the marketplace manager for AI trading. */
+  setMarketplaceManager(mp: MarketplaceManager): void {
+    this.marketplaceManager = mp;
+  }
+
   update(deltaTime: number): void {
     this.decisionCooldown -= deltaTime;
     this.attackCooldown -= deltaTime;
@@ -135,6 +153,15 @@ export class AIPlayer {
       // Reset threat flag after one attack cycle
       this.underThreat = false;
       this.tryAttack();
+    }
+
+    // Trade evaluation
+    if (this.marketplaceManager) {
+      this.tradeCooldown -= deltaTime;
+      if (this.tradeCooldown <= 0) {
+        this.tradeCooldown = AI_TRADE_CHECK_INTERVAL;
+        this.tryTrade();
+      }
     }
   }
 
@@ -312,6 +339,63 @@ export class AIPlayer {
       if ((resources[cost.resource] ?? 0) < cost.amount) return false;
     }
     return true;
+  }
+
+  /**
+   * AI trading: sell surplus resources for ones in shortage.
+   * Trades via castle (always available) or market (if built).
+   */
+  private tryTrade(): void {
+    const mp = this.marketplaceManager;
+    if (!mp) return;
+
+    const stocks = this.getStoredResources();
+    const entries = Object.entries(stocks) as [ResourceType, number][];
+    if (entries.length < 2) return;
+
+    // Find the resource with the largest surplus
+    let surplusRes: ResourceType | null = null;
+    let surplusAmount = 0;
+    for (const [res, amount] of entries) {
+      if (amount > AI_TRADE_SURPLUS_THRESHOLD * 10 && amount > surplusAmount) {
+        // Check price sensitivity — don't sell if the price is already crashed
+        const mul = mp.getPriceMultiplier(this.playerId, res);
+        if (mul >= 1 / AI_TRADE_PRICE_SENSITIVITY) {
+          surplusRes = res;
+          surplusAmount = amount;
+        }
+      }
+    }
+
+    if (!surplusRes) return;
+
+    // Find the resource with the most critical shortage
+    // Prefer food, then construction materials, then tools
+    let shortageRes: ResourceType | null = null;
+    let lowestStock = Infinity;
+    for (const [res, amount] of entries) {
+      if (res === surplusRes) continue;
+      if (amount < AI_TRADE_SHORTAGE_THRESHOLD * 10 && amount < lowestStock) {
+        const mul = mp.getPriceMultiplier(this.playerId, res);
+        if (mul <= AI_TRADE_PRICE_SENSITIVITY) {
+          shortageRes = res;
+          lowestStock = amount;
+        }
+      }
+    }
+
+    if (!shortageRes) return;
+
+    // Determine venue: market if available, otherwise castle
+    const hasMarket = this.gameState.getBuildingsByPlayer(this.playerId)
+      .some(b => b.type === BuildingType.Market && b.state === BuildingState.Active && b.hasWorker);
+    const venue = hasMarket ? 'market' : 'castle';
+
+    // Trade a modest amount (don't go all-in)
+    const tradeAmount = Math.min(5, Math.floor(surplusAmount * 0.3));
+    if (tradeAmount <= 0) return;
+
+    mp.executeTrade(this.playerId, surplusRes, tradeAmount, shortageRes, venue);
   }
 
   /** Sum outputInventory across Castle and Warehouses for this player. */

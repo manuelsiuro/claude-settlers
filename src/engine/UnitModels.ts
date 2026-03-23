@@ -39,6 +39,7 @@ export const UNIT_MODEL_MAP: Record<UnitType, UnitModelName> = {
   [UnitType.Stablehand]: 'stablehand',
   [UnitType.Rancher]: 'rancher',
   [UnitType.Shepherd]: 'shepherd',
+  [UnitType.Merchant]: 'merchant',
   // Military
   [UnitType.Knight]: 'knight',
   [UnitType.Archer]: 'archer',

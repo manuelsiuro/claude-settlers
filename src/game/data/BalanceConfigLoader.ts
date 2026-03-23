@@ -4,7 +4,7 @@ import type { BalanceConfigOverrides } from './balanceConstants';
 const VALID_SECTIONS = new Set([
   'woodcutter', 'forester', 'geologist', 'trees', 'combat', 'upgrades',
   'victory', 'population', 'hunger', 'night', 'morale', 'animals',
-  'startingResources',
+  'marketplace', 'startingResources',
 ]);
 
 /** Validate a balance config JSON object. Returns an array of error strings. */
@@ -21,6 +21,39 @@ export function validateBalanceConfig(config: unknown): string[] {
     if (key.startsWith('_') || key === 'generatedAt') continue;
     if (!VALID_SECTIONS.has(key)) {
       errors.push(`Unknown section: "${key}"`);
+      continue;
+    }
+    if (key === 'marketplace') {
+      const mp = obj[key];
+      if (typeof mp !== 'object' || mp === null || Array.isArray(mp)) {
+        errors.push('marketplace must be a non-null object');
+        continue;
+      }
+      for (const [field, value] of Object.entries(mp as Record<string, unknown>)) {
+        if (field === 'baseValues') {
+          if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+            errors.push('marketplace.baseValues must be a non-null object');
+            continue;
+          }
+          for (const [res, val] of Object.entries(value as Record<string, unknown>)) {
+            if (typeof val !== 'number') {
+              errors.push(`marketplace.baseValues.${res} must be a number`);
+            } else if (val < 0) {
+              errors.push(`marketplace.baseValues.${res} must be >= 0`);
+            }
+          }
+        } else if (field === 'castleTradeEnabled') {
+          if (typeof value !== 'boolean') {
+            errors.push('marketplace.castleTradeEnabled must be a boolean');
+          }
+        } else {
+          if (typeof value !== 'number') {
+            errors.push(`marketplace.${field} must be a number, got ${typeof value}`);
+          } else if (value < 0) {
+            errors.push(`marketplace.${field} must be >= 0`);
+          }
+        }
+      }
       continue;
     }
     if (key === 'startingResources') {

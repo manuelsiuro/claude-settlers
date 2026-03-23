@@ -44,6 +44,7 @@ export const UnitType = {
   Stablehand: 'stablehand',
   Rancher: 'rancher',
   Shepherd: 'shepherd',
+  Merchant: 'merchant',
 
   // Military
   Knight: 'knight',
@@ -310,6 +311,13 @@ export const UNIT_DEFINITIONS: Record<UnitType, UnitDefinition> = {
     requiredTool: null,
     moveSpeed: 1.0,
   },
+  [UnitType.Merchant]: {
+    type: UnitType.Merchant,
+    label: 'Merchant',
+    category: 'civilian',
+    requiredTool: null,
+    moveSpeed: 1.0,
+  },
 
   // Military
   [UnitType.Knight]: {
@@ -437,6 +445,7 @@ export const WORKER_TO_UNIT_TYPE: Record<string, UnitType> = {
   'Stablehand': UnitType.Stablehand,
   'Rancher': UnitType.Rancher,
   'Shepherd': UnitType.Shepherd,
+  'Merchant': UnitType.Merchant,
 };
 
 /** Get the UnitType needed to work at a building, or null if no worker needed */

@@ -23,6 +23,7 @@ import { HarborManager } from './HarborManager';
 import { PopulationManager } from './PopulationManager';
 import { FeedingManager } from './FeedingManager';
 import { MoraleManager } from './MoraleManager';
+import { MarketplaceManager } from './MarketplaceManager';
 import { AIPlayer } from './AIPlayer';
 import { BuildingType } from './BuildingType';
 import {
@@ -93,6 +94,7 @@ function createManagers(gameState: GameState, roadNetwork: RoadNetwork, territor
     harborManager: new HarborManager(gameState, roadNetwork, gameState.getGrid()),
     feedingManager: new FeedingManager(gameState),
     moraleManager: new MoraleManager(gameState),
+    marketplaceManager: new MarketplaceManager(gameState),
     animalLifecycleManager: { _getState: () => ({ feedCooldown: 10 }), _loadState: () => {} },
   };
 }

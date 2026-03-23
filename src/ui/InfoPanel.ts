@@ -32,6 +32,11 @@ import {
   HUNGER_PRODUCTION_PENALTY_STARVING,
 } from '../game/data/balanceConstants';
 import { BottomSheetController } from './BottomSheetController';
+import {
+  initTradePanel, canTrade, getTradeStructureKey,
+  generateTradeHTML, updateTradeValues, handleTradeClick,
+  handleTradeChange, resetTradeState,
+} from './TradePanel';
 
 let infoPanel: HTMLElement;
 let infoPanelTitle: HTMLElement;
@@ -79,6 +84,7 @@ export function initInfoPanel(
   getGame = getGameFn;
   closeBuildPanelFn = closeBuildPanel;
   closeStatsPanelFn = closeStatsPanel;
+  initTradePanel(getGameFn);
 
   infoPanel = document.getElementById('info-panel')!;
   infoPanelTitle = document.getElementById('info-panel-title')!;
@@ -209,6 +215,20 @@ export function initInfoPanel(
       }
     }
 
+    // Trade panel click events
+    const selectedBuilding = getSelectedBuilding();
+    if (selectedBuilding && canTrade(selectedBuilding)) {
+      if (handleTradeClick(e.target as HTMLElement, selectedBuilding)) {
+        updater.reset();
+        updater.update(
+          getInfoStructureKey(selectedBuilding),
+          () => generateInfoHTML(selectedBuilding),
+          () => updateInfoValues(selectedBuilding),
+        );
+        return;
+      }
+    }
+
     // Tool queue +/- buttons
     const toolqBtn = (e.target as HTMLElement).closest('.toolq-btn') as HTMLElement | null;
     if (toolqBtn?.dataset.tool && toolqBtn?.dataset.delta) {
@@ -219,6 +239,21 @@ export function initInfoPanel(
         getGame().getToolProductionManager().adjustQueue(selectedBuilding.id, toolType, delta);
         // Force structure rebuild to update counts
         updater.reset();
+      }
+    }
+  });
+
+  // Change event for trade resource selectors
+  infoPanelContent.addEventListener('change', (e) => {
+    if (handleTradeChange(e.target as HTMLElement)) {
+      const sel = getSelectedBuilding();
+      if (sel) {
+        updater.reset();
+        updater.update(
+          getInfoStructureKey(sel),
+          () => generateInfoHTML(sel),
+          () => updateInfoValues(sel),
+        );
       }
     }
   });
@@ -349,6 +384,11 @@ function getInfoStructureKey(building: Building): string {
       .filter(r => (r.flagA === bFlag.id || r.flagB === bFlag.id) && !r.virtual)
       .map(r => `${r.id}:${r.quality}`).join(',');
     if (roadQs) parts.push('rq:' + roadQs);
+  }
+
+  // Trade state fingerprint
+  if (canTrade(building)) {
+    parts.push(getTradeStructureKey(building));
   }
 
   return parts.join('|');
@@ -899,6 +939,11 @@ function generateInfoHTML(building: Building): string {
     }
   }
 
+  // Trade section (Market and Castle buildings)
+  if (canTrade(building) && building.playerId === getGame().getHumanPlayerId()) {
+    html += generateTradeHTML(building);
+  }
+
   // Demolish button (non-Castle, human player only)
   if (building.type !== BuildingType.Castle && building.playerId === getGame().getHumanPlayerId()) {
     html += `<div class="info-section">
@@ -1100,6 +1145,11 @@ function updateInfoValues(building: Building): void {
       }
     }
   }
+
+  // Trade value updates
+  if (canTrade(building) && building.playerId === getGame().getHumanPlayerId()) {
+    updateTradeValues(building, updater);
+  }
 }
 
 /** Show the info panel for a building and start live updates */
@@ -1150,6 +1200,7 @@ export function closeInfoPanel(): void {
     infoPanel.classList.add('hidden');
     stopInfoPanelUpdates();
     updater.reset();
+    resetTradeState();
     if (!isAttackModeActive()) {
       const selection = getGame().getSelectionController();
       if (selection?.selected) {

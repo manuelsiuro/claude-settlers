@@ -123,7 +123,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     production: {
       inputs: [],
       outputs: [{ resource: ResourceType.Fish, amount: 1 }],
-      productionTime: 18,
+      productionTime: 14,
     },
     allowedTerrain: [TerrainType.Grassland],
     adjacentTerrain: TerrainType.Water,
@@ -203,7 +203,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     production: {
       inputs: [],
       outputs: [{ resource: ResourceType.Grain, amount: 1 }],
-      productionTime: 25,
+      productionTime: 20,
     },
     allowedTerrain: [TerrainType.Grassland],
     adjacentTerrain: null,
@@ -854,7 +854,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     production: {
       inputs: [],
       outputs: [{ resource: ResourceType.Fruit, amount: 1 }],
-      productionTime: 22,
+      productionTime: 16,
     },
     allowedTerrain: [TerrainType.Grassland],
     adjacentTerrain: null,
@@ -1450,7 +1450,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
   ['market']: {
     type: 'market',
     label: 'Market',
-    description: 'Automatically redistributes food to nearby buildings',
+    description: 'Barter trading post. Exchange resources with NPC merchants',
     category: 'logistics',
     tier: 2,
     cost: [
@@ -1458,7 +1458,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
       { resource: ResourceType.Stone, amount: 2 },
       { resource: ResourceType.Planks, amount: 2 },
     ],
-    worker: '',
+    worker: 'Merchant',
     workerTool: '',
     production: null,
     allowedTerrain: [TerrainType.Grassland],
@@ -1467,7 +1467,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     knightSlots: 0,
     influenceRadius: 0,
     visionRadius: 0,
-    storageCapacity: 12,
+    storageCapacity: 20,
     constructionTime: 30,
     workRadius: 0,
     populationCapacity: 0,

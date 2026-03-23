@@ -113,6 +113,7 @@ const UNIT_MODELS = [
   'stablehand',
   'rancher',
   'shepherd',
+  'merchant',
   'archer',
   'cavalry',
   'siege_operator',

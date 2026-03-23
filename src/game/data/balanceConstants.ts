@@ -94,24 +94,26 @@ export function getPopulationSeverity(ratio: number): 'critical' | 'warning' | '
 
 // ─── Hunger / Feeding ──────────────────────────────────────────────────────
 
-/** Base satiation decay rate per second (full → starving in ~500s) */
-export let HUNGER_DECAY_RATE = 0.002;
-/** Decay multiplier when unit is working */
-export let HUNGER_WORKING_MULTIPLIER = 1.2;
+/** Base satiation decay rate per second (full → starving in ~1000s) */
+export let HUNGER_DECAY_RATE = 0.001;
+/** Decay multiplier when unit is working (1.0 = no extra penalty) */
+export let HUNGER_WORKING_MULTIPLIER = 1.0;
 /** Decay multiplier for garrisoned knights */
 export let HUNGER_GARRISONED_MULTIPLIER = 0.5;
+/** Decay multiplier for workers in food-producing buildings */
+export let HUNGER_FOOD_PRODUCER_MULTIPLIER = 0.5;
 /** Satiation threshold: below this = hungry penalties */
-export let HUNGER_HUNGRY_THRESHOLD = 0.50;
+export let HUNGER_HUNGRY_THRESHOLD = 0.35;
 /** Satiation threshold: below this = starving penalties */
-export let HUNGER_STARVING_THRESHOLD = 0.25;
+export let HUNGER_STARVING_THRESHOLD = 0.15;
 /** Speed penalty when hungry */
-export let HUNGER_SPEED_PENALTY_HUNGRY = 0.20;
+export let HUNGER_SPEED_PENALTY_HUNGRY = 0.10;
 /** Speed penalty when starving */
-export let HUNGER_SPEED_PENALTY_STARVING = 0.40;
+export let HUNGER_SPEED_PENALTY_STARVING = 0.25;
 /** Production penalty when hungry */
-export let HUNGER_PRODUCTION_PENALTY_HUNGRY = 0.15;
+export let HUNGER_PRODUCTION_PENALTY_HUNGRY = 0.05;
 /** Production penalty when starving */
-export let HUNGER_PRODUCTION_PENALTY_STARVING = 0.30;
+export let HUNGER_PRODUCTION_PENALTY_STARVING = 0.15;
 
 /** Get the display color for a satiation value, aligned with penalty thresholds */
 export function getSatiationColor(satiation: number): string {
@@ -244,6 +246,88 @@ export const ANIMAL_SPECS: Partial<Record<string, AnimalSpec>> = {
   },
 };
 
+// ─── Marketplace ─────────────────────────────────────────────────────────
+
+/** Base trade values — dimensionless relative worth of each resource */
+export let MARKETPLACE_BASE_VALUES: Record<string, number> = {
+  // Raw materials (1–6)
+  wood: 2, stone: 3, grain: 2, fish: 3,
+  iron_ore: 4, coal_ore: 3, gold_ore: 6,
+  grapes: 3, fruit: 2, water_barrel: 1,
+  milk: 3, hay: 1, wool: 3, raw_leather: 3,
+  // Processed goods (4–20)
+  planks: 4, flour: 4, bread: 7, meat: 8,
+  iron_bars: 8, gold_bars: 15, swords: 12, shields: 12,
+  wine: 8, beer: 6, cheese: 7, cloth: 6,
+  worked_leather: 7, arrows: 5, bow: 10, siege_ram: 20,
+  // Tools (6)
+  axe: 6, pickaxe: 6, saw: 6, scythe: 6,
+  fishing_rod: 6, hammer_tool: 6, shovel: 6,
+  rolling_pin: 6, cleaver: 6, crucible: 6, tongs: 6,
+  // Animals (8–12)
+  pigs: 8, cattle: 10, horses: 12,
+};
+
+/** Fee applied to Market trades (fraction of value lost) */
+export let MARKETPLACE_FEE = 0.10;
+/** Seconds between trades at the Market */
+export let MARKETPLACE_TRADE_COOLDOWN = 3.0;
+/** Max items per single trade at Market */
+export let MARKETPLACE_MAX_TRADE_SIZE = 10;
+/** Seconds between NPC stock refreshes */
+export let MARKETPLACE_RESTOCK_INTERVAL = 60;
+/** Min items NPC has per offered resource */
+export let MARKETPLACE_NPC_STOCK_MIN = 3;
+/** Max items NPC has per offered resource */
+export let MARKETPLACE_NPC_STOCK_MAX = 8;
+/** Number of resource types the NPC offers per restock */
+export let MARKETPLACE_OFFERED_RESOURCE_COUNT = 12;
+/** Extra offer probability for resources the player is short of */
+export let MARKETPLACE_SCARCITY_BONUS = 0.50;
+
+/** Dynamic pricing: multiplier increase per unit bought */
+export let MARKETPLACE_PRICE_SHIFT_BUY = 0.05;
+/** Dynamic pricing: multiplier decrease per unit sold */
+export let MARKETPLACE_PRICE_SHIFT_SELL = 0.03;
+/** Dynamic pricing: decay speed toward 1.0 per second */
+export let MARKETPLACE_PRICE_DECAY_RATE = 0.002;
+/** Dynamic pricing: minimum multiplier floor */
+export let MARKETPLACE_PRICE_MIN = 0.5;
+/** Dynamic pricing: maximum multiplier ceiling */
+export let MARKETPLACE_PRICE_MAX = 2.0;
+
+/** Castle trade fee (higher than Market) */
+export let CASTLE_TRADE_FEE = 0.25;
+/** Seconds between trades at the Castle */
+export let CASTLE_TRADE_COOLDOWN = 10.0;
+/** Max items per single trade at Castle */
+export let CASTLE_TRADE_MAX_SIZE = 5;
+/** Whether Castle trading is enabled */
+export let CASTLE_TRADE_ENABLED = true;
+
+/** Seconds between traveling merchant visits */
+export let MERCHANT_VISIT_INTERVAL = 300;
+/** How long the merchant stays (seconds) */
+export let MERCHANT_VISIT_DURATION = 60;
+/** Number of special deals per merchant visit */
+export let MERCHANT_DEAL_COUNT = 3;
+/** Discount on merchant deals (fraction, 0.20 = 20% better) */
+export let MERCHANT_DISCOUNT = 0.20;
+
+/** Seconds between auto-trade rule evaluations */
+export let AUTOTRADE_CHECK_INTERVAL = 15.0;
+/** Maximum number of active auto-trade rules */
+export let AUTOTRADE_MAX_RULES = 8;
+
+/** Seconds between AI trade evaluations */
+export let AI_TRADE_CHECK_INTERVAL = 30;
+/** AI trades surplus when stock > consumption rate × this */
+export let AI_TRADE_SURPLUS_THRESHOLD = 1.5;
+/** AI buys when stock < consumption rate × this */
+export let AI_TRADE_SHORTAGE_THRESHOLD = 0.5;
+/** AI won't trade if price multiplier exceeds this */
+export let AI_TRADE_PRICE_SENSITIVITY = 1.3;
+
 // ─── Balance Override System ──────────────────────────────────────────────
 
 export interface BalanceConfigOverrides {
@@ -261,6 +345,7 @@ export interface BalanceConfigOverrides {
   };
   hunger?: {
     decayRate?: number; workingMultiplier?: number; garrisonedMultiplier?: number;
+    foodProducerMultiplier?: number;
     hungryThreshold?: number; starvingThreshold?: number;
     speedPenaltyHungry?: number; speedPenaltyStarving?: number;
     productionPenaltyHungry?: number; productionPenaltyStarving?: number;
@@ -279,6 +364,21 @@ export interface BalanceConfigOverrides {
     multiplierBase?: number; multiplierScale?: number;
   };
   animals?: { feedInterval?: number };
+  marketplace?: {
+    fee?: number; tradeCooldown?: number; maxTradeSize?: number;
+    priceShiftBuy?: number; priceShiftSell?: number;
+    priceDecayRate?: number; priceMin?: number; priceMax?: number;
+    restockInterval?: number; npcStockMin?: number; npcStockMax?: number;
+    offeredResourceCount?: number; scarcityBonus?: number;
+    castleTradeFee?: number; castleTradeCooldown?: number;
+    castleTradeMaxSize?: number; castleTradeEnabled?: boolean;
+    merchantVisitInterval?: number; merchantVisitDuration?: number;
+    merchantDealCount?: number; merchantDiscount?: number;
+    autoTradeCheckInterval?: number; autoTradeMaxRules?: number;
+    aiTradeCheckInterval?: number; aiTradeSurplusThreshold?: number;
+    aiTradeShortageThreshold?: number; aiTradePriceSensitivity?: number;
+    baseValues?: Partial<Record<string, number>>;
+  };
   startingResources?: Partial<Record<Difficulty, { resource: string; amount: number }[]>>;
 }
 
@@ -319,6 +419,7 @@ export function applyBalanceOverrides(config: BalanceConfigOverrides): void {
   if (config.hunger?.decayRate !== undefined) HUNGER_DECAY_RATE = config.hunger.decayRate;
   if (config.hunger?.workingMultiplier !== undefined) HUNGER_WORKING_MULTIPLIER = config.hunger.workingMultiplier;
   if (config.hunger?.garrisonedMultiplier !== undefined) HUNGER_GARRISONED_MULTIPLIER = config.hunger.garrisonedMultiplier;
+  if (config.hunger?.foodProducerMultiplier !== undefined) HUNGER_FOOD_PRODUCER_MULTIPLIER = config.hunger.foodProducerMultiplier;
   if (config.hunger?.hungryThreshold !== undefined) HUNGER_HUNGRY_THRESHOLD = config.hunger.hungryThreshold;
   if (config.hunger?.starvingThreshold !== undefined) HUNGER_STARVING_THRESHOLD = config.hunger.starvingThreshold;
   if (config.hunger?.speedPenaltyHungry !== undefined) HUNGER_SPEED_PENALTY_HUNGRY = config.hunger.speedPenaltyHungry;
@@ -346,6 +447,39 @@ export function applyBalanceOverrides(config: BalanceConfigOverrides): void {
   if (config.morale?.multiplierScale !== undefined) MORALE_MULTIPLIER_SCALE = config.morale.multiplierScale;
   // Animals
   if (config.animals?.feedInterval !== undefined) ANIMAL_FEED_INTERVAL = config.animals.feedInterval;
+  // Marketplace
+  if (config.marketplace?.fee !== undefined) MARKETPLACE_FEE = config.marketplace.fee;
+  if (config.marketplace?.tradeCooldown !== undefined) MARKETPLACE_TRADE_COOLDOWN = config.marketplace.tradeCooldown;
+  if (config.marketplace?.maxTradeSize !== undefined) MARKETPLACE_MAX_TRADE_SIZE = config.marketplace.maxTradeSize;
+  if (config.marketplace?.priceShiftBuy !== undefined) MARKETPLACE_PRICE_SHIFT_BUY = config.marketplace.priceShiftBuy;
+  if (config.marketplace?.priceShiftSell !== undefined) MARKETPLACE_PRICE_SHIFT_SELL = config.marketplace.priceShiftSell;
+  if (config.marketplace?.priceDecayRate !== undefined) MARKETPLACE_PRICE_DECAY_RATE = config.marketplace.priceDecayRate;
+  if (config.marketplace?.priceMin !== undefined) MARKETPLACE_PRICE_MIN = config.marketplace.priceMin;
+  if (config.marketplace?.priceMax !== undefined) MARKETPLACE_PRICE_MAX = config.marketplace.priceMax;
+  if (config.marketplace?.restockInterval !== undefined) MARKETPLACE_RESTOCK_INTERVAL = config.marketplace.restockInterval;
+  if (config.marketplace?.npcStockMin !== undefined) MARKETPLACE_NPC_STOCK_MIN = config.marketplace.npcStockMin;
+  if (config.marketplace?.npcStockMax !== undefined) MARKETPLACE_NPC_STOCK_MAX = config.marketplace.npcStockMax;
+  if (config.marketplace?.offeredResourceCount !== undefined) MARKETPLACE_OFFERED_RESOURCE_COUNT = config.marketplace.offeredResourceCount;
+  if (config.marketplace?.scarcityBonus !== undefined) MARKETPLACE_SCARCITY_BONUS = config.marketplace.scarcityBonus;
+  if (config.marketplace?.castleTradeFee !== undefined) CASTLE_TRADE_FEE = config.marketplace.castleTradeFee;
+  if (config.marketplace?.castleTradeCooldown !== undefined) CASTLE_TRADE_COOLDOWN = config.marketplace.castleTradeCooldown;
+  if (config.marketplace?.castleTradeMaxSize !== undefined) CASTLE_TRADE_MAX_SIZE = config.marketplace.castleTradeMaxSize;
+  if (config.marketplace?.castleTradeEnabled !== undefined) CASTLE_TRADE_ENABLED = config.marketplace.castleTradeEnabled;
+  if (config.marketplace?.merchantVisitInterval !== undefined) MERCHANT_VISIT_INTERVAL = config.marketplace.merchantVisitInterval;
+  if (config.marketplace?.merchantVisitDuration !== undefined) MERCHANT_VISIT_DURATION = config.marketplace.merchantVisitDuration;
+  if (config.marketplace?.merchantDealCount !== undefined) MERCHANT_DEAL_COUNT = config.marketplace.merchantDealCount;
+  if (config.marketplace?.merchantDiscount !== undefined) MERCHANT_DISCOUNT = config.marketplace.merchantDiscount;
+  if (config.marketplace?.autoTradeCheckInterval !== undefined) AUTOTRADE_CHECK_INTERVAL = config.marketplace.autoTradeCheckInterval;
+  if (config.marketplace?.autoTradeMaxRules !== undefined) AUTOTRADE_MAX_RULES = config.marketplace.autoTradeMaxRules;
+  if (config.marketplace?.aiTradeCheckInterval !== undefined) AI_TRADE_CHECK_INTERVAL = config.marketplace.aiTradeCheckInterval;
+  if (config.marketplace?.aiTradeSurplusThreshold !== undefined) AI_TRADE_SURPLUS_THRESHOLD = config.marketplace.aiTradeSurplusThreshold;
+  if (config.marketplace?.aiTradeShortageThreshold !== undefined) AI_TRADE_SHORTAGE_THRESHOLD = config.marketplace.aiTradeShortageThreshold;
+  if (config.marketplace?.aiTradePriceSensitivity !== undefined) AI_TRADE_PRICE_SENSITIVITY = config.marketplace.aiTradePriceSensitivity;
+  if (config.marketplace?.baseValues) {
+    for (const [res, val] of Object.entries(config.marketplace.baseValues)) {
+      if (val !== undefined) MARKETPLACE_BASE_VALUES[res] = val;
+    }
+  }
   // Starting Resources
   if (config.startingResources) {
     for (const [diff, items] of Object.entries(config.startingResources)) {
@@ -384,15 +518,16 @@ export function resetBalanceDefaults(): void {
   LARGE_HOUSE_CAPACITY = 25;
   POPULATION_WARNING_THRESHOLD = 0.9;
   POPULATION_CAUTION_THRESHOLD = 0.75;
-  HUNGER_DECAY_RATE = 0.002;
-  HUNGER_WORKING_MULTIPLIER = 1.2;
+  HUNGER_DECAY_RATE = 0.001;
+  HUNGER_WORKING_MULTIPLIER = 1.0;
   HUNGER_GARRISONED_MULTIPLIER = 0.5;
-  HUNGER_HUNGRY_THRESHOLD = 0.50;
-  HUNGER_STARVING_THRESHOLD = 0.25;
-  HUNGER_SPEED_PENALTY_HUNGRY = 0.20;
-  HUNGER_SPEED_PENALTY_STARVING = 0.40;
-  HUNGER_PRODUCTION_PENALTY_HUNGRY = 0.15;
-  HUNGER_PRODUCTION_PENALTY_STARVING = 0.30;
+  HUNGER_FOOD_PRODUCER_MULTIPLIER = 0.5;
+  HUNGER_HUNGRY_THRESHOLD = 0.35;
+  HUNGER_STARVING_THRESHOLD = 0.15;
+  HUNGER_SPEED_PENALTY_HUNGRY = 0.10;
+  HUNGER_SPEED_PENALTY_STARVING = 0.25;
+  HUNGER_PRODUCTION_PENALTY_HUNGRY = 0.05;
+  HUNGER_PRODUCTION_PENALTY_STARVING = 0.15;
   NIGHT_PRODUCTION_SLOWDOWN = 0.25;
   NIGHT_SPEED_PENALTY_CIVILIAN = 0.40;
   NIGHT_SPEED_PENALTY_TRANSPORTER = 0.35;
@@ -411,6 +546,48 @@ export function resetBalanceDefaults(): void {
   MORALE_MULTIPLIER_BASE = 0.85;
   MORALE_MULTIPLIER_SCALE = 0.8;
   ANIMAL_FEED_INTERVAL = 10.0;
+  // Marketplace
+  MARKETPLACE_BASE_VALUES = {
+    wood: 2, stone: 3, grain: 2, fish: 3,
+    iron_ore: 4, coal_ore: 3, gold_ore: 6,
+    grapes: 3, fruit: 2, water_barrel: 1,
+    milk: 3, hay: 1, wool: 3, raw_leather: 3,
+    planks: 4, flour: 4, bread: 7, meat: 8,
+    iron_bars: 8, gold_bars: 15, swords: 12, shields: 12,
+    wine: 8, beer: 6, cheese: 7, cloth: 6,
+    worked_leather: 7, arrows: 5, bow: 10, siege_ram: 20,
+    axe: 6, pickaxe: 6, saw: 6, scythe: 6,
+    fishing_rod: 6, hammer_tool: 6, shovel: 6,
+    rolling_pin: 6, cleaver: 6, crucible: 6, tongs: 6,
+    pigs: 8, cattle: 10, horses: 12,
+  };
+  MARKETPLACE_FEE = 0.10;
+  MARKETPLACE_TRADE_COOLDOWN = 3.0;
+  MARKETPLACE_MAX_TRADE_SIZE = 10;
+  MARKETPLACE_RESTOCK_INTERVAL = 60;
+  MARKETPLACE_NPC_STOCK_MIN = 3;
+  MARKETPLACE_NPC_STOCK_MAX = 8;
+  MARKETPLACE_OFFERED_RESOURCE_COUNT = 12;
+  MARKETPLACE_SCARCITY_BONUS = 0.50;
+  MARKETPLACE_PRICE_SHIFT_BUY = 0.05;
+  MARKETPLACE_PRICE_SHIFT_SELL = 0.03;
+  MARKETPLACE_PRICE_DECAY_RATE = 0.002;
+  MARKETPLACE_PRICE_MIN = 0.5;
+  MARKETPLACE_PRICE_MAX = 2.0;
+  CASTLE_TRADE_FEE = 0.25;
+  CASTLE_TRADE_COOLDOWN = 10.0;
+  CASTLE_TRADE_MAX_SIZE = 5;
+  CASTLE_TRADE_ENABLED = true;
+  MERCHANT_VISIT_INTERVAL = 300;
+  MERCHANT_VISIT_DURATION = 60;
+  MERCHANT_DEAL_COUNT = 3;
+  MERCHANT_DISCOUNT = 0.20;
+  AUTOTRADE_CHECK_INTERVAL = 15.0;
+  AUTOTRADE_MAX_RULES = 8;
+  AI_TRADE_CHECK_INTERVAL = 30;
+  AI_TRADE_SURPLUS_THRESHOLD = 1.5;
+  AI_TRADE_SHORTAGE_THRESHOLD = 0.5;
+  AI_TRADE_PRICE_SENSITIVITY = 1.3;
   // Starting Resources
   CASTLE_STARTING_RESOURCES_BY_DIFFICULTY.easy = buildResourceList(STARTING_AMOUNTS.easy);
   CASTLE_STARTING_RESOURCES_BY_DIFFICULTY.normal = buildResourceList(STARTING_AMOUNTS.normal);
