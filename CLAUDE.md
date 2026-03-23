@@ -76,13 +76,13 @@ The mobile UI (≤768px) uses a distinct interaction model from desktop, gated b
 
 ## Skills Reference
 
-30 specialized skills in `.claude/skills/` provide focused guidance for common tasks. Skills auto-load based on context or can be invoked manually with `/<skill-name>`.
+31 specialized skills in `.claude/skills/` provide focused guidance for common tasks. Skills auto-load based on context or can be invoked manually with `/<skill-name>`.
 
 ### Three.js Reference Skills (10)
 
 General Three.js knowledge — `threejs-fundamentals`, `threejs-animation`, `threejs-geometry`, `threejs-interaction`, `threejs-lighting`, `threejs-loaders`, `threejs-materials`, `threejs-postprocessing`, `threejs-shaders`, `threejs-textures`.
 
-### Code Architecture & Refactoring Skills (10)
+### Code Architecture & Refactoring Skills (11)
 
 | Skill | Use When |
 |-------|----------|
@@ -93,6 +93,7 @@ General Three.js knowledge — `threejs-fundamentals`, `threejs-animation`, `thr
 | `dependency-injection` | Adding managers or improving testability with mock injection |
 | `extract-data-files` | Moving data out of BuildingType.ts (770 lines) or AI build orders |
 | `decouple-ui` | Adding UI features, testing UI, or reducing main.ts coupling |
+| `mobile-ui` | Adding or modifying mobile-facing UI (bottom sheets, toolbar, touch targets, panel transitions) |
 | `saveload-migration` | Adding fields to SaveData or changing serialized state shape |
 | `expand-test-coverage` | Writing tests for engine/ or ui/ layers (currently minimal/zero coverage) |
 | `profile-performance` | FPS drops, memory growth, or mobile optimization |
