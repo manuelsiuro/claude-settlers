@@ -111,7 +111,22 @@ Players manage their economy through building placement, production settings, an
     - Bottleneck detection: resources with negative net balance are flagged.
     - History snapshots (10 datapoints) for sparkline visualizations.
 
-### 3.7. World and Map
+### 3.7. Marketplace & Barter Trading
+
+A barter-based marketplace lets players exchange resources for other resources without currency.
+
+- **Two Trading Venues:**
+    - **Market Building:** A logistics building requiring a Merchant worker. 10% trade fee, 3s cooldown, up to 10 items per trade. Provides NPC stock, traveling merchants, and auto-trade rules.
+    - **Castle (Fallback):** Emergency trading at 25% fee, 10s cooldown, max 5 items. Available immediately without building a Market.
+- **Dynamic Pricing:** Each resource has a price multiplier (starts 1.0) that shifts based on supply/demand. Buying raises the price (+5%/unit), selling lowers it (-3%/unit). Prices decay back toward baseline at 0.002/s. Clamped between 50%–200%.
+- **NPC Virtual Stock:** The NPC merchant stocks ~12 resource types, biased toward resources the player needs. Restocks every 60 seconds. Buying depletes stock; selling doesn't affect it.
+- **Traveling Merchants:** Every 5 minutes, a traveling merchant arrives at the Market with 3 special deals (bulk buy, bulk sell, swaps, rare offers) at 20% better rates. Stays for 60 seconds.
+- **Auto-Trade Rules:** Players set up to 8 rules to automate trading (e.g., "buy Iron Bars when stock < 10, pay with Wood"). Rules run every 15 seconds.
+- **Base Trade Values:** Every resource has a relative value (Wood=2, Bread=7, Siege Ram=20) determining exchange ratios. All values are data-driven and overrideable.
+- **AI Trading:** AI players trade surplus for shortage every 30s with price sensitivity limits.
+- **See:** `docs/marketplace-guide.md` for the full system guide, `docs/marketplace.md` for the design document.
+
+### 3.8. World and Map
 
 - **Map Generation:** Maps can be pre-designed scenarios or generated randomly based on a numerical seed. Map sizes vary.
 - **Terrain Types:**

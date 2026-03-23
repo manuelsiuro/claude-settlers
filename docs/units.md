@@ -182,6 +182,18 @@ Each profession will be identified by the base serf model holding or wearing a d
     - **Item:** Carries a map scroll (small rolled-up beige cylinder).
 - **Color Accent:** Brown (hat).
 
+### 19. Merchant
+
+- **Function:** Operates the Market building, facilitating barter trades with NPC merchants.
+- **Base Model:** Standard serf body and head.
+- **Distinguishing Feature:**
+    - **Attire:** A rich burgundy or deep red apron (flat cuboid, `#8B2252`) suggesting a trader's tabard. Slightly wider than standard apron to suggest prosperity.
+    - **Hat:** A soft, rounded merchant's cap (flattened sphere, dark brown `#5C3A1E`) sitting at a slight angle on the head — taller than the Brewer's cap but rounder than the Geologist's brim.
+    - **Item:** Carries a small satchel or pouch (small brown cuboid `#7B5B3A`) at the hip, representing coins or trade goods.
+    - **Accessory (Optional):** A small balance scale (two tiny gold discs `#DAA520` on a thin grey rod) held in one hand or attached to the belt.
+- **Color Accent:** Burgundy (apron), Dark Brown (hat), Gold (scale).
+- **Note:** Currently uses a placeholder model (shepherd base). Replace with custom Blender model when available.
+
 ---
 
 ## Military Units

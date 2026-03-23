@@ -276,6 +276,18 @@ All buildings share these runtime visual behaviors (implemented in `BuildingAnim
 - **Relative Dimensions:** Pier is long and narrow; dock building is small.
 - **Key Colors:** Dark Brown (pier), Light Brown/Grey (building), Blue (boats).
 
+### 24. Market
+
+- **Function:** Barter trading post. Employs a Merchant to facilitate resource-for-resource exchanges with NPC traders. Provides dynamic pricing, NPC stock, traveling merchant deals, and auto-trade rules.
+- **Visual Description:**
+    - **Central Pavilion:** A medium-sized open structure with four wooden posts (brown cylinders) supporting a colorful patchwork roof (flat cuboid composed of red, blue, green, and yellow segments).
+    - **Stalls:** Two or three smaller open-sided cuboid stalls arranged around the pavilion, with tiny cuboids representing displayed goods (assorted colors).
+    - **Awnings:** Colorful canopy flaps (thin flat cuboids in warm colors: red `#C0392B`, gold `#DAA520`, blue `#2980B9`) extending from the stall tops.
+    - **Ground Detail:** A slightly raised platform (flat beige cuboid) serving as the marketplace floor.
+    - **Goods Display:** Small crates (brown cuboids) and barrels (brown cylinders) near stall fronts suggesting active commerce.
+- **Relative Dimensions:** Medium footprint (similar to Sawmill), low to medium height.
+- **Key Colors:** Brown (structure), Red/Gold/Blue (awnings), Beige (platform).
+
 ---
 
 ## Housing
