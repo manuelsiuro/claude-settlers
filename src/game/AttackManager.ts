@@ -8,6 +8,7 @@ import type { DuelAnimationManager } from './DuelAnimationManager';
 import type { Unit } from './Unit';
 import { UnitState, setUnitPath, clearUnitPath } from './Unit';
 import { UnitType, UNIT_DEFINITIONS } from './UnitType';
+import type { RoadNetwork } from './RoadNetwork';
 import { findPath } from './Pathfinding';
 
 /** All unit types that can be ordered to attack */
@@ -46,6 +47,7 @@ export class AttackManager {
   private territoryManager: TerritoryManager;
   private duelAnimationManager: DuelAnimationManager | null;
   private getWorldY: ((q: number, r: number) => number) | null;
+  private roadNetwork: RoadNetwork | null;
 
   /** Active attack orders */
   private attacks: AttackOrder[] = [];
@@ -65,12 +67,14 @@ export class AttackManager {
     territoryManager: TerritoryManager,
     duelAnimationManager?: DuelAnimationManager,
     getWorldY?: (q: number, r: number) => number,
+    roadNetwork?: RoadNetwork,
   ) {
     this.gameState = gameState;
     this.combatManager = combatManager;
     this.territoryManager = territoryManager;
     this.duelAnimationManager = duelAnimationManager ?? null;
     this.getWorldY = getWorldY ?? null;
+    this.roadNetwork = roadNetwork ?? null;
   }
 
   /** Serialization: get internal state for save */
@@ -271,7 +275,7 @@ export class AttackManager {
 
   /**
    * Capture a building: change ownership, recalculate territory,
-   * and handle civilian buildings in newly captured territory.
+   * and transfer all entities in newly captured territory.
    */
   private captureBuilding(building: Building, newPlayerId: number): void {
     const oldPlayerId = building.playerId;
@@ -288,24 +292,35 @@ export class AttackManager {
     this.territoryManager.markDirty();
     this.territoryManager.update();
 
-    // Capture or destroy civilian buildings now in new territory
-    this.handleCivilianBuildings(oldPlayerId, newPlayerId);
+    // Transfer all entities in newly captured territory
+    this.handleTerritoryTransfer(oldPlayerId, newPlayerId);
 
     this.onBuildingCaptured?.(building, newPlayerId, oldPlayerId);
     this.onTerritoryChanged?.();
   }
 
   /**
-   * After territory changes, civilian buildings of the old player
-   * that are now in the new player's territory change ownership.
-   * Buildings outside any territory are destroyed.
+   * After territory changes, transfer all entities of the old player
+   * that are now in the new player's territory: buildings, workers,
+   * flags, transporters, and loose units.
    */
-  private handleCivilianBuildings(oldPlayerId: number, newPlayerId: number): void {
+  private handleTerritoryTransfer(oldPlayerId: number, newPlayerId: number): void {
+    this.transferCivilianBuildings(oldPlayerId, newPlayerId);
+    this.transferFlags(oldPlayerId, newPlayerId);
+    this.transferTransporters(oldPlayerId, newPlayerId);
+    this.transferLooseUnits(oldPlayerId, newPlayerId);
+  }
+
+  /**
+   * Transfer civilian buildings in captured territory, along with
+   * their workers, extra workers, and garrisoned knights.
+   */
+  private transferCivilianBuildings(oldPlayerId: number, newPlayerId: number): void {
     const buildings = this.gameState.getAllBuildings();
 
     for (const building of buildings) {
       if (building.playerId !== oldPlayerId) continue;
-      if (building.state !== BuildingState.Active) continue;
+      if (building.state === BuildingState.Destroyed) continue;
 
       const def = BUILDING_DEFINITIONS[building.type];
 
@@ -314,12 +329,107 @@ export class AttackManager {
 
       // Check if this building is now in the new player's territory
       const owner = this.territoryManager.getOwner(building.coord.q, building.coord.r);
+      if (owner !== newPlayerId) continue;
 
-      if (owner === newPlayerId) {
-        // Transfer ownership
-        building.playerId = newPlayerId;
+      // Transfer building ownership
+      building.playerId = newPlayerId;
+
+      // Transfer primary worker
+      const worker = this.gameState.getWorkerForBuilding(building.id);
+      if (worker) {
+        worker.playerId = newPlayerId;
       }
-      // Buildings still in old player's territory stay as-is
+
+      // Transfer extra workers (from worker upgrades)
+      for (const extraId of (building.extraWorkerIds ?? [])) {
+        const extra = this.gameState.getUnit(extraId);
+        if (extra) {
+          extra.playerId = newPlayerId;
+        }
+      }
+
+      // Transfer garrisoned knights (e.g. Watchtowers with both workers and knights)
+      for (const knightId of building.knightIds) {
+        const knight = this.gameState.getUnit(knightId);
+        if (knight) {
+          knight.playerId = newPlayerId;
+        }
+      }
+    }
+  }
+
+  /**
+   * Transfer flags in captured territory to the new player.
+   * Goods at flags are left as-is — logistics will re-route naturally.
+   */
+  private transferFlags(oldPlayerId: number, newPlayerId: number): void {
+    if (!this.roadNetwork) return;
+
+    for (const flag of this.roadNetwork.getAllFlags()) {
+      if (flag.playerId !== oldPlayerId) continue;
+
+      const owner = this.territoryManager.getOwner(flag.coord.q, flag.coord.r);
+      if (owner !== newPlayerId) continue;
+
+      flag.playerId = newPlayerId;
+    }
+  }
+
+  /**
+   * Transfer transporters on roads where both flags now belong to the new player.
+   * Mixed-ownership roads (border roads) are left alone.
+   */
+  private transferTransporters(oldPlayerId: number, newPlayerId: number): void {
+    if (!this.roadNetwork) return;
+
+    for (const road of this.roadNetwork.getAllRoads()) {
+      if (!road.transporterId) continue;
+
+      const flagA = this.roadNetwork.getFlag(road.flagA);
+      const flagB = this.roadNetwork.getFlag(road.flagB);
+      if (!flagA || !flagB) continue;
+
+      // Only transfer when both flags belong to the new player
+      if (flagA.playerId !== newPlayerId || flagB.playerId !== newPlayerId) continue;
+
+      const transporter = this.gameState.getUnit(road.transporterId);
+      if (transporter && transporter.playerId === oldPlayerId) {
+        transporter.playerId = newPlayerId;
+      }
+    }
+  }
+
+  /**
+   * Transfer idle/unassigned civilian units in captured territory,
+   * and units assigned to already-captured buildings.
+   */
+  private transferLooseUnits(oldPlayerId: number, newPlayerId: number): void {
+    const units = this.gameState.getUnitsByPlayer(oldPlayerId);
+
+    for (const unit of units) {
+      // Skip military units (handled through building capture combat)
+      if (UNIT_DEFINITIONS[unit.type].category === 'military') continue;
+
+      // Skip units walking home (they're disengaging)
+      if (unit.state === UnitState.WalkingHome) continue;
+
+      // Check if unit is in captured territory
+      const owner = this.territoryManager.getOwner(unit.coord.q, unit.coord.r);
+      if (owner !== newPlayerId) continue;
+
+      // Transfer if idle with no assignment
+      if (unit.state === UnitState.Idle && !unit.assignedBuildingId) {
+        unit.playerId = newPlayerId;
+        continue;
+      }
+
+      // Transfer if assigned to a building that was already captured
+      if (unit.assignedBuildingId) {
+        const building = this.gameState.getBuilding(unit.assignedBuildingId);
+        if (building && building.playerId === newPlayerId) {
+          unit.playerId = newPlayerId;
+        }
+      }
     }
   }
 
@@ -341,6 +451,44 @@ export class AttackManager {
       knight.state = UnitState.WalkingHome;
     } else {
       knight.state = UnitState.Idle;
+    }
+  }
+
+  /**
+   * Check all players for buildings/units/flags in foreign territory
+   * and transfer them. Called after territory recalculation (not just combat).
+   * This handles passive territory expansion (e.g., building a Guard Hut
+   * near enemy buildings).
+   */
+  checkTerritoryTransfers(): void {
+    const buildings = this.gameState.getAllBuildings();
+    const playerIds = new Set<number>();
+    for (const b of buildings) playerIds.add(b.playerId);
+
+    let anyTransferred = false;
+
+    // For each pair of players, check if any entities need transfer
+    for (const oldPlayerId of playerIds) {
+      for (const newPlayerId of playerIds) {
+        if (oldPlayerId === newPlayerId) continue;
+
+        // Check if any civilian buildings of oldPlayer are in newPlayer's territory
+        const hasOverlap = buildings.some((b) => {
+          if (b.playerId !== oldPlayerId || b.state === BuildingState.Destroyed) return false;
+          const def = BUILDING_DEFINITIONS[b.type];
+          if (def.category === 'military' || def.category === 'core') return false;
+          return this.territoryManager.getOwner(b.coord.q, b.coord.r) === newPlayerId;
+        });
+
+        if (hasOverlap) {
+          this.handleTerritoryTransfer(oldPlayerId, newPlayerId);
+          anyTransferred = true;
+        }
+      }
+    }
+
+    if (anyTransferred) {
+      this.onTerritoryChanged?.();
     }
   }
 

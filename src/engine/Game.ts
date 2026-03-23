@@ -317,6 +317,7 @@ export class Game {
         const tile = this.grid.getTile(q, r);
         return tile ? MapRenderer.getTileY(tile) : 0;
       },
+      this.roadNetwork,
     );
     const playerIds = Array.from({ length: this.config.numPlayers }, (_, i) => i + 1);
     const vc = { ...(this.config.victory ?? DEFAULT_VICTORY_CONFIG) };
@@ -635,6 +636,9 @@ export class Game {
       this.roadRenderer.sync(this.roadNetwork, (id) => this.gameState.getUnit(id));
       this.territoryRenderer.sync(this.territoryManager);
 
+      // Transfer any misplaced entities (buildings in wrong player's territory)
+      this.attackManager.checkTerritoryTransfers();
+
       // Rebuild deposit markers from revealed deposits
       for (const tile of this.grid.getAllTiles()) {
         if (tile.deposit?.revealed && !tile.deposit.claimed) {
@@ -744,7 +748,12 @@ export class Game {
         transferStorageInputs(b);
       }
 
+      const prevTerritoryVersion = this.territoryManager.getVersion();
       this.territoryManager.update();
+      // Check for territory transfers when territory changes (passive expansion)
+      if (this.territoryManager.getVersion() !== prevTerritoryVersion) {
+        this.attackManager.checkTerritoryTransfers();
+      }
       // Pass nightness to managers for day/night gameplay effects
       this.unitManager.nightness = this.currentNightness;
       this.productionManager.nightness = this.currentNightness;

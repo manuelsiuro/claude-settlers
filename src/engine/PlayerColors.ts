@@ -16,6 +16,24 @@ export function getPlayerColor(playerId: number): number {
   return PLAYER_COLORS[playerId] ?? DEFAULT_PLAYER_COLOR;
 }
 
+/** Per-player CSS colors for UI elements */
+export const PLAYER_CSS_COLORS: Record<number, string> = {
+  1: '#4488ff', // blue
+  2: '#ff4444', // red
+  3: '#44cc44', // green
+  4: '#ffcc00', // yellow
+};
+
+/** Get the CSS color for a player (with fallback) */
+export function getPlayerCssColor(playerId: number): string {
+  return PLAYER_CSS_COLORS[playerId] ?? '#aaaaaa';
+}
+
+/** Get a display label for a player */
+export function getPlayerLabel(playerId: number, humanPlayerId: number): string {
+  return playerId === humanPlayerId ? 'You' : `Player ${playerId}`;
+}
+
 /** Per-player territory overlay colors for minimap (semi-transparent CSS strings) */
 export const PLAYER_TERRITORY_CSS: Record<number, string> = {
   1: 'rgba(60, 120, 255, 0.3)',   // blue

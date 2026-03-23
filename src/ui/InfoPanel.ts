@@ -16,6 +16,7 @@ import {
   getEffectiveWorkRadius,
   canUpgrade,
 } from '../game/BuildingUpgrade';
+import { getPlayerCssColor, getPlayerLabel } from '../engine/PlayerColors';
 import { startAttackTargeting, isAttackModeActive } from './BuildPanel';
 import { showDemolishConfirm } from './DemolishDialog';
 import { PanelUpdater } from './PanelUpdater';
@@ -259,7 +260,7 @@ function getStateDisplay(state: BuildingState): { label: string; cssClass: strin
 /** Get a structure key fingerprint for the building's panel layout */
 function getInfoStructureKey(building: Building): string {
   const def = BUILDING_DEFINITIONS[building.type];
-  const parts: string[] = [String(building.state)];
+  const parts: string[] = [String(building.state), 'p:' + building.playerId];
 
   // Construction remaining resource keys
   if (building.state === BuildingState.Planned || building.state === BuildingState.UnderConstruction) {
@@ -395,11 +396,18 @@ function generateInfoHTML(building: Building): string {
   // Quick actions row (mobile only)
   html += generateQuickActionsHTML(building);
 
-  // Status
+  // Status & Owner
+  const humanPid = getGame().getHumanPlayerId();
+  const ownerColor = getPlayerCssColor(building.playerId);
+  const ownerLabel = getPlayerLabel(building.playerId, humanPid);
   html += `<div class="info-section">
     <div class="info-row">
       <span class="info-label">Status</span>
       <span class="info-value ${stateDisplay.cssClass}" data-field="status-label">${stateDisplay.label}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Owner</span>
+      <span class="info-value" data-field="owner-label"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${ownerColor};margin-right:6px;vertical-align:middle"></span>${ownerLabel}</span>
     </div>`;
 
   // Construction progress
