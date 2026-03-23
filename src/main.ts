@@ -57,6 +57,12 @@ if (Capacitor.isNativePlatform()) {
   });
 }
 
+// Android: env(safe-area-inset-bottom) returns 0px — detect via UA and set via CSS class
+// Works in both Capacitor and mobile browser
+if (/android/i.test(navigator.userAgent)) {
+  document.documentElement.classList.add('platform-android');
+}
+
 // UI modules
 import { initSnackbar, showSnackbar } from './ui/Snackbar';
 import { wireNotifications } from './ui/NotificationWiring';

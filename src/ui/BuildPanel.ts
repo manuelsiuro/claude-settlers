@@ -78,31 +78,6 @@ function updateMobileToolbarRecents(): void {
   ).join('');
 }
 
-/** Show the building detail sheet for a specific building type (mobile) */
-function showBuildingDetail(type: BuildingType): void {
-  const def = BUILDING_DEFINITIONS[type];
-  const available = getPlayerResources();
-  const affordable = canAfford(def, available);
-  const prodSummary = formatProductionSummary(def);
-  const milInfo = def.knightSlots > 0
-    ? `<div class="build-item-section"><span class="build-item-section-label">Military</span><div class="build-item-section-content"><span class="build-item-military">${def.knightSlots} knight slot${def.knightSlots > 1 ? 's' : ''} \u00b7 range ${def.influenceRadius}</span></div></div>`
-    : '';
-
-  buildingDetailContent.innerHTML = `
-    <div class="building-detail-name">${buildingIcon(type, 28)} ${def.label}</div>
-    <div class="building-detail-desc">${def.description}</div>
-    <div class="build-item-section">
-      <span class="build-item-section-label">Cost</span>
-      <div class="build-item-section-content">${formatCost(def, available)}</div>
-    </div>
-    ${prodSummary ? `<div class="build-item-section"><span class="build-item-section-label">Production</span><div class="build-item-section-content">${prodSummary}</div></div>` : ''}
-    ${milInfo}
-    <button class="building-detail-place-btn" data-building-type="${type}" ${!affordable ? 'disabled' : ''}>Place ${def.label}</button>
-  `;
-
-  buildingDetailSheet.classList.remove('hidden');
-}
-
 function closeBuildingDetail(): void {
   buildingDetailSheet.classList.add('hidden');
 }
@@ -243,13 +218,8 @@ export function initBuildPanel(
       const type = tile.dataset.buildingType as BuildingType;
       if (!type) return;
 
-      if (isDesktop) {
-        // Desktop: immediate placement
-        startPlacement(type);
-      } else {
-        // Mobile: show building detail sheet with all info + Place button
-        showBuildingDetail(type);
-      }
+      // Direct placement on both desktop and mobile
+      startPlacement(type);
       return;
     }
 

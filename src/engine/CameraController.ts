@@ -244,8 +244,7 @@ export class CameraController {
     e.preventDefault();
 
     if (this.activeTouches.length === 1) {
-      // Single finger: pan (skip when placement mode is active — PlacementController handles it)
-      if (this.placementActive) return;
+      // Single finger: pan (also runs during placement — ghost preview updates simultaneously)
       const touch = e.changedTouches[0];
       const prev = this.activeTouches[0];
       const dx = (touch.clientX - prev.x) * TOUCH_PAN_SPEED;

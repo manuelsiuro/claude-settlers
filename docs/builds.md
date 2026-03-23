@@ -86,6 +86,10 @@ npm run cap:sync
 ### Development (Emulator or USB Device)
 
 ```bash
+npm run build && npx cap sync android
+```
+
+```bash
 npm run cap:run:android
 ```
 
