@@ -129,11 +129,14 @@ html[data-theme="night"] {
   --z-tooltip: 30;
   --z-game-over: 2500;
   --z-setup: 2600;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 html, body {
   width: 100%;
   height: 100%;
+  height: 100dvh;
   overflow: hidden;
   background: #1a1a2e;
   font-family: system-ui, sans-serif;
@@ -358,7 +361,7 @@ html, body {
 .app-bar {
   display: flex;
   align-items: center;
-  height: 48px;
+  min-height: 48px;
   padding: 0 4px;
   background: linear-gradient(90deg, var(--color-surface-container), var(--color-surface));
   color: var(--color-on-surface);
@@ -369,13 +372,22 @@ html, body {
 
 @supports (padding-top: env(safe-area-inset-top)) {
   .app-bar {
-    padding-top: env(safe-area-inset-top);
+    padding-top: var(--safe-top);
   }
   .build-fab {
-    bottom: calc(24px + env(safe-area-inset-bottom));
+    bottom: calc(24px + var(--safe-bottom));
   }
   .build-toolbar {
-    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+    padding-bottom: calc(8px + var(--safe-bottom));
+  }
+  .stats-fab {
+    bottom: calc(88px + var(--safe-bottom));
+  }
+  .placement-bar {
+    padding-bottom: var(--safe-bottom);
+  }
+  .nav-drawer-header {
+    padding-top: calc(20px + var(--safe-top));
   }
 }
 
@@ -393,7 +405,7 @@ html, body {
    ============================================================ */
 .game-controls-bar {
   position: fixed;
-  top: 56px;
+  top: calc(56px + var(--safe-top));
   left: 50%;
   transform: translateX(-50%);
   z-index: var(--z-minimap);
@@ -406,8 +418,8 @@ html, body {
   box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
 .game-controls-bar .icon-btn {
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   color: rgba(255,255,255,0.85);
 }
 .game-controls-bar .icon-btn:hover {
@@ -475,7 +487,7 @@ html, body {
 
 @media (max-width: 768px) {
   .snackbar {
-    bottom: 24px;  /* No toolbar on mobile */
+    bottom: calc(24px + var(--safe-bottom));  /* No toolbar on mobile */
   }
 }
 .snackbar.show {
@@ -501,7 +513,7 @@ html, body {
    ============================================================ */
 .alert-bar {
   position: fixed;
-  top: 56px;
+  top: calc(56px + var(--safe-top));
   left: 12px;
   z-index: var(--z-panels);
   display: flex;
@@ -1577,7 +1589,7 @@ html[data-theme="night"] .state-destroyed {
    ============================================================ */
 .stats-panel {
   position: fixed;
-  top: 64px;
+  top: calc(64px + var(--safe-top));
   left: 16px;
   width: 280px;
   max-height: calc(100vh - 80px);
@@ -1667,7 +1679,7 @@ html[data-theme="night"] .state-destroyed {
    ============================================================ */
 .minimap-container {
   position: fixed;
-  top: 56px;
+  top: calc(56px + var(--safe-top));
   right: 8px;
   width: 160px;
   z-index: var(--z-minimap);
@@ -2297,6 +2309,7 @@ html[data-theme="night"] .state-destroyed {
     overflow: hidden;
     transform: translateY(0) translateX(0) !important;
     transition: transform 0.3s ease;
+    padding-bottom: var(--safe-bottom);
   }
 
   /* Add a drag handle indicator at the top */
@@ -2317,7 +2330,7 @@ html[data-theme="night"] .state-destroyed {
 @media (max-width: 480px) {
   .minimap-container {
     width: 120px;
-    top: 48px;
+    top: calc(48px + var(--safe-top));
     right: 4px;
   }
 
@@ -2333,7 +2346,7 @@ html[data-theme="night"] .state-destroyed {
   }
 
   .game-controls-bar {
-    top: 52px;
+    top: calc(52px + var(--safe-top));
   }
 
   .game-over-card {
