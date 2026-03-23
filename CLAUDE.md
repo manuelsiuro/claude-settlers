@@ -57,6 +57,18 @@ Live-updating panels (`InfoPanel`, `StatsPanel`, `BuildPanel`) use `PanelUpdater
 
 New panels should follow this pattern: add `data-field="..."` to dynamic elements in the HTML template, create a structure key function, and create a value updater function.
 
+### Mobile UI Architecture
+
+The mobile UI (≤768px) uses a distinct interaction model from desktop, gated behind `@media (max-width: 768px)` CSS and `isDesktop` JS flags:
+
+- **BottomSheetController** (`src/ui/BottomSheetController.ts`): Gesture-driven bottom sheet with configurable snap points (peek/expanded), velocity-based fling, and swipe-to-dismiss. Uses `transform: translateY()` for GPU-composited animations. Content scrolling only enabled at max snap to prevent scroll-vs-drag conflicts.
+- **Mobile Bottom Toolbar** (`#mobile-toolbar` in `main.ts`): 5-button toolbar at bottom edge replacing FABs — Build, Stats, Recents (3 recent building thumbnails), Speed, Menu. 48px touch targets, translucent blur background.
+- **Building Detail Sheet** (`#building-detail-sheet`): Slides up when tapping a building tile on mobile, showing cost/production/military info + Place button. Replaces the desktop inline-expand pattern.
+- **Recent Buildings**: `BuildPanel.ts` tracks last 5 placed buildings in `localStorage('feudal-recent-buildings')`, renders thumbnails in the mobile toolbar for 2-tap repeat placement.
+- **Quick Actions**: Mobile info panel shows a horizontal row of action buttons (Pause/Resume, Attack, Demolish) at the top for one-tap access.
+- **Placement Touch**: `PlacementController` has a `touchmove` handler so the ghost preview follows the finger. `CameraController.placementActive` flag suppresses single-finger pan during placement while preserving pinch-to-zoom.
+- **Panel Transitions**: Mobile panels use `transform: translateY()` instead of `display: none` for smooth CSS-animated slide-up/down. Each panel has a `.bottom-sheet-handle` div for drag interaction.
+
 ### MCP Integrations
 
 - **Blender MCP** (`.mcp.json`): Primary 3D asset creation tool. See `feudal-3d-asset-pipeline` skill for the full workflow.
@@ -124,7 +136,7 @@ This project uses `PROGRESS.md` at the repo root as the single source of truth f
 
 ### Development Phases
 
-Phases 1–9 and all expansion phases (A–J) are complete. The game now has 50 building types, 44 resource types, 39 unit types, hunger/morale systems, military expansion (5 unit types), advanced transport (multi-carry, road quality tiers), animal lifecycle, balance tuning, and a full statistics dashboard with Canvas-based charts. See `PROGRESS.md` for full history. 703 tests passing.
+Phases 1–9 and all expansion phases (A–J) are complete. The game now has 50 building types, 44 resource types, 39 unit types, hunger/morale systems, military expansion (5 unit types), advanced transport (multi-carry, road quality tiers), animal lifecycle, balance tuning, a full statistics dashboard with Canvas-based charts, standalone app packaging (Capacitor/Tauri/PWA), and a comprehensive mobile UI overhaul (bottom sheets, toolbar, streamlined build flow, touch-optimized placement). See `PROGRESS.md` for full history. 745 tests passing.
 
 ### Verification
 

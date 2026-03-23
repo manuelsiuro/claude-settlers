@@ -1,8 +1,16 @@
 # Project Progress
 
-## Current Phase: Standalone App Packaging — Complete
+## Current Phase: Mobile UI Overhaul — Complete
 
 ## Task Board
+
+### Mobile UI Overhaul [COMPLETE]
+- [DONE] Phase 1: BottomSheetController — Created `src/ui/BottomSheetController.ts` with gesture-driven snap points (peek/expanded), velocity-based fling, swipe-to-dismiss. Uses `transform: translateY()` for GPU-composited animations. Wired to InfoPanel as first consumer. Added drag handle elements to all panels. Changed mobile panel show/hide from `display: none` to transform-based transitions. — 2026-03-23
+- [DONE] Phase 2: Mobile Bottom Toolbar — Replaced two stacked FABs (Build 56px + Stats 48px) with unified 5-button toolbar at bottom edge (Build, Stats, Recents, Speed, Menu). 48px touch targets, translucent blur background. Hidden on desktop. Moved speed/pause controls into toolbar for thumb-zone accessibility. Repositioned placement bar and snackbar above toolbar. — 2026-03-23
+- [DONE] Phase 3: Build Flow Redesign — Reduced building placement from 6 taps to 3 (standard) or 2 (recents). Replaced inline expand-then-place pattern with building detail sheet showing cost/production/military info + "Place" button. Added recent buildings system (max 5, localStorage-persisted) with circular thumbnails in the mobile toolbar. 3-column grid on mobile (up from 2). — 2026-03-23
+- [DONE] Phase 4: Placement Touch Fix — Added `touchmove` handler to `PlacementController` so ghost preview follows finger across hexes in real-time. Added `placementActive` flag to `CameraController` to suppress single-finger pan during placement while preserving pinch-to-zoom. — 2026-03-23
+- [DONE] Phase 5: Info Panel Quick Actions — Added mobile-only quick actions row (Pause/Resume, Attack, Demolish) to info panel via `generateQuickActionsHTML()`. Event delegation handles toggle-pause, attack targeting, and demolish dialog. Styled as horizontal pill buttons. — 2026-03-23
+- [DONE] Phase 6: Polish — Added drag handles to build/stats panels. Moved alert bars from `bottom: 150px` to `top: 56px` on mobile. Increased `.icon-btn` to 44px on mobile (Apple HIG minimum). Updated Capacitor back button to dismiss building detail sheet. Build + lint + 745 tests pass. Desktop UI verified unchanged. — 2026-03-23
 
 ### Standalone App Packaging [COMPLETE]
 - [DONE] Phase 1: Capacitor (Android + iOS) — Installed @capacitor/core, @capacitor/cli, @capacitor/app, @capacitor/android, @capacitor/ios. Created capacitor.config.ts with https scheme, splash screen, status bar config. Generated android/ and ios/ native projects. Added npm scripts (cap:sync, cap:android, cap:ios, cap:run:android). Added WebGL context loss/restore handlers in Game.ts for Android backgrounding. Added Android back button handler via @capacitor/app to close panels instead of navigating away. — 2026-03-21
