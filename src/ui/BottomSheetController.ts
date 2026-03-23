@@ -177,7 +177,9 @@ export class BottomSheetController {
   /** Set max-height based on largest snap point to ensure sheet is tall enough */
   private ensureHeight(): void {
     const maxSnap = Math.max(...this.opts.snapPoints);
-    this.el.style.maxHeight = `${maxSnap}vh`;
+    const isMobile = window.innerWidth <= 768;
+    const toolbarPx = isMobile ? 56 : 0;
+    this.el.style.maxHeight = `calc(${maxSnap}vh + ${toolbarPx}px)`;
   }
 
   /** Open the sheet at the given snap point index (0 = peek, last = expanded) */
