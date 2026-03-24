@@ -10,6 +10,7 @@ import {
   HUNGER_DECAY_RATE,
   HUNGER_WORKING_MULTIPLIER,
   HUNGER_GARRISONED_MULTIPLIER,
+  HUNGER_FOOD_PRODUCER_MULTIPLIER,
   HUNGER_HUNGRY_THRESHOLD,
   HUNGER_STARVING_THRESHOLD,
   HUNGER_SPEED_PENALTY_HUNGRY,
@@ -20,6 +21,25 @@ import {
 
 /** How often to attempt feeding (seconds) */
 const FEEDING_INTERVAL = 5.0;
+
+/** Buildings whose workers get reduced hunger decay to prevent food-chain starvation spiral */
+const FOOD_PRODUCER_BUILDINGS: ReadonlySet<string> = new Set([
+  BuildingType.FishermanHut,
+  BuildingType.Orchard,
+  BuildingType.Farm,
+  BuildingType.Windmill,
+  BuildingType.Bakery,
+  BuildingType.PigFarm,
+  BuildingType.Slaughterhouse,
+  BuildingType.DairyFarm,
+  BuildingType.CheeseMakerBuilding,
+  BuildingType.Hayfield,
+  BuildingType.Brewery,
+  BuildingType.Winery,
+  BuildingType.Vineyard,
+  BuildingType.CattleRanch,
+  BuildingType.Butchery,
+]);
 
 /**
  * FeedingManager: decays unit satiation over time and feeds units from
@@ -59,13 +79,21 @@ export class FeedingManager {
       multiplier = HUNGER_GARRISONED_MULTIPLIER;
     }
 
+    // Food producer workers decay slower to prevent food-chain starvation spiral
+    if (unit.assignedBuildingId) {
+      const building = this.gameState.getBuilding(unit.assignedBuildingId);
+      if (building && FOOD_PRODUCER_BUILDINGS.has(building.type)) {
+        multiplier *= HUNGER_FOOD_PRODUCER_MULTIPLIER;
+      }
+    }
+
     unit.satiation = Math.max(0, unit.satiation - HUNGER_DECAY_RATE * multiplier * deltaTime);
   }
 
   private feedUnits(units: Unit[]): void {
     const byPlayer = new Map<number, Unit[]>();
     for (const unit of units) {
-      if (unit.satiation >= 0.90) continue;
+      if (unit.satiation >= 0.80) continue;
       const list = byPlayer.get(unit.playerId) ?? [];
       list.push(unit);
       byPlayer.set(unit.playerId, list);
@@ -88,7 +116,7 @@ export class FeedingManager {
         ));
 
       for (const unit of playerUnits) {
-        if (unit.satiation >= 0.90) continue;
+        if (unit.satiation >= 0.80) continue;
 
         for (const storage of storageBuildings) {
           const foodResource = this.findBestFood(storage.outputInventory);
@@ -107,6 +135,11 @@ export class FeedingManager {
   private getUnitFeedPriority(unit: Unit): number {
     if (unit.type === UnitType.Knight) return 0;
     if (unit.type === UnitType.Miner) return 1;
+    // Food producer workers get priority between miners and other workers
+    if (unit.assignedBuildingId) {
+      const building = this.gameState.getBuilding(unit.assignedBuildingId);
+      if (building && FOOD_PRODUCER_BUILDINGS.has(building.type)) return 1.5;
+    }
     if (unit.state === UnitState.Working) return 2;
     if (unit.state === UnitState.Idle) return 4;
     return 3;

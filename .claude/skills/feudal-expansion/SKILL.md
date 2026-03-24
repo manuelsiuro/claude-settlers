@@ -56,13 +56,13 @@ These changes prepare existing code for expansion features without adding new co
 
 ### Phase B: Core Mechanics (3 new files/systems)
 
-**B1. FeedingManager** (`src/game/FeedingManager.ts`)
-- Satiation decay: 0.005/s per unit
-- Food consumption from nearest Castle/Warehouse
-- Food tiers: Fish (0.25), Bread (0.50), Meat (0.60), cooked meals (0.80)
-- Below 0.3 satiation: work speed -50%
-- Below 0.0: unit returns to Castle
-- Skills: `feudal-new-manager`
+**B1. FeedingManager** (`src/game/FeedingManager.ts`) — **IMPLEMENTED**
+- Satiation decay: 0.001/s per unit (1.0x working, 0.5x garrisoned, 0.5x food producers)
+- Food consumption from Castle/Warehouse every 5s when satiation < 0.80
+- Food tiers: Fish (0.50), Fruit (0.45), Beer (0.30), Wine (0.35), Cheese (0.60), Bread (0.70), Meat (0.90)
+- Hungry at 0.35, starving at 0.15 (penalties defined but not yet wired)
+- Food producer workers get reduced decay and priority feeding
+- See `docs/food-system.md` for full system guide
 
 **B2. HousingManager** (`src/game/HousingManager.ts`)
 - Castle: 15 population cap

@@ -33,17 +33,17 @@ describe('FeedingManager', () => {
       expect(unit.satiation).toBe(1.0);
 
       feedingManager.update(10.0); // 10 seconds
-      // Base decay: 0.002/s * 10s = 0.02
-      expect(unit.satiation).toBeCloseTo(0.98, 2);
+      // Base decay: 0.001/s * 10s = 0.01
+      expect(unit.satiation).toBeCloseTo(0.99, 2);
     });
 
-    it('should decay faster for working units', () => {
+    it('should decay at same rate for working units (no working penalty)', () => {
       const unit = gameState.spawnUnit(UnitType.Woodcutter, { q: 0, r: 0 }, 1);
       unit.state = UnitState.Working;
 
       feedingManager.update(10.0);
-      // Working decay: 0.002 * 1.2 * 10 = 0.024
-      expect(unit.satiation).toBeCloseTo(0.976, 2);
+      // Working decay: 0.001 * 1.0 * 10 = 0.01 (same as idle)
+      expect(unit.satiation).toBeCloseTo(0.99, 2);
     });
 
     it('should decay slower for garrisoned knights', () => {
@@ -52,8 +52,23 @@ describe('FeedingManager', () => {
       unit.assignedBuildingId = 'building_1';
 
       feedingManager.update(10.0);
-      // Garrisoned decay: 0.002 * 0.5 * 10 = 0.01
-      expect(unit.satiation).toBeCloseTo(0.99, 2);
+      // Garrisoned decay: 0.001 * 0.5 * 10 = 0.005
+      expect(unit.satiation).toBeCloseTo(0.995, 3);
+    });
+
+    it('should decay slower for food producer workers', () => {
+      // Place a farm (no adjacency requirement) and assign a worker
+      const result = gameState.placeBuilding(BuildingType.Farm, { q: 3, r: 3 }, 1);
+      if (!result.ok) throw new Error('Farm placement failed');
+      result.building.state = BuildingState.Active;
+
+      const unit = gameState.spawnUnit(UnitType.Farmer, { q: 3, r: 3 }, 1);
+      unit.state = UnitState.Working;
+      unit.assignedBuildingId = result.building.id;
+
+      feedingManager.update(10.0);
+      // Food producer decay: 0.001 * 1.0 * 0.5 * 10 = 0.005
+      expect(unit.satiation).toBeCloseTo(0.995, 3);
     });
 
     it('should not go below 0', () => {
@@ -79,9 +94,40 @@ describe('FeedingManager', () => {
 
       // Force feeding (need to wait for interval)
       feedingManager.update(5.1); // Trigger feeding interval
-      // Fish restores 0.40, so satiation should be ~0.30 + 0.40 - small decay
+      // Fish restores 0.50, so satiation should be ~0.30 + 0.50 - small decay
       expect(unit.satiation).toBeGreaterThan(0.50);
       expect(result.building.outputInventory[ResourceType.Fish]).toBe(4);
+    });
+
+    it('should prioritize food producer workers over regular workers', () => {
+      const result = gameState.placeBuilding(BuildingType.Castle, { q: 5, r: 5 }, 1);
+      if (!result.ok) throw new Error('Castle failed');
+      // Only 1 fish available
+      result.building.outputInventory[ResourceType.Fish] = 1;
+      result.building.state = BuildingState.Active;
+
+      // Place a farm (no adjacency requirement)
+      const farmResult = gameState.placeBuilding(BuildingType.Farm, { q: 4, r: 4 }, 1);
+      if (!farmResult.ok) throw new Error('Farm placement failed');
+      farmResult.building.state = BuildingState.Active;
+
+      // Regular working unit
+      const regularWorker = gameState.spawnUnit(UnitType.Woodcutter, { q: 5, r: 5 }, 1);
+      regularWorker.state = UnitState.Working;
+      regularWorker.satiation = 0.40;
+
+      // Food producer worker (should get fed first)
+      const foodWorker = gameState.spawnUnit(UnitType.Farmer, { q: 4, r: 4 }, 1);
+      foodWorker.state = UnitState.Working;
+      foodWorker.assignedBuildingId = farmResult.building.id;
+      foodWorker.satiation = 0.40;
+
+      feedingManager.update(5.1);
+
+      // Food worker should have been fed (priority 1.5 < 2)
+      expect(foodWorker.satiation).toBeGreaterThan(0.50);
+      // Regular worker should NOT have been fed (only 1 fish was available)
+      expect(regularWorker.satiation).toBeLessThan(0.50);
     });
   });
 
@@ -102,13 +148,13 @@ describe('Hunger multipliers', () => {
     expect(getHungerProductionMultiplier(0.80)).toBe(1.0);
   });
 
-  it('should apply hungry penalty below 0.50', () => {
-    expect(getHungerSpeedMultiplier(0.40)).toBe(0.80);
-    expect(getHungerProductionMultiplier(0.40)).toBe(0.85);
+  it('should apply hungry penalty below 0.35', () => {
+    expect(getHungerSpeedMultiplier(0.30)).toBe(0.90);
+    expect(getHungerProductionMultiplier(0.30)).toBe(0.95);
   });
 
-  it('should apply starving penalty below 0.25', () => {
-    expect(getHungerSpeedMultiplier(0.10)).toBe(0.60);
-    expect(getHungerProductionMultiplier(0.10)).toBe(0.70);
+  it('should apply starving penalty below 0.15', () => {
+    expect(getHungerSpeedMultiplier(0.10)).toBe(0.75);
+    expect(getHungerProductionMultiplier(0.10)).toBe(0.85);
   });
 });

@@ -42,6 +42,28 @@ multiplier = min(3.0, 1.0 + max(0, distance - 1) * 0.25)
 effectiveTime = baseTime * multiplier
 ```
 
+## Hunger & Feeding
+
+**Location:** `src/game/data/balanceConstants.ts` (constants), `src/game/FeedingManager.ts` (logic)
+
+| Constant | Value | Effect |
+|----------|-------|--------|
+| HUNGER_DECAY_RATE | 0.001/s | Full→empty in 1000s (16.7 min) |
+| HUNGER_WORKING_MULTIPLIER | 1.0 | No extra penalty for working |
+| HUNGER_GARRISONED_MULTIPLIER | 0.5 | Knights in garrison decay slower |
+| HUNGER_FOOD_PRODUCER_MULTIPLIER | 0.5 | Food chain workers decay at 0.0005/s |
+| HUNGER_HUNGRY_THRESHOLD | 0.35 | Amber bar / hungry penalties |
+| HUNGER_STARVING_THRESHOLD | 0.15 | Red bar / starving penalties |
+| Feed threshold | 0.80 | Units eat when satiation < this |
+| FEEDING_INTERVAL | 5.0s | How often feeding is checked |
+
+**Food satiation values** (`src/game/ResourceType.ts`):
+Fish 0.50, Fruit 0.45, Beer 0.30, Wine 0.35, Cheese 0.60, Bread 0.70, Meat 0.90
+
+**Feed priority**: Knights (0) > Miners (1) > Food producers (1.5) > Workers (2) > Idle (4)
+
+> Penalty functions exist but are NOT wired into ProductionManager or UnitManager. See `docs/food-system.md`.
+
 ## Construction Costs
 
 **Location:** `src/game/BuildingType.ts` → `BUILDING_DEFINITIONS` → `cost[]`

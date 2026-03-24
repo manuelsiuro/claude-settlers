@@ -33,20 +33,23 @@ Default: `1.0` on creation.
 
 | Level | Satiation Range | Effect |
 |-------|----------------|--------|
-| Well-Fed | 0.75–1.0 | No penalty |
-| Normal | 0.50–0.74 | No penalty |
-| Hungry | 0.25–0.49 | -20% move speed, -15% production speed |
-| Starving | 0.00–0.24 | -40% move speed, -30% production speed, unit abandons post at 0.0 |
+| Well-Fed | 0.35–1.0 | No penalty |
+| Hungry | 0.15–0.34 | -10% move speed, -5% production speed |
+| Starving | 0.00–0.14 | -25% move speed, -15% production speed |
+
+> **Note:** Penalty functions (`getHungerSpeedMultiplier`, `getHungerProductionMultiplier`) exist in `FeedingManager.ts` but are not yet wired into `ProductionManager` or `UnitManager`. Hunger currently only affects UI display (satiation bar colors).
 
 ### Decay Formula
 
 ```
-satiation -= DECAY_RATE * deltaTime
+satiation -= DECAY_RATE * multiplier * deltaTime
 ```
 
-- **DECAY_RATE:** `0.005` per second (full → starving in ~200 seconds / 3.3 minutes)
-- Working units decay 20% faster: `DECAY_RATE * 1.2`
-- Knights in garrison (idle in military building) decay 50% slower: `DECAY_RATE * 0.5`
+- **DECAY_RATE:** `0.001` per second (full → starving in ~1000 seconds / 16.7 minutes)
+- Working units: no extra penalty (`multiplier = 1.0`)
+- Knights in garrison (idle in military building): `multiplier = 0.5` (decay 50% slower)
+- **Food producer workers**: additional `0.5x` multiplier (effective rate `0.0005/s`, 33 min to starve)
+- Feeding threshold: units are fed when satiation drops below `0.80`
 
 ### Food Quality Tiers
 
@@ -54,31 +57,31 @@ Each food type restores a different amount of satiation when consumed:
 
 | Food | Satiation Restored | Production Chain Complexity |
 |------|-------------------|---------------------------|
-| Fish | 0.40 | Tier 1 (direct gathering) |
-| Bread | 0.60 | Tier 3 (Grain → Flour → Bread) |
-| Meat | 0.80 | Tier 3 (Grain → Pigs → Meat) |
-| Fruit (new) | 0.35 | Tier 1 (direct gathering) |
-| Cheese (new) | 0.55 | Tier 2 (Cattle → Milk → Cheese) |
-| Wine (new) | 0.30 | Tier 3 (Grapes → Wine) — also morale |
-| Beer (new) | 0.25 | Tier 2 (Grain → Beer) — also morale |
+| Fish | 0.50 | Tier 1 (direct gathering, 14s) |
+| Fruit | 0.45 | Tier 1 (direct gathering, 16s) |
+| Beer | 0.30 | Tier 2 (Grain → Beer, 18s) — also morale |
+| Wine | 0.35 | Tier 3 (Grapes → Wine, 20s) — also morale |
+| Cheese | 0.60 | Tier 2 (Hay → Milk → Cheese, 16s) |
+| Bread | 0.70 | Tier 3 (Grain → Flour → Bread, 14s) |
+| Meat | 0.90 | Tier 3 (Grain → Pigs → Meat, 15s) |
 
 ### Feeding Priority
 
-A new `FeedingManager` (similar to `LogisticsManager`) routes food to units:
+`FeedingManager` feeds units from Castle/Warehouse inventories every 5 seconds:
 
-1. **Military buildings** — knights must eat to maintain garrison
-2. **Mines** — miners already consume Fish; extend to all food types
-3. **Production buildings** — workers at processing buildings
-4. **Gathering buildings** — woodcutters, farmers, etc.
-5. **Idle serfs** — lowest priority
+1. **Knights** (priority 0) — military must eat
+2. **Miners** (priority 1) — resource extraction critical
+3. **Food producer workers** (priority 1.5) — prevents starvation spiral
+4. **Other working units** (priority 2)
+5. **Idle units** (priority 4) — lowest priority
 
-Food is consumed from the nearest Warehouse, Castle, or the unit's assigned building inventory. The existing `GoodsDistribution` routing score (`importance × priority / distance`) applies.
+Food selection: cheapest satiation value first (preserves high-value foods). See `docs/food-system.md` for the full system guide.
 
 ### Integration Point
 
-- `UnitManager.update()` calls `updateSatiation(unit, deltaTime)` each frame
-- Production timer in `ProductionManager` multiplied by `getHungerProductionMultiplier(unit.satiation)`
-- Movement speed in `UnitManager` multiplied by `getHungerSpeedMultiplier(unit.satiation)`
+- `FeedingManager.update()` decays satiation and feeds units each frame
+- Production timer in `ProductionManager` multiplied by `getHungerProductionMultiplier(unit.satiation)` *(not yet wired)*
+- Movement speed in `UnitManager` multiplied by `getHungerSpeedMultiplier(unit.satiation)` *(not yet wired)*
 
 ---
 
