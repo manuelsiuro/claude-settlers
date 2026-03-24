@@ -1,8 +1,16 @@
 # Project Progress
 
-## Current Phase: Marketplace System — Complete
+## Current Phase: Living World — Complete
 
 ## Task Board
+
+### Living World Feature [COMPLETE]
+- [DONE] Design document — Created `docs/living-world.md` covering ambient visuals (6 systems) and gameplay content (5 buildings, 5 resources, 5 units). Updated `docs/buildings.md`, `docs/resources.md`, `docs/units.md`. — 2026-03-24
+- [DONE] Data layer — Added 5 resources (GameMeat, Pelts, FurCoat, Honey, Mead) with `isLuxury` field on ResourceProperties. Added 5 units (Hunter, Trapper, Furrier, Beekeeper, Meadmaker). Added 5 buildings (HuntingLodge, TrappersHut, Furrier, Apiary, Meadery) with `inputCategory` field on ProductionRecipe. Registered all in AssetLoader, BuildingModels, UnitModels, BuildingRenderer. 779 tests passing. — 2026-03-24
+- [DONE] Gameplay logic — Fixed InnTavern bug (never consumed Beer due to empty outputs skip). Added data-driven `inputCategory` on ProductionRecipe for generic service buildings. Created `TerrainGatheringManager` (single data-driven manager for terrain gatherers). Updated MoraleManager with luxury goods tracking. Updated FeedingManager, AI build orders, SaveLoad v13. 779 tests passing. — 2026-03-24
+- [DONE] 3D models — Created 20 Blender models: 5 buildings, 5 units, 5 resources, 4 terrain animals (deer, rabbit, mountain_goat, fish), 1 flower_patch. Added Bees particle effect to ParticleSystem for Apiary. — 2026-03-24
+- [DONE] Ambient sky systems — Created CloudRenderer (30 billboard clouds with ground shadows, procedural Canvas2D textures, camera-relative wrapping, night tint). Created BirdFlockRenderer (5 GPU-driven flocks with V-shape shader birds, wing flap animation, flight patterns). Added `ambientLife` graphics setting. — 2026-03-24
+- [DONE] Ambient ground & water systems — Created WaterEffectRenderer (sun sparkle points on water tiles, day/night scaling). Created WildAnimalRenderer (20 ambient animals with state machine: deer, rabbits, goats, fish). Created FlowerButterflyRenderer (25 GPU-driven butterflies with wing flap shader, daytime only). 779 tests passing. — 2026-03-24
 
 ### Marketplace System [COMPLETE]
 - [DONE] Design document — Full barter marketplace design at `docs/marketplace.md`. Covers: barter exchange, dynamic pricing, NPC stock, traveling merchants, auto-trade rules, Castle fallback trading, AI integration, data-driven constants, UI design. — 2026-03-23

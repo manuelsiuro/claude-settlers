@@ -176,3 +176,52 @@ This document outlines the visual design for each resource in Feudal Realm Manag
     - **Color:** Pink.
     - **Arrangement:** Serfs would visually guide/herd this (represented by the serf carrying a "lead rope" sprite, and the pig model moving nearby).
 - **Notes:** This is a mobile resource unit until it reaches the Slaughterhouse.
+
+---
+
+## Living World Resources
+
+### 18. Game Meat
+
+- **Type:** Raw Material (Food)
+- **Visual Description:**
+    - **Shape:** Elongated, slightly irregular cuboid — thicker than Fish, more rustic than processed Meat. A subtle ridge along the top suggests a haunch shape.
+    - **Color:** Reddish-Pink (#CD5C5C) with a darker outer edge.
+    - **Arrangement:** Carried singly by Hunters.
+- **Notes:** Raw food (satiation 0.55). Distinguished from Meat by its rougher shape and pinker color.
+
+### 19. Pelts
+
+- **Type:** Raw Material
+- **Visual Description:**
+    - **Shape:** Flat, slightly rolled rectangular shape — a thin cuboid with curled edges, suggesting an animal hide.
+    - **Color:** Warm Brown (#8B6914) with a lighter cream interior visible at the curl.
+    - **Arrangement:** Carried singly, rolled up.
+- **Notes:** Input for Furrier building. Not food.
+
+### 20. Fur Coat
+
+- **Type:** Processed Good (Luxury)
+- **Visual Description:**
+    - **Shape:** Folded garment shape — a wider, flat cuboid with a visible collar ridge (small cylinder on top). Thicker than Cloth.
+    - **Color:** Dark Brown (#654321) exterior with Cream (#FFFDD0) interior lining visible at the fold.
+    - **Arrangement:** Carried singly.
+- **Notes:** Luxury good (`isLuxury: true`). Provides morale bonus when consumed at Inn/Tavern.
+
+### 21. Honey
+
+- **Type:** Raw Material (Food)
+- **Visual Description:**
+    - **Shape:** Small, squat cylinder (pot shape) with a slightly wider base. A tiny sphere of golden drip on the rim.
+    - **Color:** Golden Amber (#DAA520).
+    - **Arrangement:** Carried singly.
+- **Notes:** Raw food (satiation 0.40). Dual-use: eat directly or process into Mead at Meadery.
+
+### 22. Mead
+
+- **Type:** Processed Good (Drink)
+- **Visual Description:**
+    - **Shape:** Small barrel or bottle shape — a cylinder with slightly wider middle (barrel-like), or a tapered cylinder (bottle). Distinct from Beer/Wine shapes.
+    - **Color:** Amber (#DAA520) with a lighter golden tint, darker than Honey.
+    - **Arrangement:** Carried singly.
+- **Notes:** Drink (`isDrink: true`, satiation 0.25). Served at Inn/Tavern for morale variety bonus.

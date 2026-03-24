@@ -72,6 +72,12 @@ const BUILDING_MODELS = [
   'torch_tower',
   'inn_tavern',
   'market',
+  // Living World buildings
+  'hunting_lodge',
+  'trappers_hut',
+  'furrier',
+  'apiary',
+  'meadery',
 ] as const;
 
 export type BuildingModelName = (typeof BUILDING_MODELS)[number];
@@ -120,6 +126,12 @@ const UNIT_MODELS = [
   'scout',
   'donkey',
   'horse_transport',
+  // Living World units
+  'hunter',
+  'trapper',
+  'furrier',
+  'beekeeper',
+  'meadmaker',
 ] as const;
 
 export type UnitModelName = (typeof UNIT_MODELS)[number];
@@ -171,6 +183,12 @@ const RESOURCE_MODELS = [
   'siege_ram',
   'cattle',
   'horses',
+  // Living World resources
+  'game_meat',
+  'pelts',
+  'fur_coat',
+  'honey',
+  'mead',
 ] as const;
 
 export type ResourceModelName = (typeof RESOURCE_MODELS)[number];

@@ -33,6 +33,7 @@ import { PopulationManager } from './PopulationManager';
 import { FeedingManager } from './FeedingManager';
 import { MoraleManager } from './MoraleManager';
 import { MarketplaceManager } from './MarketplaceManager';
+import { TerrainGatheringManager } from './TerrainGatheringManager';
 import { serializeGame, deserializeGame } from './SaveLoad';
 import type { SaveData } from './SaveLoad';
 
@@ -1273,6 +1274,7 @@ describe('Integration: Save/Load Round-Trip', () => {
   let feedingManager: FeedingManager;
   let moraleManager: MoraleManager;
   let marketplaceManager: MarketplaceManager;
+  let terrainGatheringManager: TerrainGatheringManager;
   let aiPlayer: AIPlayer;
 
   function createManagers() {
@@ -1296,6 +1298,7 @@ describe('Integration: Save/Load Round-Trip', () => {
       feedingManager,
       moraleManager,
       marketplaceManager,
+      terrainGatheringManager,
     };
   }
 
@@ -1348,6 +1351,7 @@ describe('Integration: Save/Load Round-Trip', () => {
     feedingManager = new FeedingManager(gameState);
     moraleManager = new MoraleManager(gameState);
     marketplaceManager = new MarketplaceManager(gameState);
+    terrainGatheringManager = new TerrainGatheringManager(gameState);
 
     gameState.territoryCheck = (q, r, pid) => territoryManager.isOwnedBy(q, r, pid);
 
@@ -1468,6 +1472,7 @@ describe('Integration: Save/Load Round-Trip', () => {
         moraleManager: new MoraleManager(gs2),
         marketplaceManager: new MarketplaceManager(gs2),
         animalLifecycleManager: { _loadState: () => {} },
+        terrainGatheringManager: new TerrainGatheringManager(gs2),
       },
       [ai2],
     );
@@ -1566,6 +1571,7 @@ describe('Integration: Save/Load Round-Trip', () => {
         moraleManager: new MoraleManager(gs2),
         marketplaceManager: new MarketplaceManager(gs2),
         animalLifecycleManager: { _loadState: () => {} },
+        terrainGatheringManager: new TerrainGatheringManager(gs2),
       },
       [ai2],
     );
@@ -1648,6 +1654,7 @@ describe('Integration: Save/Load Round-Trip', () => {
         moraleManager: new MoraleManager(gs2),
         marketplaceManager: new MarketplaceManager(gs2),
         animalLifecycleManager: { _loadState: () => {} },
+        terrainGatheringManager: new TerrainGatheringManager(gs2),
       },
       [ai2],
     );

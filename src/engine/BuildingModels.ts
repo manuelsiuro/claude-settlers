@@ -57,4 +57,10 @@ export const BUILDING_MODEL_MAP: Record<BuildingType, BuildingModelName> = {
   [BuildingType.TorchTower]: 'torch_tower',
   [BuildingType.InnTavern]: 'inn_tavern',
   [BuildingType.Market]: 'market',
+  // Living World buildings (placeholder models until real ones are created)
+  [BuildingType.HuntingLodge]: 'hunting_lodge',
+  [BuildingType.TrappersHut]: 'trappers_hut',
+  [BuildingType.Furrier]: 'furrier',
+  [BuildingType.Apiary]: 'apiary',
+  [BuildingType.Meadery]: 'meadery',
 };

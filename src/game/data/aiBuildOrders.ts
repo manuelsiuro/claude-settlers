@@ -63,6 +63,11 @@ const ECONOMIC_BUILD_ORDER: BuildingType[] = [
   BuildingType.Tannery,                  // raw leather → worked leather
   BuildingType.WeaversHut,              // wool → cloth
   BuildingType.Stable,                    // horse breeding
+  BuildingType.HuntingLodge,             // game meat from forest tiles
+  BuildingType.Apiary,                   // honey from forest tiles
+  BuildingType.TrappersHut,              // pelts from forest tiles
+  BuildingType.Meadery,                  // honey → mead (drink for morale)
+  BuildingType.Furrier,                  // pelts → fur coats (luxury for morale)
   BuildingType.LargeHouse,
   BuildingType.Market,                    // trade hub
   BuildingType.Barracks,
@@ -113,6 +118,13 @@ const BALANCED_BUILD_ORDER: BuildingType[] = [
   BuildingType.DairyFarm,          // hay + cattle → milk
   BuildingType.CheeseMakerBuilding, // milk → cheese
   BuildingType.InnTavern,          // serves drinks for morale
+
+  // ── Living world: hunting, trapping & luxury goods ──────────────────────
+  BuildingType.HuntingLodge,       // game meat from forest tiles
+  BuildingType.Apiary,             // honey from forest tiles
+  BuildingType.TrappersHut,        // pelts from forest tiles
+  BuildingType.Meadery,            // honey → mead (drink for morale)
+  BuildingType.Furrier,            // pelts → fur coats (luxury for morale)
 
   // ── Late game: gold economy + extra military ────────────────────────────
   BuildingType.LargeHouse,         // population housing

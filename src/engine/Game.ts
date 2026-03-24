@@ -66,12 +66,18 @@ import { PostProcessing } from './PostProcessing';
 import { WeatherController } from './WeatherController';
 import type { ColorGradingParams } from './AtmosphereController';
 import { FlagLightSystem } from './FlagLightSystem';
+import { CloudRenderer } from './CloudRenderer';
+import { BirdFlockRenderer } from './BirdFlockRenderer';
+import { WaterEffectRenderer } from './WaterEffectRenderer';
+import { WildAnimalRenderer } from './WildAnimalRenderer';
+import { FlowerButterflyRenderer } from './FlowerButterflyRenderer';
 import { WorkAreaRenderer } from './WorkAreaRenderer';
 import { PopulationManager } from '../game/PopulationManager';
 import { FeedingManager } from '../game/FeedingManager';
 import { MoraleManager } from '../game/MoraleManager';
 import { MarketplaceManager } from '../game/MarketplaceManager';
 import { AnimalLifecycleManager } from '../game/AnimalLifecycleManager';
+import { TerrainGatheringManager } from '../game/TerrainGatheringManager';
 import { DashboardTracker } from '../game/DashboardTracker';
 
 export const ShadowQuality = {
@@ -144,6 +150,11 @@ export class Game {
   private performanceMonitor: PerformanceMonitor;
   private postProcessing: PostProcessing;
   private weatherController: WeatherController;
+  private cloudRenderer: CloudRenderer;
+  private birdFlockRenderer: BirdFlockRenderer;
+  private waterEffectRenderer: WaterEffectRenderer;
+  private wildAnimalRenderer: WildAnimalRenderer;
+  private flowerButterflyRenderer: FlowerButterflyRenderer;
   private flagLightSystem: FlagLightSystem;
   private workAreaRenderer: WorkAreaRenderer;
   private populationManager: PopulationManager;
@@ -151,6 +162,7 @@ export class Game {
   private animalLifecycleManager: AnimalLifecycleManager;
   private moraleManager: MoraleManager;
   private marketplaceManager: MarketplaceManager;
+  private terrainGatheringManager: TerrainGatheringManager;
   private dashboardTracker: DashboardTracker;
   private aiPlayers: AIPlayer[] = [];
   private roadRenderer: RoadRenderer;
@@ -331,6 +343,7 @@ export class Game {
     this.treeRenderer = new TreeRenderer();
     this.woodcutterManager = new WoodcutterManager(this.gameState, this.treeManager);
     this.foresterManager = new ForesterManager(this.gameState, this.treeManager);
+    this.terrainGatheringManager = new TerrainGatheringManager(this.gameState);
     this.depositRenderer = new DepositRenderer();
     this.particleSystem = new ParticleSystem();
     this.buildingAnimator = new BuildingAnimator();
@@ -357,11 +370,20 @@ export class Game {
       this.gameState, this.populationManager, this.moraleManager, this.humanPlayerId,
     );
     this.weatherController = new WeatherController();
+    this.cloudRenderer = new CloudRenderer();
+    this.birdFlockRenderer = new BirdFlockRenderer();
+    this.waterEffectRenderer = new WaterEffectRenderer();
+    this.wildAnimalRenderer = new WildAnimalRenderer();
+    this.flowerButterflyRenderer = new FlowerButterflyRenderer();
     this.flagLightSystem = new FlagLightSystem();
     this.workAreaRenderer = new WorkAreaRenderer();
     this.atmosphereController.onNightnessUpdate = (nightness) => {
       this.currentNightness = nightness;
       this.flagLightSystem.setNightness(nightness);
+      this.cloudRenderer.setNightness(nightness);
+      this.birdFlockRenderer.setNightness(nightness);
+      this.waterEffectRenderer.setNightness(nightness);
+      this.flowerButterflyRenderer.setNightness(nightness);
       this.postProcessing.setBloomStrength(0.3 + 0.2 * nightness);
     };
     // Wire food consumption to economy tracker
@@ -382,6 +404,14 @@ export class Game {
         for (const input of inputs) {
           if (RESOURCE_PROPERTIES[input.resource].isDrink) {
             this.moraleManager.recordDrinkServed(building.playerId, input.resource);
+          }
+        }
+      }
+      // Track luxury goods production for morale
+      if (building) {
+        for (const output of outputs) {
+          if (RESOURCE_PROPERTIES[output.resource].isLuxury) {
+            this.moraleManager.recordLuxuryServed(building.playerId, output.resource);
           }
         }
       }
@@ -590,6 +620,22 @@ export class Game {
     // Set up weather controller
     this.weatherController.addToScene(this.scene);
 
+    // Set up cloud renderer (billboard clouds + ground shadows)
+    this.cloudRenderer.addToScene(this.scene);
+
+    // Set up bird flock renderer (GPU-driven flocks)
+    this.birdFlockRenderer.addToScene(this.scene);
+
+    // Set up water effect renderer (sun sparkles on water tiles)
+    this.waterEffectRenderer.addToScene(this.scene);
+    this.waterEffectRenderer.initWaterPositions(this.grid);
+
+    // Set up wild animal renderer (ambient terrain creatures)
+    this.wildAnimalRenderer.addToScene(this.scene, this.grid);
+
+    // Set up flower butterfly renderer (GPU-driven butterflies near grassland)
+    this.flowerButterflyRenderer.addToScene(this.scene, this.grid);
+
     // Set up fog of war renderer + wire into unit/building renderers
     this.fogOfWarRenderer.addToScene(this.scene, this.grid);
     this.fogOfWarRenderer.setPlayerId(this.humanPlayerId);
@@ -624,6 +670,7 @@ export class Game {
           moraleManager: this.moraleManager,
           marketplaceManager: this.marketplaceManager,
           animalLifecycleManager: this.animalLifecycleManager,
+          terrainGatheringManager: this.terrainGatheringManager,
         },
         this.aiPlayers,
       );
@@ -771,6 +818,7 @@ export class Game {
       this.geologistManager.update(deltaTime);
       this.treeManager.update(deltaTime);
       this.woodcutterManager.update(deltaTime);
+      this.terrainGatheringManager.update(deltaTime);
       this.foresterManager.update(deltaTime);
       this.treeRenderer.sync(this.treeManager, this.grid);
       this.logisticsManager.update(deltaTime);
@@ -827,6 +875,11 @@ export class Game {
       );
       this.productionChainOverlay.update(deltaTime);
       this.weatherController.update(rawDelta, this.camera.position, this.frustum);
+      this.cloudRenderer.update(rawDelta, this.camera.position, this.frustum);
+      this.birdFlockRenderer.update(rawDelta, this.camera.position, this.frustum);
+      this.waterEffectRenderer.update(rawDelta, this.camera.position, this.frustum);
+      this.wildAnimalRenderer.update(rawDelta, this.camera.position);
+      this.flowerButterflyRenderer.update(rawDelta, this.camera.position, this.frustum);
 
       // Apply weather atmosphere overlay
       const wt = this.weatherController.getWeatherType();
@@ -1192,6 +1245,11 @@ export class Game {
     this.flagLightSystem.dispose();
     this.workAreaRenderer.dispose();
     this.weatherController.dispose();
+    this.cloudRenderer.dispose();
+    this.birdFlockRenderer.dispose();
+    this.waterEffectRenderer.dispose();
+    this.wildAnimalRenderer.dispose();
+    this.flowerButterflyRenderer.dispose();
     this.particleSystem.dispose();
     this.treeRenderer.dispose();
     this.depositRenderer.dispose();
@@ -1538,6 +1596,7 @@ export class Game {
         moraleManager: this.moraleManager,
         marketplaceManager: this.marketplaceManager,
         animalLifecycleManager: this.animalLifecycleManager,
+        terrainGatheringManager: this.terrainGatheringManager,
       },
       this.aiPlayers,
       {

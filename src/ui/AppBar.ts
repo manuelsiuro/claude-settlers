@@ -132,6 +132,7 @@ export function initAppBar(
       weather: gfxWeather.value as GraphicsSettings['weather'],
       timeOfDay: gfxTime.value as GraphicsSettings['timeOfDay'],
       fogOfWar: gfxFog.value === 'on',
+      ambientLife: ((document.getElementById('gfx-ambient') as HTMLSelectElement | null)?.value ?? 'full') as GraphicsSettings['ambientLife'],
     };
 
     saveSettings({
@@ -218,6 +219,7 @@ export function initAppBar(
         weather: gfxWeather.value as GraphicsSettings['weather'],
         timeOfDay: gfxTime.value as GraphicsSettings['timeOfDay'],
         fogOfWar: gfxFog.value === 'on',
+        ambientLife: ((document.getElementById('gfx-ambient') as HTMLSelectElement | null)?.value ?? 'full') as GraphicsSettings['ambientLife'],
       };
 
       game = getGame();

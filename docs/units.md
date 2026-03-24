@@ -223,3 +223,56 @@ Each profession will be identified by the base serf model holding or wearing a d
     - Clash phase: ±0.5 rad swing rotation. Result phase: winner scale pulse, loser fall + fade.
     - See `CombatAnimationState.ts` and `CombatRenderer.ts`.
 - **Key Colors:** Player Faction Color, Grey (weapons), Brown (weapon hilts), Gold (rank chevrons).
+
+---
+
+## Living World Professions
+
+### 21. Hunter
+
+- **Function:** Hunts wild game in forests for Game Meat. Requires Bow tool.
+- **Base Model:** Standard serf body and head.
+- **Distinguishing Feature:**
+    - **Attire:** Body color Forest Green-Brown (#556B2F). Darker and more camouflaged than Forester.
+    - **Tool:** Carries a Bow (curved thin cylinder with a string line, already exists as resource model).
+    - **Quiver:** Small cylinder on the back (color: Dark Brown).
+- **Color Accent:** Forest Green-Brown, Dark Brown.
+
+### 22. Trapper
+
+- **Function:** Sets traps in forests to collect animal Pelts. No tool required.
+- **Base Model:** Standard serf body and head.
+- **Distinguishing Feature:**
+    - **Attire:** Body color Medium Brown (#8B6914) — leather outfit.
+    - **Item:** Carries a coiled rope/snare (small torus or looped thin cylinder, color: Tan).
+    - **Belt:** Thin dark strip around the waist.
+- **Color Accent:** Medium Brown, Tan.
+
+### 23. Furrier
+
+- **Function:** Processes Pelts into Fur Coats at the Furrier building.
+- **Base Model:** Standard serf body and head.
+- **Distinguishing Feature:**
+    - **Attire:** Body color Saddle Brown (#8B4513) with a lighter brown apron (flat cuboid on front).
+    - **Item:** Carries a stretched hide piece (flat cream rectangle).
+- **Color Accent:** Saddle Brown, Cream.
+
+### 24. Beekeeper
+
+- **Function:** Tends bee hives at the Apiary to produce Honey. No tool required.
+- **Base Model:** Standard serf body and head.
+- **Distinguishing Feature:**
+    - **Attire:** Body color Off-White/Cream (#F5F5DC) — protective beekeeper suit.
+    - **Hat:** Wide-brimmed disc on top of head sphere (flat cylinder, color: White). Wider than any other unit's headwear.
+    - **Item:** Carries a small smoker (tiny cylinder with a wisp, color: Grey).
+- **Color Accent:** Off-White, White, Grey.
+
+### 25. Meadmaker
+
+- **Function:** Ferments Honey into Mead at the Meadery.
+- **Base Model:** Standard serf body and head.
+- **Distinguishing Feature:**
+    - **Attire:** Body color Amber (#DAA520) with a darker apron (flat cuboid on front, color: Dark Brown).
+    - **Item:** Carries a small barrel or honey pot (small cylinder, color: Golden Amber).
+- **Color Accent:** Amber, Dark Brown, Golden Amber.
+- **Notes:** Visually similar to Brewer but distinguished by amber color palette (vs Brewer's brown).

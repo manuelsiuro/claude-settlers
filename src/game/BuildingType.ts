@@ -75,6 +75,13 @@ export const BuildingType = {
   // Expansion: Special
   InnTavern: 'inn_tavern',
   Market: 'market',
+
+  // Living World
+  HuntingLodge: 'hunting_lodge',
+  TrappersHut: 'trappers_hut',
+  Furrier: 'furrier',
+  Apiary: 'apiary',
+  Meadery: 'meadery',
 } as const;
 
 export type BuildingType = (typeof BuildingType)[keyof typeof BuildingType];
@@ -91,6 +98,8 @@ export interface ProductionRecipe {
   outputs: { resource: ResourceType; amount: number }[];
   /** Production time in seconds */
   productionTime: number;
+  /** Accept any resource matching this category as input (data-driven service buildings) */
+  inputCategory?: 'drink' | 'luxury';
 }
 
 export interface BuildingDefinition {

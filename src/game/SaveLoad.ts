@@ -32,9 +32,11 @@ import type { MarketplaceManager, MarketplaceState } from './MarketplaceManager'
 import { TerrainType } from './TerrainType';
 import type { GoodsDistributionSettings } from './GoodsDistribution';
 import { serializeDistribution, deserializeDistribution } from './GoodsDistribution';
+import type { TerrainGatheringManager, TerrainGatheringPhase } from './TerrainGatheringManager';
+import type { HexCoord } from './HexGrid';
 
 /** Current save format version */
-const SAVE_VERSION = 12;
+const SAVE_VERSION = 13;
 
 /** localStorage key for auto-save */
 const STORAGE_KEY = 'feudal_realm_save';
@@ -155,12 +157,21 @@ export interface SaveData {
   };
   moraleManager?: {
     drinkEvents: [number, { drinkType: string; timestamp: number }[]][];
+    luxuryEvents?: [number, { luxuryType: string; timestamp: number }[]][];
     elapsedTime: number;
   };
   animalLifecycleManager?: {
     feedCooldown: number;
   };
   marketplaceManager?: MarketplaceState;
+  terrainGatheringManager?: {
+    workStates: [string, {
+      phase: TerrainGatheringPhase;
+      targetCoord: HexCoord | null;
+      gatherProgress: number;
+      idleCooldown: number;
+    }][];
+  };
 
   // Economy settings
   goodsDistribution?: ReturnType<typeof serializeDistribution>;
@@ -208,6 +219,7 @@ export function serializeGame(
     moraleManager: MoraleManager;
     marketplaceManager: MarketplaceManager;
     animalLifecycleManager?: { _getState(): { feedCooldown: number } };
+    terrainGatheringManager: TerrainGatheringManager;
   },
   aiPlayers: AIPlayer[],
   camera: { frustum: number; position: { x: number; y: number; z: number }; target: { x: number; y: number; z: number } },
@@ -284,6 +296,7 @@ export function serializeGame(
     moraleManager: managers.moraleManager._getState(),
     marketplaceManager: managers.marketplaceManager._getState(),
     animalLifecycleManager: managers.animalLifecycleManager?._getState(),
+    terrainGatheringManager: managers.terrainGatheringManager._getState(),
 
     goodsDistribution: distributionSettings ? serializeDistribution(distributionSettings) : undefined,
 
@@ -325,6 +338,7 @@ export function deserializeGame(
     moraleManager: MoraleManager;
     marketplaceManager: MarketplaceManager;
     animalLifecycleManager?: { _loadState(state: { feedCooldown: number }): void };
+    terrainGatheringManager: TerrainGatheringManager;
   },
   aiPlayers: AIPlayer[],
 ): GoodsDistributionSettings | null {
@@ -399,6 +413,9 @@ export function deserializeGame(
   }
   if (data.animalLifecycleManager && managers.animalLifecycleManager) {
     managers.animalLifecycleManager._loadState(data.animalLifecycleManager);
+  }
+  if (data.terrainGatheringManager) {
+    managers.terrainGatheringManager._loadState(data.terrainGatheringManager);
   }
 
   // Backward compat: patch buildings missing fields from older versions

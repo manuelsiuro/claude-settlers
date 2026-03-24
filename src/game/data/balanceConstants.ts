@@ -35,6 +35,13 @@ export let GEOLOGIST_PROSPECT_DURATION = 5.0;
 /** Seconds the geologist waits before prospecting another tile */
 export let GEOLOGIST_IDLE_COOLDOWN = 2.0;
 
+// ─── Terrain Gathering ─────────────────────────────────────────────────────
+
+/** Fraction of productionTime spent at the gathering site (the rest is travel) */
+export let TERRAIN_GATHERING_WORK_FRACTION = 0.4;
+/** Seconds the gatherer waits before searching for another terrain tile */
+export let TERRAIN_GATHERING_IDLE_COOLDOWN = 3;
+
 // ─── Trees ──────────────────────────────────────────────────────────────────
 
 /** Maximum trees allowed on a single hex tile */
@@ -168,6 +175,14 @@ export let MORALE_GOLD_BONUS_MAX = 0.10;
 export let MORALE_MULTIPLIER_BASE = 0.85;
 /** Morale-to-multiplier scaling factor */
 export let MORALE_MULTIPLIER_SCALE = 0.8;
+/** Morale bonus per unique luxury type served */
+export let MORALE_LUXURY_VARIETY_PER_TYPE = 0.05;
+/** Maximum morale bonus from luxury variety */
+export let MORALE_LUXURY_VARIETY_MAX = 0.10;
+/** Morale bonus per luxury item served in window */
+export let MORALE_LUXURY_VOLUME_PER_ITEM = 0.008;
+/** Maximum morale bonus from luxury volume */
+export let MORALE_LUXURY_VOLUME_MAX = 0.08;
 
 // ─── Difficulty-Based Starting Resources ───────────────────────────────────
 
@@ -334,6 +349,7 @@ export interface BalanceConfigOverrides {
   woodcutter?: { chopDuration?: number; idleCooldown?: number };
   forester?: { plantDuration?: number; idleCooldown?: number };
   geologist?: { prospectDuration?: number; idleCooldown?: number };
+  terrainGathering?: { workFraction?: number; idleCooldown?: number };
   trees?: { maxPerTile?: number; saplingGrowthTime?: number; youngGrowthTime?: number };
   combat?: { winsPerRank?: number; goldBonusPerBar?: number; maxGoldBonus?: number };
   upgrades?: { maxLevel?: number; workRadiusMaxLevel?: number };
@@ -362,6 +378,8 @@ export interface BalanceConfigOverrides {
     volumeBonusMax?: number; volumePerDrink?: number;
     goldBonusPerBar?: number; goldBonusMax?: number;
     multiplierBase?: number; multiplierScale?: number;
+    luxuryVarietyPerType?: number; luxuryVarietyMax?: number;
+    luxuryVolumePerItem?: number; luxuryVolumeMax?: number;
   };
   animals?: { feedInterval?: number };
   marketplace?: {
@@ -393,6 +411,9 @@ export function applyBalanceOverrides(config: BalanceConfigOverrides): void {
   // Geologist
   if (config.geologist?.prospectDuration !== undefined) GEOLOGIST_PROSPECT_DURATION = config.geologist.prospectDuration;
   if (config.geologist?.idleCooldown !== undefined) GEOLOGIST_IDLE_COOLDOWN = config.geologist.idleCooldown;
+  // Terrain Gathering
+  if (config.terrainGathering?.workFraction !== undefined) TERRAIN_GATHERING_WORK_FRACTION = config.terrainGathering.workFraction;
+  if (config.terrainGathering?.idleCooldown !== undefined) TERRAIN_GATHERING_IDLE_COOLDOWN = config.terrainGathering.idleCooldown;
   // Trees
   if (config.trees?.maxPerTile !== undefined) TREES_MAX_PER_TILE = config.trees.maxPerTile;
   if (config.trees?.saplingGrowthTime !== undefined) TREES_SAPLING_GROWTH_TIME = config.trees.saplingGrowthTime;
@@ -445,6 +466,10 @@ export function applyBalanceOverrides(config: BalanceConfigOverrides): void {
   if (config.morale?.goldBonusMax !== undefined) MORALE_GOLD_BONUS_MAX = config.morale.goldBonusMax;
   if (config.morale?.multiplierBase !== undefined) MORALE_MULTIPLIER_BASE = config.morale.multiplierBase;
   if (config.morale?.multiplierScale !== undefined) MORALE_MULTIPLIER_SCALE = config.morale.multiplierScale;
+  if (config.morale?.luxuryVarietyPerType !== undefined) MORALE_LUXURY_VARIETY_PER_TYPE = config.morale.luxuryVarietyPerType;
+  if (config.morale?.luxuryVarietyMax !== undefined) MORALE_LUXURY_VARIETY_MAX = config.morale.luxuryVarietyMax;
+  if (config.morale?.luxuryVolumePerItem !== undefined) MORALE_LUXURY_VOLUME_PER_ITEM = config.morale.luxuryVolumePerItem;
+  if (config.morale?.luxuryVolumeMax !== undefined) MORALE_LUXURY_VOLUME_MAX = config.morale.luxuryVolumeMax;
   // Animals
   if (config.animals?.feedInterval !== undefined) ANIMAL_FEED_INTERVAL = config.animals.feedInterval;
   // Marketplace
@@ -501,6 +526,8 @@ export function resetBalanceDefaults(): void {
   FORESTER_IDLE_COOLDOWN = 3.0;
   GEOLOGIST_PROSPECT_DURATION = 5.0;
   GEOLOGIST_IDLE_COOLDOWN = 2.0;
+  TERRAIN_GATHERING_WORK_FRACTION = 0.4;
+  TERRAIN_GATHERING_IDLE_COOLDOWN = 3;
   TREES_MAX_PER_TILE = 10;
   TREES_SAPLING_GROWTH_TIME = 60;
   TREES_YOUNG_GROWTH_TIME = 90;
@@ -545,6 +572,10 @@ export function resetBalanceDefaults(): void {
   MORALE_GOLD_BONUS_MAX = 0.10;
   MORALE_MULTIPLIER_BASE = 0.85;
   MORALE_MULTIPLIER_SCALE = 0.8;
+  MORALE_LUXURY_VARIETY_PER_TYPE = 0.05;
+  MORALE_LUXURY_VARIETY_MAX = 0.10;
+  MORALE_LUXURY_VOLUME_PER_ITEM = 0.008;
+  MORALE_LUXURY_VOLUME_MAX = 0.08;
   ANIMAL_FEED_INTERVAL = 10.0;
   // Marketplace
   MARKETPLACE_BASE_VALUES = {

@@ -8,9 +8,9 @@ import {
 import { BUILDING_DEFINITIONS } from './BuildingType';
 
 describe('UnitType', () => {
-  it('should have 40 unit types', () => {
+  it('should have 45 unit types', () => {
     const types = Object.values(UnitType);
-    expect(types).toHaveLength(40);
+    expect(types).toHaveLength(45);
   });
 
   it('all unit types should have unique string values', () => {

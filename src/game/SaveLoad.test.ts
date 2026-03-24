@@ -24,6 +24,7 @@ import { PopulationManager } from './PopulationManager';
 import { FeedingManager } from './FeedingManager';
 import { MoraleManager } from './MoraleManager';
 import { MarketplaceManager } from './MarketplaceManager';
+import { TerrainGatheringManager } from './TerrainGatheringManager';
 import { AIPlayer } from './AIPlayer';
 import { BuildingType } from './BuildingType';
 import {
@@ -96,6 +97,7 @@ function createManagers(gameState: GameState, roadNetwork: RoadNetwork, territor
     moraleManager: new MoraleManager(gameState),
     marketplaceManager: new MarketplaceManager(gameState),
     animalLifecycleManager: { _getState: () => ({ feedCooldown: 10 }), _loadState: () => {} },
+    terrainGatheringManager: new TerrainGatheringManager(gameState),
   };
 }
 
@@ -132,7 +134,7 @@ describe('SaveLoad: round-trip serialization', () => {
       { frustum: 10, position: { x: 0, y: 20, z: 0 }, target: { x: 0, y: 0, z: 0 } },
     );
 
-    expect(data.version).toBe(12);
+    expect(data.version).toBe(13);
     expect(data.config).toEqual(testConfig);
     expect(data.buildings).toEqual([]);
     expect(data.units).toEqual([]);
@@ -549,7 +551,7 @@ describe('SaveLoad: round-trip serialization', () => {
     const json = JSON.stringify(data);
     const parsed = JSON.parse(json) as SaveData;
 
-    expect(parsed.version).toBe(12);
+    expect(parsed.version).toBe(13);
     expect(parsed.config.seed).toBe(42);
     expect(parsed.buildings.length).toBe(2);
     expect(parsed.units.length).toBe(1);

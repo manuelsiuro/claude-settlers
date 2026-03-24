@@ -82,6 +82,13 @@ export const BUILDING_SCALE: Record<string, number> = {
   // ── Expansion: Special ──
   [BuildingType.InnTavern]: 0.17,
   [BuildingType.Market]: 0.16,
+
+  // ── Living World ──
+  [BuildingType.HuntingLodge]: 0.18,
+  [BuildingType.TrappersHut]: 0.18,
+  [BuildingType.Furrier]: 0.20,
+  [BuildingType.Apiary]: 0.16,
+  [BuildingType.Meadery]: 0.18,
 };
 
 const DEFAULT_BUILDING_SCALE = 0.15;

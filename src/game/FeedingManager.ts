@@ -39,6 +39,8 @@ const FOOD_PRODUCER_BUILDINGS: ReadonlySet<string> = new Set([
   BuildingType.Vineyard,
   BuildingType.CattleRanch,
   BuildingType.Butchery,
+  BuildingType.HuntingLodge,
+  BuildingType.Apiary,
 ]);
 
 /**
