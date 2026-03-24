@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-21T10:41:15.698Z",
+  "generatedAt": "2026-03-24T13:44:06.354Z",
   "config": {
     "size": 256,
     "camera": {
@@ -396,6 +396,41 @@
           "category": "logistics",
           "tier": 2,
           "modelFile": "market.glb"
+        },
+        {
+          "id": "hunting_lodge",
+          "label": "Hunting Lodge",
+          "category": "gathering",
+          "tier": 2,
+          "modelFile": "hunting_lodge.glb"
+        },
+        {
+          "id": "trappers_hut",
+          "label": "Trapper's Hut",
+          "category": "gathering",
+          "tier": 2,
+          "modelFile": "trappers_hut.glb"
+        },
+        {
+          "id": "furrier",
+          "label": "Furrier",
+          "category": "processing",
+          "tier": 3,
+          "modelFile": "furrier.glb"
+        },
+        {
+          "id": "apiary",
+          "label": "Apiary",
+          "category": "gathering",
+          "tier": 2,
+          "modelFile": "apiary.glb"
+        },
+        {
+          "id": "meadery",
+          "label": "Meadery",
+          "category": "processing",
+          "tier": 3,
+          "modelFile": "meadery.glb"
         }
       ]
     },
@@ -593,6 +628,42 @@
           "label": "Shepherd",
           "category": "civilian",
           "modelFile": "shepherd.glb"
+        },
+        {
+          "id": "merchant",
+          "label": "Merchant",
+          "category": "civilian",
+          "modelFile": "merchant.glb"
+        },
+        {
+          "id": "hunter",
+          "label": "Hunter",
+          "category": "civilian",
+          "modelFile": "hunter.glb"
+        },
+        {
+          "id": "trapper",
+          "label": "Trapper",
+          "category": "civilian",
+          "modelFile": "trapper.glb"
+        },
+        {
+          "id": "furrier",
+          "label": "Furrier",
+          "category": "civilian",
+          "modelFile": "furrier.glb"
+        },
+        {
+          "id": "beekeeper",
+          "label": "Beekeeper",
+          "category": "civilian",
+          "modelFile": "beekeeper.glb"
+        },
+        {
+          "id": "meadmaker",
+          "label": "Meadmaker",
+          "category": "civilian",
+          "modelFile": "meadmaker.glb"
         },
         {
           "id": "knight",
@@ -892,6 +963,36 @@
           "label": "Tongs",
           "category": "processed",
           "modelFile": "tongs.glb"
+        },
+        {
+          "id": "game_meat",
+          "label": "Game Meat",
+          "category": "raw",
+          "modelFile": "game_meat.glb"
+        },
+        {
+          "id": "pelts",
+          "label": "Pelts",
+          "category": "raw",
+          "modelFile": "pelts.glb"
+        },
+        {
+          "id": "fur_coat",
+          "label": "Fur Coat",
+          "category": "processed",
+          "modelFile": "fur_coat.glb"
+        },
+        {
+          "id": "honey",
+          "label": "Honey",
+          "category": "raw",
+          "modelFile": "honey.glb"
+        },
+        {
+          "id": "mead",
+          "label": "Mead",
+          "category": "processed",
+          "modelFile": "mead.glb"
         },
         {
           "id": "pigs",
