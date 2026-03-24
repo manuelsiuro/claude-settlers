@@ -11,10 +11,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 All design specs live in `docs/`:
 
 - `docs/game.md` — Master game design document: core gameplay loop, mechanics (resource management, building system, transportation/logistics, territory expansion, combat, economic management), progression tree, UI layout, win conditions
-- `docs/buildings.md` — Visual designs for all 50 building types with specific colors and style references
-- `docs/resources.md` — Visual designs for all 44 resource types (raw materials, processed goods, animals, tools)
-- `docs/units.md` — Visual designs for all 39 unit types (civilian professions, military, transport)
+- `docs/buildings.md` — Visual designs for all 55 building types with specific colors and style references
+- `docs/resources.md` — Visual designs for all 49 resource types (raw materials, processed goods, animals, tools)
+- `docs/units.md` — Visual designs for all 45 unit types (civilian professions, military, transport)
 - `docs/terrains.md` — Visual designs for 5 terrain types (grassland, forest, mountain, water, desert) with hex colors and decoration styles
+- `docs/living-world.md` — Living World feature: ambient visual systems (clouds, birds, wildlife, water effects, butterflies, bees) and new production chains (hunting, trapping, beekeeping)
 
 **Always read the relevant design doc before implementing a feature.** The docs specify exact shapes, colors, and behaviors.
 
@@ -31,14 +32,14 @@ All design specs live in `docs/`:
 
 ### Core Game Systems (from design doc)
 
-- **Resource chain economy**: multi-step production chains (e.g., Grain → Flour → Bread; Iron Ore → Iron Bars → Tools/Weapons; Hay → Dairy Farm → Milk → Cheese). 50 building types with explicit inputs/outputs across 44 resource types.
+- **Resource chain economy**: multi-step production chains (e.g., Grain → Flour → Bread; Iron Ore → Iron Bars → Tools/Weapons; Hay → Dairy Farm → Milk → Cheese). 55 building types with explicit inputs/outputs across 49 resource types.
 - **Flag-and-road logistics**: players place Flags to define paths; Transporters carry goods between Flags. Road quality (Path/Dirt/Stone/Paved) determines transport type: foot (1 item), Donkey (3 items), HorseTransport (8 items). Road upgrades via building/flag InfoPanel.
 - **Indirect unit control**: players don't command individual serfs — they create jobs via buildings. Serfs auto-assign. Military units (Knights, Archers, Cavalry, Siege Operators, Scouts) are the exception (directable for attacks).
 - **Territory system**: military buildings (Guard Hut, Watchtower, Barracks, Fortress) project areas of influence that define borders. Fortress has 20 slots and radius 10.
 - **Military recruitment**: type-aware recruitment at military buildings. Knights (Sword+Shield), Archers (Bow+Arrows at ArcheryRange), Cavalry (Horse+Sword+Shield at Barracks/Fortress), Siege Operators (SiegeRam), Scouts (serf promotion). Ranks 1-5 through combat; Gold Bars provide global combat bonus.
 - **Combat system**: 1v1 probability-based duels for all military types. Cavalry charge bonus (1.3x first engagement). Siege Operators deal 3x building damage (building HP system). Archers have 3-hex range with 0.6x melee strength.
 - **Hunger & feeding**: `FeedingManager` decays unit satiation over time (0.001/s base, 1.0x working, 0.5x garrisoned, 0.5x food producers). Feeds from Castle/Warehouse every 5s when satiation < 0.80. Food producer workers (fishermen, farmers, bakers, etc.) get reduced decay and higher feed priority. Hunger thresholds: hungry at 0.35, starving at 0.15. Penalty functions exist but are not yet wired into gameplay. See `docs/food-system.md` for full details.
-- **Morale system**: `MoraleManager` tracks drink service (Beer/Wine via Inn/Tavern). Morale = base(0.5) + variety + volume + gold bonuses. Affects production (+32% max) and combat multipliers.
+- **Morale system**: `MoraleManager` tracks drink service (Beer/Wine/Mead via Inn/Tavern) and luxury goods (Fur Coat). Inn/Tavern uses `inputCategory: 'drink'` to accept any `isDrink` resource generically. Morale = base(0.5) + drink variety + drink volume + luxury variety + luxury volume + gold bonuses. Affects production (+32% max) and combat multipliers.
 - **Day/night effects**: night production slowdown (25%), civilian speed penalty (40%), torch tower mitigation (50% reduction in 5-hex radius).
 - **Animal lifecycle**: `AnimalLifecycleManager` tracks Donkey/HorseTransport feeding, aging, starvation death. Cargo drops at nearest flag on death.
 - **Goods distribution**: per-resource priority (1-5) and per-building importance (1-5) control routing scores. `LogisticsManager` uses composite `importance × priority / distance` when deciding where to send output goods.
@@ -48,7 +49,9 @@ All design specs live in `docs/`:
 
 ### Visual & Animation Systems
 
-`src/engine/` contains 18+ renderers and visual systems (particles, building animations, tree sway shader, combat renderer, overlays, flag lights, atmosphere, post-processing, etc.). All follow the same integration pattern: instantiated in `Game` constructor, added to scene in `start()`, updated in the animate loop (after manager updates, before render), and disposed in `dispose()`. Read the source files for implementation details, or use the `feudal-new-renderer` skill when adding new ones.
+`src/engine/` contains 23+ renderers and visual systems (particles, building animations, tree sway shader, combat renderer, overlays, flag lights, atmosphere, post-processing, ambient life, etc.). All follow the same integration pattern: instantiated in `Game` constructor, added to scene in `start()`, updated in the animate loop (after manager updates, before render), and disposed in `dispose()`. Read the source files for implementation details, or use the `feudal-new-renderer` skill when adding new ones.
+- **Ambient life systems** (Living World): `CloudRenderer` (billboard clouds + ground shadows), `BirdFlockRenderer` (GPU-driven shader birds), `WaterEffectRenderer` (sparkle points on water), `WildAnimalRenderer` (deer/rabbits/goats/fish via InstancedMesh), `FlowerButterflyRenderer` (GPU-driven butterflies). Controlled via `ambientLife` graphics setting (`off`/`minimal`/`full`). Use `rawDelta` (animate even when paused). See `docs/living-world.md` for specs.
+- **TerrainGatheringManager**: Data-driven manager for Hunting Lodge, Trapper's Hut, and future terrain-gathering buildings. Reads `harvestTerrain`, `workRadius`, `productionTime` from `BuildingDefinition` — no per-building code needed.
 
 ### UI Panel Update Pattern
 
@@ -138,7 +141,7 @@ This project uses `PROGRESS.md` at the repo root as the single source of truth f
 
 ### Development Phases
 
-Phases 1–9 and all expansion phases (A–J) are complete. The game now has 50 building types, 44 resource types, 40 unit types, hunger/morale systems, military expansion (5 unit types), advanced transport (multi-carry, road quality tiers), animal lifecycle, balance tuning, a full statistics dashboard with Canvas-based charts, standalone app packaging (Capacitor/Tauri/PWA), a comprehensive mobile UI overhaul (bottom sheets, toolbar, streamlined build flow, touch-optimized placement), and a barter marketplace with dynamic pricing, traveling merchants, auto-trade rules, and AI trading. See `PROGRESS.md` for full history. 779 tests passing.
+Phases 1–9 and all expansion phases (A–J) are complete. The game now has 55 building types, 49 resource types, 45 unit types, hunger/morale systems, military expansion (5 unit types), advanced transport (multi-carry, road quality tiers), animal lifecycle, balance tuning, a full statistics dashboard with Canvas-based charts, standalone app packaging (Capacitor/Tauri/PWA), a comprehensive mobile UI overhaul (bottom sheets, toolbar, streamlined build flow, touch-optimized placement), a barter marketplace with dynamic pricing, traveling merchants, auto-trade rules, and AI trading, and a Living World feature with 6 ambient visual systems (clouds, birds, water sparkles, wild animals, butterflies, bee particles), 5 new production chain buildings (Hunting Lodge, Trapper's Hut, Furrier, Apiary, Meadery), data-driven service buildings (`inputCategory`), and luxury morale goods. See `PROGRESS.md` for full history. 779 tests passing.
 
 ### Verification
 
