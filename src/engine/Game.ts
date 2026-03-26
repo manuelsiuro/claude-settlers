@@ -399,15 +399,18 @@ export class Game {
       for (const output of outputs) {
         this.economyTracker.recordProduction(output.resource, output.amount);
       }
-      // InnTavern consumes drinks → record for morale
+      // InnTavern consumes drinks and luxury goods → record for morale
       if (building?.type === BuildingType.InnTavern) {
         for (const input of inputs) {
           if (RESOURCE_PROPERTIES[input.resource].isDrink) {
             this.moraleManager.recordDrinkServed(building.playerId, input.resource);
           }
+          if (RESOURCE_PROPERTIES[input.resource].isLuxury) {
+            this.moraleManager.recordLuxuryServed(building.playerId, input.resource);
+          }
         }
       }
-      // Track luxury goods production for morale
+      // Track luxury goods production for morale (non-InnTavern buildings producing luxuries)
       if (building) {
         for (const output of outputs) {
           if (RESOURCE_PROPERTIES[output.resource].isLuxury) {
@@ -875,10 +878,14 @@ export class Game {
       );
       this.productionChainOverlay.update(deltaTime);
       this.weatherController.update(rawDelta, this.camera.position, this.frustum);
+      // Pass dynamic wind direction from weather to ambient renderers
+      const wind = this.weatherController.getWindDirection();
+      this.cloudRenderer.setWindDirection(wind);
+      this.flowerButterflyRenderer.setWindDirection(wind);
       this.cloudRenderer.update(rawDelta, this.camera.position, this.frustum);
       this.birdFlockRenderer.update(rawDelta, this.camera.position, this.frustum);
       this.waterEffectRenderer.update(rawDelta, this.camera.position, this.frustum);
-      this.wildAnimalRenderer.update(rawDelta, this.camera.position);
+      this.wildAnimalRenderer.update(deltaTime, this.camera.position);
       this.flowerButterflyRenderer.update(rawDelta, this.camera.position, this.frustum);
 
       // Apply weather atmosphere overlay

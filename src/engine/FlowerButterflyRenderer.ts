@@ -105,6 +105,12 @@ export class FlowerButterflyRenderer {
     }
   }
 
+  setWindDirection(dir: THREE.Vector2): void {
+    if (this.material) {
+      this.material.uniforms.uWindDir.value.copy(dir).normalize();
+    }
+  }
+
   setEnabled(enabled: boolean): void {
     this.enabled = enabled;
     if (this.points) {

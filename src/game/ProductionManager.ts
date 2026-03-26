@@ -61,11 +61,14 @@ export class ProductionManager {
       const def = BUILDING_DEFINITIONS[building.type];
       if (!def.production) continue;
       // Skip dynamic-output buildings (e.g., Toolmaker) — handled by their own manager
-      // But keep buildings that use inputCategory (e.g., InnTavern consumes drinks)
-      if (def.production.outputs.length === 0 && !def.production.inputCategory) continue;
+      // But keep buildings that use inputCategories (e.g., InnTavern consumes drinks)
+      if (def.production.outputs.length === 0 && !def.production.inputCategories?.length) continue;
 
       // WoodcutterHut production is handled by WoodcutterManager
       if (building.type === BuildingType.WoodcutterHut) continue;
+
+      // Skip terrain-walking buildings — handled by TerrainGatheringManager
+      if (def.gatheringStyle === 'walk') continue;
 
       // Count active workers (primary + extras from worker upgrades)
       const activeWorkers = this.countActiveWorkers(building);
@@ -77,17 +80,19 @@ export class ProductionManager {
         continue;
       }
 
-      // Category-based input check: need at least one resource matching the category
-      if (def.production.inputCategory) {
-        const cat = def.production.inputCategory;
-        const hasCategory = Object.entries(building.inputInventory).some(([res, qty]) => {
-          if (!qty || qty <= 0) return false;
-          const props = RESOURCE_PROPERTIES[res as ResourceType];
-          if (cat === 'drink') return props.isDrink;
-          if (cat === 'luxury') return props.isLuxury;
-          return false;
+      // Category-based input check: need at least one resource matching each required category
+      if (def.production.inputCategories?.length) {
+        const missingRequired = def.production.inputCategories.some(({ category: cat, required }) => {
+          if (!required) return false;
+          return !Object.entries(building.inputInventory).some(([res, qty]) => {
+            if (!qty || qty <= 0) return false;
+            const props = RESOURCE_PROPERTIES[res as ResourceType];
+            if (cat === 'drink') return props.isDrink;
+            if (cat === 'luxury') return props.isLuxury;
+            return false;
+          });
         });
-        if (!hasCategory) continue;
+        if (missingRequired) continue;
       }
 
       // Need output space
@@ -144,17 +149,18 @@ export class ProductionManager {
       building.inputInventory[input.resource as ResourceType] = Math.max(0, current - input.amount);
     }
 
-    // Consume category-based input: find first matching resource and consume 1 unit
-    if (def.production.inputCategory) {
-      const cat = def.production.inputCategory;
-      for (const [res, qty] of Object.entries(building.inputInventory)) {
-        if (!qty || qty <= 0) continue;
-        const props = RESOURCE_PROPERTIES[res as ResourceType];
-        const matches = (cat === 'drink' && props.isDrink) || (cat === 'luxury' && props.isLuxury);
-        if (matches) {
-          building.inputInventory[res as ResourceType] = qty - 1;
-          consumedInputs.push({ resource: res as ResourceType, amount: 1 });
-          break;
+    // Consume category-based inputs: find first matching resource per category and consume 1 unit
+    if (def.production.inputCategories?.length) {
+      for (const { category: cat } of def.production.inputCategories) {
+        for (const [res, qty] of Object.entries(building.inputInventory)) {
+          if (!qty || qty <= 0) continue;
+          const props = RESOURCE_PROPERTIES[res as ResourceType];
+          const matches = (cat === 'drink' && props.isDrink) || (cat === 'luxury' && props.isLuxury);
+          if (matches) {
+            building.inputInventory[res as ResourceType] = qty - 1;
+            consumedInputs.push({ resource: res as ResourceType, amount: 1 });
+            break;
+          }
         }
       }
     }

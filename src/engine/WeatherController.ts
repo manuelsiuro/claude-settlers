@@ -369,6 +369,11 @@ export class WeatherController {
     return this.transitionOpacity;
   }
 
+  /** Get current wind direction (normalized) for ambient renderers */
+  getWindDirection(): THREE.Vector2 {
+    return this.wind;
+  }
+
   dispose(): void {
     this.disposePrecipitation();
     this.scene = null;

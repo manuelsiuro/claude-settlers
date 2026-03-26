@@ -139,6 +139,10 @@ export class CloudRenderer {
     this.nightness = nightness;
   }
 
+  setWindDirection(dir: THREE.Vector2): void {
+    this.windDirection.copy(dir).normalize();
+  }
+
   setEnabled(enabled: boolean): void {
     this.enabled = enabled;
     if (this.cloudMesh) this.cloudMesh.visible = enabled;

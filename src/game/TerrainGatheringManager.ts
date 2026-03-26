@@ -1,4 +1,4 @@
-import { BuildingType, BUILDING_DEFINITIONS } from './BuildingType';
+import { BUILDING_DEFINITIONS } from './BuildingType';
 import { BuildingState, addToInventory, hasOutputSpace } from './Building';
 import type { Building } from './Building';
 import type { GameState } from './GameState';
@@ -14,13 +14,6 @@ import {
   TERRAIN_GATHERING_WORK_FRACTION,
   TERRAIN_GATHERING_IDLE_COOLDOWN,
 } from './data/balanceConstants';
-
-/** Building types handled by their own specialized managers (excluded here) */
-const EXCLUDED_TYPES: Set<string> = new Set([
-  BuildingType.WoodcutterHut,
-  BuildingType.ForesterHut,
-  BuildingType.GeologistHut,
-]);
 
 export type TerrainGatheringPhase =
   | 'idle_at_building'
@@ -57,12 +50,7 @@ export class TerrainGatheringManager {
 
   /** Check if a building type should be handled by this manager */
   private isTerrainGatherer(building: Building): boolean {
-    if (EXCLUDED_TYPES.has(building.type)) return false;
-    const def = BUILDING_DEFINITIONS[building.type];
-    if (!def.harvestTerrain) return false;
-    if (!def.production) return false;
-    if (def.production.inputs.length > 0) return false;
-    return true;
+    return BUILDING_DEFINITIONS[building.type].gatheringStyle === 'walk';
   }
 
   update(deltaTime: number): void {

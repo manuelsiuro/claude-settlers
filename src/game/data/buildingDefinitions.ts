@@ -1432,7 +1432,10 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     workerTool: '',
     production: {
       inputs: [],
-      inputCategory: 'drink',
+      inputCategories: [
+        { category: 'drink', required: true },
+        { category: 'luxury', required: false },
+      ],
       outputs: [],
       productionTime: 15,
     },
@@ -1505,6 +1508,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     constructionTime: 25,
     workRadius: 5,
     populationCapacity: 0,
+    gatheringStyle: 'walk',
   },
 
   ['trappers_hut']: {
@@ -1534,6 +1538,7 @@ export const BUILDING_DEFINITIONS: Record<BuildingType, BuildingDefinition> = {
     constructionTime: 20,
     workRadius: 4,
     populationCapacity: 0,
+    gatheringStyle: 'walk',
   },
 
   ['furrier']: {

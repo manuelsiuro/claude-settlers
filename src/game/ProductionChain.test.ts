@@ -105,10 +105,12 @@ describe('Production Chain Verification', () => {
     expect(brewery.production!.outputs).toContainEqual({ resource: ResourceType.Beer, amount: 1 });
 
     const inn = BUILDING_DEFINITIONS[BuildingType.InnTavern];
-    // InnTavern uses inputCategory: 'drink' instead of explicit Beer input
-    expect(inn.production!.inputCategory).toBe('drink');
-    // Beer is a drink, so InnTavern will accept it
+    // InnTavern uses inputCategories: drink (required) + luxury (optional)
+    expect(inn.production!.inputCategories).toContainEqual({ category: 'drink', required: true });
+    expect(inn.production!.inputCategories).toContainEqual({ category: 'luxury', required: false });
+    // Beer is a drink and FurCoat is a luxury, so InnTavern will accept both
     expect(RESOURCE_PROPERTIES[ResourceType.Beer].isDrink).toBe(true);
+    expect(RESOURCE_PROPERTIES[ResourceType.FurCoat].isLuxury).toBe(true);
   });
 
   it('SheepFarm → Wool → WeaversHut → Cloth', () => {
