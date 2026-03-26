@@ -28,8 +28,8 @@ const BUTTERFLY_VERTEX = /* glsl */ `
     );
     gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
     // Wing flap via point size oscillation
-    float wingFlap = 3.0 + sin(uTime * 12.0 + aPhase * 5.0) * 1.5;
-    gl_PointSize = wingFlap * (8.0 / uFrustum);
+    float wingFlap = 6.0 + sin(uTime * 12.0 + aPhase * 5.0) * 2.0;
+    gl_PointSize = wingFlap * (14.0 / uFrustum);
     // Daytime only: fade out when nightness > 0.3
     vAlpha = smoothstep(0.5, 0.3, uNightness);
     vColor = aColor;

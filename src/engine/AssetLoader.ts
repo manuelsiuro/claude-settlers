@@ -15,6 +15,12 @@ const TERRAIN_MODELS = [
   'bush',
   'rock_small',
   'water_waves',
+  // Living World: ambient animals + flower decorations
+  'deer',
+  'rabbit',
+  'mountain_goat',
+  'fish',
+  'flower_patch',
 ] as const;
 
 export type TerrainModelName = (typeof TERRAIN_MODELS)[number];
