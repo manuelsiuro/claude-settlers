@@ -6,7 +6,7 @@ import type { Game } from '../../engine/Game';
 import { BuildingType, BUILDING_DEFINITIONS } from '../../game/BuildingType';
 import { BuildingState, getInventoryAmount, getInventoryTotal } from '../../game/Building';
 import type { Building } from '../../game/Building';
-import { RESOURCE_PROPERTIES } from '../../game/ResourceType';
+import { RESOURCE_PROPERTIES, ResourceType } from '../../game/ResourceType';
 import { getDistanceMultiplier } from '../../game/ProductionManager';
 import {
   BUILDING_UPGRADES,
@@ -27,6 +27,7 @@ import {
   canTrade,
   updateTradeValues,
 } from '../TradePanel';
+import { getSeenInventoryKeys } from './BuildingInfoRenderer';
 
 /** Update dynamic values without rebuilding DOM */
 export function updateInfoValues(
@@ -139,21 +140,21 @@ export function updateInfoValues(
     }
   }
 
-  // Inventory amounts
-  for (const [resource, amount] of Object.entries(building.inputInventory)) {
-    if (amount !== undefined && amount > 0) {
-      updater.setText(`inv-in-${resource}`, `${amount}`);
-    }
+  // Inventory amounts + row visibility (seen keys may include deleted inventory entries)
+  const seen = getSeenInventoryKeys();
+  for (const key of seen.input) {
+    const amount = building.inputInventory[key as ResourceType] ?? 0;
+    updater.setText(`inv-in-${key}`, `${amount}`);
+    updater.setDisplay(`inv-in-row-${key}`, amount > 0);
   }
-  for (const [resource, amount] of Object.entries(building.outputInventory)) {
-    if (amount !== undefined && amount > 0) {
-      updater.setText(`inv-out-${resource}`, `${amount}`);
-    }
+  for (const key of seen.output) {
+    const amount = building.outputInventory[key as ResourceType] ?? 0;
+    updater.setText(`inv-out-${key}`, `${amount}`);
+    updater.setDisplay(`inv-out-row-${key}`, amount > 0);
   }
 
   // Capacity
-  const hasInventory = Object.values(building.inputInventory).some((v) => v !== undefined && v > 0)
-    || Object.values(building.outputInventory).some((v) => v !== undefined && v > 0);
+  const hasInventory = seen.input.size > 0 || seen.output.size > 0;
   if (hasInventory) {
     const effectiveCap = getEffectiveStorageCapacity(building);
     const totalUsed = getInventoryTotal(building.inputInventory) + getInventoryTotal(building.outputInventory);

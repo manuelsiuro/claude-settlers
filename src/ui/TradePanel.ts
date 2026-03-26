@@ -61,15 +61,18 @@ export function getTradeStructureKey(building: Building): string {
   const mp = getMarketplace();
   if (!mp) return 'trade:none';
 
+  const venue = getVenue(building);
   const merchant = mp.getMerchant(building.playerId);
-  const merchantKey = merchant?.active
-    ? `m:${merchant.deals.map(d => `${d.id}:${d.remaining}`).join(',')}`
-    : 'm:0';
+  // Only track structural changes: merchant presence and deal count (not remaining amounts)
+  const merchantActive = merchant?.active ? 1 : 0;
+  const dealCount = merchant?.active
+    ? merchant.deals.filter(d => d.remaining > 0).length : 0;
+  const available = venue === 'market'
+    ? mp.getAvailableResources(building.playerId).length : 0;
+  const rules = venue === 'market'
+    ? mp.getAutoTradeRules(building.playerId).length : 0;
 
-  const available = mp.getAvailableResources(building.playerId).length;
-  const rules = mp.getAutoTradeRules(building.playerId).length;
-
-  return `trade|${selectedSellResource}|${selectedBuyResource}|${sellAmount}|${merchantKey}|a:${available}|r:${rules}`;
+  return `trade|${venue}|${merchantActive}|d:${dealCount}|a:${available}|r:${rules}`;
 }
 
 // ── HTML generation ──────────────────────────────────────────────────────
@@ -128,7 +131,7 @@ export function generateTradeHTML(building: Building): string {
         ${allResources.map(r => `<option value="${r}" ${r === selectedBuyResource ? 'selected' : ''}>${RESOURCE_PROPERTIES[r].label}</option>`).join('')}
       </select>
       <div class="trade-result">
-        ${resourceIcon(selectedBuyResource, 20)}
+        <span data-field="trade-buy-icon">${resourceIcon(selectedBuyResource, 20)}</span>
         <span class="trade-result-amount" data-field="trade-receive-amt">${preview.amountReceived}</span>
       </div>
     </div>`;
@@ -136,7 +139,7 @@ export function generateTradeHTML(building: Building): string {
   // Price impact
   const impactColors: Record<string, string> = { none: '#4CAF50', low: '#8BC34A', medium: '#FF9800', high: '#F44336' };
   html += `<div class="trade-impact" data-field="trade-impact" style="color:${impactColors[preview.priceImpact] ?? '#4CAF50'}">
-      Price impact: ${preview.priceImpact}
+      Price impact: <span data-field="trade-impact-text">${preview.priceImpact}</span>
     </div>`;
 
   // Confirm button
@@ -202,6 +205,7 @@ function generateMerchantHTML(merchant: TravelingMerchant, building: Building, t
         ${resourceIcon(deal.costResource)} ${deal.costAmount} ${costLabel}
         <span class="trade-deal-arrow">→</span>
         ${resourceIcon(deal.offerResource)} ${deal.offerAmount} ${offerLabel}
+        <span class="trade-deal-remaining" data-field="deal-remaining-${deal.id}">(${deal.remaining} left)</span>
       </div>
       <button class="btn-outlined trade-deal-btn" data-trade-action="accept-deal" data-deal-id="${deal.id}" data-building-id="${building.id}">
         Accept
@@ -336,19 +340,37 @@ export function updateTradeValues(building: Building, updater: PanelUpdater): vo
   const preview = mp.previewTrade(playerId, selectedSellResource, sellAmount, selectedBuyResource, venue);
   const cooldownLeft = mp.getCooldownRemaining(playerId, venue);
 
+  // Patch select element values (preserves dropdown state across value updates)
+  const container = updater.getContainer();
+  const sellSelect = container.querySelector('[data-trade-role="sell"]') as HTMLSelectElement | null;
+  if (sellSelect && sellSelect.value !== selectedSellResource) {
+    sellSelect.value = selectedSellResource;
+  }
+  const buySelect = container.querySelector('[data-trade-role="buy"]') as HTMLSelectElement | null;
+  if (buySelect && buySelect.value !== selectedBuyResource) {
+    buySelect.value = selectedBuyResource;
+  }
+
+  // Patch buy icon
+  updater.setHTML('trade-buy-icon', resourceIcon(selectedBuyResource, 20));
+
   updater.setText('trade-sell-amt', String(sellAmount));
   updater.setText('trade-receive-amt', String(preview.amountReceived));
   updater.setText('trade-rate', `Rate: ${preview.exchangeRate > 0 ? preview.exchangeRate.toFixed(2) : '—'}`);
 
   const impactColors: Record<string, string> = { none: '#4CAF50', low: '#8BC34A', medium: '#FF9800', high: '#F44336' };
   updater.setColor('trade-impact', impactColors[preview.priceImpact] ?? '#4CAF50');
+  updater.setText('trade-impact-text', preview.priceImpact);
 
-  // Update merchant timer
+  // Update merchant timer and deal remaining
   const merchant = mp.getMerchant(playerId);
   if (merchant?.active) {
     const gameTime = getGameFn?.().getEconomyTracker().getGameTime() ?? 0;
     const timeLeft = Math.max(0, Math.ceil(merchant.departureTime - gameTime));
     updater.setText('merchant-timer', `${timeLeft}s`);
+    for (const deal of merchant.deals) {
+      updater.setText(`deal-remaining-${deal.id}`, `(${deal.remaining} left)`);
+    }
   }
 
   // Update NPC stock counts
@@ -358,8 +380,20 @@ export function updateTradeValues(building: Building, updater: PanelUpdater): vo
     }
   }
 
+  // Update price trends
+  for (const r of getTradeableResources()) {
+    const mul = mp.getPriceMultiplier(playerId, r);
+    if (mul !== 1.0) {
+      const pct = Math.round(mul * 100);
+      const color = mul < 1.0 ? '#4CAF50' : mul > 1.0 ? '#F44336' : '#888';
+      const tag = mul < 0.9 ? 'cheap' : mul > 1.1 ? 'expensive' : 'normal';
+      updater.setText(`price-trend-${r}`, `${pct}% (${tag})`);
+      updater.setColor(`price-trend-${r}`, color);
+    }
+  }
+
   // Update cooldown on confirm button
-  const confirmBtn = document.querySelector('.trade-confirm-btn') as HTMLButtonElement | null;
+  const confirmBtn = container.querySelector('.trade-confirm-btn') as HTMLButtonElement | null;
   if (confirmBtn) {
     const canExecute = preview.amountReceived > 0 && cooldownLeft <= 0;
     confirmBtn.disabled = !canExecute;

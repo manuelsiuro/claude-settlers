@@ -21,7 +21,7 @@ import {
   handleTradeClick, handleTradeChange, resetTradeState,
 } from '../TradePanel';
 
-import { getInfoStructureKey, generateInfoHTML } from './BuildingInfoRenderer';
+import { getInfoStructureKey, generateInfoHTML, resetInventoryTracking } from './BuildingInfoRenderer';
 import { generateFlagInfoHTML } from './RoadInfoRenderer';
 import { updateInfoValues } from './InfoPanelValues';
 
@@ -205,11 +205,10 @@ export function initInfoPanel(
       }
     }
 
-    // Trade panel click events
+    // Trade panel click events — no updater.reset(), trade key is stable
     const selectedBuilding = getSelectedBuilding();
     if (selectedBuilding && canTrade(selectedBuilding)) {
       if (handleTradeClick(e.target as HTMLElement, selectedBuilding)) {
-        updater.reset();
         updateBuilding(selectedBuilding);
         return;
       }
@@ -229,12 +228,11 @@ export function initInfoPanel(
     }
   });
 
-  // Change event for trade resource selectors
+  // Change event for trade resource selectors — no updater.reset(), trade key is stable
   infoPanelContent.addEventListener('change', (e) => {
     if (handleTradeChange(e.target as HTMLElement)) {
       const sel = getSelectedBuilding();
       if (sel) {
-        updater.reset();
         updateBuilding(sel);
       }
     }
@@ -247,6 +245,7 @@ export function showInfoPanel(building: Building): void {
   const def = BUILDING_DEFINITIONS[building.type];
   infoPanelTitle.innerHTML = `${buildingIcon(building.type, 24)} ${def.label}`;
   updater.reset();
+  resetInventoryTracking();
   updateBuilding(building);
 
   // Open panel: bottom sheet on mobile, classList on desktop

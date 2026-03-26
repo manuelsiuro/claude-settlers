@@ -37,18 +37,58 @@ import {
   generateTradeHTML,
 } from '../TradePanel';
 
+// ── Monotonic inventory key tracking ─────────────────────────────────────
+// Once a resource key is observed, it stays in the structure key for the
+// panel session — even after the game deletes the key on consumption.
+// This prevents structure key churn that would cause full DOM rebuilds.
+
+let trackedBuildingId: string | null = null;
+const seenInKeys = new Set<string>();
+const seenOutKeys = new Set<string>();
+
+/** Reset inventory tracking (call when panel opens for a new building) */
+export function resetInventoryTracking(): void {
+  trackedBuildingId = null;
+  seenInKeys.clear();
+  seenOutKeys.clear();
+}
+
+/** Get the accumulated seen inventory keys (for value updater visibility toggling) */
+export function getSeenInventoryKeys(): { input: ReadonlySet<string>; output: ReadonlySet<string> } {
+  return { input: seenInKeys, output: seenOutKeys };
+}
+
+/** Accumulate inventory keys into the seen sets and return stable sorted key strings */
+function getStableInventoryKeys(building: Building): { inKeys: string; outKeys: string } {
+  if (building.id !== trackedBuildingId) {
+    trackedBuildingId = building.id;
+    seenInKeys.clear();
+    seenOutKeys.clear();
+  }
+  for (const [k, v] of Object.entries(building.inputInventory)) {
+    if (v !== undefined && v > 0) seenInKeys.add(k);
+  }
+  for (const [k, v] of Object.entries(building.outputInventory)) {
+    if (v !== undefined && v > 0) seenOutKeys.add(k);
+  }
+  return {
+    inKeys: [...seenInKeys].sort().join(','),
+    outKeys: [...seenOutKeys].sort().join(','),
+  };
+}
+
 // ── Utility helpers ──────────────────────────────────────────────────────
 
-/** Format an inventory as HTML list with data-field attributes */
-function formatInventory(inventory: ResourceInventory, fieldPrefix: string): string {
-  const entries = Object.entries(inventory).filter(
-    ([, amount]) => amount !== undefined && amount > 0,
-  );
-  if (entries.length === 0) return '<span class="info-empty">Empty</span>';
-  return entries
-    .map(([resource, amount]) => {
+/** Format an inventory as HTML list with data-field attributes.
+ *  Renders rows for all seen keys; zero-amount rows are hidden via display:none. */
+function formatInventory(inventory: ResourceInventory, fieldPrefix: string, keys: ReadonlySet<string>): string {
+  if (keys.size === 0) return '<span class="info-empty">Empty</span>';
+  return [...keys].sort()
+    .map((resource) => {
+      const amount = inventory[resource as ResourceType] ?? 0;
       const props = RESOURCE_PROPERTIES[resource as ResourceType];
-      return `<div class="info-resource-row">
+      const display = amount > 0 ? '' : ' style="display:none"';
+      return `<div class="info-resource-row" data-field="${fieldPrefix}-row-${resource}"${display}>
         <span class="info-resource-name">${resourceIcon(resource)} ${props?.label ?? resource}</span>
         <span class="info-resource-amount" data-field="${fieldPrefix}-${resource}">${amount}</span>
       </div>`;
@@ -104,13 +144,8 @@ export function getInfoStructureKey(building: Building, getGame: () => Game): st
     parts.push('k:' + building.knightIds.length);
   }
 
-  // Inventory resource keys present
-  const inKeys = Object.entries(building.inputInventory)
-    .filter(([, v]) => v !== undefined && v > 0)
-    .map(([k]) => k).sort().join(',');
-  const outKeys = Object.entries(building.outputInventory)
-    .filter(([, v]) => v !== undefined && v > 0)
-    .map(([k]) => k).sort().join(',');
+  // Inventory resource keys — monotonic: once seen, stays in key even after deletion
+  const { inKeys, outKeys } = getStableInventoryKeys(building);
   parts.push('i:' + inKeys, 'o:' + outKeys);
 
   // Upgrade states per axis
@@ -582,22 +617,20 @@ export function generateInfoHTML(building: Building, getGame: () => Game, isDesk
     html += '</div>';
   }
 
-  // Inventory (input + output)
-  const hasInputs =
-    Object.values(building.inputInventory).some((v) => v !== undefined && v > 0);
-  const hasOutputs =
-    Object.values(building.outputInventory).some((v) => v !== undefined && v > 0);
+  // Inventory (input + output) — uses seen keys for stable rendering
+  const hasInputs = seenInKeys.size > 0;
+  const hasOutputs = seenOutKeys.size > 0;
 
   if (hasInputs || hasOutputs) {
     html += '<div class="info-section">';
     html += `<div class="info-section-label">${icon('warehouse')} Inventory</div>`;
     if (hasInputs) {
       html += '<div class="info-subsection-label">Input</div>';
-      html += formatInventory(building.inputInventory, 'inv-in');
+      html += formatInventory(building.inputInventory, 'inv-in', seenInKeys);
     }
     if (hasOutputs) {
       html += '<div class="info-subsection-label">Output</div>';
-      html += formatInventory(building.outputInventory, 'inv-out');
+      html += formatInventory(building.outputInventory, 'inv-out', seenOutKeys);
     }
     const effectiveCap = getEffectiveStorageCapacity(building);
     const totalUsed = getInventoryTotal(building.inputInventory) + getInventoryTotal(building.outputInventory);

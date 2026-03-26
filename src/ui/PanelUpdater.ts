@@ -79,4 +79,26 @@ export class PanelUpdater {
       el.style.background = color;
     }
   }
+
+  /** Set innerHTML of [data-field] element, compare-before-set */
+  setHTML(field: string, html: string): void {
+    const el = this.container.querySelector(`[data-field="${field}"]`);
+    if (el && el.innerHTML !== html) {
+      el.innerHTML = html;
+    }
+  }
+
+  /** Set display visibility of [data-field] element, compare-before-set */
+  setDisplay(field: string, visible: boolean): void {
+    const el = this.container.querySelector(`[data-field="${field}"]`) as HTMLElement | null;
+    if (el) {
+      const val = visible ? '' : 'none';
+      if (el.style.display !== val) el.style.display = val;
+    }
+  }
+
+  /** Access the container element (for direct DOM queries) */
+  getContainer(): HTMLElement {
+    return this.container;
+  }
 }
