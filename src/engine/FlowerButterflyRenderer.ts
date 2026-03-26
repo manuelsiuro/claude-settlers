@@ -75,6 +75,7 @@ export class FlowerButterflyRenderer {
   private points: THREE.Points | null = null;
   private geometry: THREE.BufferGeometry | null = null;
   private material: THREE.ShaderMaterial | null = null;
+  private nightness = 0;
   private enabled = true;
   private maxButterflies: number;
 
@@ -98,6 +99,7 @@ export class FlowerButterflyRenderer {
   }
 
   setNightness(nightness: number): void {
+    this.nightness = nightness;
     if (this.material) {
       this.material.uniforms.uNightness.value = nightness;
     }
@@ -218,7 +220,7 @@ export class FlowerButterflyRenderer {
       uniforms: {
         uTime: { value: 0 },
         uFrustum: { value: 10 },
-        uNightness: { value: 0 },
+        uNightness: { value: this.nightness },
         uWindDir: { value: windDir },
       },
     });

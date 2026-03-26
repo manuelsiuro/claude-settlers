@@ -28,6 +28,8 @@ interface WildAnimal {
 interface SubMeshInfo {
   geometry: THREE.BufferGeometry;
   material: THREE.Material;
+  /** Local transform of this sub-mesh within the GLTF hierarchy */
+  localMatrix: THREE.Matrix4;
 }
 
 // ── Constants ──
@@ -62,6 +64,8 @@ const HEX_WORLD_SIZE = 1.732; // approx sqrt(3) * HEX_SIZE
 export class WildAnimalRenderer {
   private animals: WildAnimal[] = [];
   private meshMap: Map<AnimalType, THREE.InstancedMesh[]> = new Map();
+  /** Sub-mesh local transforms per animal type (parallel to meshMap) */
+  private subMeshInfoMap: Map<AnimalType, SubMeshInfo[]> = new Map();
   private scene: THREE.Scene | null = null;
   private grid: HexGrid | null = null;
   private enabled = true;
@@ -69,6 +73,7 @@ export class WildAnimalRenderer {
 
   /** Reusable scratch objects for per-frame matrix composition */
   private readonly _matrix = new THREE.Matrix4();
+  private readonly _localMatrix = new THREE.Matrix4();
   private readonly _position = new THREE.Vector3();
   private readonly _quaternion = new THREE.Quaternion();
   private readonly _euler = new THREE.Euler();
@@ -161,12 +166,18 @@ export class WildAnimalRenderer {
           animal.position.z,
         );
 
-        // Apply to all sub-meshes of this type
-        for (const mesh of meshes) {
-          // Get the sub-mesh local matrix (baked into the geometry transform)
-          // For InstancedMesh, we compose world matrix with sub-mesh local
-          this._matrix.compose(this._position, this._quaternion, this._scale);
-          mesh.setMatrixAt(instanceIdx, this._matrix);
+        // Compose world matrix from animal position/rotation/scale
+        this._matrix.compose(this._position, this._quaternion, this._scale);
+
+        // Apply to all sub-meshes, incorporating each sub-mesh's local transform
+        const subInfos = this.subMeshInfoMap.get(type) ?? [];
+        for (let mi = 0; mi < meshes.length; mi++) {
+          if (mi < subInfos.length) {
+            this._localMatrix.multiplyMatrices(this._matrix, subInfos[mi].localMatrix);
+            meshes[mi].setMatrixAt(instanceIdx, this._localMatrix);
+          } else {
+            meshes[mi].setMatrixAt(instanceIdx, this._matrix);
+          }
         }
         instanceIdx++;
       }
@@ -188,6 +199,7 @@ export class WildAnimalRenderer {
         mesh.dispose();
       }
     }
+    this.subMeshInfoMap.clear();
     this.meshMap.clear();
     this.animals = [];
     this.scene = null;
@@ -316,9 +328,11 @@ export class WildAnimalRenderer {
         // Fallback: create a simple colored box geometry
         const meshes = this.createFallbackMesh(type, count);
         this.meshMap.set(type, meshes);
+        this.subMeshInfoMap.set(type, []);
         continue;
       }
 
+      this.subMeshInfoMap.set(type, subMeshes);
       const meshes: THREE.InstancedMesh[] = [];
       for (const sub of subMeshes) {
         const instMesh = new THREE.InstancedMesh(sub.geometry, sub.material, count);
@@ -381,6 +395,7 @@ export class WildAnimalRenderer {
         results.push({
           geometry: child.geometry,
           material: child.material as THREE.Material,
+          localMatrix: child.matrixWorld.clone(),
         });
       }
     });

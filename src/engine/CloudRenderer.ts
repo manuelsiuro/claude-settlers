@@ -8,6 +8,8 @@ interface CloudData {
   speed: number;
   scale: number;
   opacity: number;
+  /** Random rotation for visual variety (radians) */
+  rotation: number;
 }
 
 /** Texture resolution */
@@ -33,6 +35,8 @@ export class CloudRenderer {
   private readonly _position = new THREE.Vector3();
   private readonly _scale = new THREE.Vector3();
   private readonly _quaternion = new THREE.Quaternion();
+  /** Scratch quaternion for per-cloud rotation variety */
+  private readonly _rotQuat = new THREE.Quaternion();
 
   /** Pre-computed billboard rotation: tilted ~60° to face the isometric camera */
   private readonly _billboardQuat: THREE.Quaternion;
@@ -108,6 +112,7 @@ export class CloudRenderer {
         speed: 0.3 + Math.random() * 0.5, // 0.3-0.8 units/sec
         scale: 3 + Math.random() * 4, // Scale 3-7
         opacity: 0.3 + Math.random() * 0.4, // Opacity 0.3-0.7
+        rotation: Math.random() * Math.PI * 2, // Random rotation for visual variety
       });
     }
 
@@ -224,10 +229,14 @@ export class CloudRenderer {
     for (let i = 0; i < this.clouds.length; i++) {
       const cloud = this.clouds[i];
 
-      // Cloud billboard
+      // Cloud billboard with per-cloud rotation for visual variety
       scale.set(cloud.scale, cloud.scale * 0.6, 1); // Wider than tall
       pos.set(cloud.x, cloud.y, cloud.z);
-      matrix.compose(pos, quat, scale);
+      this._rotQuat.copy(quat);
+      this._quaternion.setFromAxisAngle(pos.set(0, 0, 1), cloud.rotation);
+      this._rotQuat.multiply(this._quaternion);
+      pos.set(cloud.x, cloud.y, cloud.z);
+      matrix.compose(pos, this._rotQuat, scale);
       this.cloudMesh.setMatrixAt(i, matrix);
 
       // Ground shadow — flat on XZ, offset by sun angle
