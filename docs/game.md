@@ -494,6 +494,6 @@ BEEKEEPING: Grassland → Apiary [Beekeeper]         → Honey (0.40 sat)
                                                                         Inn/Tavern
 ```
 
-**Data-driven service buildings**: The `inputCategory` field on `ProductionRecipe` enables buildings like Inn/Tavern to accept any `isDrink` resource (Beer, Wine, Mead) without hardcoding. Similarly `isLuxury` resources (Fur Coat) provide morale bonuses.
+**Data-driven service buildings**: The `inputCategories` array on `ProductionRecipe` enables buildings like Inn/Tavern to accept multiple resource categories. Each entry has `{ category, required }` — drinks are required (blocks production without them), luxury goods are optional (consumed as bonus when available). Adding a new category requires only a `ResourceProperties` flag and a recipe entry.
 
-**TerrainGatheringManager**: A single data-driven manager handles all terrain-gathering buildings (Hunting Lodge, Trapper's Hut). Building definition fields (`harvestTerrain`, `workRadius`, `productionTime`) drive the behavior — adding future terrain gatherers requires zero code changes.
+**TerrainGatheringManager**: A single data-driven manager handles buildings with `gatheringStyle: 'walk'` on `BuildingDefinition` (Hunting Lodge, Trapper's Hut). Worker walks to terrain, gathers, returns with output. Adding future terrain-walkers requires only setting the flag — zero code changes.

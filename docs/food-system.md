@@ -66,7 +66,7 @@ Defined in `src/game/ResourceType.ts` → `RESOURCE_PROPERTIES`:
 | Meat | 0.90 | No | No | Grain → Pigs → Slaughterhouse (15s) |
 | Fur Coat | 0 | No | Yes | Pelts → Furrier (20s). Luxury good — boosts morale at Inn/Tavern |
 
-Resources with `satiationValue > 0` are automatically classified as food. The `isDrink` flag marks items consumed by the morale system (Inn/Tavern via `inputCategory: 'drink'`). The `isLuxury` flag marks luxury goods that provide morale bonus when served.
+Resources with `satiationValue > 0` are automatically classified as food. The `isDrink` flag marks items consumed by the morale system (Inn/Tavern requires drinks via `inputCategories`). The `isLuxury` flag marks luxury goods that provide an optional morale bonus when available at the Inn/Tavern.
 
 ### Living World Food Chains
 

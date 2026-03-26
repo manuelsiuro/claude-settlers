@@ -191,35 +191,41 @@ BEEKEEPING CHAIN:
 
 `ProductionManager` line 64 skips all buildings where `outputs.length === 0`. The InnTavern has `outputs: []`, so it **never processes Beer** and the `onProductionComplete` morale callback never fires.
 
-### Solution: `inputCategory` on ProductionRecipe
+### Solution: `inputCategories` on ProductionRecipe
 
-Extend `ProductionRecipe` with a new optional field:
+Extend `ProductionRecipe` with an array of category entries, each with a `required` flag:
 
 ```typescript
 interface ProductionRecipe {
   inputs: { resource: ResourceType; amount: number }[];
   outputs: { resource: ResourceType; amount: number }[];
   productionTime: number;
-  inputCategory?: 'drink' | 'luxury';  // accept any resource matching this category
+  inputCategories?: { category: 'drink' | 'luxury'; required: boolean }[];
 }
 ```
 
-When `inputCategory` is set:
+When `inputCategories` is set:
 1. `ProductionManager.update()` does NOT skip the building (even with empty outputs)
-2. `hasRequiredInputs()` checks for any resource in `inputInventory` where `RESOURCE_PROPERTIES[r].isDrink === true` (for `'drink'`) or `isLuxury === true` (for `'luxury'`)
-3. `completeProduction()` consumes 1 unit of the first matching resource found
-4. Reports the actual consumed resource type in `onProductionComplete` callback
+2. For `required: true` categories: production blocks if no matching resource in `inputInventory`
+3. For `required: false` categories: consumed as a bonus if available, does not block production
+4. `completeProduction()` iterates all categories, consumes one matching resource per category
+5. Reports all consumed resources in `onProductionComplete` callback
 
 ### Updated InnTavern Definition
 
 ```typescript
 production: {
-  inputs: [],              // empty — category-based matching instead
+  inputs: [],
   outputs: [],
   productionTime: 15,
-  inputCategory: 'drink',  // accepts Beer, Wine, Mead, any future isDrink resource
+  inputCategories: [
+    { category: 'drink', required: true },   // Beer, Wine, or Mead required
+    { category: 'luxury', required: false },  // FurCoat consumed as bonus if available
+  ],
 }
 ```
+
+This is fully data-driven: adding a new category (e.g., `'spice'`) requires only a `ResourceProperties` flag and a category entry — zero `ProductionManager` changes.
 
 ### `isLuxury` on ResourceProperties
 
@@ -256,10 +262,7 @@ WoodcutterManager, ForesterManager, and GeologistManager each have unique terrai
 
 ### Solution
 
-A single `TerrainGatheringManager` handles ANY building where:
-- `harvestTerrain !== null`
-- `production.inputs.length === 0`
-- NOT WoodcutterHut, ForesterHut, or GeologistHut (which have specialized managers)
+A single `TerrainGatheringManager` handles buildings where `gatheringStyle === 'walk'` on `BuildingDefinition`. This field explicitly opts buildings into the walk-to-terrain state machine. Currently set on HuntingLodge and TrappersHut. `ProductionManager` skips these buildings (`if (def.gatheringStyle === 'walk') continue`). All pre-existing gathering buildings (FishermanHut, Quarry, Farm, Mines) remain handled by `ProductionManager` — they have no `gatheringStyle` field.
 
 ### State Machine
 
