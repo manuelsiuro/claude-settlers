@@ -135,8 +135,8 @@ export class ProductionManager {
     const def = BUILDING_DEFINITIONS[building.type];
     if (!def.production) return;
 
-    // Track actual consumed inputs for reporting
-    let consumedInputs: { resource: ResourceType; amount: number }[] = def.production.inputs;
+    // Track actual consumed inputs for reporting (spread to avoid mutating definition)
+    const consumedInputs: { resource: ResourceType; amount: number }[] = [...def.production.inputs];
 
     // Consume explicit inputs
     for (const input of def.production.inputs) {
@@ -153,7 +153,7 @@ export class ProductionManager {
         const matches = (cat === 'drink' && props.isDrink) || (cat === 'luxury' && props.isLuxury);
         if (matches) {
           building.inputInventory[res as ResourceType] = qty - 1;
-          consumedInputs = [...consumedInputs, { resource: res as ResourceType, amount: 1 }];
+          consumedInputs.push({ resource: res as ResourceType, amount: 1 });
           break;
         }
       }

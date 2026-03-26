@@ -8,12 +8,8 @@ interface CloudData {
   speed: number;
   scale: number;
   opacity: number;
-  /** Index into texture array for visual variety */
-  textureVariant: number;
 }
 
-/** Number of texture variants to generate */
-const TEXTURE_VARIANTS = 4;
 /** Texture resolution */
 const TEX_SIZE = 128;
 
@@ -31,7 +27,6 @@ export class CloudRenderer {
   private nightness = 0;
   private enabled = true;
   private windDirection = new THREE.Vector2(1, 0.3).normalize();
-  private textures: THREE.CanvasTexture[] = [];
   private shadowTexture: THREE.CanvasTexture | null = null;
   /** Reusable matrix for setMatrixAt — zero allocations per frame */
   private readonly _matrix = new THREE.Matrix4();
@@ -64,11 +59,6 @@ export class CloudRenderer {
     const isMobile = window.innerWidth <= 768;
     const count = isMobile ? Math.min(this.maxClouds, 15) : this.maxClouds;
 
-    // Generate procedural cloud textures
-    this.textures = [];
-    for (let i = 0; i < TEXTURE_VARIANTS; i++) {
-      this.textures.push(this.createCloudTexture(i));
-    }
     // Shadow texture: dark soft blob
     this.shadowTexture = this.createShadowTexture();
 
@@ -118,7 +108,6 @@ export class CloudRenderer {
         speed: 0.3 + Math.random() * 0.5, // 0.3-0.8 units/sec
         scale: 3 + Math.random() * 4, // Scale 3-7
         opacity: 0.3 + Math.random() * 0.4, // Opacity 0.3-0.7
-        textureVariant: Math.floor(Math.random() * TEXTURE_VARIANTS),
       });
     }
 
@@ -214,10 +203,6 @@ export class CloudRenderer {
       this.shadowMaterial.dispose();
       this.shadowMaterial = null;
     }
-    for (const tex of this.textures) {
-      tex.dispose();
-    }
-    this.textures = [];
     if (this.shadowTexture) {
       this.shadowTexture.dispose();
       this.shadowTexture = null;
@@ -293,42 +278,6 @@ export class CloudRenderer {
       gradient.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
       gradient.addColorStop(0.4, 'rgba(255, 255, 255, 0.5)');
       gradient.addColorStop(0.7, 'rgba(255, 255, 255, 0.2)');
-      gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, TEX_SIZE, TEX_SIZE);
-    }
-
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.needsUpdate = true;
-    return texture;
-  }
-
-  /** Create a procedural cloud texture variant */
-  private createCloudTexture(variant: number): THREE.CanvasTexture {
-    const canvas = document.createElement('canvas');
-    canvas.width = TEX_SIZE;
-    canvas.height = TEX_SIZE;
-    const ctx = canvas.getContext('2d')!;
-
-    ctx.clearRect(0, 0, TEX_SIZE, TEX_SIZE);
-
-    const cx = TEX_SIZE / 2;
-    const cy = TEX_SIZE / 2;
-
-    // Use variant to offset blob positions for visual variety
-    const seed = variant * 1.7;
-    const blobCount = 3 + variant;
-
-    for (let i = 0; i < blobCount; i++) {
-      const angle = (i / blobCount) * Math.PI * 2 + seed;
-      const dist = 10 + Math.sin(seed + i * 2.1) * 12;
-      const bx = cx + Math.cos(angle) * dist;
-      const by = cy + Math.sin(angle) * dist * 0.5;
-      const br = 20 + Math.sin(seed + i * 1.3) * 15;
-
-      const gradient = ctx.createRadialGradient(bx, by, 0, bx, by, br);
-      gradient.addColorStop(0, 'rgba(255, 255, 255, 0.7)');
-      gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.3)');
       gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, TEX_SIZE, TEX_SIZE);

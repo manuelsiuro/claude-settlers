@@ -1524,6 +1524,14 @@ export class Game {
       this.atmosphereController.setAutoCycle(false);
       this.atmosphereController.setPreset(settings.timeOfDay);
     }
+
+    // Ambient life (clouds, birds, water sparkles, wild animals, butterflies)
+    const ambient = settings.ambientLife;
+    this.cloudRenderer.setEnabled(ambient !== 'off');
+    this.birdFlockRenderer.setEnabled(ambient === 'full');
+    this.waterEffectRenderer.setEnabled(ambient === 'full');
+    this.wildAnimalRenderer.setEnabled(ambient === 'full');
+    this.flowerButterflyRenderer.setEnabled(ambient === 'full');
   }
 
   getDistributionSettings(): GoodsDistributionSettings {

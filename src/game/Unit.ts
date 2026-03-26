@@ -160,3 +160,22 @@ export function getUnitIdCounter(): number {
 export function setUnitIdCounter(value: number): void {
   nextUnitId = value;
 }
+
+/** Move a unit along its path (shared interpolation logic used by multiple managers) */
+export function advanceUnitMovement(unit: Unit, deltaTime: number): void {
+  if (unit.path.length === 0 || unit.pathIndex >= unit.path.length - 1) return;
+
+  const speed = UNIT_DEFINITIONS[unit.type].moveSpeed;
+  unit.moveProgress += speed * deltaTime;
+
+  while (unit.moveProgress >= 1.0 && unit.pathIndex < unit.path.length - 1) {
+    unit.moveProgress -= 1.0;
+    unit.pathIndex++;
+    unit.coord = { ...unit.path[unit.pathIndex] };
+  }
+
+  if (unit.pathIndex >= unit.path.length - 1) {
+    unit.moveProgress = 0;
+    unit.coord = { ...unit.path[unit.path.length - 1] };
+  }
+}

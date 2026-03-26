@@ -7,7 +7,7 @@ const BIRD_VERTEX = /* glsl */ `
   uniform float uTime;
   uniform float uFrustum;
   uniform float uNightness;
-  uniform vec3 uFlockCenters[6];
+  uniform vec3 uFlockCenters[5];
   attribute float aFlockId;
   attribute float aPhase;
   attribute vec2 aOffset;
@@ -265,9 +265,9 @@ export class BirdFlockRenderer {
     this.geometry.setAttribute('aPhase', new THREE.BufferAttribute(aPhase, 1));
     this.geometry.setAttribute('aOffset', new THREE.BufferAttribute(aOffset, 2));
 
-    // Initialize uniform array for flock centers (always 6 slots, unused ones stay at origin)
+    // Initialize uniform array for flock centers (FLOCK_COUNT slots, unused ones stay at origin)
     const flockCentersArray: THREE.Vector3[] = [];
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < FLOCK_COUNT; i++) {
       flockCentersArray.push(
         i < this.flocks.length ? this.flocks[i].center.clone() : new THREE.Vector3(),
       );

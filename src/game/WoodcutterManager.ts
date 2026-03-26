@@ -3,9 +3,8 @@ import { BuildingState, addToInventory, hasOutputSpace } from './Building';
 import type { Building } from './Building';
 import type { GameState } from './GameState';
 import type { TreeManager } from './TreeManager';
-import { UnitState } from './Unit';
+import { UnitState, advanceUnitMovement } from './Unit';
 import type { Unit } from './Unit';
-import { UNIT_DEFINITIONS } from './UnitType';
 import { ResourceType } from './ResourceType';
 import { findPath } from './Pathfinding';
 import { setUnitPath, clearUnitPath } from './Unit';
@@ -132,7 +131,7 @@ export class WoodcutterManager {
       }
 
       case 'walking_to_tree': {
-        this.advanceMovement(worker, deltaTime);
+        advanceUnitMovement(worker, deltaTime);
 
         if (worker.pathIndex >= worker.path.length - 1 && worker.path.length > 0) {
           clearUnitPath(worker);
@@ -193,7 +192,7 @@ export class WoodcutterManager {
       }
 
       case 'walking_to_hut': {
-        this.advanceMovement(worker, deltaTime);
+        advanceUnitMovement(worker, deltaTime);
 
         if (worker.pathIndex >= worker.path.length - 1 && worker.path.length > 0) {
           clearUnitPath(worker);
@@ -210,25 +209,6 @@ export class WoodcutterManager {
         ws.idleCooldown = IDLE_COOLDOWN;
         break;
       }
-    }
-  }
-
-  /** Move a unit along its path (same interpolation logic as UnitManager) */
-  private advanceMovement(unit: Unit, deltaTime: number): void {
-    if (unit.path.length === 0 || unit.pathIndex >= unit.path.length - 1) return;
-
-    const speed = UNIT_DEFINITIONS[unit.type].moveSpeed;
-    unit.moveProgress += speed * deltaTime;
-
-    while (unit.moveProgress >= 1.0 && unit.pathIndex < unit.path.length - 1) {
-      unit.moveProgress -= 1.0;
-      unit.pathIndex++;
-      unit.coord = { ...unit.path[unit.pathIndex] };
-    }
-
-    if (unit.pathIndex >= unit.path.length - 1) {
-      unit.moveProgress = 0;
-      unit.coord = { ...unit.path[unit.path.length - 1] };
     }
   }
 

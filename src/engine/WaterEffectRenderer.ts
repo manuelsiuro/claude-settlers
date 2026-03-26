@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { HexGrid } from '../game/HexGrid';
 import { TerrainType } from '../game/TerrainType';
+import { shaderTimeManager } from './ShaderTimeManager';
 
 // ── Shaders ──
 
@@ -136,6 +137,11 @@ export class WaterEffectRenderer {
       blending: THREE.AdditiveBlending,
     });
 
+    // Register uTime with ShaderTimeManager for automatic updates
+    shaderTimeManager.register(
+      this.sparkleMaterial as THREE.ShaderMaterial & { uniforms: { uTime: { value: number } } },
+    );
+
     this.sparklePoints = new THREE.Points(this.sparkleGeometry, this.sparkleMaterial);
     this.sparklePoints.frustumCulled = false;
     this.sparklePoints.name = 'water_sparkles';
@@ -186,8 +192,7 @@ export class WaterEffectRenderer {
     if (!this.enabled || !this.sparklePoints || !this.sparkleMaterial) return;
     if (this.maxSparkles === 0 || this.waterPositions.length === 0) return;
 
-    // Update uniforms
-    this.sparkleMaterial.uniforms.uTime.value += deltaTime;
+    // Update frustum uniform (uTime is managed by ShaderTimeManager)
     this.sparkleMaterial.uniforms.uFrustum.value = frustum;
 
     // Determine spawn rate based on nightness
@@ -207,7 +212,7 @@ export class WaterEffectRenderer {
     }
 
     // Update existing sparkles and respawn expired ones
-    let needsSync = false;
+    let hasActiveSparkles = false;
     for (let i = 0; i < this.sparkles.length; i++) {
       const sparkle = this.sparkles[i];
 
@@ -221,20 +226,18 @@ export class WaterEffectRenderer {
             sparkle.active = false;
             sparkle.y = -100;
           }
-          needsSync = true;
-        } else {
-          needsSync = true; // lifetime changed, need buffer update
         }
+        hasActiveSparkles = true;
       } else {
         // Inactive sparkle — try to spawn
         if (spawnChance > 0 && Math.random() < spawnChance * deltaTime * 3) {
           this.respawnSparkle(sparkle, nearbyWater);
-          needsSync = true;
+          hasActiveSparkles = true;
         }
       }
     }
 
-    if (needsSync) {
+    if (hasActiveSparkles) {
       this.syncBuffers();
     }
   }
@@ -249,6 +252,9 @@ export class WaterEffectRenderer {
       this.sparkleGeometry = null;
     }
     if (this.sparkleMaterial) {
+      shaderTimeManager.unregister(
+        this.sparkleMaterial as THREE.ShaderMaterial & { uniforms: { uTime: { value: number } } },
+      );
       this.sparkleMaterial.dispose();
       this.sparkleMaterial = null;
     }

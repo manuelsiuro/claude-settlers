@@ -28,7 +28,6 @@ interface WildAnimal {
 interface SubMeshInfo {
   geometry: THREE.BufferGeometry;
   material: THREE.Material;
-  localMatrix: THREE.Matrix4;
 }
 
 // ── Constants ──
@@ -111,15 +110,7 @@ export class WildAnimalRenderer {
     const cullDistWorld = CULL_DISTANCE * HEX_WORLD_SIZE;
     const cullDistSq = cullDistWorld * cullDistWorld;
 
-    // Track visible count per type for instance count setting
-    const visibleByType = new Map<AnimalType, number>();
-    const indexByType = new Map<AnimalType, number>();
-    for (const type of this.meshMap.keys()) {
-      visibleByType.set(type, 0);
-      indexByType.set(type, 0);
-    }
-
-    // Update animal states and collect visible ones
+    // Update animal states for visible animals
     for (const animal of this.animals) {
       const dx = animal.position.x - camX;
       const dz = animal.position.z - camZ;
@@ -129,9 +120,6 @@ export class WildAnimalRenderer {
       if (distSq > cullDistSq) continue;
 
       this.updateAnimalState(animal, deltaTime);
-
-      // Count this animal as visible for its type
-      visibleByType.set(animal.type, (visibleByType.get(animal.type) ?? 0) + 1);
     }
 
     // Update instance matrices for each type
@@ -393,7 +381,6 @@ export class WildAnimalRenderer {
         results.push({
           geometry: child.geometry,
           material: child.material as THREE.Material,
-          localMatrix: child.matrixWorld.clone(),
         });
       }
     });
