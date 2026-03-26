@@ -1,8 +1,21 @@
 # Project Progress
 
-## Current Phase: Living World — Complete
+## Current Phase: Code Quality Refactoring — Complete
 
 ## Task Board
+
+### Code Quality Refactoring [COMPLETE]
+- [DONE] Audit — Full codebase audit (128 source files, ~37,700 lines). Found: 3 files >1,000 lines, 7 files >800 lines, ~40 lines dead code, 1 pattern inconsistency. No unfinished features. Overall score 7.5/10. — 2026-03-26
+- [DONE] Phase 1: Hygiene fixes — Removed dead Season infrastructure from TerrainColors.ts. Fixed missing onProductionComplete callback cleanup in Game.ts dispose. Fixed WebGL context listener leak. Fixed risky non-null assertions. Replaced all direct console.* with Logger (5 files, 13 call sites). 779 tests passing. — 2026-03-26
+- [DONE] Phase 2: Split buildingDefinitions.ts (1,642 → 2 lines) — Created src/game/data/buildings/ with 8 category files (core, gathering, processing, food, military, housing, logistics, livingWorld). Thin re-export for backward compatibility. 779 tests passing. — 2026-03-26
+- [DONE] Phase 3: Split Game.ts (1,648 → 1,365 lines) — Extracted GameNotifications.ts (types + callback wiring) and GameSystems.ts (manager/renderer factory functions + interfaces). 779 tests passing. — 2026-03-26
+- [DONE] Phase 4: Split InfoPanel.ts (1,331 → 12 lines) — Created src/ui/infopanel/ with BuildingInfoRenderer, RoadInfoRenderer, InfoPanelValues, InfoPanelController. 779 tests passing. — 2026-03-26
+- [DONE] Phase 5: Split MarketplaceManager.ts (912 → 16 lines) — Created src/game/marketplace/ with PriceEngine, TravelingMerchantEngine, AutoTradeEvaluator, types, reduced core. 779 tests passing. — 2026-03-26
+- [DONE] Phase 6: Split main.ts (910 → 310 lines) — Extracted GameHTML.ts (HTML template, 456 lines) and GameWiring.ts (mobile toolbar + controller wiring, 233 lines). 779 tests passing. — 2026-03-26
+- [DONE] Phase 7: Split BuildPanel.ts (819 → 27 lines) — Created src/ui/buildpanel/ with BuildingCatalog, AttackMode, BuildPanelController. 779 tests passing. — 2026-03-26
+- [DONE] Phase 8: Split DashboardPanel.ts (804 → 15 lines) — Created src/ui/dashboard/ with 5 tab modules + controller + helpers. 779 tests passing. — 2026-03-26
+- [DONE] Phase 9: Split StatsPanel.ts (741 → 18 lines) — Created src/ui/statspanel/ with 4 stat modules + controller. 779 tests passing. — 2026-03-26
+- [DONE] Documentation update — Updated CLAUDE.md with new Module Organization section and updated file references. Updated PROGRESS.md. — 2026-03-26
 
 ### Living World Feature [COMPLETE]
 - [DONE] Design document — Created `docs/living-world.md` covering ambient visuals (6 systems) and gameplay content (5 buildings, 5 resources, 5 units). Updated `docs/buildings.md`, `docs/resources.md`, `docs/units.md`. — 2026-03-24
