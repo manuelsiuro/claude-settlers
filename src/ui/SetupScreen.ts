@@ -2,6 +2,7 @@ import type { GameConfig, VictoryConfig } from '../game/GameConfig';
 import type { SaveData } from '../game/SaveLoad';
 import { hasSave, loadFromLocalStorage, loadFromFile } from '../game/SaveLoad';
 import { showSnackbar } from './Snackbar';
+import { logger } from '../util/Logger';
 import { hideGameOverOverlay } from './GameOverScreen';
 import { listMaps, deleteMap, loadBundledMapsIndex, importMapFromFile } from '../editor/MapStorage';
 
@@ -294,7 +295,7 @@ export function initSetupScreen(startGame: StartGameFn, onOpenEditor?: () => voi
     setupOverlay.classList.add('hidden');
 
     startGame(config).catch((err) => {
-      console.error('Failed to start game:', err);
+      logger.error('Failed to start game:', err);
       showSnackbar('Failed to load game assets. Please reload the page.', 'error');
       setupOverlay.classList.remove('hidden');
     });
@@ -322,7 +323,7 @@ async function handleLoadFromStorage(startGame: StartGameFn): Promise<void> {
     await startGame(data.config, data);
     showSnackbar('Game loaded', 'success');
   } catch (err) {
-    console.error('Load failed:', err);
+    logger.error('Load failed:', err);
     showSnackbar('Failed to load saved game', 'error');
     setupOverlay.classList.remove('hidden');
   }
@@ -341,7 +342,7 @@ export async function handleLoadFromFile(startGame: StartGameFn): Promise<void> 
     await startGame(data.config, data);
     showSnackbar('Game loaded from file', 'success');
   } catch (err) {
-    console.error('Load failed:', err);
+    logger.error('Load failed:', err);
     showSnackbar('Failed to load save file', 'error');
   }
 }

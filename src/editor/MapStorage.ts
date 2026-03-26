@@ -1,5 +1,6 @@
 import type { MapData, MapListEntry } from '../game/MapData';
 import { validateMapData } from '../game/MapData';
+import { logger } from '../util/Logger';
 
 const INDEX_KEY = 'feudal_maps_index';
 const MAP_KEY_PREFIX = 'feudal_map_';
@@ -100,7 +101,7 @@ export function importMapFromFile(): Promise<MapData | null> {
           const data = JSON.parse(reader.result as string) as MapData;
           const errors = validateMapData(data);
           if (errors.length > 0) {
-            console.warn('Map import validation errors:', errors);
+            logger.warn('Map import validation errors:', errors);
             resolve(null);
             return;
           }

@@ -47,9 +47,24 @@ All design specs live in `docs/`:
 - **Dashboard analytics**: `DashboardTracker` takes periodic aggregate snapshots every 30 game-seconds into `RingBuffer` (Float32Array-backed circular buffers, 120 points). Tracks: population & capacity, average satiation, morale, military count & rank, per-resource stock levels, and building efficiency (producing/waitingInput/waitingOutput/noWorker/paused). `DashboardPanel` renders a fullscreen 5-tab overlay (Overview, Economy, Resources, Population, Buildings) with Canvas-based charts (`ChartRenderer`: line charts, dual bar charts, donut charts). Updates every 2s when visible.
 - **Marketplace & barter trading**: `MarketplaceManager` provides resource-for-resource trading with dynamic supply/demand pricing. Two venues: Market building (10% fee, Merchant worker required) and Castle (25% fee, emergency fallback). NPC virtual stock restocks every 60s. Traveling merchants arrive every 5 min with 3 special deals. Auto-trade rules (max 8) automate routine trades. All 25+ constants in `balanceConstants.ts` are data-driven and overrideable. AI players trade via `AIPlayer.tryTrade()`. Trades record in `EconomyTracker` for Dashboard charts. UI: `TradePanel.ts` integrates into InfoPanel with resource selectors, amount controls, exchange preview, merchant deals, NPC stock, auto-trade editor, and price trends. See `docs/marketplace.md` for full design.
 
+### Module Organization
+
+Large files have been split into focused sub-modules with thin re-export facades for backward compatibility:
+
+- **`src/engine/Game.ts`** (~1,365 lines) — Core orchestrator. Factory functions in `GameSystems.ts`, callback wiring in `GameNotifications.ts`.
+- **`src/game/data/buildings/`** — Building definitions split by category: `core.ts`, `gathering.ts`, `processing.ts`, `food.ts`, `military.ts`, `housing.ts`, `logistics.ts`, `livingWorld.ts`. Composed via `index.ts`, re-exported from `buildingDefinitions.ts`.
+- **`src/game/marketplace/`** — `MarketplaceManager.ts` (core), `PriceEngine.ts` (stateless pricing), `TravelingMerchantEngine.ts` (merchant spawning/deals), `AutoTradeEvaluator.ts` (rule evaluation), `types.ts` (shared interfaces).
+- **`src/ui/infopanel/`** — `InfoPanelController.ts` (orchestrator), `BuildingInfoRenderer.ts` (HTML generation), `RoadInfoRenderer.ts` (road/flag display), `InfoPanelValues.ts` (DOM patching).
+- **`src/ui/buildpanel/`** — `BuildPanelController.ts` (orchestrator), `BuildingCatalog.ts` (list/filter/HTML), `AttackMode.ts` (attack targeting).
+- **`src/ui/dashboard/`** — `DashboardController.ts` + 5 tab modules (`OverviewTab`, `EconomyTab`, `ResourcesTab`, `PopulationTab`, `BuildingsTab`) + `dashboardHelpers.ts`.
+- **`src/ui/statspanel/`** — `StatsPanelController.ts` + 4 stat modules (`BuildingStats`, `ResourceStats`, `PopulationStats`, `MilitaryStats`).
+- **`src/ui/GameHTML.ts`** — HTML template extracted from `main.ts`. `GameWiring.ts` — mobile toolbar + game controller wiring.
+
+All original import paths continue to work via re-export facades. When adding new code, import from the sub-module directly for clarity.
+
 ### Visual & Animation Systems
 
-`src/engine/` contains 23+ renderers and visual systems (particles, building animations, tree sway shader, combat renderer, overlays, flag lights, atmosphere, post-processing, ambient life, etc.). All follow the same integration pattern: instantiated in `Game` constructor, added to scene in `start()`, updated in the animate loop (after manager updates, before render), and disposed in `dispose()`. Read the source files for implementation details, or use the `feudal-new-renderer` skill when adding new ones.
+`src/engine/` contains 23+ renderers and visual systems (particles, building animations, tree sway shader, combat renderer, overlays, flag lights, atmosphere, post-processing, ambient life, etc.). All follow the same integration pattern: instantiated via `GameSystems.createRenderers()`, added to scene in `start()`, updated in the animate loop (after manager updates, before render), and disposed in `dispose()`. Read the source files for implementation details, or use the `feudal-new-renderer` skill when adding new ones.
 - **Ambient life systems** (Living World): `CloudRenderer` (billboard clouds + ground shadows), `BirdFlockRenderer` (GPU-driven shader birds), `WaterEffectRenderer` (sparkle points on water), `WildAnimalRenderer` (deer/rabbits/goats/fish via InstancedMesh), `FlowerButterflyRenderer` (GPU-driven butterflies). Controlled via `ambientLife` graphics setting (`off`/`minimal`/`full`). Use `rawDelta` (animate even when paused). See `docs/living-world.md` for specs.
 - **TerrainGatheringManager**: Data-driven manager for buildings with `gatheringStyle: 'walk'` (Hunting Lodge, Trapper's Hut). Worker walks to `harvestTerrain` tiles within `workRadius`, gathers for `productionTime × TERRAIN_GATHERING_WORK_FRACTION`, returns with output. Adding future terrain-walkers requires only setting `gatheringStyle: 'walk'` on the definition — zero code changes.
 
@@ -93,10 +108,10 @@ General Three.js knowledge — `threejs-fundamentals`, `threejs-animation`, `thr
 | `safe-refactoring` | Before any structural change (auto-loaded, not user-invocable) |
 | `code-quality-audit` | Periodic code health review (`/code-quality-audit`, user-invocable only) |
 | `introduce-event-bus` | Adding cross-cutting events or decoupling callback-wired managers |
-| `refactor-god-class` | Decomposing Game.ts (750+ lines) or AIPlayer.ts (557 lines) |
+| `refactor-god-class` | Decomposing large classes (Game.ts, AIPlayer.ts) |
 | `dependency-injection` | Adding managers or improving testability with mock injection |
-| `extract-data-files` | Moving data out of BuildingType.ts (770 lines) or AI build orders |
-| `decouple-ui` | Adding UI features, testing UI, or reducing main.ts coupling |
+| `extract-data-files` | Moving data out of code files or AI build orders |
+| `decouple-ui` | Adding UI features, testing UI, or reducing coupling |
 | `mobile-ui` | Adding or modifying mobile-facing UI (bottom sheets, toolbar, touch targets, panel transitions) |
 | `saveload-migration` | Adding fields to SaveData or changing serialized state shape |
 | `expand-test-coverage` | Writing tests for engine/ or ui/ layers (currently minimal/zero coverage) |

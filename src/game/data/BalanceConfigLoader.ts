@@ -1,5 +1,6 @@
 import { applyBalanceOverrides } from './balanceConstants';
 import type { BalanceConfigOverrides } from './balanceConstants';
+import { logger } from '../../util/Logger';
 
 const VALID_SECTIONS = new Set([
   'woodcutter', 'forester', 'geologist', 'trees', 'combat', 'upgrades',
@@ -121,11 +122,11 @@ export async function loadBalanceConfig(): Promise<boolean> {
     const config = await resp.json();
     const errors = validateBalanceConfig(config);
     if (errors.length > 0) {
-      console.warn('Balance config validation errors:', errors);
+      logger.warn('Balance config validation errors:', errors);
       return false;
     }
     applyBalanceOverrides(config as BalanceConfigOverrides);
-    console.log('Balance config loaded successfully');
+    logger.info('Balance config loaded successfully');
     return true;
   } catch {
     return false;

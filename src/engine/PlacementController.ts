@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import type { Game } from './Game';
 import { HexPicker } from './HexPicker';
 import { HexGrid } from '../game/HexGrid';
+import { logger } from '../util/Logger';
 import type { HexCoord } from '../game/HexGrid';
 import type { BuildingType } from '../game/BuildingType';
 import { BUILDING_DEFINITIONS } from '../game/BuildingType';
@@ -65,7 +66,7 @@ export class PlacementController {
     this.selectedType = type;
     this.canvas.style.cursor = 'crosshair';
     this.onModeChanged?.(true);
-    console.log('[Placement] selectBuilding:', type, 'isActive:', this.isActive);
+    logger.debug('[Placement] selectBuilding:', type, 'isActive:', this.isActive);
   }
 
   /** Cancel placement mode */
@@ -148,13 +149,13 @@ export class PlacementController {
   };
 
   private onTouchStart = (e: TouchEvent): void => {
-    console.log('[Placement] touchstart', { selectedType: this.selectedType, touches: e.touches.length });
+    logger.debug('[Placement] touchstart', { selectedType: this.selectedType, touches: e.touches.length });
     if (!this.selectedType) return;
     const touch = e.touches[0];
     this.mouseDownPos = { x: touch.clientX, y: touch.clientY };
     this.mouseIsDown = true;
     this.updatePreview(touch.clientX, touch.clientY);
-    console.log('[Placement] after updatePreview', { currentHex: this.currentHex, canPlace: this.canPlaceHere, ghost: !!this.ghostMesh });
+    logger.debug('[Placement] after updatePreview', { currentHex: this.currentHex, canPlace: this.canPlaceHere, ghost: !!this.ghostMesh });
   };
 
   /** Touch move: ghost preview follows finger across hexes in real-time */
@@ -165,7 +166,7 @@ export class PlacementController {
   };
 
   private onTouchEnd = (e: TouchEvent): void => {
-    console.log('[Placement] touchend', { mouseIsDown: this.mouseIsDown, selectedType: this.selectedType, currentHex: this.currentHex, canPlace: this.canPlaceHere });
+    logger.debug('[Placement] touchend', { mouseIsDown: this.mouseIsDown, selectedType: this.selectedType, currentHex: this.currentHex, canPlace: this.canPlaceHere });
     if (!this.mouseIsDown || !this.selectedType) return;
     this.mouseIsDown = false;
 
@@ -173,15 +174,15 @@ export class PlacementController {
     const dx = touch.clientX - this.mouseDownPos.x;
     const dy = touch.clientY - this.mouseDownPos.y;
     const dist = Math.hypot(dx, dy);
-    console.log('[Placement] touchend drag distance', dist);
+    logger.debug('[Placement] touchend drag distance', dist);
     if (dist > CLICK_THRESHOLD) return;
 
     if (this.currentHex) {
       if (this.canPlaceHere) {
-        console.log('[Placement] confirming placement!');
+        logger.debug('[Placement] confirming placement!');
         this.confirmPlacement();
       } else if (this.currentPlacementError && this.selectedType) {
-        console.log('[Placement] placement error:', this.currentPlacementError);
+        logger.debug('[Placement] placement error:', this.currentPlacementError);
         this.onPlacementError?.(this.currentPlacementError, this.selectedType);
       }
     }

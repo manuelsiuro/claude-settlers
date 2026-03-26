@@ -6,79 +6,69 @@ import type { MapData } from '../game/MapData';
 import { getMap } from '../editor/MapStorage';
 import { applyBalanceOverrides } from '../game/data/balanceConstants';
 import { BuildingType } from '../game/BuildingType';
-import { RESOURCE_PROPERTIES } from '../game/ResourceType';
-import type { ResourceType } from '../game/ResourceType';
+import { BUILDING_DEFINITIONS } from '../game/BuildingType';
 import { initializeCastleResources, transferStorageInputs } from '../game/Building';
 import { BuildingState } from '../game/Building';
 import { GameState } from '../game/GameState';
-import { UnitManager } from '../game/UnitManager';
-import { ProductionManager } from '../game/ProductionManager';
-import { ConstructionManager } from '../game/ConstructionManager';
-import { RoadNetwork } from '../game/RoadNetwork';
-import { TransporterManager } from '../game/TransporterManager';
-import { LogisticsManager } from '../game/LogisticsManager';
-import { TerritoryManager } from '../game/TerritoryManager';
-import { KnightManager } from '../game/KnightManager';
-import { CombatManager } from '../game/CombatManager';
-import { AttackManager } from '../game/AttackManager';
-import { DuelAnimationManager } from '../game/DuelAnimationManager';
-import { VictoryManager } from '../game/VictoryManager';
 import { AIPlayer } from '../game/AIPlayer';
-import { GeologistManager } from '../game/GeologistManager';
-import { TreeManager } from '../game/TreeManager';
-import { WoodcutterManager } from '../game/WoodcutterManager';
-import { ForesterManager } from '../game/ForesterManager';
-import { HarborManager } from '../game/HarborManager';
-import { DepositRenderer } from './DepositRenderer';
-import { TreeRenderer } from './TreeRenderer';
 import type { GameConfig, GraphicsSettings } from '../game/GameConfig';
-import { DEFAULT_CONFIG, DEFAULT_VICTORY_CONFIG, SCENARIO_TERRAIN_BALANCE } from '../game/GameConfig';
-import { RoadRenderer } from './RoadRenderer';
-import { TerritoryRenderer } from './TerritoryRenderer';
+import { DEFAULT_CONFIG, SCENARIO_TERRAIN_BALANCE } from '../game/GameConfig';
 import { MapRenderer } from './MapRenderer';
-import { BuildingRenderer } from './BuildingRenderer';
-import { UnitRenderer } from './UnitRenderer';
 import { PlacementController } from './PlacementController';
 import { SelectionController } from './SelectionController';
 import { RoadPlacementController } from './RoadPlacementController';
 import { CameraController } from './CameraController';
 import { assetLoader } from './AssetLoader';
 import { shaderTimeManager } from './ShaderTimeManager';
-import { BUILDING_DEFINITIONS } from '../game/BuildingType';
 import type { SaveData } from '../game/SaveLoad';
 import { serializeGame, deserializeGame } from '../game/SaveLoad';
-import { ParticleSystem, ParticleEffect } from './ParticleSystem';
-import { BuildingAnimator } from './BuildingAnimator';
-import { BuildingStatusOverlay } from './BuildingStatusOverlay';
-import { CombatRenderer } from './CombatRenderer';
-import { ProductionChainOverlay } from './ProductionChainOverlay';
-import { EconomyTracker } from '../game/EconomyTracker';
-import { UpgradeManager } from '../game/UpgradeManager';
-import { FogOfWarManager } from '../game/FogOfWarManager';
-import { FogOfWarRenderer } from './FogOfWarRenderer';
-import { BlobShadowRenderer } from './BlobShadowRenderer';
 import { AtmosphereController } from './AtmosphereController';
-import { createDefaultDistribution } from '../game/GoodsDistribution';
-import type { GoodsDistributionSettings } from '../game/GoodsDistribution';
-import { ToolProductionManager } from '../game/ToolProductionManager';
-import { PerformanceMonitor } from './PerformanceMonitor';
-import { PostProcessing } from './PostProcessing';
-import { WeatherController } from './WeatherController';
 import type { ColorGradingParams } from './AtmosphereController';
-import { FlagLightSystem } from './FlagLightSystem';
-import { CloudRenderer } from './CloudRenderer';
-import { BirdFlockRenderer } from './BirdFlockRenderer';
-import { WaterEffectRenderer } from './WaterEffectRenderer';
-import { WildAnimalRenderer } from './WildAnimalRenderer';
-import { FlowerButterflyRenderer } from './FlowerButterflyRenderer';
-import { WorkAreaRenderer } from './WorkAreaRenderer';
-import { PopulationManager } from '../game/PopulationManager';
-import { FeedingManager } from '../game/FeedingManager';
-import { MoraleManager } from '../game/MoraleManager';
-import { MarketplaceManager } from '../game/MarketplaceManager';
-import { AnimalLifecycleManager } from '../game/AnimalLifecycleManager';
-import { TerrainGatheringManager } from '../game/TerrainGatheringManager';
-import { DashboardTracker } from '../game/DashboardTracker';
+import type { GoodsDistributionSettings } from '../game/GoodsDistribution';
+
+// Manager types (for getter return types)
+import type { UnitManager } from '../game/UnitManager';
+import type { RoadNetwork } from '../game/RoadNetwork';
+import type { TerritoryManager } from '../game/TerritoryManager';
+import type { KnightManager } from '../game/KnightManager';
+import type { CombatManager } from '../game/CombatManager';
+import type { AttackManager } from '../game/AttackManager';
+import type { VictoryManager } from '../game/VictoryManager';
+import type { GeologistManager } from '../game/GeologistManager';
+import type { TreeManager } from '../game/TreeManager';
+import type { WoodcutterManager } from '../game/WoodcutterManager';
+import type { ForesterManager } from '../game/ForesterManager';
+import type { EconomyTracker } from '../game/EconomyTracker';
+import type { UpgradeManager } from '../game/UpgradeManager';
+import type { ToolProductionManager } from '../game/ToolProductionManager';
+import type { FogOfWarManager } from '../game/FogOfWarManager';
+import type { PopulationManager } from '../game/PopulationManager';
+import type { FeedingManager } from '../game/FeedingManager';
+import type { MoraleManager } from '../game/MoraleManager';
+import type { MarketplaceManager } from '../game/MarketplaceManager';
+import type { DashboardTracker } from '../game/DashboardTracker';
+
+// Renderer types (for getter return types)
+import type { BuildingRenderer } from './BuildingRenderer';
+import type { UnitRenderer } from './UnitRenderer';
+import type { DepositRenderer } from './DepositRenderer';
+import type { RoadRenderer } from './RoadRenderer';
+import type { ParticleSystem } from './ParticleSystem';
+import type { BuildingAnimator } from './BuildingAnimator';
+import type { BuildingStatusOverlay } from './BuildingStatusOverlay';
+import type { CombatRenderer } from './CombatRenderer';
+import type { ProductionChainOverlay } from './ProductionChainOverlay';
+import type { FogOfWarRenderer } from './FogOfWarRenderer';
+import type { PostProcessing } from './PostProcessing';
+import type { WeatherController } from './WeatherController';
+
+import type { GameNotification } from './GameNotifications';
+import { wireGameCallbacks } from './GameNotifications';
+import { createManagers, createRenderers, applyGraphicsSettings as applyGraphicsSettingsFn } from './GameSystems';
+import type { GameManagers, GameRenderers } from './GameSystems';
+
+// Re-export notification types for backward compatibility
+export type { GameNotificationType, GameNotification } from './GameNotifications';
 
 export const ShadowQuality = {
   Off: 'off',
@@ -88,85 +78,20 @@ export const ShadowQuality = {
 } as const;
 export type ShadowQuality = (typeof ShadowQuality)[keyof typeof ShadowQuality];
 
-export type GameNotificationType =
-  | 'building_complete'
-  | 'knight_recruited'
-  | 'under_attack'
-  | 'building_captured'
-  | 'building_destroyed'
-  | 'combat_result'
-  | 'tool_waiting'
-  | 'population_cap'
-  | 'food_warning'
-  | 'victory'
-  | 'defeat';
-
-export interface GameNotification {
-  type: GameNotificationType;
-  message: string;
-}
-
 export class Game {
   private renderer: THREE.WebGLRenderer;
   private scene: THREE.Scene;
   private camera: THREE.OrthographicCamera;
   private container: HTMLElement;
   private animationId: number | null = null;
-  private mapRenderer: MapRenderer;
-  private buildingRenderer: BuildingRenderer;
-  private unitRenderer: UnitRenderer;
-  private unitManager: UnitManager;
-  private productionManager: ProductionManager;
-  private constructionManager: ConstructionManager;
-  private roadNetwork: RoadNetwork;
-  private transporterManager: TransporterManager;
-  private logisticsManager: LogisticsManager;
-  private harborManager: HarborManager;
-  private territoryManager: TerritoryManager;
-  private knightManager: KnightManager;
-  private combatManager: CombatManager;
-  private attackManager: AttackManager;
-  private duelAnimationManager: DuelAnimationManager;
-  private victoryManager: VictoryManager;
-  private geologistManager: GeologistManager;
-  private treeManager: TreeManager;
-  private treeRenderer: TreeRenderer;
-  private woodcutterManager: WoodcutterManager;
-  private foresterManager: ForesterManager;
-  private depositRenderer: DepositRenderer;
-  private particleSystem: ParticleSystem;
-  private buildingAnimator: BuildingAnimator;
-  private buildingStatusOverlay: BuildingStatusOverlay;
-  private combatRenderer: CombatRenderer;
-  private productionChainOverlay: ProductionChainOverlay;
-  private economyTracker: EconomyTracker;
-  private upgradeManager: UpgradeManager;
-  private toolProductionManager: ToolProductionManager;
-  private fogOfWarManager: FogOfWarManager;
-  private fogOfWarRenderer: FogOfWarRenderer;
-  private blobShadowRenderer: BlobShadowRenderer;
-  private atmosphereController: AtmosphereController;
-  private distributionSettings: GoodsDistributionSettings;
-  private performanceMonitor: PerformanceMonitor;
-  private postProcessing: PostProcessing;
-  private weatherController: WeatherController;
-  private cloudRenderer: CloudRenderer;
-  private birdFlockRenderer: BirdFlockRenderer;
-  private waterEffectRenderer: WaterEffectRenderer;
-  private wildAnimalRenderer: WildAnimalRenderer;
-  private flowerButterflyRenderer: FlowerButterflyRenderer;
-  private flagLightSystem: FlagLightSystem;
-  private workAreaRenderer: WorkAreaRenderer;
-  private populationManager: PopulationManager;
-  private feedingManager: FeedingManager;
-  private animalLifecycleManager: AnimalLifecycleManager;
-  private moraleManager: MoraleManager;
-  private marketplaceManager: MarketplaceManager;
-  private terrainGatheringManager: TerrainGatheringManager;
-  private dashboardTracker: DashboardTracker;
+
+  // Managers (created by factory)
+  private mgrs: GameManagers;
+
+  // Renderers (created by factory)
+  private rnds: GameRenderers;
+
   private aiPlayers: AIPlayer[] = [];
-  private roadRenderer: RoadRenderer;
-  private territoryRenderer: TerritoryRenderer;
   private cameraController: CameraController | null = null;
   private placementController: PlacementController | null = null;
   private selectionController: SelectionController | null = null;
@@ -177,6 +102,7 @@ export class Game {
   private directionalLight: THREE.DirectionalLight;
   private config: GameConfig;
   private customMapData: MapData | null = null;
+  private atmosphereController: AtmosphereController;
 
   /** Cached base color grading params from AtmosphereController (before weather overlay) */
   private baseColorGrading: ColorGradingParams = { warmTint: [1.02, 1.0, 0.96], contrast: 1.08, saturation: 1.1 };
@@ -203,6 +129,10 @@ export class Game {
   /** Whether WebGL context is currently lost (Android backgrounding) */
   private contextLost = false;
 
+  /** Stored WebGL context event handlers for cleanup */
+  private handleContextLost: (e: Event) => void = () => {};
+  private handleContextRestored: () => void = () => {};
+
   /** Notification callback — subscribe to receive game event alerts */
   onNotification: ((notification: GameNotification) => void) | null = null;
 
@@ -222,19 +152,21 @@ export class Game {
     container.appendChild(this.renderer.domElement);
 
     // Handle WebGL context loss (Android may kill context when backgrounded)
-    this.renderer.domElement.addEventListener('webglcontextlost', (e) => {
+    this.handleContextLost = (e: Event) => {
       e.preventDefault();
       this.contextLost = true;
       if (this.animationId !== null) {
         cancelAnimationFrame(this.animationId);
         this.animationId = null;
       }
-    });
-    this.renderer.domElement.addEventListener('webglcontextrestored', () => {
+    };
+    this.handleContextRestored = () => {
       this.contextLost = false;
       this.setupEnvironment();
       this.renderer.shadowMap.needsUpdate = true;
-    });
+    };
+    this.renderer.domElement.addEventListener('webglcontextlost', this.handleContextLost);
+    this.renderer.domElement.addEventListener('webglcontextrestored', this.handleContextRestored);
 
     // Scene with fog for atmospheric depth
     this.scene = new THREE.Scene();
@@ -276,7 +208,7 @@ export class Game {
     // Generate procedural environment map from scene lights for PBR materials
     this.setupEnvironment();
 
-    // Grid, game state, and renderers (map built after assets load)
+    // Grid, game state (map built after assets load)
     if (this.config.customMapId) {
       const mapData = getMap(this.config.customMapId);
       if (mapData) {
@@ -304,246 +236,58 @@ export class Game {
       });
     }
     this.gameState = new GameState(this.grid);
-    this.populationManager = new PopulationManager(this.gameState);
-    this.feedingManager = new FeedingManager(this.gameState);
-    this.moraleManager = new MoraleManager(this.gameState);
-    this.marketplaceManager = new MarketplaceManager(this.gameState);
-    this.mapRenderer = new MapRenderer();
-    this.buildingRenderer = new BuildingRenderer();
-    this.unitRenderer = new UnitRenderer();
-    this.unitManager = new UnitManager(this.gameState, this.populationManager);
-    this.productionManager = new ProductionManager(this.gameState);
-    this.constructionManager = new ConstructionManager(this.gameState, this.populationManager);
-    this.roadNetwork = new RoadNetwork(this.grid);
-    this.transporterManager = new TransporterManager(this.gameState, this.roadNetwork, this.populationManager);
-    this.animalLifecycleManager = new AnimalLifecycleManager(this.gameState, this.roadNetwork, this.transporterManager);
-    this.logisticsManager = new LogisticsManager(this.gameState, this.roadNetwork);
-    this.harborManager = new HarborManager(this.gameState, this.roadNetwork, this.grid);
-    this.territoryManager = new TerritoryManager(this.gameState);
-    this.knightManager = new KnightManager(this.gameState);
-    this.combatManager = new CombatManager(this.gameState, this.knightManager);
-    this.duelAnimationManager = new DuelAnimationManager();
-    this.attackManager = new AttackManager(
-      this.gameState,
-      this.combatManager,
-      this.territoryManager,
-      this.duelAnimationManager,
-      (q, r) => {
-        const tile = this.grid.getTile(q, r);
-        return tile ? MapRenderer.getTileY(tile) : 0;
+
+    // Create all managers via factory
+    this.mgrs = createManagers({
+      gameState: this.gameState,
+      grid: this.grid,
+      config: this.config,
+      humanPlayerId: this.humanPlayerId,
+    });
+
+    // Create all renderers via factory
+    this.rnds = createRenderers({
+      renderer: this.renderer,
+      scene: this.scene,
+      camera: this.camera,
+      atmosphereController: this.atmosphereController,
+      onColorGradingUpdate: (params) => {
+        // Cache base params; weather overlay is applied per-frame in animate loop
+        this.baseColorGrading = { ...params, warmTint: [...params.warmTint] };
+        this.applyColorGradingWithWeather(params);
       },
-      this.roadNetwork,
-    );
-    const playerIds = Array.from({ length: this.config.numPlayers }, (_, i) => i + 1);
-    const vc = { ...(this.config.victory ?? DEFAULT_VICTORY_CONFIG) };
-    if (this.config.numPlayers <= 1) vc.elimination = false;
-    this.victoryManager = new VictoryManager(this.gameState, this.territoryManager, playerIds, vc);
-    this.geologistManager = new GeologistManager(this.gameState);
-    this.treeManager = new TreeManager();
-    this.treeRenderer = new TreeRenderer();
-    this.woodcutterManager = new WoodcutterManager(this.gameState, this.treeManager);
-    this.foresterManager = new ForesterManager(this.gameState, this.treeManager);
-    this.terrainGatheringManager = new TerrainGatheringManager(this.gameState);
-    this.depositRenderer = new DepositRenderer();
-    this.particleSystem = new ParticleSystem();
-    this.buildingAnimator = new BuildingAnimator();
-    this.buildingStatusOverlay = new BuildingStatusOverlay();
-    this.combatRenderer = new CombatRenderer();
-    this.productionChainOverlay = new ProductionChainOverlay();
-    this.economyTracker = new EconomyTracker();
-    this.marketplaceManager.setEconomyTracker(this.economyTracker);
-    this.upgradeManager = new UpgradeManager(this.gameState);
-    this.toolProductionManager = new ToolProductionManager(this.gameState);
-    this.fogOfWarManager = new FogOfWarManager(this.gameState);
-    this.fogOfWarRenderer = new FogOfWarRenderer();
-    this.blobShadowRenderer = new BlobShadowRenderer();
-    this.distributionSettings = createDefaultDistribution();
-    this.logisticsManager.setDistributionSettings(this.distributionSettings);
-    this.performanceMonitor = new PerformanceMonitor();
-    this.postProcessing = new PostProcessing(this.renderer, this.scene, this.camera);
-    this.atmosphereController.onColorGradingUpdate = (params) => {
-      // Cache base params; weather overlay is applied per-frame in animate loop
-      this.baseColorGrading = { ...params, warmTint: [...params.warmTint] };
-      this.applyColorGradingWithWeather(params);
-    };
-    this.dashboardTracker = new DashboardTracker(
-      this.gameState, this.populationManager, this.moraleManager, this.humanPlayerId,
-    );
-    this.weatherController = new WeatherController();
-    this.cloudRenderer = new CloudRenderer();
-    this.birdFlockRenderer = new BirdFlockRenderer();
-    this.waterEffectRenderer = new WaterEffectRenderer();
-    this.wildAnimalRenderer = new WildAnimalRenderer();
-    this.flowerButterflyRenderer = new FlowerButterflyRenderer();
-    this.flagLightSystem = new FlagLightSystem();
-    this.workAreaRenderer = new WorkAreaRenderer();
-    this.atmosphereController.onNightnessUpdate = (nightness) => {
-      this.currentNightness = nightness;
-      this.flagLightSystem.setNightness(nightness);
-      this.cloudRenderer.setNightness(nightness);
-      this.birdFlockRenderer.setNightness(nightness);
-      this.waterEffectRenderer.setNightness(nightness);
-      this.flowerButterflyRenderer.setNightness(nightness);
-      this.postProcessing.setBloomStrength(0.3 + 0.2 * nightness);
-    };
-    // Wire food consumption to economy tracker
-    this.feedingManager.onFoodConsumed = (resource, amount) => {
-      this.economyTracker.recordConsumption(resource, amount);
-    };
+      onNightnessUpdate: (nightness) => {
+        this.currentNightness = nightness;
+      },
+    });
 
-    // Wire production events to economy tracker and morale system
-    const trackProduction = (inputs: { resource: ResourceType; amount: number }[], outputs: { resource: ResourceType; amount: number }[], building?: import('../game/Building').Building) => {
-      for (const input of inputs) {
-        this.economyTracker.recordConsumption(input.resource, input.amount);
-      }
-      for (const output of outputs) {
-        this.economyTracker.recordProduction(output.resource, output.amount);
-      }
-      // InnTavern consumes drinks and luxury goods → record for morale
-      if (building?.type === BuildingType.InnTavern) {
-        for (const input of inputs) {
-          if (RESOURCE_PROPERTIES[input.resource].isDrink) {
-            this.moraleManager.recordDrinkServed(building.playerId, input.resource);
-          }
-          if (RESOURCE_PROPERTIES[input.resource].isLuxury) {
-            this.moraleManager.recordLuxuryServed(building.playerId, input.resource);
-          }
-        }
-      }
-      // Track luxury goods production for morale (non-InnTavern buildings producing luxuries)
-      if (building) {
-        for (const output of outputs) {
-          if (RESOURCE_PROPERTIES[output.resource].isLuxury) {
-            this.moraleManager.recordLuxuryServed(building.playerId, output.resource);
-          }
-        }
-      }
-    };
-    this.productionManager.onProductionComplete = trackProduction;
-    this.toolProductionManager.onProductionComplete = trackProduction;
-    this.victoryManager.onVictory = (result) => {
-      const conditionLabels: Record<string, string> = {
-        elimination: 'All enemies defeated',
-        domination: 'Territorial domination',
-        economic: 'Economic supremacy',
-        timed: 'Time limit reached',
-        peaceful: 'Trade empire',
-      };
-      const label = conditionLabels[result.condition] ?? result.condition;
-      if (result.winnerId === this.humanPlayerId) {
-        this.onNotification?.({ type: 'victory', message: `Victory! ${label}!` });
-      } else {
-        this.onNotification?.({ type: 'defeat', message: `Defeat! Player ${result.winnerId} achieved ${label}` });
-      }
-    };
-    this.victoryManager.onDefeat = (result) => {
-      if (result.playerId === this.humanPlayerId) {
-        this.onNotification?.({ type: 'defeat', message: 'Your Castle has been destroyed! Defeat!' });
-      }
-    };
-    this.constructionManager.onBuildingActivated = (building) => {
-      this.territoryManager.markDirty();
-      this.buildingAnimator.onBuildingActivated(building.id);
-      // Completion particle burst
-      const { x, z } = HexGrid.hexToWorld(building.coord.q, building.coord.r);
-      const tile = this.grid.getTile(building.coord.q, building.coord.r);
-      const y = tile ? MapRenderer.getTileY(tile) : 0;
-      this.particleSystem.emitBurst(x, y + 0.3, z, ParticleEffect.CompletionFlash, 20);
-      // Initialize tool queue for dynamic-output buildings (e.g., Toolmaker)
-      this.toolProductionManager.initializeQueue(building);
-      if (building.playerId === this.humanPlayerId) {
-        const def = BUILDING_DEFINITIONS[building.type];
-        this.onNotification?.({ type: 'building_complete', message: `${def.label} construction complete` });
-      }
-    };
-    // Wire tool-waiting notifications
-    const notifyToolWaiting = (building: import('../game/Building').Building) => {
-      if (building.playerId !== this.humanPlayerId) return;
-      if (!building.waitingForTool) return;
-      const def = BUILDING_DEFINITIONS[building.type];
-      const toolLabel = RESOURCE_PROPERTIES[building.waitingForTool].label;
-      this.onNotification?.({ type: 'tool_waiting', message: `${def.label} needs a ${toolLabel}` });
-    };
-    this.unitManager.onBuildingWaitingForTool = notifyToolWaiting;
-    this.constructionManager.onBuildingWaitingForTool = notifyToolWaiting;
-    this.unitManager.onPopulationCapReached = (playerId: number) => {
-      if (playerId !== this.humanPlayerId) return;
-      this.onNotification?.({ type: 'population_cap', message: 'Population at capacity — build more houses' });
-    };
-
-    this.gameState.territoryCheck = (q, r, playerId) => this.territoryManager.isOwnedBy(q, r, playerId);
-    this.gameState.onBuildingRemoved = (building) => {
-      this.territoryManager.markDirty();
-      if (building.playerId === this.humanPlayerId) {
-        const def = BUILDING_DEFINITIONS[building.type];
-        this.onNotification?.({ type: 'building_destroyed', message: `${def.label} destroyed` });
-        // Check if population now exceeds capacity after housing destroyed
-        if (def.populationCapacity > 0 && this.populationManager.getUsageRatio(building.playerId) > 1) {
-          this.onNotification?.({ type: 'population_cap', message: 'Population exceeds capacity! Build more houses' });
-        }
-      }
-    };
-    this.knightManager.onKnightRecruited = (building) => {
-      this.territoryManager.markDirty();
-      if (building.playerId === this.humanPlayerId) {
-        const def = BUILDING_DEFINITIONS[building.type];
-        this.onNotification?.({ type: 'knight_recruited', message: `Knight recruited at ${def.label}` });
-      }
-    };
-    this.combatManager.onDuelResolved = (result) => {
-      if (result.winnerPlayerId === this.humanPlayerId) {
-        const winner = this.gameState.getUnit(result.winnerId);
-        const msg = result.rankUp && winner
-          ? `Knight victorious — promoted to rank ${winner.knightRank}!`
-          : 'Knight won the duel!';
-        this.onNotification?.({ type: 'combat_result', message: msg });
-      } else if (result.loserPlayerId === this.humanPlayerId) {
-        this.onNotification?.({ type: 'combat_result', message: 'Your knight was defeated' });
-      }
-      // NPC-vs-NPC duels: no notification for human player
-    };
-    this.attackManager.onBuildingUnderAttack = (building) => {
-      this.combatRenderer.showAttackWarning(building);
-      if (building.playerId === this.humanPlayerId) {
-        const def = BUILDING_DEFINITIONS[building.type];
-        this.onNotification?.({ type: 'under_attack', message: `${def.label} is under attack!` });
-      }
-      // Notify AI player of the attack so it can respond
-      for (const ai of this.aiPlayers) {
-        if (ai.getPlayerId() === building.playerId) {
-          ai.onUnderAttack(building.id);
-        }
-      }
-    };
-    this.attackManager.onBuildingCaptured = (building, byPlayerId, oldPlayerId) => {
-      this.combatRenderer.showCaptureBanner(building, byPlayerId);
-      const def = BUILDING_DEFINITIONS[building.type];
-      if (byPlayerId === this.humanPlayerId) {
-        this.onNotification?.({ type: 'building_captured', message: `${def.label} captured!` });
-      } else if (oldPlayerId === this.humanPlayerId) {
-        this.onNotification?.({ type: 'building_captured', message: `Enemy captured your ${def.label}!` });
-      }
-    };
-    // Wire geologist deposit reveal → deposit renderer
-    this.geologistManager.onDepositRevealed = (coord, deposit) => {
-      this.depositRenderer.addMarker(coord, deposit.resource, this.grid);
-      const resourceLabels: Record<string, string> = {
-        iron_ore: 'Iron',
-        coal_ore: 'Coal',
-        gold_ore: 'Gold',
-      };
-      const label = resourceLabels[deposit.resource] ?? deposit.resource;
-      this.onNotification?.({ type: 'building_complete', message: `${label} deposit discovered!` });
-    };
-
-    // Wire mine placement → remove deposit marker + rebuild map
-    this.gameState.onMinePlaced = (coord) => {
-      this.depositRenderer.removeMarker(coord);
-      this.mapRenderer.rebuild();
-    };
-
-    this.roadRenderer = new RoadRenderer();
-    this.territoryRenderer = new TerritoryRenderer();
+    // Wire all manager/notification callbacks
+    wireGameCallbacks({
+      productionManager: this.mgrs.productionManager,
+      toolProductionManager: this.mgrs.toolProductionManager,
+      victoryManager: this.mgrs.victoryManager,
+      constructionManager: this.mgrs.constructionManager,
+      unitManager: this.mgrs.unitManager,
+      gameState: this.gameState,
+      territoryManager: this.mgrs.territoryManager,
+      knightManager: this.mgrs.knightManager,
+      combatManager: this.mgrs.combatManager,
+      attackManager: this.mgrs.attackManager,
+      geologistManager: this.mgrs.geologistManager,
+      economyTracker: this.mgrs.economyTracker,
+      moraleManager: this.mgrs.moraleManager,
+      feedingManager: this.mgrs.feedingManager,
+      populationManager: this.mgrs.populationManager,
+      buildingAnimator: this.rnds.buildingAnimator,
+      combatRenderer: this.rnds.combatRenderer,
+      depositRenderer: this.rnds.depositRenderer,
+      particleSystem: this.rnds.particleSystem,
+      mapRenderer: this.rnds.mapRenderer,
+      grid: this.grid,
+      humanPlayerId: this.humanPlayerId,
+      aiPlayers: this.aiPlayers,
+      getNotification: () => this.onNotification,
+    });
 
     // Handle resize
     this.onResize = this.onResize.bind(this);
@@ -569,7 +313,7 @@ export class Game {
     this.camera.updateProjectionMatrix();
 
     this.renderer.setSize(this.width, this.height);
-    this.postProcessing.resize(this.width, this.height);
+    this.rnds.postProcessing.resize(this.width, this.height);
   }
 
   async start(savedData?: SaveData): Promise<void> {
@@ -582,68 +326,68 @@ export class Game {
     ]);
 
     // Build terrain
-    this.mapRenderer.render(this.grid, this.scene);
+    this.rnds.mapRenderer.render(this.grid, this.scene);
 
     // Set up building renderer with world wrapping
-    this.buildingRenderer.addToScene(this.scene, this.grid);
+    this.rnds.buildingRenderer.addToScene(this.scene, this.grid);
 
     // Set up unit renderer with world wrapping
-    this.unitRenderer.addToScene(this.scene, this.grid);
+    this.rnds.unitRenderer.addToScene(this.scene, this.grid);
 
     // Set up road renderer with world wrapping
-    this.roadRenderer.addToScene(this.scene, this.grid);
+    this.rnds.roadRenderer.addToScene(this.scene, this.grid);
 
     // Set up territory renderer with world wrapping
-    this.territoryRenderer.addToScene(this.scene, this.grid);
+    this.rnds.territoryRenderer.addToScene(this.scene, this.grid);
 
     // Set up deposit renderer with world wrapping
-    this.depositRenderer.addToScene(this.scene, this.grid);
+    this.rnds.depositRenderer.addToScene(this.scene, this.grid);
 
     // Set up tree renderer
-    this.treeRenderer.addToScene(this.scene);
+    this.rnds.treeRenderer.addToScene(this.scene);
 
     // Set up particle system
-    this.particleSystem.addToScene(this.scene);
+    this.rnds.particleSystem.addToScene(this.scene);
 
     // Set up combat renderer
-    this.combatRenderer.addToScene(this.scene, this.grid);
+    this.rnds.combatRenderer.addToScene(this.scene, this.grid);
 
     // Set up production chain overlay
-    this.productionChainOverlay.addToScene(this.scene, this.grid);
+    this.rnds.productionChainOverlay.addToScene(this.scene, this.grid);
 
     // Set up blob shadows
-    this.blobShadowRenderer.addToScene(this.scene, this.grid);
+    this.rnds.blobShadowRenderer.addToScene(this.scene, this.grid);
 
     // Set up flag light system (nighttime lanterns)
-    this.flagLightSystem.addToScene(this.scene);
+    this.rnds.flagLightSystem.addToScene(this.scene);
 
     // Set up work area renderer (building selection overlay)
-    this.workAreaRenderer.addToScene(this.scene);
+    this.rnds.workAreaRenderer.addToScene(this.scene);
 
     // Set up weather controller
-    this.weatherController.addToScene(this.scene);
+    this.rnds.weatherController.addToScene(this.scene);
 
     // Set up cloud renderer (billboard clouds + ground shadows)
-    this.cloudRenderer.addToScene(this.scene);
+    this.rnds.cloudRenderer.addToScene(this.scene);
 
     // Set up bird flock renderer (GPU-driven flocks)
-    this.birdFlockRenderer.addToScene(this.scene);
+    this.rnds.birdFlockRenderer.addToScene(this.scene);
 
     // Set up water effect renderer (sun sparkles on water tiles)
-    this.waterEffectRenderer.addToScene(this.scene);
-    this.waterEffectRenderer.initWaterPositions(this.grid);
+    this.rnds.waterEffectRenderer.addToScene(this.scene);
+    this.rnds.waterEffectRenderer.initWaterPositions(this.grid);
 
     // Set up wild animal renderer (ambient terrain creatures)
-    this.wildAnimalRenderer.addToScene(this.scene, this.grid);
+    this.rnds.wildAnimalRenderer.addToScene(this.scene, this.grid);
 
     // Set up flower butterfly renderer (GPU-driven butterflies near grassland)
-    this.flowerButterflyRenderer.addToScene(this.scene, this.grid);
+    this.rnds.flowerButterflyRenderer.addToScene(this.scene, this.grid);
 
     // Set up fog of war renderer + wire into unit/building renderers
-    this.fogOfWarRenderer.addToScene(this.scene, this.grid);
-    this.fogOfWarRenderer.setPlayerId(this.humanPlayerId);
-    this.unitRenderer.setFogOfWar(this.fogOfWarManager, this.humanPlayerId);
-    this.buildingRenderer.setFogOfWar(this.fogOfWarManager, this.humanPlayerId);
+    this.rnds.fogOfWarRenderer.addToScene(this.scene, this.grid);
+    this.rnds.fogOfWarRenderer.setPlayerId(this.humanPlayerId);
+    this.rnds.unitRenderer.setFogOfWar(this.mgrs.fogOfWarManager, this.humanPlayerId);
+    this.rnds.buildingRenderer.setFogOfWar(this.mgrs.fogOfWarManager, this.humanPlayerId);
 
     if (savedData) {
       // Restore saved state
@@ -651,53 +395,53 @@ export class Game {
       const restoredDistribution = deserializeGame(
         savedData,
         this.gameState,
-        this.roadNetwork,
+        this.mgrs.roadNetwork,
         {
-          constructionManager: this.constructionManager,
-          transporterManager: this.transporterManager,
-          unitManager: this.unitManager,
-          combatManager: this.combatManager,
-          attackManager: this.attackManager,
-          territoryManager: this.territoryManager,
-          logisticsManager: this.logisticsManager,
-          knightManager: this.knightManager,
-          victoryManager: this.victoryManager,
-          geologistManager: this.geologistManager,
-          treeManager: this.treeManager,
-          woodcutterManager: this.woodcutterManager,
-          foresterManager: this.foresterManager,
-          upgradeManager: this.upgradeManager,
-          fogOfWarManager: this.fogOfWarManager,
-          harborManager: this.harborManager,
-          feedingManager: this.feedingManager,
-          moraleManager: this.moraleManager,
-          marketplaceManager: this.marketplaceManager,
-          animalLifecycleManager: this.animalLifecycleManager,
-          terrainGatheringManager: this.terrainGatheringManager,
+          constructionManager: this.mgrs.constructionManager,
+          transporterManager: this.mgrs.transporterManager,
+          unitManager: this.mgrs.unitManager,
+          combatManager: this.mgrs.combatManager,
+          attackManager: this.mgrs.attackManager,
+          territoryManager: this.mgrs.territoryManager,
+          logisticsManager: this.mgrs.logisticsManager,
+          knightManager: this.mgrs.knightManager,
+          victoryManager: this.mgrs.victoryManager,
+          geologistManager: this.mgrs.geologistManager,
+          treeManager: this.mgrs.treeManager,
+          woodcutterManager: this.mgrs.woodcutterManager,
+          foresterManager: this.mgrs.foresterManager,
+          upgradeManager: this.mgrs.upgradeManager,
+          fogOfWarManager: this.mgrs.fogOfWarManager,
+          harborManager: this.mgrs.harborManager,
+          feedingManager: this.mgrs.feedingManager,
+          moraleManager: this.mgrs.moraleManager,
+          marketplaceManager: this.mgrs.marketplaceManager,
+          animalLifecycleManager: this.mgrs.animalLifecycleManager,
+          terrainGatheringManager: this.mgrs.terrainGatheringManager,
         },
         this.aiPlayers,
       );
 
       // Restore goods distribution settings if present
       if (restoredDistribution) {
-        this.distributionSettings = restoredDistribution;
-        this.logisticsManager.setDistributionSettings(restoredDistribution);
+        this.mgrs.distributionSettings = restoredDistribution;
+        this.mgrs.logisticsManager.setDistributionSettings(restoredDistribution);
       }
 
       // Rebuild renderers from restored state
       for (const building of this.gameState.getAllBuildings()) {
-        this.buildingRenderer.addBuilding(building, this.grid);
+        this.rnds.buildingRenderer.addBuilding(building, this.grid);
       }
-      this.roadRenderer.sync(this.roadNetwork, (id) => this.gameState.getUnit(id));
-      this.territoryRenderer.sync(this.territoryManager);
+      this.rnds.roadRenderer.sync(this.mgrs.roadNetwork, (id) => this.gameState.getUnit(id));
+      this.rnds.territoryRenderer.sync(this.mgrs.territoryManager);
 
       // Transfer any misplaced entities (buildings in wrong player's territory)
-      this.attackManager.checkTerritoryTransfers();
+      this.mgrs.attackManager.checkTerritoryTransfers();
 
       // Rebuild deposit markers from revealed deposits
       for (const tile of this.grid.getAllTiles()) {
         if (tile.deposit?.revealed && !tile.deposit.claimed) {
-          this.depositRenderer.addMarker(tile.coord, tile.deposit.resource, this.grid);
+          this.rnds.depositRenderer.addMarker(tile.coord, tile.deposit.resource, this.grid);
         }
       }
 
@@ -716,7 +460,7 @@ export class Game {
       );
     } else {
       // New game: initialize tree entities from forest tiles
-      this.treeManager.initializeFromMap(this.grid);
+      this.mgrs.treeManager.initializeFromMap(this.grid);
 
       // New game: place starting Castles and create AI controllers
       this.placeStartingCastles();
@@ -730,7 +474,7 @@ export class Game {
         const { x, z } = HexGrid.hexToWorld(castle1.coord.q, castle1.coord.r);
         lookAt = new THREE.Vector3(x, 0, z);
       } else {
-        lookAt = this.mapRenderer.getMapCenter(this.grid);
+        lookAt = this.rnds.mapRenderer.getMapCenter(this.grid);
       }
       const camOffset = new THREE.Vector3(20, 20, 20);
       this.camera.position.copy(lookAt).add(camOffset);
@@ -738,13 +482,13 @@ export class Game {
     }
 
     // Wire tree/forestry callbacks
-    this.treeManager.onTreeChanged = () => this.treeRenderer.markDirty();
-    this.woodcutterManager.onTerrainChanged = () => this.mapRenderer.rebuild();
-    this.foresterManager.onTerrainChanged = () => this.mapRenderer.rebuild();
+    this.mgrs.treeManager.onTreeChanged = () => this.rnds.treeRenderer.markDirty();
+    this.mgrs.woodcutterManager.onTerrainChanged = () => this.rnds.mapRenderer.rebuild();
+    this.mgrs.foresterManager.onTerrainChanged = () => this.rnds.mapRenderer.rebuild();
 
     // Initial tree render
-    this.treeRenderer.markDirty();
-    this.treeRenderer.sync(this.treeManager, this.grid);
+    this.rnds.treeRenderer.markDirty();
+    this.rnds.treeRenderer.sync(this.mgrs.treeManager, this.grid);
 
     // Camera controls (must be created AFTER camera is positioned so
     // CameraController computes the correct initial target)
@@ -763,7 +507,7 @@ export class Game {
     const animate = (): void => {
       this.animationId = requestAnimationFrame(animate);
       if (this.contextLost) return;
-      this.performanceMonitor.tick();
+      this.rnds.performanceMonitor.tick();
       const rawDelta = Math.min(clock.getDelta(), 0.1); // Cap at 100ms to prevent teleporting
 
       // Camera and shader time always update (even when paused)
@@ -790,7 +534,7 @@ export class Game {
       this.baseExposure = this.renderer.toneMappingExposure;
 
       // Pass nightness to weather controller for rain vs snow selection
-      this.weatherController.setNightness(this.atmosphereController.getCycleState().nightness);
+      this.rnds.weatherController.setNightness(this.atmosphereController.getCycleState().nightness);
 
       // Scale delta by game speed; zero when paused
       const deltaTime = this._paused ? 0 : rawDelta * this._gameSpeed;
@@ -803,94 +547,94 @@ export class Game {
         transferStorageInputs(b);
       }
 
-      const prevTerritoryVersion = this.territoryManager.getVersion();
-      this.territoryManager.update();
+      const prevTerritoryVersion = this.mgrs.territoryManager.getVersion();
+      this.mgrs.territoryManager.update();
       // Check for territory transfers when territory changes (passive expansion)
-      if (this.territoryManager.getVersion() !== prevTerritoryVersion) {
-        this.attackManager.checkTerritoryTransfers();
+      if (this.mgrs.territoryManager.getVersion() !== prevTerritoryVersion) {
+        this.mgrs.attackManager.checkTerritoryTransfers();
       }
       // Pass nightness to managers for day/night gameplay effects
-      this.unitManager.nightness = this.currentNightness;
-      this.productionManager.nightness = this.currentNightness;
+      this.mgrs.unitManager.nightness = this.currentNightness;
+      this.mgrs.productionManager.nightness = this.currentNightness;
       this.updateLightMitigation();
-      this.unitManager.update(deltaTime);
-      this.constructionManager.update(deltaTime);
-      this.upgradeManager.update(deltaTime);
-      this.productionManager.update(deltaTime);
-      this.toolProductionManager.update(deltaTime);
-      this.geologistManager.update(deltaTime);
-      this.treeManager.update(deltaTime);
-      this.woodcutterManager.update(deltaTime);
-      this.terrainGatheringManager.update(deltaTime);
-      this.foresterManager.update(deltaTime);
-      this.treeRenderer.sync(this.treeManager, this.grid);
-      this.logisticsManager.update(deltaTime);
-      this.harborManager.update(deltaTime);
-      this.transporterManager.update(deltaTime);
-      this.knightManager.update(deltaTime);
-      this.attackManager.update(deltaTime);
-      this.combatManager.cleanupStaleData();
-      this.victoryManager.update(deltaTime);
+      this.mgrs.unitManager.update(deltaTime);
+      this.mgrs.constructionManager.update(deltaTime);
+      this.mgrs.upgradeManager.update(deltaTime);
+      this.mgrs.productionManager.update(deltaTime);
+      this.mgrs.toolProductionManager.update(deltaTime);
+      this.mgrs.geologistManager.update(deltaTime);
+      this.mgrs.treeManager.update(deltaTime);
+      this.mgrs.woodcutterManager.update(deltaTime);
+      this.mgrs.terrainGatheringManager.update(deltaTime);
+      this.mgrs.foresterManager.update(deltaTime);
+      this.rnds.treeRenderer.sync(this.mgrs.treeManager, this.grid);
+      this.mgrs.logisticsManager.update(deltaTime);
+      this.mgrs.harborManager.update(deltaTime);
+      this.mgrs.transporterManager.update(deltaTime);
+      this.mgrs.knightManager.update(deltaTime);
+      this.mgrs.attackManager.update(deltaTime);
+      this.mgrs.combatManager.cleanupStaleData();
+      this.mgrs.victoryManager.update(deltaTime);
       for (const ai of this.aiPlayers) {
         ai.update(deltaTime);
       }
-      this.feedingManager.update(deltaTime);
-      this.moraleManager.update(deltaTime);
-      this.marketplaceManager.update(deltaTime);
-      this.animalLifecycleManager.update(deltaTime);
-      this.economyTracker.update(deltaTime);
-      this.dashboardTracker.update(deltaTime);
-      this.roadRenderer.sync(this.roadNetwork, (id) => this.gameState.getUnit(id));
-      this.territoryRenderer.sync(this.territoryManager);
-      this.fogOfWarManager.markDirty(); // Units move every frame
-      this.fogOfWarManager.update();
-      this.fogOfWarRenderer.sync(this.fogOfWarManager);
-      this.buildingRenderer.updateFogVisibility(allBuildings);
+      this.mgrs.feedingManager.update(deltaTime);
+      this.mgrs.moraleManager.update(deltaTime);
+      this.mgrs.marketplaceManager.update(deltaTime);
+      this.mgrs.animalLifecycleManager.update(deltaTime);
+      this.mgrs.economyTracker.update(deltaTime);
+      this.mgrs.dashboardTracker.update(deltaTime);
+      this.rnds.roadRenderer.sync(this.mgrs.roadNetwork, (id) => this.gameState.getUnit(id));
+      this.rnds.territoryRenderer.sync(this.mgrs.territoryManager);
+      this.mgrs.fogOfWarManager.markDirty(); // Units move every frame
+      this.mgrs.fogOfWarManager.update();
+      this.rnds.fogOfWarRenderer.sync(this.mgrs.fogOfWarManager);
+      this.rnds.buildingRenderer.updateFogVisibility(allBuildings);
       const allUnits = this.gameState.getAllUnits();
-      this.unitRenderer.syncUnits(allUnits);
-      this.unitRenderer.updatePositions(allUnits, deltaTime);
+      this.rnds.unitRenderer.syncUnits(allUnits);
+      this.rnds.unitRenderer.updatePositions(allUnits, deltaTime);
 
       // Visual systems (shadows, particles, animations, overlays)
-      this.blobShadowRenderer.update(allBuildings, allUnits);
-      this.flagLightSystem.update(
+      this.rnds.blobShadowRenderer.update(allBuildings, allUnits);
+      this.rnds.flagLightSystem.update(
         deltaTime,
-        this.roadNetwork.getAllFlags(),
+        this.mgrs.roadNetwork.getAllFlags(),
         allBuildings,
         this.grid,
-        (id) => this.buildingRenderer.getMesh(id),
+        (id) => this.rnds.buildingRenderer.getMesh(id),
       );
-      this.particleSystem.update(deltaTime, allBuildings, this.grid, this.frustum);
-      this.buildingAnimator.update(
+      this.rnds.particleSystem.update(deltaTime, allBuildings, this.grid, this.frustum);
+      this.rnds.buildingAnimator.update(
         deltaTime,
         allBuildings,
-        (id) => this.buildingRenderer.getMesh(id),
+        (id) => this.rnds.buildingRenderer.getMesh(id),
       );
-      this.buildingStatusOverlay.update(
+      this.rnds.buildingStatusOverlay.update(
         deltaTime,
         allBuildings,
         this.gameState,
-        (id) => this.buildingRenderer.getMesh(id),
+        (id) => this.rnds.buildingRenderer.getMesh(id),
       );
-      this.combatRenderer.update(
+      this.rnds.combatRenderer.update(
         deltaTime,
-        this.duelAnimationManager.getActiveDuels(),
-        (id) => this.unitRenderer.getMesh(id),
+        this.mgrs.duelAnimationManager.getActiveDuels(),
+        (id) => this.rnds.unitRenderer.getMesh(id),
       );
-      this.productionChainOverlay.update(deltaTime);
-      this.weatherController.update(rawDelta, this.camera.position, this.frustum);
+      this.rnds.productionChainOverlay.update(deltaTime);
+      this.rnds.weatherController.update(rawDelta, this.camera.position, this.frustum);
       // Pass dynamic wind direction from weather to ambient renderers
-      const wind = this.weatherController.getWindDirection();
-      this.cloudRenderer.setWindDirection(wind);
-      this.flowerButterflyRenderer.setWindDirection(wind);
-      this.cloudRenderer.update(rawDelta, this.camera.position, this.frustum);
-      this.birdFlockRenderer.update(rawDelta, this.camera.position, this.frustum);
-      this.waterEffectRenderer.update(rawDelta, this.camera.position, this.frustum);
-      this.wildAnimalRenderer.update(deltaTime, this.camera.position);
-      this.flowerButterflyRenderer.update(rawDelta, this.camera.position, this.frustum);
+      const wind = this.rnds.weatherController.getWindDirection();
+      this.rnds.cloudRenderer.setWindDirection(wind);
+      this.rnds.flowerButterflyRenderer.setWindDirection(wind);
+      this.rnds.cloudRenderer.update(rawDelta, this.camera.position, this.frustum);
+      this.rnds.birdFlockRenderer.update(rawDelta, this.camera.position, this.frustum);
+      this.rnds.waterEffectRenderer.update(rawDelta, this.camera.position, this.frustum);
+      this.rnds.wildAnimalRenderer.update(deltaTime, this.camera.position);
+      this.rnds.flowerButterflyRenderer.update(rawDelta, this.camera.position, this.frustum);
 
       // Apply weather atmosphere overlay
-      const wt = this.weatherController.getWeatherType();
-      const t = this.weatherController.getTransitionOpacity();
+      const wt = this.rnds.weatherController.getWeatherType();
+      const t = this.rnds.weatherController.getTransitionOpacity();
       if (t > 0 && wt !== 'none') {
         const isRain = wt === 'rain';
         // Fog density increase
@@ -905,7 +649,7 @@ export class Game {
         this.applyColorGradingWithWeather(this.baseColorGrading);
       }
 
-      this.postProcessing.render();
+      this.rnds.postProcessing.render();
     };
     animate();
   }
@@ -917,17 +661,17 @@ export class Game {
         i,
         this.config.difficulty,
         this.gameState,
-        this.territoryManager,
-        this.attackManager,
-        this.knightManager,
-        this.upgradeManager,
-        this.roadNetwork,
-        this.populationManager,
+        this.mgrs.territoryManager,
+        this.mgrs.attackManager,
+        this.mgrs.knightManager,
+        this.mgrs.upgradeManager,
+        this.mgrs.roadNetwork,
+        this.mgrs.populationManager,
         (building, grid) => {
-          this.buildingRenderer.addBuilding(building, grid);
+          this.rnds.buildingRenderer.addBuilding(building, grid);
         },
       );
-      ai.setMarketplaceManager(this.marketplaceManager);
+      ai.setMarketplaceManager(this.mgrs.marketplaceManager);
       this.aiPlayers.push(ai);
     }
   }
@@ -1025,8 +769,8 @@ export class Game {
           );
           if (result.ok) {
             initializeCastleResources(result.building, this.config.difficulty);
-            this.buildingRenderer.addBuilding(result.building, this.grid);
-            this.territoryManager.markDirty();
+            this.rnds.buildingRenderer.addBuilding(result.building, this.grid);
+            this.mgrs.territoryManager.markDirty();
             return;
           }
         }
@@ -1052,8 +796,8 @@ export class Game {
           // Mark as active and fully built
           result.building.state = BuildingState.Active;
           result.building.constructionProgress = 1;
-          this.buildingRenderer.addBuilding(result.building, this.grid);
-          this.territoryManager.markDirty();
+          this.rnds.buildingRenderer.addBuilding(result.building, this.grid);
+          this.mgrs.territoryManager.markDirty();
         }
       }
     }
@@ -1061,17 +805,17 @@ export class Game {
     // Restore flags
     if (this.customMapData.flags) {
       for (const f of this.customMapData.flags) {
-        this.roadNetwork.placeFlag({ q: f.q, r: f.r }, f.playerId);
+        this.mgrs.roadNetwork.placeFlag({ q: f.q, r: f.r }, f.playerId);
       }
     }
 
     // Restore roads
     if (this.customMapData.roads) {
       for (const r of this.customMapData.roads) {
-        const flagA = this.roadNetwork.getFlagAt(r.flagA.q, r.flagA.r);
-        const flagB = this.roadNetwork.getFlagAt(r.flagB.q, r.flagB.r);
+        const flagA = this.mgrs.roadNetwork.getFlagAt(r.flagA.q, r.flagA.r);
+        const flagB = this.mgrs.roadNetwork.getFlagAt(r.flagB.q, r.flagB.r);
         if (flagA && flagB) {
-          this.roadNetwork.connectFlags(flagA.id, flagB.id);
+          this.mgrs.roadNetwork.connectFlags(flagA.id, flagB.id);
         }
       }
     }
@@ -1134,35 +878,35 @@ export class Game {
       case ShadowQuality.Off:
         this.renderer.shadowMap.enabled = false;
         this.directionalLight.castShadow = false;
-        this.blobShadowRenderer.setEnabled(false);
-        this.buildingRenderer.setCastShadow(false);
-        this.mapRenderer.setReceiveShadow(false);
+        this.rnds.blobShadowRenderer.setEnabled(false);
+        this.rnds.buildingRenderer.setCastShadow(false);
+        this.rnds.mapRenderer.setReceiveShadow(false);
         break;
 
       case ShadowQuality.BlobOnly:
         this.renderer.shadowMap.enabled = false;
         this.directionalLight.castShadow = false;
-        this.blobShadowRenderer.setEnabled(true);
-        this.buildingRenderer.setCastShadow(false);
-        this.mapRenderer.setReceiveShadow(false);
+        this.rnds.blobShadowRenderer.setEnabled(true);
+        this.rnds.buildingRenderer.setCastShadow(false);
+        this.rnds.mapRenderer.setReceiveShadow(false);
         break;
 
       case ShadowQuality.Low:
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.BasicShadowMap;
         this.configureShadowCamera(512);
-        this.blobShadowRenderer.setEnabled(false);
-        this.buildingRenderer.setCastShadow(true);
-        this.mapRenderer.setReceiveShadow(true);
+        this.rnds.blobShadowRenderer.setEnabled(false);
+        this.rnds.buildingRenderer.setCastShadow(true);
+        this.rnds.mapRenderer.setReceiveShadow(true);
         break;
 
       case ShadowQuality.High:
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         this.configureShadowCamera(1024);
-        this.blobShadowRenderer.setEnabled(false);
-        this.buildingRenderer.setCastShadow(true);
-        this.mapRenderer.setReceiveShadow(true);
+        this.rnds.blobShadowRenderer.setEnabled(false);
+        this.rnds.buildingRenderer.setCastShadow(true);
+        this.rnds.mapRenderer.setReceiveShadow(true);
         break;
     }
 
@@ -1209,11 +953,11 @@ export class Game {
 
   /** Apply color grading with weather overlay multipliers */
   private applyColorGradingWithWeather(base: ColorGradingParams): void {
-    const wt = this.weatherController.getWeatherType();
-    const t = this.weatherController.getTransitionOpacity();
+    const wt = this.rnds.weatherController.getWeatherType();
+    const t = this.rnds.weatherController.getTransitionOpacity();
 
     if (t <= 0 || wt === 'none') {
-      this.postProcessing.setColorGradingParams(base);
+      this.rnds.postProcessing.setColorGradingParams(base);
       return;
     }
 
@@ -1222,7 +966,7 @@ export class Game {
     // Cool tint shift: rain shifts toward blue, snow toward white (reduce warm)
     const tintShift = isRain ? -0.06 * t : -0.03 * t;
 
-    this.postProcessing.setColorGradingParams({
+    this.rnds.postProcessing.setColorGradingParams({
       warmTint: [
         base.warmTint[0] + tintShift, // reduce red warmth
         base.warmTint[1],
@@ -1242,55 +986,58 @@ export class Game {
     this.selectionController?.dispose();
     this.placementController?.dispose();
     this.cameraController?.dispose();
-    this.performanceMonitor.dispose();
-    this.blobShadowRenderer.dispose();
-    this.fogOfWarRenderer.dispose();
-    this.productionChainOverlay.dispose();
-    this.combatRenderer.dispose();
-    this.buildingStatusOverlay.dispose();
-    this.buildingAnimator.dispose();
-    this.flagLightSystem.dispose();
-    this.workAreaRenderer.dispose();
-    this.weatherController.dispose();
-    this.cloudRenderer.dispose();
-    this.birdFlockRenderer.dispose();
-    this.waterEffectRenderer.dispose();
-    this.wildAnimalRenderer.dispose();
-    this.flowerButterflyRenderer.dispose();
-    this.particleSystem.dispose();
-    this.treeRenderer.dispose();
-    this.depositRenderer.dispose();
-    this.territoryRenderer.dispose();
-    this.roadRenderer.dispose();
-    this.unitRenderer.dispose();
-    this.buildingRenderer.dispose();
-    this.mapRenderer.dispose();
-    this.postProcessing.dispose();
+    this.rnds.performanceMonitor.dispose();
+    this.rnds.blobShadowRenderer.dispose();
+    this.rnds.fogOfWarRenderer.dispose();
+    this.rnds.productionChainOverlay.dispose();
+    this.rnds.combatRenderer.dispose();
+    this.rnds.buildingStatusOverlay.dispose();
+    this.rnds.buildingAnimator.dispose();
+    this.rnds.flagLightSystem.dispose();
+    this.rnds.workAreaRenderer.dispose();
+    this.rnds.weatherController.dispose();
+    this.rnds.cloudRenderer.dispose();
+    this.rnds.birdFlockRenderer.dispose();
+    this.rnds.waterEffectRenderer.dispose();
+    this.rnds.wildAnimalRenderer.dispose();
+    this.rnds.flowerButterflyRenderer.dispose();
+    this.rnds.particleSystem.dispose();
+    this.rnds.treeRenderer.dispose();
+    this.rnds.depositRenderer.dispose();
+    this.rnds.territoryRenderer.dispose();
+    this.rnds.roadRenderer.dispose();
+    this.rnds.unitRenderer.dispose();
+    this.rnds.buildingRenderer.dispose();
+    this.rnds.mapRenderer.dispose();
+    this.rnds.postProcessing.dispose();
     if (this.scene.environment) {
       this.scene.environment.dispose();
       this.scene.environment = null;
     }
+    this.renderer.domElement.removeEventListener('webglcontextlost', this.handleContextLost);
+    this.renderer.domElement.removeEventListener('webglcontextrestored', this.handleContextRestored);
     this.renderer.dispose();
     this.renderer.domElement.remove();
 
     this.aiPlayers = [];
 
     // Clean up manager callbacks to prevent memory leaks
-    this.feedingManager.onFoodConsumed = null;
-    this.constructionManager.onBuildingActivated = null;
+    this.mgrs.productionManager.onProductionComplete = null;
+    this.mgrs.feedingManager.onFoodConsumed = null;
+    this.mgrs.constructionManager.onBuildingActivated = null;
     this.gameState.onBuildingRemoved = null;
     this.gameState.onMinePlaced = null;
-    this.geologistManager.onDepositRevealed = null;
-    this.treeManager.onTreeChanged = null;
-    this.woodcutterManager.onTerrainChanged = null;
-    this.foresterManager.onTerrainChanged = null;
-    this.knightManager.onKnightRecruited = null;
-    this.combatManager.onDuelResolved = null;
-    this.attackManager.onBuildingUnderAttack = null;
-    this.attackManager.onBuildingCaptured = null;
-    this.attackManager.onTerritoryChanged = null;
-    this.victoryManager.onVictory = null;
-    this.victoryManager.onDefeat = null;
+    this.mgrs.geologistManager.onDepositRevealed = null;
+    this.mgrs.treeManager.onTreeChanged = null;
+    this.mgrs.woodcutterManager.onTerrainChanged = null;
+    this.mgrs.foresterManager.onTerrainChanged = null;
+    this.mgrs.knightManager.onKnightRecruited = null;
+    this.mgrs.combatManager.onDuelResolved = null;
+    this.mgrs.attackManager.onBuildingUnderAttack = null;
+    this.mgrs.attackManager.onBuildingCaptured = null;
+    this.mgrs.attackManager.onTerritoryChanged = null;
+    this.mgrs.victoryManager.onVictory = null;
+    this.mgrs.victoryManager.onDefeat = null;
     this.onNotification = null;
     this.onSpeedChange = null;
   }
@@ -1312,31 +1059,31 @@ export class Game {
   }
 
   getMapRenderer(): MapRenderer {
-    return this.mapRenderer;
+    return this.rnds.mapRenderer;
   }
 
   getBuildingRenderer(): BuildingRenderer {
-    return this.buildingRenderer;
+    return this.rnds.buildingRenderer;
   }
 
   getUnitRenderer(): UnitRenderer {
-    return this.unitRenderer;
+    return this.rnds.unitRenderer;
   }
 
   getUnitManager(): UnitManager {
-    return this.unitManager;
+    return this.mgrs.unitManager;
   }
 
   getFeedingManager(): FeedingManager {
-    return this.feedingManager;
+    return this.mgrs.feedingManager;
   }
 
   getMoraleManager(): MoraleManager {
-    return this.moraleManager;
+    return this.mgrs.moraleManager;
   }
 
   getMarketplaceManager(): MarketplaceManager {
-    return this.marketplaceManager;
+    return this.mgrs.marketplaceManager;
   }
 
   getGameState(): GameState {
@@ -1344,23 +1091,23 @@ export class Game {
   }
 
   getRoadNetwork(): RoadNetwork {
-    return this.roadNetwork;
+    return this.mgrs.roadNetwork;
   }
 
   getTerritoryManager(): TerritoryManager {
-    return this.territoryManager;
+    return this.mgrs.territoryManager;
   }
 
   getKnightManager(): KnightManager {
-    return this.knightManager;
+    return this.mgrs.knightManager;
   }
 
   getCombatManager(): CombatManager {
-    return this.combatManager;
+    return this.mgrs.combatManager;
   }
 
   getAttackManager(): AttackManager {
-    return this.attackManager;
+    return this.mgrs.attackManager;
   }
 
   getConfig(): GameConfig {
@@ -1377,11 +1124,11 @@ export class Game {
   }
 
   getVictoryManager(): VictoryManager {
-    return this.victoryManager;
+    return this.mgrs.victoryManager;
   }
 
   getRoadRenderer(): RoadRenderer {
-    return this.roadRenderer;
+    return this.rnds.roadRenderer;
   }
 
   getPlacementController(): PlacementController | null {
@@ -1397,51 +1144,51 @@ export class Game {
   }
 
   getGeologistManager(): GeologistManager {
-    return this.geologistManager;
+    return this.mgrs.geologistManager;
   }
 
   getTreeManager(): TreeManager {
-    return this.treeManager;
+    return this.mgrs.treeManager;
   }
 
   getWoodcutterManager(): WoodcutterManager {
-    return this.woodcutterManager;
+    return this.mgrs.woodcutterManager;
   }
 
   getForesterManager(): ForesterManager {
-    return this.foresterManager;
+    return this.mgrs.foresterManager;
   }
 
   getDepositRenderer(): DepositRenderer {
-    return this.depositRenderer;
+    return this.rnds.depositRenderer;
   }
 
   getParticleSystem(): ParticleSystem {
-    return this.particleSystem;
+    return this.rnds.particleSystem;
   }
 
   getBuildingAnimator(): BuildingAnimator {
-    return this.buildingAnimator;
+    return this.rnds.buildingAnimator;
   }
 
   getBuildingStatusOverlay(): BuildingStatusOverlay {
-    return this.buildingStatusOverlay;
+    return this.rnds.buildingStatusOverlay;
   }
 
   getCombatRenderer(): CombatRenderer {
-    return this.combatRenderer;
+    return this.rnds.combatRenderer;
   }
 
   getProductionChainOverlay(): ProductionChainOverlay {
-    return this.productionChainOverlay;
+    return this.rnds.productionChainOverlay;
   }
 
   getUpgradeManager(): UpgradeManager {
-    return this.upgradeManager;
+    return this.mgrs.upgradeManager;
   }
 
   getToolProductionManager(): ToolProductionManager {
-    return this.toolProductionManager;
+    return this.mgrs.toolProductionManager;
   }
 
   getCameraController(): CameraController | null {
@@ -1449,11 +1196,11 @@ export class Game {
   }
 
   getEconomyTracker(): EconomyTracker {
-    return this.economyTracker;
+    return this.mgrs.economyTracker;
   }
 
   getDashboardTracker(): DashboardTracker {
-    return this.dashboardTracker;
+    return this.mgrs.dashboardTracker;
   }
 
   /** Get the count of idle (unassigned) serfs at the Castle */
@@ -1466,88 +1213,58 @@ export class Game {
   }
 
   getWeatherController(): WeatherController {
-    return this.weatherController;
+    return this.rnds.weatherController;
   }
 
   getPostProcessing(): PostProcessing {
-    return this.postProcessing;
+    return this.rnds.postProcessing;
   }
 
   getFogOfWarRenderer(): FogOfWarRenderer {
-    return this.fogOfWarRenderer;
+    return this.rnds.fogOfWarRenderer;
   }
 
   /** Show work area overlay for a building (if it has a work radius) */
   showWorkArea(building: import('../game/Building').Building): void {
     if (BUILDING_DEFINITIONS[building.type].workRadius > 0) {
-      this.workAreaRenderer.show(building, this.grid);
+      this.rnds.workAreaRenderer.show(building, this.grid);
     } else {
-      this.workAreaRenderer.hide();
+      this.rnds.workAreaRenderer.hide();
     }
   }
 
   /** Hide the work area overlay */
   hideWorkArea(): void {
-    this.workAreaRenderer.hide();
+    this.rnds.workAreaRenderer.hide();
   }
 
   getPopulationManager(): PopulationManager {
-    return this.populationManager;
+    return this.mgrs.populationManager;
   }
 
   getFogOfWarManager(): FogOfWarManager {
-    return this.fogOfWarManager;
+    return this.mgrs.fogOfWarManager;
   }
 
   /** Apply all graphics settings at once (called on startup and from UI) */
   applyGraphicsSettings(settings: GraphicsSettings): void {
-    this.setShadowQuality(settings.shadows as ShadowQuality);
-    this.postProcessing.setMode(settings.postProcessing);
-    if (settings.weather !== 'none') {
-      // User picked explicit weather — disable auto, apply it
-      this.weatherController.setWeather(settings.weather as 'none' | 'rain' | 'snow');
-    } else if (settings.timeOfDay === 'auto') {
-      // Auto time + no explicit weather → enable auto weather scheduling
-      this.weatherController.setAutoSchedule(true);
-    } else {
-      // Manual time + no weather → just set none (disables auto via setWeather)
-      this.weatherController.setWeather('none');
-    }
-
-    // Fog of war
-    this.fogOfWarRenderer.setEnabled(settings.fogOfWar);
-    if (settings.fogOfWar) {
-      this.unitRenderer.setFogOfWar(this.fogOfWarManager, this.humanPlayerId);
-      this.buildingRenderer.setFogOfWar(this.fogOfWarManager, this.humanPlayerId);
-    } else {
-      this.unitRenderer.setFogOfWar(null!, this.humanPlayerId);
-      this.buildingRenderer.setFogOfWar(null!, this.humanPlayerId);
-    }
-
-    // Time of day / atmosphere
-    if (settings.timeOfDay === 'auto') {
-      this.atmosphereController.setAutoCycle(true);
-    } else {
-      this.atmosphereController.setAutoCycle(false);
-      this.atmosphereController.setPreset(settings.timeOfDay);
-    }
-
-    // Ambient life (clouds, birds, water sparkles, wild animals, butterflies)
-    const ambient = settings.ambientLife;
-    this.cloudRenderer.setEnabled(ambient !== 'off');
-    this.birdFlockRenderer.setEnabled(ambient === 'full');
-    this.waterEffectRenderer.setEnabled(ambient === 'full');
-    this.wildAnimalRenderer.setEnabled(ambient === 'full');
-    this.flowerButterflyRenderer.setEnabled(ambient === 'full');
+    applyGraphicsSettingsFn(
+      settings,
+      this.rnds,
+      this.atmosphereController,
+      this.mgrs.fogOfWarManager,
+      this.humanPlayerId,
+      (q) => this.setShadowQuality(q as ShadowQuality),
+    );
   }
 
   getDistributionSettings(): GoodsDistributionSettings {
-    return this.distributionSettings;
+    return this.mgrs.distributionSettings;
   }
 
   setDistributionSettings(settings: GoodsDistributionSettings): void {
-    this.distributionSettings = settings;
-    this.logisticsManager.setDistributionSettings(settings);
+    this.mgrs.distributionSettings = settings;
+    this.mgrs.logisticsManager.setDistributionSettings(settings);
   }
 
   /** Serialize the full game state for save/load */
@@ -1557,7 +1274,7 @@ export class Game {
    * get 50% reduction in night penalties.
    */
   private updateLightMitigation(): void {
-    this.productionManager.lightMitigation.clear();
+    this.mgrs.productionManager.lightMitigation.clear();
     if (this.currentNightness <= 0) return;
 
     const allBuildings = this.gameState.getAllBuildings();
@@ -1573,7 +1290,7 @@ export class Game {
         if (tower.playerId !== building.playerId) continue;
         const dist = HexGrid.hexDistance(building.coord, tower.coord);
         if (dist <= LIGHT_RADIUS) {
-          this.productionManager.lightMitigation.set(building.id, 0.5);
+          this.mgrs.productionManager.lightMitigation.set(building.id, 0.5);
           break;
         }
       }
@@ -1589,29 +1306,29 @@ export class Game {
     return serializeGame(
       this.config,
       this.gameState,
-      this.roadNetwork,
+      this.mgrs.roadNetwork,
       {
-        constructionManager: this.constructionManager,
-        transporterManager: this.transporterManager,
-        unitManager: this.unitManager,
-        combatManager: this.combatManager,
-        attackManager: this.attackManager,
-        territoryManager: this.territoryManager,
-        logisticsManager: this.logisticsManager,
-        knightManager: this.knightManager,
-        victoryManager: this.victoryManager,
-        geologistManager: this.geologistManager,
-        treeManager: this.treeManager,
-        woodcutterManager: this.woodcutterManager,
-        foresterManager: this.foresterManager,
-        upgradeManager: this.upgradeManager,
-        fogOfWarManager: this.fogOfWarManager,
-        harborManager: this.harborManager,
-        feedingManager: this.feedingManager,
-        moraleManager: this.moraleManager,
-        marketplaceManager: this.marketplaceManager,
-        animalLifecycleManager: this.animalLifecycleManager,
-        terrainGatheringManager: this.terrainGatheringManager,
+        constructionManager: this.mgrs.constructionManager,
+        transporterManager: this.mgrs.transporterManager,
+        unitManager: this.mgrs.unitManager,
+        combatManager: this.mgrs.combatManager,
+        attackManager: this.mgrs.attackManager,
+        territoryManager: this.mgrs.territoryManager,
+        logisticsManager: this.mgrs.logisticsManager,
+        knightManager: this.mgrs.knightManager,
+        victoryManager: this.mgrs.victoryManager,
+        geologistManager: this.mgrs.geologistManager,
+        treeManager: this.mgrs.treeManager,
+        woodcutterManager: this.mgrs.woodcutterManager,
+        foresterManager: this.mgrs.foresterManager,
+        upgradeManager: this.mgrs.upgradeManager,
+        fogOfWarManager: this.mgrs.fogOfWarManager,
+        harborManager: this.mgrs.harborManager,
+        feedingManager: this.mgrs.feedingManager,
+        moraleManager: this.mgrs.moraleManager,
+        marketplaceManager: this.mgrs.marketplaceManager,
+        animalLifecycleManager: this.mgrs.animalLifecycleManager,
+        terrainGatheringManager: this.mgrs.terrainGatheringManager,
       },
       this.aiPlayers,
       {
@@ -1627,7 +1344,7 @@ export class Game {
           z: target.z,
         },
       },
-      this.distributionSettings,
+      this.mgrs.distributionSettings,
     );
   }
 
