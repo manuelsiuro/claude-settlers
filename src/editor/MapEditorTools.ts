@@ -276,7 +276,8 @@ export class MapEditorTools {
     let filled = 0;
 
     while (queue.length > 0 && filled < MAX_FILL) {
-      const curr = queue.shift()!;
+      const curr = queue.shift();
+      if (!curr) break;
       const key = HexGrid.key(curr.q, curr.r);
       if (visited.has(key)) continue;
       visited.add(key);

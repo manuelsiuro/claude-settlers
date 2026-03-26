@@ -1,6 +1,7 @@
 import type { Game } from '../engine/Game';
 import { audioManager } from '../engine/AudioManager';
 import { showSnackbar } from './Snackbar';
+import { logger } from '../util/Logger';
 import { showTechTreePanel } from './TechTreePanel';
 import { showDashboard } from './DashboardPanel';
 import { saveToLocalStorage, downloadSave } from '../game/SaveLoad';
@@ -240,7 +241,7 @@ export function initAppBar(
       saveToLocalStorage(data);
       showSnackbar('Game saved', 'success');
     } catch (err) {
-      console.error('Save failed:', err);
+      logger.error('Save failed:', err);
       showSnackbar('Save failed — storage may be full', 'error');
     }
   }
@@ -257,7 +258,7 @@ export function initAppBar(
       downloadSave(data);
       showSnackbar('Save file downloaded', 'success');
     } catch (err) {
-      console.error('Download save failed:', err);
+      logger.error('Download save failed:', err);
       showSnackbar('Failed to download save', 'error');
     }
   }
