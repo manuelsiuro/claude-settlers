@@ -333,3 +333,65 @@ All buildings share these runtime visual behaviors (implemented in `BuildingAnim
     - **Chimney:** Tall stone cuboid with a cap piece on the main roof.
 - **Relative Dimensions:** Large footprint (L-shaped), imposing. Similar to Barracks in scale.
 - **Key Colors:** Light Warm Stone, Dark Slate, Dark Oak.
+
+---
+
+## Living World Buildings
+
+### 29. Hunting Lodge
+
+- **Function:** Sends a Hunter into the forest to bring back Game Meat. Requires Forest adjacency. Worker requires Bow tool.
+- **Visual Description:**
+    - **Main Structure:** Small rustic cabin, low cuboid (color: Dark Brown #5D3A1A).
+    - **Roof:** Peaked triangular prism (color: Forest Green #2D5016), with slight overhang.
+    - **Antler Rack:** Two small branching cylinders mounted on the front wall (color: Tan #C4A67D).
+    - **Hanging Game:** A small brown cylinder hanging beside the door, representing cured meat.
+    - **Bow Rack:** 2–3 thin cylinders leaning against the side wall (color: Light Brown).
+- **Relative Dimensions:** Small footprint, low height. Similar to Woodcutter's Hut.
+- **Key Colors:** Dark Brown (#5D3A1A), Forest Green (#2D5016), Tan (#C4A67D).
+
+### 30. Trapper's Hut
+
+- **Function:** Sets traps in the forest to collect animal Pelts. Requires Forest adjacency.
+- **Visual Description:**
+    - **Main Structure:** Lean-to style shelter, open on one side. Low cuboid frame (color: Medium Brown #8B6914).
+    - **Stretched Hides:** Flat planes draped over the frame and drying outside (color: Cream/Tan #F5DEB3).
+    - **Drying Rack:** Horizontal cylinder with 2–3 hanging flat shapes beside the hut (color: Light Brown).
+    - **Trap:** A small wooden frame (thin cuboids forming an A-shape) on the ground nearby.
+- **Relative Dimensions:** Small footprint, very low height. Smallest of the new buildings.
+- **Key Colors:** Medium Brown (#8B6914), Cream (#F5DEB3), Dark Wood (#3E2723).
+
+### 31. Furrier
+
+- **Function:** Processes Pelts into Fur Coats (luxury goods for morale).
+- **Visual Description:**
+    - **Main Structure:** Medium cuboid workshop (color: Saddle Brown #8B4513).
+    - **Roof:** Peaked triangular prism (color: Dark Brown).
+    - **Hide Frames:** 1–2 wooden frames with stretched flat planes on the side wall (color: Cream #FFFDD0).
+    - **Fur Display:** A small furry-textured cuboid near the entrance (color: Dark Brown with cream interior).
+    - **Work Table:** Small flat cuboid in front of the building.
+- **Relative Dimensions:** Medium footprint, similar to Tannery.
+- **Key Colors:** Saddle Brown (#8B4513), Cream (#FFFDD0), Dark Brown.
+
+### 32. Apiary
+
+- **Function:** Keeps bees to produce Honey. Visual bee particle effect when active.
+- **Visual Description:**
+    - **Beehive Boxes:** 2–3 stacked cuboids (color: Off-White #F5F5DC), with thin dark lines for tray slots.
+    - **Shelf/Frame:** Wooden cuboid shelf supporting the hive stack (color: Light Brown).
+    - **Honey Pot:** Small cylinder at the base (color: Golden Amber #DAA520).
+    - **Small Flowers:** 2–3 tiny colored cones at the base (red, yellow, purple) for decoration.
+- **Relative Dimensions:** Small footprint, medium height from stacked boxes.
+- **Key Colors:** Off-White (#F5F5DC), Golden Amber (#DAA520), Light Brown.
+
+### 33. Meadery
+
+- **Function:** Ferments Honey into Mead (drink for morale at Inn/Tavern).
+- **Visual Description:**
+    - **Main Structure:** Medium cuboid building (color: Amber #DAA520 tinted wood).
+    - **Roof:** Peaked triangular prism (color: Dark Brown).
+    - **Large Barrel:** A prominent cylinder visible through an open side wall (color: Dark Wood #5D3A1A).
+    - **Chimney:** Small cuboid on the roof (color: Copper #B87333).
+    - **Honey Pots:** 2 small golden cylinders near the entrance.
+- **Relative Dimensions:** Medium footprint, similar to Brewery/Winery.
+- **Key Colors:** Amber (#DAA520), Dark Wood (#5D3A1A), Copper (#B87333).

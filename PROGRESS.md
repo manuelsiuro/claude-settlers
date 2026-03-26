@@ -1,8 +1,21 @@
 # Project Progress
 
-## Current Phase: Marketplace System — Complete
+## Current Phase: Living World — Complete
 
 ## Task Board
+
+### Living World Feature [COMPLETE]
+- [DONE] Design document — Created `docs/living-world.md` covering ambient visuals (6 systems) and gameplay content (5 buildings, 5 resources, 5 units). Updated `docs/buildings.md`, `docs/resources.md`, `docs/units.md`. — 2026-03-24
+- [DONE] Data layer — Added 5 resources (GameMeat, Pelts, FurCoat, Honey, Mead) with `isLuxury` field on ResourceProperties. Added 5 units (Hunter, Trapper, Furrier, Beekeeper, Meadmaker). Added 5 buildings (HuntingLodge, TrappersHut, Furrier, Apiary, Meadery) with `inputCategory` field on ProductionRecipe. Registered all in AssetLoader, BuildingModels, UnitModels, BuildingRenderer. 779 tests passing. — 2026-03-24
+- [DONE] Gameplay logic — Fixed InnTavern bug (never consumed Beer due to empty outputs skip). Added data-driven `inputCategory` on ProductionRecipe for generic service buildings. Created `TerrainGatheringManager` (single data-driven manager for terrain gatherers). Updated MoraleManager with luxury goods tracking. Updated FeedingManager, AI build orders, SaveLoad v13. 779 tests passing. — 2026-03-24
+- [DONE] 3D models — Created 20 Blender models: 5 buildings, 5 units, 5 resources, 4 terrain animals (deer, rabbit, mountain_goat, fish), 1 flower_patch. Added Bees particle effect to ParticleSystem for Apiary. — 2026-03-24
+- [DONE] Ambient sky systems — Created CloudRenderer (30 billboard clouds with ground shadows, procedural Canvas2D textures, camera-relative wrapping, night tint). Created BirdFlockRenderer (5 GPU-driven flocks with V-shape shader birds, wing flap animation, flight patterns). Added `ambientLife` graphics setting. — 2026-03-24
+- [DONE] Ambient ground & water systems — Created WaterEffectRenderer (sun sparkle points on water tiles, day/night scaling). Created WildAnimalRenderer (20 ambient animals with state machine: deer, rabbits, goats, fish). Created FlowerButterflyRenderer (25 GPU-driven butterflies with wing flap shader, daytime only). 779 tests passing. — 2026-03-24
+- [DONE] Code quality pass — Extracted `advanceUnitMovement()` shared utility (replaced 4 copies), removed dead code (CloudRenderer unused textures, WildAnimalRenderer unused maps/localMatrix), fixed ambientLife setting not wired, fixed WaterEffectRenderer ShaderTimeManager, fixed BirdFlockRenderer shader array mismatch. Net -113 lines. — 2026-03-26
+- [DONE] Unfinished feature completion — Restored FlowerButterflyRenderer nightness backup (race condition fix), added per-cloud rotation for visual variety, restored WildAnimalRenderer localMatrix for correct GLTF sub-mesh positioning. — 2026-03-26
+- [DONE] Bug fixes — Registered terrain animal + flower_patch models in AssetLoader TERRAIN_MODELS (were never loaded). Added flower_patch decorations to MapRenderer grassland placements (30% chance). Increased butterfly point size from 1-4px to 6-11px for visibility. — 2026-03-26
+- [DONE] 3D model regeneration — Rebuilt all 15 living world models at correct Blender scale (3-6 units vs 0.3-0.8), with proper transform_apply, shade_smooth, remove_doubles. Regenerated all 15 PNG thumbnails. — 2026-03-26
+- [DONE] Quality review & critical fixes — Fixed double production (TerrainGatheringManager caught all terrain gatherers including pre-existing FishermanHut/Quarry/Farm/Mines; added `gatheringStyle: 'walk'` field for explicit opt-in). Fixed luxury never consumed (evolved `inputCategory` string to `inputCategories` array with required/optional flags; InnTavern now accepts drinks + luxury). Fixed wild animals not pausing (rawDelta → deltaTime). Added dynamic wind from WeatherController to cloud/butterfly renderers. — 2026-03-26
 
 ### Marketplace System [COMPLETE]
 - [DONE] Design document — Full barter marketplace design at `docs/marketplace.md`. Covers: barter exchange, dynamic pricing, NPC stock, traveling merchants, auto-trade rules, Castle fallback trading, AI integration, data-driven constants, UI design. — 2026-03-23

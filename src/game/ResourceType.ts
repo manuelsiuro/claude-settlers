@@ -54,6 +54,13 @@ export const ResourceType = {
   Crucible: 'crucible',
   Tongs: 'tongs',
 
+  // Living World
+  GameMeat: 'game_meat',
+  Pelts: 'pelts',
+  FurCoat: 'fur_coat',
+  Honey: 'honey',
+  Mead: 'mead',
+
   // Animals
   Pigs: 'pigs',
   Cattle: 'cattle',
@@ -69,6 +76,8 @@ export interface ResourceProperties {
   satiationValue: number;
   /** Whether this resource counts as a drink (for morale) */
   isDrink: boolean;
+  /** Whether this resource is a luxury good (boosts morale when served) */
+  isLuxury: boolean;
 }
 
 /** Check if a resource is food (has satiation value) */
@@ -78,56 +87,63 @@ export function isFood(resource: ResourceType): boolean {
 
 export const RESOURCE_PROPERTIES: Record<ResourceType, ResourceProperties> = {
   // Raw materials
-  [ResourceType.Wood]: { label: 'Wood', category: 'raw',satiationValue: 0, isDrink: false },
-  [ResourceType.Stone]: { label: 'Stone', category: 'raw',satiationValue: 0, isDrink: false },
-  [ResourceType.Grain]: { label: 'Grain', category: 'raw',satiationValue: 0, isDrink: false },
-  [ResourceType.Fish]: { label: 'Fish', category: 'raw',satiationValue: 0.50, isDrink: false },
-  [ResourceType.IronOre]: { label: 'Iron Ore', category: 'raw',satiationValue: 0, isDrink: false },
-  [ResourceType.CoalOre]: { label: 'Coal', category: 'raw',satiationValue: 0, isDrink: false },
-  [ResourceType.GoldOre]: { label: 'Gold Ore', category: 'raw',satiationValue: 0, isDrink: false },
-  [ResourceType.Grapes]: { label: 'Grapes', category: 'raw',satiationValue: 0, isDrink: false },
-  [ResourceType.Fruit]: { label: 'Fruit', category: 'raw',satiationValue: 0.45, isDrink: false },
-  [ResourceType.WaterBarrel]: { label: 'Water Barrel', category: 'raw',satiationValue: 0, isDrink: false },
-  [ResourceType.Milk]: { label: 'Milk', category: 'raw',satiationValue: 0, isDrink: false },
-  [ResourceType.Hay]: { label: 'Hay', category: 'raw',satiationValue: 0, isDrink: false },
-  [ResourceType.Wool]: { label: 'Wool', category: 'raw',satiationValue: 0, isDrink: false },
-  [ResourceType.RawLeather]: { label: 'Raw Leather', category: 'raw',satiationValue: 0, isDrink: false },
+  [ResourceType.Wood]: { label: 'Wood', category: 'raw',satiationValue: 0, isDrink: false, isLuxury: false },
+  [ResourceType.Stone]: { label: 'Stone', category: 'raw',satiationValue: 0, isDrink: false, isLuxury: false },
+  [ResourceType.Grain]: { label: 'Grain', category: 'raw',satiationValue: 0, isDrink: false, isLuxury: false },
+  [ResourceType.Fish]: { label: 'Fish', category: 'raw',satiationValue: 0.50, isDrink: false, isLuxury: false },
+  [ResourceType.IronOre]: { label: 'Iron Ore', category: 'raw',satiationValue: 0, isDrink: false, isLuxury: false },
+  [ResourceType.CoalOre]: { label: 'Coal', category: 'raw',satiationValue: 0, isDrink: false, isLuxury: false },
+  [ResourceType.GoldOre]: { label: 'Gold Ore', category: 'raw',satiationValue: 0, isDrink: false, isLuxury: false },
+  [ResourceType.Grapes]: { label: 'Grapes', category: 'raw',satiationValue: 0, isDrink: false, isLuxury: false },
+  [ResourceType.Fruit]: { label: 'Fruit', category: 'raw',satiationValue: 0.45, isDrink: false, isLuxury: false },
+  [ResourceType.WaterBarrel]: { label: 'Water Barrel', category: 'raw',satiationValue: 0, isDrink: false, isLuxury: false },
+  [ResourceType.Milk]: { label: 'Milk', category: 'raw',satiationValue: 0, isDrink: false, isLuxury: false },
+  [ResourceType.Hay]: { label: 'Hay', category: 'raw',satiationValue: 0, isDrink: false, isLuxury: false },
+  [ResourceType.Wool]: { label: 'Wool', category: 'raw',satiationValue: 0, isDrink: false, isLuxury: false },
+  [ResourceType.RawLeather]: { label: 'Raw Leather', category: 'raw',satiationValue: 0, isDrink: false, isLuxury: false },
 
   // Processed goods
-  [ResourceType.Planks]: { label: 'Planks', category: 'processed',satiationValue: 0, isDrink: false },
-  [ResourceType.Flour]: { label: 'Flour', category: 'processed',satiationValue: 0, isDrink: false },
-  [ResourceType.Bread]: { label: 'Bread', category: 'processed',satiationValue: 0.70, isDrink: false },
-  [ResourceType.Meat]: { label: 'Meat', category: 'processed',satiationValue: 0.90, isDrink: false },
-  [ResourceType.IronBars]: { label: 'Iron Bars', category: 'processed',satiationValue: 0, isDrink: false },
-  [ResourceType.GoldBars]: { label: 'Gold Bars', category: 'processed',satiationValue: 0, isDrink: false },
-  [ResourceType.Swords]: { label: 'Swords', category: 'processed',satiationValue: 0, isDrink: false },
-  [ResourceType.Shields]: { label: 'Shields', category: 'processed',satiationValue: 0, isDrink: false },
-  [ResourceType.Wine]: { label: 'Wine', category: 'processed',satiationValue: 0.35, isDrink: true },
-  [ResourceType.Beer]: { label: 'Beer', category: 'processed',satiationValue: 0.30, isDrink: true },
-  [ResourceType.Cheese]: { label: 'Cheese', category: 'processed',satiationValue: 0.60, isDrink: false },
-  [ResourceType.Cloth]: { label: 'Cloth', category: 'processed',satiationValue: 0, isDrink: false },
-  [ResourceType.WorkedLeather]: { label: 'Worked Leather', category: 'processed',satiationValue: 0, isDrink: false },
-  [ResourceType.Arrows]: { label: 'Arrows', category: 'processed',satiationValue: 0, isDrink: false },
-  [ResourceType.Bow]: { label: 'Bow', category: 'processed',satiationValue: 0, isDrink: false },
-  [ResourceType.SiegeRam]: { label: 'Siege Ram', category: 'processed',satiationValue: 0, isDrink: false },
+  [ResourceType.Planks]: { label: 'Planks', category: 'processed',satiationValue: 0, isDrink: false, isLuxury: false },
+  [ResourceType.Flour]: { label: 'Flour', category: 'processed',satiationValue: 0, isDrink: false, isLuxury: false },
+  [ResourceType.Bread]: { label: 'Bread', category: 'processed',satiationValue: 0.70, isDrink: false, isLuxury: false },
+  [ResourceType.Meat]: { label: 'Meat', category: 'processed',satiationValue: 0.90, isDrink: false, isLuxury: false },
+  [ResourceType.IronBars]: { label: 'Iron Bars', category: 'processed',satiationValue: 0, isDrink: false, isLuxury: false },
+  [ResourceType.GoldBars]: { label: 'Gold Bars', category: 'processed',satiationValue: 0, isDrink: false, isLuxury: false },
+  [ResourceType.Swords]: { label: 'Swords', category: 'processed',satiationValue: 0, isDrink: false, isLuxury: false },
+  [ResourceType.Shields]: { label: 'Shields', category: 'processed',satiationValue: 0, isDrink: false, isLuxury: false },
+  [ResourceType.Wine]: { label: 'Wine', category: 'processed',satiationValue: 0.35, isDrink: true, isLuxury: false },
+  [ResourceType.Beer]: { label: 'Beer', category: 'processed',satiationValue: 0.30, isDrink: true, isLuxury: false },
+  [ResourceType.Cheese]: { label: 'Cheese', category: 'processed',satiationValue: 0.60, isDrink: false, isLuxury: false },
+  [ResourceType.Cloth]: { label: 'Cloth', category: 'processed',satiationValue: 0, isDrink: false, isLuxury: false },
+  [ResourceType.WorkedLeather]: { label: 'Worked Leather', category: 'processed',satiationValue: 0, isDrink: false, isLuxury: false },
+  [ResourceType.Arrows]: { label: 'Arrows', category: 'processed',satiationValue: 0, isDrink: false, isLuxury: false },
+  [ResourceType.Bow]: { label: 'Bow', category: 'processed',satiationValue: 0, isDrink: false, isLuxury: false },
+  [ResourceType.SiegeRam]: { label: 'Siege Ram', category: 'processed',satiationValue: 0, isDrink: false, isLuxury: false },
 
   // Tools
-  [ResourceType.Axe]: { label: 'Axe', category: 'processed',satiationValue: 0, isDrink: false },
-  [ResourceType.Pickaxe]: { label: 'Pickaxe', category: 'processed',satiationValue: 0, isDrink: false },
-  [ResourceType.Saw]: { label: 'Saw', category: 'processed',satiationValue: 0, isDrink: false },
-  [ResourceType.Scythe]: { label: 'Scythe', category: 'processed',satiationValue: 0, isDrink: false },
-  [ResourceType.FishingRod]: { label: 'Fishing Rod', category: 'processed',satiationValue: 0, isDrink: false },
-  [ResourceType.Hammer]: { label: 'Hammer', category: 'processed',satiationValue: 0, isDrink: false },
-  [ResourceType.Shovel]: { label: 'Shovel', category: 'processed',satiationValue: 0, isDrink: false },
-  [ResourceType.RollingPin]: { label: 'Rolling Pin', category: 'processed',satiationValue: 0, isDrink: false },
-  [ResourceType.Cleaver]: { label: 'Cleaver', category: 'processed',satiationValue: 0, isDrink: false },
-  [ResourceType.Crucible]: { label: 'Crucible', category: 'processed',satiationValue: 0, isDrink: false },
-  [ResourceType.Tongs]: { label: 'Tongs', category: 'processed',satiationValue: 0, isDrink: false },
+  [ResourceType.Axe]: { label: 'Axe', category: 'processed',satiationValue: 0, isDrink: false, isLuxury: false },
+  [ResourceType.Pickaxe]: { label: 'Pickaxe', category: 'processed',satiationValue: 0, isDrink: false, isLuxury: false },
+  [ResourceType.Saw]: { label: 'Saw', category: 'processed',satiationValue: 0, isDrink: false, isLuxury: false },
+  [ResourceType.Scythe]: { label: 'Scythe', category: 'processed',satiationValue: 0, isDrink: false, isLuxury: false },
+  [ResourceType.FishingRod]: { label: 'Fishing Rod', category: 'processed',satiationValue: 0, isDrink: false, isLuxury: false },
+  [ResourceType.Hammer]: { label: 'Hammer', category: 'processed',satiationValue: 0, isDrink: false, isLuxury: false },
+  [ResourceType.Shovel]: { label: 'Shovel', category: 'processed',satiationValue: 0, isDrink: false, isLuxury: false },
+  [ResourceType.RollingPin]: { label: 'Rolling Pin', category: 'processed',satiationValue: 0, isDrink: false, isLuxury: false },
+  [ResourceType.Cleaver]: { label: 'Cleaver', category: 'processed',satiationValue: 0, isDrink: false, isLuxury: false },
+  [ResourceType.Crucible]: { label: 'Crucible', category: 'processed',satiationValue: 0, isDrink: false, isLuxury: false },
+  [ResourceType.Tongs]: { label: 'Tongs', category: 'processed',satiationValue: 0, isDrink: false, isLuxury: false },
+
+  // Living World
+  [ResourceType.GameMeat]: { label: 'Game Meat', category: 'raw', satiationValue: 0.55, isDrink: false, isLuxury: false },
+  [ResourceType.Pelts]: { label: 'Pelts', category: 'raw', satiationValue: 0, isDrink: false, isLuxury: false },
+  [ResourceType.FurCoat]: { label: 'Fur Coat', category: 'processed', satiationValue: 0, isDrink: false, isLuxury: true },
+  [ResourceType.Honey]: { label: 'Honey', category: 'raw', satiationValue: 0.40, isDrink: false, isLuxury: false },
+  [ResourceType.Mead]: { label: 'Mead', category: 'processed', satiationValue: 0.25, isDrink: true, isLuxury: false },
 
   // Animals
-  [ResourceType.Pigs]: { label: 'Pigs', category: 'animal',satiationValue: 0, isDrink: false },
-  [ResourceType.Cattle]: { label: 'Cattle', category: 'animal',satiationValue: 0, isDrink: false },
-  [ResourceType.Horses]: { label: 'Horses', category: 'animal',satiationValue: 0, isDrink: false },
+  [ResourceType.Pigs]: { label: 'Pigs', category: 'animal',satiationValue: 0, isDrink: false, isLuxury: false },
+  [ResourceType.Cattle]: { label: 'Cattle', category: 'animal',satiationValue: 0, isDrink: false, isLuxury: false },
+  [ResourceType.Horses]: { label: 'Horses', category: 'animal',satiationValue: 0, isDrink: false, isLuxury: false },
 };
 
 /** All individual tool resource types */

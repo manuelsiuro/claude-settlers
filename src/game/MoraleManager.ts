@@ -13,6 +13,10 @@ import {
   MORALE_VOLUME_PER_DRINK,
   MORALE_MULTIPLIER_BASE,
   MORALE_MULTIPLIER_SCALE,
+  MORALE_LUXURY_VARIETY_PER_TYPE,
+  MORALE_LUXURY_VARIETY_MAX,
+  MORALE_LUXURY_VOLUME_PER_ITEM,
+  MORALE_LUXURY_VOLUME_MAX,
 } from './data/balanceConstants';
 
 interface DrinkEvent {
@@ -20,15 +24,21 @@ interface DrinkEvent {
   timestamp: number;
 }
 
+interface LuxuryEvent {
+  luxuryType: ResourceType;
+  timestamp: number;
+}
+
 /**
- * MoraleManager: tracks drink service and computes per-player morale.
+ * MoraleManager: tracks drink service and luxury goods to compute per-player morale.
  * Morale affects production speed and combat effectiveness.
  *
- * Morale = base(0.5) + drink variety bonus + drink volume bonus + gold bonus
+ * Morale = base(0.5) + drink variety bonus + drink volume bonus + gold bonus + luxury variety bonus + luxury volume bonus
  */
 export class MoraleManager {
   private gameState: GameState;
   private drinkEvents: Map<number, DrinkEvent[]> = new Map();
+  private luxuryEvents: Map<number, LuxuryEvent[]> = new Map();
   private elapsedTime = 0;
   /** Cached gold bar count per player, updated each frame */
   private goldBarCache: Map<number, number> = new Map();
@@ -48,6 +58,14 @@ export class MoraleManager {
       }
       if (events.length === 0) {
         this.drinkEvents.delete(playerId);
+      }
+    }
+    for (const [playerId, events] of this.luxuryEvents) {
+      while (events.length > 0 && events[0].timestamp <= cutoff) {
+        events.shift();
+      }
+      if (events.length === 0) {
+        this.luxuryEvents.delete(playerId);
       }
     }
 
@@ -70,6 +88,13 @@ export class MoraleManager {
     this.drinkEvents.set(playerId, events);
   }
 
+  /** Record a luxury good being served (call when luxury buildings deliver goods) */
+  recordLuxuryServed(playerId: number, luxuryType: ResourceType): void {
+    const events = this.luxuryEvents.get(playerId) ?? [];
+    events.push({ luxuryType, timestamp: this.elapsedTime });
+    this.luxuryEvents.set(playerId, events);
+  }
+
   /** Get morale value for a player (0.0–1.0) */
   getMorale(playerId: number): number {
     const events = this.drinkEvents.get(playerId) ?? [];
@@ -80,7 +105,12 @@ export class MoraleManager {
     const goldBars = this.goldBarCache.get(playerId) ?? 0;
     const goldBonus = Math.min(MORALE_GOLD_BONUS_MAX, goldBars * MORALE_GOLD_BONUS_PER_BAR);
 
-    return Math.min(1.0, MORALE_BASE + varietyBonus + volumeBonus + goldBonus);
+    const luxEvents = this.luxuryEvents.get(playerId) ?? [];
+    const luxuryTypes = new Set(luxEvents.map(e => e.luxuryType));
+    const luxuryVarietyBonus = Math.min(MORALE_LUXURY_VARIETY_MAX, luxuryTypes.size * MORALE_LUXURY_VARIETY_PER_TYPE);
+    const luxuryVolumeBonus = Math.min(MORALE_LUXURY_VOLUME_MAX, luxEvents.length * MORALE_LUXURY_VOLUME_PER_ITEM);
+
+    return Math.min(1.0, MORALE_BASE + varietyBonus + volumeBonus + goldBonus + luxuryVarietyBonus + luxuryVolumeBonus);
   }
 
   /** Get production multiplier from morale (0.85–1.15) */
@@ -99,20 +129,29 @@ export class MoraleManager {
     return MORALE_MULTIPLIER_BASE + (morale - MORALE_BASE) * MORALE_MULTIPLIER_SCALE;
   }
 
-  _getState(): { drinkEvents: [number, DrinkEvent[]][]; elapsedTime: number } {
+  _getState(): { drinkEvents: [number, DrinkEvent[]][]; luxuryEvents: [number, LuxuryEvent[]][]; elapsedTime: number } {
     return {
       drinkEvents: Array.from(this.drinkEvents.entries()),
+      luxuryEvents: Array.from(this.luxuryEvents.entries()),
       elapsedTime: this.elapsedTime,
     };
   }
 
-  _loadState(state: { drinkEvents: [number, { drinkType: string; timestamp: number }[]][]; elapsedTime: number }): void {
+  _loadState(state: { drinkEvents: [number, { drinkType: string; timestamp: number }[]][]; luxuryEvents?: [number, { luxuryType: string; timestamp: number }[]][]; elapsedTime: number }): void {
     this.drinkEvents = new Map(
       state.drinkEvents.map(([playerId, events]) => [
         playerId,
         events.map(e => ({ drinkType: e.drinkType as ResourceType, timestamp: e.timestamp })),
       ]),
     );
+    this.luxuryEvents = state.luxuryEvents
+      ? new Map(
+          state.luxuryEvents.map(([playerId, events]) => [
+            playerId,
+            events.map(e => ({ luxuryType: e.luxuryType as ResourceType, timestamp: e.timestamp })),
+          ]),
+        )
+      : new Map();
     this.elapsedTime = state.elapsedTime;
   }
 }

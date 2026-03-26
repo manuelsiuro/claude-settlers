@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-23T20:34:11.451Z",
+  "generatedAt": "2026-03-24T10:40:23.388Z",
   "version": "1.0.0",
   "constants": {
     "woodcutter": {
@@ -2156,6 +2156,193 @@
       "constructionTime": 30,
       "workRadius": 0,
       "populationCapacity": 0
+    },
+    "hunting_lodge": {
+      "label": "Hunting Lodge",
+      "category": "gathering",
+      "tier": 2,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 3
+        },
+        {
+          "resource": "planks",
+          "amount": 2
+        },
+        {
+          "resource": "stone",
+          "amount": 1
+        }
+      ],
+      "worker": "Hunter",
+      "workerTool": "bow",
+      "production": {
+        "inputs": [],
+        "outputs": [
+          {
+            "resource": "game_meat",
+            "amount": 1
+          }
+        ],
+        "productionTime": 20
+      },
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 6,
+      "constructionTime": 25,
+      "workRadius": 5,
+      "populationCapacity": 0
+    },
+    "trappers_hut": {
+      "label": "Trapper's Hut",
+      "category": "gathering",
+      "tier": 2,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 3
+        },
+        {
+          "resource": "planks",
+          "amount": 1
+        }
+      ],
+      "worker": "Trapper",
+      "workerTool": null,
+      "production": {
+        "inputs": [],
+        "outputs": [
+          {
+            "resource": "pelts",
+            "amount": 1
+          }
+        ],
+        "productionTime": 25
+      },
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 6,
+      "constructionTime": 20,
+      "workRadius": 4,
+      "populationCapacity": 0
+    },
+    "furrier": {
+      "label": "Furrier",
+      "category": "processing",
+      "tier": 3,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 3
+        },
+        {
+          "resource": "stone",
+          "amount": 2
+        },
+        {
+          "resource": "planks",
+          "amount": 1
+        }
+      ],
+      "worker": "Furrier",
+      "workerTool": null,
+      "production": {
+        "inputs": [
+          {
+            "resource": "pelts",
+            "amount": 1
+          }
+        ],
+        "outputs": [
+          {
+            "resource": "fur_coat",
+            "amount": 1
+          }
+        ],
+        "productionTime": 20
+      },
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 6,
+      "constructionTime": 30,
+      "workRadius": 0,
+      "populationCapacity": 0
+    },
+    "apiary": {
+      "label": "Apiary",
+      "category": "gathering",
+      "tier": 2,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 3
+        },
+        {
+          "resource": "planks",
+          "amount": 2
+        }
+      ],
+      "worker": "Beekeeper",
+      "workerTool": null,
+      "production": {
+        "inputs": [],
+        "outputs": [
+          {
+            "resource": "honey",
+            "amount": 1
+          }
+        ],
+        "productionTime": 22
+      },
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 6,
+      "constructionTime": 25,
+      "workRadius": 0,
+      "populationCapacity": 0
+    },
+    "meadery": {
+      "label": "Meadery",
+      "category": "processing",
+      "tier": 3,
+      "cost": [
+        {
+          "resource": "wood",
+          "amount": 3
+        },
+        {
+          "resource": "stone",
+          "amount": 2
+        },
+        {
+          "resource": "planks",
+          "amount": 2
+        }
+      ],
+      "worker": "Meadmaker",
+      "workerTool": null,
+      "production": {
+        "inputs": [
+          {
+            "resource": "honey",
+            "amount": 1
+          }
+        ],
+        "outputs": [
+          {
+            "resource": "mead",
+            "amount": 1
+          }
+        ],
+        "productionTime": 18
+      },
+      "knightSlots": 0,
+      "influenceRadius": 0,
+      "storageCapacity": 6,
+      "constructionTime": 35,
+      "workRadius": 0,
+      "populationCapacity": 0
     }
   },
   "resources": {
@@ -2404,6 +2591,36 @@
       "category": "processed",
       "satiationValue": 0,
       "isDrink": false
+    },
+    "game_meat": {
+      "label": "Game Meat",
+      "category": "raw",
+      "satiationValue": 0.55,
+      "isDrink": false
+    },
+    "pelts": {
+      "label": "Pelts",
+      "category": "raw",
+      "satiationValue": 0,
+      "isDrink": false
+    },
+    "fur_coat": {
+      "label": "Fur Coat",
+      "category": "processed",
+      "satiationValue": 0,
+      "isDrink": false
+    },
+    "honey": {
+      "label": "Honey",
+      "category": "raw",
+      "satiationValue": 0.4,
+      "isDrink": false
+    },
+    "mead": {
+      "label": "Mead",
+      "category": "processed",
+      "satiationValue": 0.25,
+      "isDrink": true
     },
     "pigs": {
       "label": "Pigs",
@@ -2843,6 +3060,71 @@
     },
     "merchant": {
       "label": "Merchant",
+      "category": "civilian",
+      "requiredTool": null,
+      "moveSpeed": 1,
+      "combatStrength": 0,
+      "attackRange": 0,
+      "visionRadius": 2,
+      "buildingDamage": 0,
+      "chargeMultiplier": 0,
+      "recruitmentItems": [],
+      "carryCapacity": 1
+    },
+    "hunter": {
+      "label": "Hunter",
+      "category": "civilian",
+      "requiredTool": "bow",
+      "moveSpeed": 1,
+      "combatStrength": 0,
+      "attackRange": 0,
+      "visionRadius": 2,
+      "buildingDamage": 0,
+      "chargeMultiplier": 0,
+      "recruitmentItems": [],
+      "carryCapacity": 1
+    },
+    "trapper": {
+      "label": "Trapper",
+      "category": "civilian",
+      "requiredTool": null,
+      "moveSpeed": 0.9,
+      "combatStrength": 0,
+      "attackRange": 0,
+      "visionRadius": 2,
+      "buildingDamage": 0,
+      "chargeMultiplier": 0,
+      "recruitmentItems": [],
+      "carryCapacity": 1
+    },
+    "furrier": {
+      "label": "Furrier",
+      "category": "civilian",
+      "requiredTool": null,
+      "moveSpeed": 1,
+      "combatStrength": 0,
+      "attackRange": 0,
+      "visionRadius": 2,
+      "buildingDamage": 0,
+      "chargeMultiplier": 0,
+      "recruitmentItems": [],
+      "carryCapacity": 1
+    },
+    "beekeeper": {
+      "label": "Beekeeper",
+      "category": "civilian",
+      "requiredTool": null,
+      "moveSpeed": 1,
+      "combatStrength": 0,
+      "attackRange": 0,
+      "visionRadius": 2,
+      "buildingDamage": 0,
+      "chargeMultiplier": 0,
+      "recruitmentItems": [],
+      "carryCapacity": 1
+    },
+    "meadmaker": {
+      "label": "Meadmaker",
       "category": "civilian",
       "requiredTool": null,
       "moveSpeed": 1,

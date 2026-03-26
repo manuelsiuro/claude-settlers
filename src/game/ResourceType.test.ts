@@ -2,9 +2,9 @@ import { describe, it, expect } from 'vitest';
 import { ResourceType, RESOURCE_PROPERTIES, TOOL_TYPES, isToolType, isFood } from './ResourceType';
 
 describe('ResourceType', () => {
-  it('should define all 44 resource types', () => {
+  it('should define all 49 resource types', () => {
     const types = Object.values(ResourceType);
-    expect(types).toHaveLength(44);
+    expect(types).toHaveLength(49);
   });
 
   it('should have unique string values for each type', () => {

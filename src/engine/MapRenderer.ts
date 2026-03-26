@@ -395,7 +395,9 @@ function getGrasslandPlacements(tile: HexTile): DecorationPlacement[] {
   const rng = createRng(tile.coord.q * 4000 + tile.coord.r);
   if (rng() > 0.2) return [];
 
-  if (rng() > 0.5) {
+  const roll = rng();
+  if (roll > 0.65) {
+    // Rock (35%)
     const rScale = 1.2 + rng() * 0.8;
     return [{
       modelName: 'rock_small',
@@ -405,7 +407,8 @@ function getGrasslandPlacements(tile: HexTile): DecorationPlacement[] {
       rotationY: rng() * Math.PI,
       scaleX: rScale, scaleY: rScale, scaleZ: rScale,
     }];
-  } else {
+  } else if (roll > 0.30) {
+    // Bush (35%)
     const bScale = 1.4 + rng() * 0.6;
     return [{
       modelName: 'bush',
@@ -414,6 +417,17 @@ function getGrasslandPlacements(tile: HexTile): DecorationPlacement[] {
       localY: 0,
       rotationY: 0,
       scaleX: bScale, scaleY: bScale, scaleZ: bScale,
+    }];
+  } else {
+    // Flower patch (30%)
+    const fScale = 1.0 + rng() * 0.5;
+    return [{
+      modelName: 'flower_patch',
+      localX: (rng() - 0.5) * 0.5,
+      localZ: (rng() - 0.5) * 0.5,
+      localY: 0,
+      rotationY: rng() * Math.PI * 2,
+      scaleX: fScale, scaleY: fScale, scaleZ: fScale,
     }];
   }
 }

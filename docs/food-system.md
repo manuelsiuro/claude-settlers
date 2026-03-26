@@ -52,17 +52,31 @@ All hunger constants live in `src/game/data/balanceConstants.ts`:
 
 Defined in `src/game/ResourceType.ts` → `RESOURCE_PROPERTIES`:
 
-| Resource | Satiation | isDrink | Production Chain |
-|----------|-----------|---------|-----------------|
-| Fish | 0.50 | No | Fisherman's Hut (14s, no inputs) |
-| Fruit | 0.45 | No | Orchard (16s, no inputs) |
-| Beer | 0.30 | Yes | Grain + Water → Brewery (18s) |
-| Wine | 0.35 | Yes | Grapes → Winery (20s) |
-| Cheese | 0.60 | No | Hay → Milk → Cheese Maker (16s) |
-| Bread | 0.70 | No | Grain → Flour → Bakery (14s) |
-| Meat | 0.90 | No | Grain → Pigs → Slaughterhouse (15s) |
+| Resource | Satiation | isDrink | isLuxury | Production Chain |
+|----------|-----------|---------|----------|-----------------|
+| Fish | 0.50 | No | No | Fisherman's Hut (14s, no inputs) |
+| Honey | 0.40 | No | No | Apiary (22s, no inputs). Dual-use: eat directly or process into Mead |
+| Fruit | 0.45 | No | No | Orchard (16s, no inputs) |
+| Game Meat | 0.55 | No | No | Hunting Lodge (20s, Forest, requires Bow tool) |
+| Beer | 0.30 | Yes | No | Grain + Water → Brewery (18s) |
+| Wine | 0.35 | Yes | No | Grapes → Winery (20s) |
+| Mead | 0.25 | Yes | No | Honey → Meadery (18s). Third morale drink alongside Beer/Wine |
+| Cheese | 0.60 | No | No | Hay → Milk → Cheese Maker (16s) |
+| Bread | 0.70 | No | No | Grain → Flour → Bakery (14s) |
+| Meat | 0.90 | No | No | Grain → Pigs → Slaughterhouse (15s) |
+| Fur Coat | 0 | No | Yes | Pelts → Furrier (20s). Luxury good — boosts morale at Inn/Tavern |
 
-Resources with `satiationValue > 0` are automatically classified as food. The `isDrink` flag marks items also consumed by the morale system (Inn/Tavern).
+Resources with `satiationValue > 0` are automatically classified as food. The `isDrink` flag marks items consumed by the morale system (Inn/Tavern requires drinks via `inputCategories`). The `isLuxury` flag marks luxury goods that provide an optional morale bonus when available at the Inn/Tavern.
+
+### Living World Food Chains
+
+```
+Forest → Hunting Lodge [Hunter + Bow] → Game Meat (0.55 sat)
+Grassland → Apiary [Beekeeper] → Honey (0.40 sat) → Meadery → Mead (drink, 0.25 sat)
+Forest → Trapper's Hut [Trapper] → Pelts → Furrier → Fur Coat (luxury morale)
+```
+
+Hunting Lodge and Apiary workers are in `FOOD_PRODUCER_BUILDINGS` — they get reduced hunger decay (0.5x) and priority feeding.
 
 ---
 

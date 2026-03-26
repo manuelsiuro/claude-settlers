@@ -245,8 +245,8 @@ describe('balance-data.json sync', () => {
 
   it('should have correct entity counts', () => {
     const json = JSON.parse(fs.readFileSync('tools/balance-data.json', 'utf-8'));
-    expect(Object.keys(json.buildings)).toHaveLength(50);
-    expect(Object.keys(json.resources)).toHaveLength(44);
-    expect(Object.keys(json.units)).toHaveLength(40);
+    expect(Object.keys(json.buildings)).toHaveLength(55);
+    expect(Object.keys(json.resources)).toHaveLength(49);
+    expect(Object.keys(json.units)).toHaveLength(45);
   });
 });

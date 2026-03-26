@@ -49,4 +49,10 @@ export const UNIT_MODEL_MAP: Record<UnitType, UnitModelName> = {
   // Transport
   [UnitType.Donkey]: 'donkey',
   [UnitType.HorseTransport]: 'horse_transport',
+  // Living World units (placeholder models until real ones are created)
+  [UnitType.Hunter]: 'hunter',
+  [UnitType.Trapper]: 'trapper',
+  [UnitType.Furrier]: 'furrier',
+  [UnitType.Beekeeper]: 'beekeeper',
+  [UnitType.Meadmaker]: 'meadmaker',
 };

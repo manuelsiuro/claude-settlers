@@ -75,6 +75,13 @@ export const BuildingType = {
   // Expansion: Special
   InnTavern: 'inn_tavern',
   Market: 'market',
+
+  // Living World
+  HuntingLodge: 'hunting_lodge',
+  TrappersHut: 'trappers_hut',
+  Furrier: 'furrier',
+  Apiary: 'apiary',
+  Meadery: 'meadery',
 } as const;
 
 export type BuildingType = (typeof BuildingType)[keyof typeof BuildingType];
@@ -91,6 +98,10 @@ export interface ProductionRecipe {
   outputs: { resource: ResourceType; amount: number }[];
   /** Production time in seconds */
   productionTime: number;
+  /** Accept any resource matching these categories as input (data-driven service buildings).
+   *  `required: true` means production blocks if no matching resource is available.
+   *  `required: false` means production proceeds even without a matching resource (optional consumption). */
+  inputCategories?: { category: 'drink' | 'luxury'; required: boolean }[];
 }
 
 export interface BuildingDefinition {
@@ -127,6 +138,8 @@ export interface BuildingDefinition {
   workRadius: number;
   /** Population capacity provided by this building (housing buildings) */
   populationCapacity: number;
+  /** How this building gathers: 'walk' = worker walks to harvestTerrain (TerrainGatheringManager), undefined = on-site (ProductionManager) */
+  gatheringStyle?: 'walk';
 }
 
 export { BUILDING_DEFINITIONS, getBuildingsByCategory, getBuildingsByTier } from './data/buildingDefinitions';

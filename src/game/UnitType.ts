@@ -46,6 +46,13 @@ export const UnitType = {
   Shepherd: 'shepherd',
   Merchant: 'merchant',
 
+  // Living World
+  Hunter: 'hunter',
+  Trapper: 'trapper',
+  Furrier: 'furrier',
+  Beekeeper: 'beekeeper',
+  Meadmaker: 'meadmaker',
+
   // Military
   Knight: 'knight',
   Archer: 'archer',
@@ -318,6 +325,42 @@ export const UNIT_DEFINITIONS: Record<UnitType, UnitDefinition> = {
     requiredTool: null,
     moveSpeed: 1.0,
   },
+  // Living World workers
+  [UnitType.Hunter]: {
+    type: UnitType.Hunter,
+    label: 'Hunter',
+    category: 'civilian',
+    requiredTool: ResourceType.Bow,
+    moveSpeed: 1.0,
+  },
+  [UnitType.Trapper]: {
+    type: UnitType.Trapper,
+    label: 'Trapper',
+    category: 'civilian',
+    requiredTool: null,
+    moveSpeed: 0.9,
+  },
+  [UnitType.Furrier]: {
+    type: UnitType.Furrier,
+    label: 'Furrier',
+    category: 'civilian',
+    requiredTool: null,
+    moveSpeed: 1.0,
+  },
+  [UnitType.Beekeeper]: {
+    type: UnitType.Beekeeper,
+    label: 'Beekeeper',
+    category: 'civilian',
+    requiredTool: null,
+    moveSpeed: 1.0,
+  },
+  [UnitType.Meadmaker]: {
+    type: UnitType.Meadmaker,
+    label: 'Meadmaker',
+    category: 'civilian',
+    requiredTool: null,
+    moveSpeed: 1.0,
+  },
 
   // Military
   [UnitType.Knight]: {
@@ -446,6 +489,12 @@ export const WORKER_TO_UNIT_TYPE: Record<string, UnitType> = {
   'Rancher': UnitType.Rancher,
   'Shepherd': UnitType.Shepherd,
   'Merchant': UnitType.Merchant,
+  // Living World workers
+  'Hunter': UnitType.Hunter,
+  'Trapper': UnitType.Trapper,
+  'Furrier': UnitType.Furrier,
+  'Beekeeper': UnitType.Beekeeper,
+  'Meadmaker': UnitType.Meadmaker,
 };
 
 /** Get the UnitType needed to work at a building, or null if no worker needed */

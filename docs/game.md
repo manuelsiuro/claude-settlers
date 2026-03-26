@@ -458,3 +458,42 @@ Gathering buildings produce slower when far from their harvest terrain:
 - Placement preview shows color-coded distance rating (green/orange/red).
 - Mines on Mountain terrain get distance 0 (optimal). Fisherman adjacent to Water gets distance 1 (optimal).
 - Processing, military, and logistics buildings are unaffected.
+
+### 8.6. Ambient Life Systems (Living World)
+
+Six visual systems that make the world feel alive. All follow the renderer pattern (constructor → addToScene → update → dispose). Controlled via `ambientLife` graphics setting (`off` | `minimal` | `full`). See `docs/living-world.md` for full design spec.
+
+| System | Renderer | Draw Calls | Desktop | Mobile | Night Behavior |
+|--------|----------|-----------|---------|--------|----------------|
+| Clouds | `CloudRenderer` | 2 (clouds + shadows) | 30 | 15 | Tint white → grey-blue |
+| Birds | `BirdFlockRenderer` | 1 | 40 points | 15 | Fade out at nightness > 0.7 |
+| Water sparkles | `WaterEffectRenderer` | 1 | 60 points | disabled | None at night |
+| Wild animals | `WildAnimalRenderer` | 4 (per model type) | 20 | 12 | Always active |
+| Butterflies | `FlowerButterflyRenderer` | 1 | 25 points | 15 | Fade out at nightness > 0.3 |
+| Bee swarms | `ParticleSystem` (Bees effect) | 0 (shared) | 8/sec per Apiary | same | Always active |
+
+**Cloud system**: Procedural Canvas2D textures on billboard InstancedMesh. Ground shadows offset by sun angle. Camera-relative wrapping.
+
+**Bird flocks**: GPU-driven via custom shader. V-shape fragment shader with wing flap animation. CPU updates only flock centers (5 vec3/frame); individual bird positions computed on GPU. Flight patterns: linear crossing or circling.
+
+**Wild animals**: Deer (grassland near forest), rabbits (grassland), mountain goats (mountain), fish (water — jump briefly, then hidden). Simple state machine: idle → grazing → walking. Deterministic spawn from seeded RNG.
+
+**Butterflies**: GPU-driven points near grassland positions. Wing flap via point size oscillation. 4 colors (white, yellow, blue, orange). Daytime only.
+
+### 8.7. Living World Production Chains
+
+Five new buildings, five resources, and five units that tie gameplay to the ambient world:
+
+```
+HUNTING:    Forest → Hunting Lodge [Hunter + Bow] → Game Meat (0.55 sat)
+TRAPPING:   Forest → Trapper's Hut [Trapper]      → Pelts → Furrier → Fur Coat (luxury morale)
+BEEKEEPING: Grassland → Apiary [Beekeeper]         → Honey (0.40 sat)
+                                                        ↓
+                                                   Meadery [Meadmaker] → Mead (drink, morale)
+                                                                            ↓
+                                                                        Inn/Tavern
+```
+
+**Data-driven service buildings**: The `inputCategories` array on `ProductionRecipe` enables buildings like Inn/Tavern to accept multiple resource categories. Each entry has `{ category, required }` — drinks are required (blocks production without them), luxury goods are optional (consumed as bonus when available). Adding a new category requires only a `ResourceProperties` flag and a recipe entry.
+
+**TerrainGatheringManager**: A single data-driven manager handles buildings with `gatheringStyle: 'walk'` on `BuildingDefinition` (Hunting Lodge, Trapper's Hut). Worker walks to terrain, gathers, returns with output. Adding future terrain-walkers requires only setting the flag — zero code changes.

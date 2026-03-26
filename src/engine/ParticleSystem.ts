@@ -15,6 +15,7 @@ export const ParticleEffect = {
   ConstructionDust: 'construction_dust',
   TreeDebris: 'tree_debris',
   CompletionFlash: 'completion_flash',
+  Bees: 'bees',
 } as const;
 
 export type ParticleEffect = (typeof ParticleEffect)[keyof typeof ParticleEffect];
@@ -69,6 +70,7 @@ const BUILDING_EMITTERS: Partial<Record<string, EmitterConfig[]>> = {
   ],
   [BuildingType.GoldsmithMint]: [{ effect: ParticleEffect.Smoke, rate: 2, offsetY: 0.5 }],
   [BuildingType.Sawmill]: [{ effect: ParticleEffect.WoodChips, rate: 8, offsetY: 0.15 }],
+  [BuildingType.Apiary]: [{ effect: ParticleEffect.Bees, rate: 8, offsetY: 0.25 }],
 };
 
 /** Effect-specific particle properties */
@@ -150,6 +152,17 @@ const EFFECT_CONFIGS: Record<string, EffectConfig> = {
     velocityY: 0.6,
     velocitySpread: 0.3,
     gravity: -0.3,
+  },
+  [ParticleEffect.Bees]: {
+    color: new THREE.Color(1.0, 0.84, 0.0),
+    colorEnd: new THREE.Color(0.72, 0.53, 0.04),
+    sizeStart: 1.5,
+    sizeEnd: 1.5,
+    lifetimeMin: 2.0,
+    lifetimeMax: 4.0,
+    velocityY: 0.05,
+    velocitySpread: 0.15,
+    gravity: 0,
   },
 };
 

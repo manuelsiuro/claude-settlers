@@ -98,6 +98,7 @@ export interface GraphicsSettings {
   weather: 'none' | 'rain' | 'snow';
   timeOfDay: 'dawn' | 'morning' | 'midday' | 'golden_hour' | 'evening' | 'night' | 'auto';
   fogOfWar: boolean;
+  ambientLife: 'off' | 'minimal' | 'full';
 }
 
 export const DEFAULT_GRAPHICS: GraphicsSettings = {
@@ -106,6 +107,7 @@ export const DEFAULT_GRAPHICS: GraphicsSettings = {
   weather: 'none',
   timeOfDay: 'midday',
   fogOfWar: true,
+  ambientLife: 'full',
 };
 
 export interface AudioSettings {
