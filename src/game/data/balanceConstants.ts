@@ -235,8 +235,8 @@ export function getRoadUpgradeCost(currentQuality: number): { resource: Resource
 
 /** Wild animal visual scales (uniform XYZ) */
 export let WILD_ANIMAL_SCALE_DEER = 0.15;
-export let WILD_ANIMAL_SCALE_RABBIT = 0.15;
-export let WILD_ANIMAL_SCALE_MOUNTAIN_GOAT = 0.12;
+export let WILD_ANIMAL_SCALE_RABBIT = 0.25;
+export let WILD_ANIMAL_SCALE_MOUNTAIN_GOAT = 0.20;
 export let WILD_ANIMAL_SCALE_FISH = 0.30;
 
 /** Bird flock rendering */
@@ -660,8 +660,8 @@ export function resetBalanceDefaults(): void {
   ANIMAL_FEED_INTERVAL = 10.0;
   // Ambient Life & Decorations
   WILD_ANIMAL_SCALE_DEER = 0.15;
-  WILD_ANIMAL_SCALE_RABBIT = 0.15;
-  WILD_ANIMAL_SCALE_MOUNTAIN_GOAT = 0.12;
+  WILD_ANIMAL_SCALE_RABBIT = 0.25;
+  WILD_ANIMAL_SCALE_MOUNTAIN_GOAT = 0.20;
   WILD_ANIMAL_SCALE_FISH = 0.30;
   FLOWER_PATCHES_MIN = 3;
   FLOWER_PATCHES_MAX = 6;
