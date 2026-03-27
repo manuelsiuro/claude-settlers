@@ -360,9 +360,9 @@ export function getGameHTML(currentTheme: string): string {
             <label class="setup-field-label" for="setup-players">Players</label>
             <select id="setup-players">
               <option value="1" selected>1 Player</option>
-              <option value="2">2 Players</option>
-              <option value="3">3 Players</option>
-              <option value="4">4 Players</option>
+              <option value="2">2 Players (1 AI)</option>
+              <option value="3">3 Players (2 AI)</option>
+              <option value="4">4 Players (3 AI)</option>
             </select>
             <div id="setup-player-colors" class="setup-player-colors">
               <span class="setup-color-dot setup-color-you" style="background:#4488ff;" title="Player 1 (You)"></span>
