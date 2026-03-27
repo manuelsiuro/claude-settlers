@@ -231,6 +231,21 @@ export function getRoadUpgradeCost(currentQuality: number): { resource: Resource
   return ROAD_UPGRADE_COSTS[currentQuality] ?? [];
 }
 
+// ─── Ambient Life & Decorations ──────────────────────────────────────────────
+
+/** Wild animal visual scales (uniform XYZ) */
+export let WILD_ANIMAL_SCALE_DEER = 0.15;
+export let WILD_ANIMAL_SCALE_RABBIT = 0.30;
+export let WILD_ANIMAL_SCALE_MOUNTAIN_GOAT = 0.12;
+export let WILD_ANIMAL_SCALE_FISH = 0.30;
+
+/** Grassland flower patch placement */
+export let FLOWER_PATCHES_MIN = 3;
+export let FLOWER_PATCHES_MAX = 6;
+export let FLOWER_PATCH_SCALE_MIN = 3.0;
+export let FLOWER_PATCH_SCALE_MAX = 5.0;
+export let FLOWER_PATCH_SPREAD = 0.45;
+
 // ── Animal lifecycle constants ──────────────────────────────────────────────
 /** How often animals attempt to feed (seconds) */
 export let ANIMAL_FEED_INTERVAL = 10.0;
@@ -382,6 +397,13 @@ export interface BalanceConfigOverrides {
     luxuryVolumePerItem?: number; luxuryVolumeMax?: number;
   };
   animals?: { feedInterval?: number };
+  ambientLife?: {
+    scaleDeer?: number; scaleRabbit?: number;
+    scaleMountainGoat?: number; scaleFish?: number;
+    flowerPatchesMin?: number; flowerPatchesMax?: number;
+    flowerPatchScaleMin?: number; flowerPatchScaleMax?: number;
+    flowerPatchSpread?: number;
+  };
   marketplace?: {
     fee?: number; tradeCooldown?: number; maxTradeSize?: number;
     priceShiftBuy?: number; priceShiftSell?: number;
@@ -472,6 +494,16 @@ export function applyBalanceOverrides(config: BalanceConfigOverrides): void {
   if (config.morale?.luxuryVolumeMax !== undefined) MORALE_LUXURY_VOLUME_MAX = config.morale.luxuryVolumeMax;
   // Animals
   if (config.animals?.feedInterval !== undefined) ANIMAL_FEED_INTERVAL = config.animals.feedInterval;
+  // Ambient Life & Decorations
+  if (config.ambientLife?.scaleDeer !== undefined) WILD_ANIMAL_SCALE_DEER = config.ambientLife.scaleDeer;
+  if (config.ambientLife?.scaleRabbit !== undefined) WILD_ANIMAL_SCALE_RABBIT = config.ambientLife.scaleRabbit;
+  if (config.ambientLife?.scaleMountainGoat !== undefined) WILD_ANIMAL_SCALE_MOUNTAIN_GOAT = config.ambientLife.scaleMountainGoat;
+  if (config.ambientLife?.scaleFish !== undefined) WILD_ANIMAL_SCALE_FISH = config.ambientLife.scaleFish;
+  if (config.ambientLife?.flowerPatchesMin !== undefined) FLOWER_PATCHES_MIN = config.ambientLife.flowerPatchesMin;
+  if (config.ambientLife?.flowerPatchesMax !== undefined) FLOWER_PATCHES_MAX = config.ambientLife.flowerPatchesMax;
+  if (config.ambientLife?.flowerPatchScaleMin !== undefined) FLOWER_PATCH_SCALE_MIN = config.ambientLife.flowerPatchScaleMin;
+  if (config.ambientLife?.flowerPatchScaleMax !== undefined) FLOWER_PATCH_SCALE_MAX = config.ambientLife.flowerPatchScaleMax;
+  if (config.ambientLife?.flowerPatchSpread !== undefined) FLOWER_PATCH_SPREAD = config.ambientLife.flowerPatchSpread;
   // Marketplace
   if (config.marketplace?.fee !== undefined) MARKETPLACE_FEE = config.marketplace.fee;
   if (config.marketplace?.tradeCooldown !== undefined) MARKETPLACE_TRADE_COOLDOWN = config.marketplace.tradeCooldown;
@@ -577,6 +609,16 @@ export function resetBalanceDefaults(): void {
   MORALE_LUXURY_VOLUME_PER_ITEM = 0.008;
   MORALE_LUXURY_VOLUME_MAX = 0.08;
   ANIMAL_FEED_INTERVAL = 10.0;
+  // Ambient Life & Decorations
+  WILD_ANIMAL_SCALE_DEER = 0.15;
+  WILD_ANIMAL_SCALE_RABBIT = 0.30;
+  WILD_ANIMAL_SCALE_MOUNTAIN_GOAT = 0.12;
+  WILD_ANIMAL_SCALE_FISH = 0.30;
+  FLOWER_PATCHES_MIN = 3;
+  FLOWER_PATCHES_MAX = 6;
+  FLOWER_PATCH_SCALE_MIN = 3.0;
+  FLOWER_PATCH_SCALE_MAX = 5.0;
+  FLOWER_PATCH_SPREAD = 0.45;
   // Marketplace
   MARKETPLACE_BASE_VALUES = {
     wood: 2, stone: 3, grain: 2, fish: 3,

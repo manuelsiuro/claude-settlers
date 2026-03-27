@@ -5,6 +5,10 @@ import { TerrainType } from '../game/TerrainType';
 import { getTerrainColor } from './TerrainColors';
 import { createRng } from '../game/noise';
 import { assetLoader } from './AssetLoader';
+import {
+  FLOWER_PATCHES_MIN, FLOWER_PATCHES_MAX,
+  FLOWER_PATCH_SCALE_MIN, FLOWER_PATCH_SCALE_MAX, FLOWER_PATCH_SPREAD,
+} from '../game/data/balanceConstants';
 
 /** Decoration placement data (no Three.js objects) */
 interface DecorationPlacement {
@@ -419,16 +423,23 @@ function getGrasslandPlacements(tile: HexTile): DecorationPlacement[] {
       scaleX: bScale, scaleY: bScale, scaleZ: bScale,
     }];
   } else {
-    // Flower patch (30%)
-    const fScale = 1.0 + rng() * 0.5;
-    return [{
-      modelName: 'flower_patch',
-      localX: (rng() - 0.5) * 0.5,
-      localZ: (rng() - 0.5) * 0.5,
-      localY: 0,
-      rotationY: rng() * Math.PI * 2,
-      scaleX: fScale, scaleY: fScale, scaleZ: fScale,
-    }];
+    // Flower patch — multiple instances for "field of flowers" look
+    const placements: DecorationPlacement[] = [];
+    const count = FLOWER_PATCHES_MIN + Math.floor(rng() * (FLOWER_PATCHES_MAX - FLOWER_PATCHES_MIN + 1));
+    for (let i = 0; i < count; i++) {
+      const fScale = FLOWER_PATCH_SCALE_MIN + rng() * (FLOWER_PATCH_SCALE_MAX - FLOWER_PATCH_SCALE_MIN);
+      const angle = rng() * Math.PI * 2;
+      const dist = rng() * FLOWER_PATCH_SPREAD;
+      placements.push({
+        modelName: 'flower_patch',
+        localX: Math.cos(angle) * dist,
+        localZ: Math.sin(angle) * dist,
+        localY: 0,
+        rotationY: rng() * Math.PI * 2,
+        scaleX: fScale, scaleY: fScale, scaleZ: fScale,
+      });
+    }
+    return placements;
   }
 }
 

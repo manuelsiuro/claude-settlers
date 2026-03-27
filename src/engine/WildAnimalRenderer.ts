@@ -4,6 +4,10 @@ import { TerrainType } from '../game/TerrainType';
 import { MapRenderer } from './MapRenderer';
 import { assetLoader } from './AssetLoader';
 import { createRng } from '../game/noise';
+import {
+  WILD_ANIMAL_SCALE_DEER, WILD_ANIMAL_SCALE_RABBIT,
+  WILD_ANIMAL_SCALE_MOUNTAIN_GOAT, WILD_ANIMAL_SCALE_FISH,
+} from '../game/data/balanceConstants';
 
 // ── Types ──
 
@@ -34,12 +38,14 @@ interface SubMeshInfo {
 
 // ── Constants ──
 
-const ANIMAL_SCALES: Record<AnimalType, number> = {
-  deer: 0.15,
-  rabbit: 0.08,
-  mountain_goat: 0.12,
-  fish: 0.10,
-};
+function getAnimalScale(type: AnimalType): number {
+  switch (type) {
+    case 'deer': return WILD_ANIMAL_SCALE_DEER;
+    case 'rabbit': return WILD_ANIMAL_SCALE_RABBIT;
+    case 'mountain_goat': return WILD_ANIMAL_SCALE_MOUNTAIN_GOAT;
+    case 'fish': return WILD_ANIMAL_SCALE_FISH;
+  }
+}
 
 const ANIMAL_SPEEDS: Record<AnimalType, number> = {
   deer: 0.4,
@@ -143,7 +149,7 @@ export class WildAnimalRenderer {
         // Skip hidden fish
         if (animal.state === 'hidden') continue;
 
-        const scale = ANIMAL_SCALES[type];
+        const scale = getAnimalScale(type);
         let yOffset = 0;
 
         // Fish jumping arc
