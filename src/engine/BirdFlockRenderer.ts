@@ -160,7 +160,17 @@ export class BirdFlockRenderer {
       const pz = flock.center.z + offZ + Math.cos(time * 0.4 + phase) * 0.3;
 
       // Face flight direction (model faces -Z after Blender Y-up → GLTF conversion)
-      const yaw = Math.atan2(flock.direction.x, flock.direction.y) + Math.PI;
+      // For circling flocks, compute tangent from circle angle
+      let dirX: number, dirZ: number;
+      if (flock.pattern === 'circling' && flock.circleAngle !== undefined) {
+        // Tangent to circle: perpendicular to radius vector
+        dirX = -Math.sin(flock.circleAngle);
+        dirZ = Math.cos(flock.circleAngle);
+      } else {
+        dirX = flock.direction.x;
+        dirZ = flock.direction.y;
+      }
+      const yaw = Math.atan2(dirX, dirZ) + Math.PI;
       this._position.set(px, py, pz);
       this._euler.set(0, yaw, 0);
       this._quaternion.setFromEuler(this._euler);
