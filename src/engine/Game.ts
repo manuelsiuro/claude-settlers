@@ -382,8 +382,8 @@ export class Game {
     // Set up wild animal renderer (ambient terrain creatures)
     this.rnds.wildAnimalRenderer.addToScene(this.scene, this.grid);
 
-    // Set up flower butterfly renderer (GPU-driven butterflies near grassland)
-    this.rnds.flowerButterflyRenderer.addToScene(this.scene, this.grid);
+    // Set up bee renderer (3D bees near grassland flowers)
+    this.rnds.beeRenderer.addToScene(this.scene, this.grid);
 
     // Set up fog of war renderer + wire into unit/building renderers
     this.rnds.fogOfWarRenderer.addToScene(this.scene, this.grid);
@@ -627,12 +627,12 @@ export class Game {
       // Pass dynamic wind direction from weather to ambient renderers
       const wind = this.rnds.weatherController.getWindDirection();
       this.rnds.cloudRenderer.setWindDirection(wind);
-      this.rnds.flowerButterflyRenderer.setWindDirection(wind);
+      this.rnds.beeRenderer.setWindDirection(wind);
       this.rnds.cloudRenderer.update(rawDelta, this.camera.position, this.frustum);
       this.rnds.birdFlockRenderer.update(rawDelta, this.camera.position, this.frustum);
       this.rnds.waterEffectRenderer.update(rawDelta, this.camera.position, this.frustum);
       this.rnds.wildAnimalRenderer.update(deltaTime, this.camera.position);
-      this.rnds.flowerButterflyRenderer.update(rawDelta, this.camera.position, this.frustum);
+      this.rnds.beeRenderer.update(rawDelta, this.camera.position, this.frustum);
 
       // Apply weather atmosphere overlay
       const wt = this.rnds.weatherController.getWeatherType();
@@ -1002,7 +1002,7 @@ export class Game {
     this.rnds.birdFlockRenderer.dispose();
     this.rnds.waterEffectRenderer.dispose();
     this.rnds.wildAnimalRenderer.dispose();
-    this.rnds.flowerButterflyRenderer.dispose();
+    this.rnds.beeRenderer.dispose();
     this.rnds.particleSystem.dispose();
     this.rnds.treeRenderer.dispose();
     this.rnds.depositRenderer.dispose();

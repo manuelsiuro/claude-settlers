@@ -21,6 +21,8 @@ const TERRAIN_MODELS = [
   'mountain_goat',
   'fish',
   'flower_patch',
+  'bird',
+  'bee',
 ] as const;
 
 export type TerrainModelName = (typeof TERRAIN_MODELS)[number];

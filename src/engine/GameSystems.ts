@@ -53,7 +53,7 @@ import { CloudRenderer } from './CloudRenderer';
 import { BirdFlockRenderer } from './BirdFlockRenderer';
 import { WaterEffectRenderer } from './WaterEffectRenderer';
 import { WildAnimalRenderer } from './WildAnimalRenderer';
-import { FlowerButterflyRenderer } from './FlowerButterflyRenderer';
+import { BeeRenderer } from './FlowerButterflyRenderer';
 import { FlagLightSystem } from './FlagLightSystem';
 import { WorkAreaRenderer } from './WorkAreaRenderer';
 import type { AtmosphereController, ColorGradingParams } from './AtmosphereController';
@@ -113,7 +113,7 @@ export interface GameRenderers {
   birdFlockRenderer: BirdFlockRenderer;
   waterEffectRenderer: WaterEffectRenderer;
   wildAnimalRenderer: WildAnimalRenderer;
-  flowerButterflyRenderer: FlowerButterflyRenderer;
+  beeRenderer: BeeRenderer;
   flagLightSystem: FlagLightSystem;
   workAreaRenderer: WorkAreaRenderer;
 }
@@ -260,7 +260,7 @@ export function createRenderers(params: CreateRenderersParams): GameRenderers {
   const birdFlockRenderer = new BirdFlockRenderer();
   const waterEffectRenderer = new WaterEffectRenderer();
   const wildAnimalRenderer = new WildAnimalRenderer();
-  const flowerButterflyRenderer = new FlowerButterflyRenderer();
+  const beeRenderer = new BeeRenderer();
   const flagLightSystem = new FlagLightSystem();
   const workAreaRenderer = new WorkAreaRenderer();
 
@@ -270,7 +270,7 @@ export function createRenderers(params: CreateRenderersParams): GameRenderers {
     cloudRenderer.setNightness(nightness);
     birdFlockRenderer.setNightness(nightness);
     waterEffectRenderer.setNightness(nightness);
-    flowerButterflyRenderer.setNightness(nightness);
+    beeRenderer.setNightness(nightness);
     postProcessing.setBloomStrength(0.3 + 0.2 * nightness);
   };
 
@@ -296,7 +296,7 @@ export function createRenderers(params: CreateRenderersParams): GameRenderers {
     birdFlockRenderer,
     waterEffectRenderer,
     wildAnimalRenderer,
-    flowerButterflyRenderer,
+    beeRenderer,
     flagLightSystem,
     workAreaRenderer,
   };
@@ -345,5 +345,5 @@ export function applyGraphicsSettings(
   renderers.birdFlockRenderer.setEnabled(ambient === 'full');
   renderers.waterEffectRenderer.setEnabled(ambient === 'full');
   renderers.wildAnimalRenderer.setEnabled(ambient === 'full');
-  renderers.flowerButterflyRenderer.setEnabled(ambient === 'full');
+  renderers.beeRenderer.setEnabled(ambient === 'full');
 }
