@@ -119,6 +119,9 @@ export function getGameHTML(currentTheme: string): string {
     <span id="victory-progress" class="victory-progress"></span>
   </div>
 
+  <!-- Resource Bar (key construction materials at a glance) -->
+  <div id="resource-bar" class="resource-bar"></div>
+
   <!-- Build Toolbar (desktop only) -->
   <div id="build-toolbar" class="build-toolbar">
     <button class="build-toolbar-tab" data-category="all" title="All">

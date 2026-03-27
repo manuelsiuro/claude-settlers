@@ -100,6 +100,7 @@ import { initDemolishDialog } from './ui/DemolishDialog';
 import { initTechTreePanel } from './ui/TechTreePanel';
 import { initDashboard } from './ui/DashboardPanel';
 import { initVictoryProgressHUD, disposeVictoryProgressHUD } from './ui/VictoryProgressHUD';
+import { initResourceBar, disposeResourceBar } from './ui/ResourceBar';
 
 // Extracted modules
 import { getGameHTML } from './ui/GameHTML';
@@ -259,6 +260,7 @@ async function startGame(config: Partial<GameConfig>, savedData?: SaveData): Pro
     disposeToolAlertBar();
     disposeCapacityAlertBar();
     disposeFoodAlertBar();
+    disposeResourceBar();
     game.dispose();
   }
 
@@ -304,6 +306,8 @@ async function startGame(config: Partial<GameConfig>, savedData?: SaveData): Pro
 
   currentMinimap = result.minimap;
   popCounterInterval = result.popCounterInterval;
+
+  initResourceBar(getGame, () => showStatsPanel('resources'));
 }
 
 // Prevent context menu on canvas for right-click cancel

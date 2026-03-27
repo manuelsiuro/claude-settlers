@@ -490,6 +490,73 @@ html, body {
 }
 
 /* ============================================================
+   Resource Bar (below game controls bar)
+   ============================================================ */
+.resource-bar {
+  position: fixed;
+  top: calc(var(--top-offset) + 36px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--z-minimap);
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(0,0,0,0.45);
+  border-radius: 8px;
+  padding: 2px 6px;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  pointer-events: auto;
+}
+.resource-bar:empty {
+  display: none;
+}
+.resource-bar-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: rgba(255,255,255,0.85);
+  font-size: 0.625rem;
+  padding: 1px 3px;
+  white-space: nowrap;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.15s ease;
+}
+.resource-bar-item:hover {
+  background: rgba(255,255,255,0.12);
+}
+.resource-bar-item img {
+  width: 14px;
+  height: 14px;
+}
+.resource-bar-divider {
+  width: 1px;
+  height: 14px;
+  background: rgba(255,255,255,0.15);
+  margin: 0 1px;
+}
+.resource-bar-item-zero {
+  opacity: 0.4;
+}
+
+@media (max-width: 768px) {
+  .resource-bar {
+    left: 8px;
+    transform: none;
+    top: calc(var(--top-offset) + 32px);
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    max-width: calc(100vw - 140px);
+  }
+  .resource-bar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ============================================================
    Snackbar
    ============================================================ */
 .snackbar {
