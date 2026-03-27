@@ -25,6 +25,9 @@ import type { PopulationManager } from '../game/PopulationManager';
 import type { BuildingAnimator } from './BuildingAnimator';
 import type { CombatRenderer } from './CombatRenderer';
 import type { DepositRenderer } from './DepositRenderer';
+import type { UpgradeManager } from '../game/UpgradeManager';
+import { BUILDING_TYPE_UPGRADE_AXIS } from '../game/UpgradeManager';
+import type { BuildingRenderer } from './BuildingRenderer';
 import type { AIPlayer } from '../game/AIPlayer';
 
 export type GameNotificationType =
@@ -66,6 +69,8 @@ export interface WireCallbacksParams {
   depositRenderer: DepositRenderer;
   particleSystem: ParticleSystem;
   mapRenderer: MapRenderer;
+  upgradeManager: UpgradeManager;
+  buildingRenderer: BuildingRenderer;
   grid: HexGrid;
   humanPlayerId: number;
   aiPlayers: AIPlayer[];
@@ -94,6 +99,8 @@ export function wireGameCallbacks(params: WireCallbacksParams): void {
     depositRenderer,
     particleSystem,
     mapRenderer,
+    upgradeManager,
+    buildingRenderer,
     grid,
     humanPlayerId,
     aiPlayers,
@@ -269,5 +276,21 @@ export function wireGameCallbacks(params: WireCallbacksParams): void {
   gameState.onMinePlaced = (coord) => {
     depositRenderer.removeMarker(coord);
     mapRenderer.rebuild();
+  };
+
+  // Wire upgrade completion -> model swap for building-type upgrades + particles
+  upgradeManager.onUpgradeComplete = (building, axis) => {
+    if (axis === BUILDING_TYPE_UPGRADE_AXIS) {
+      buildingRenderer.swapBuildingModel(building, grid);
+      buildingAnimator.onBuildingActivated(building.id);
+      const { x, z } = HexGrid.hexToWorld(building.coord.q, building.coord.r);
+      const tile = grid.getTile(building.coord.q, building.coord.r);
+      const y = tile ? MapRenderer.getTileY(tile) : 0;
+      particleSystem.emitBurst(x, y + 0.3, z, ParticleEffect.CompletionFlash, 20);
+      if (building.playerId === humanPlayerId) {
+        const def = BUILDING_DEFINITIONS[building.type];
+        getNotification()?.({ type: 'building_complete', message: `House upgraded to ${def.label}!` });
+      }
+    }
   };
 }

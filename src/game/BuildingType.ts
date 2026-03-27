@@ -140,6 +140,12 @@ export interface BuildingDefinition {
   populationCapacity: number;
   /** How this building gathers: 'walk' = worker walks to harvestTerrain (TerrainGatheringManager), undefined = on-site (ProductionManager) */
   gatheringStyle?: 'walk';
+  /** Building type this can be upgraded to (e.g., small_house → medium_house) */
+  upgradesTo?: BuildingType;
+  /** Resource cost to upgrade to the target type */
+  upgradeCost?: BuildingCost[];
+  /** Construction time for the upgrade (seconds) */
+  upgradeTime?: number;
 }
 
 export { BUILDING_DEFINITIONS, getBuildingsByCategory, getBuildingsByTier } from './data/buildingDefinitions';

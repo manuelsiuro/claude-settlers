@@ -174,6 +174,19 @@ export function initInfoPanel(
       }
     }
 
+    // Building-type upgrade (house upgrades)
+    const buildingUpgradeBtn = (e.target as HTMLElement).closest('.info-building-upgrade-btn') as HTMLElement | null;
+    if (buildingUpgradeBtn?.dataset.buildingId) {
+      const ok = getGame().getUpgradeManager().startBuildingUpgrade(buildingUpgradeBtn.dataset.buildingId);
+      if (ok) {
+        const building = getGame().getGameState().getBuilding(buildingUpgradeBtn.dataset.buildingId);
+        if (building) {
+          updater.reset();
+          updateBuilding(building);
+        }
+      }
+    }
+
     const demolishBtn = (e.target as HTMLElement).closest('.info-demolish-btn') as HTMLElement | null;
     if (demolishBtn?.dataset.buildingId) {
       const building = getGame().getGameState().getBuilding(demolishBtn.dataset.buildingId);
@@ -264,6 +277,9 @@ export function showInfoPanel(building: Building): void {
   infoPanelUpdateInterval = setInterval(() => {
     const current = getGame().getGameState().getBuilding(building.id);
     if (current) {
+      // Update title in case building type changed (house upgrade)
+      const currentDef = BUILDING_DEFINITIONS[current.type];
+      infoPanelTitle.innerHTML = `${buildingIcon(current.type, 24)} ${currentDef.label}`;
       updateBuilding(current);
     } else {
       closeInfoPanel();

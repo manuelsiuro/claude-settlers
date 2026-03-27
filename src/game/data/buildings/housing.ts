@@ -32,6 +32,13 @@ export const HOUSING_BUILDINGS: Partial<Record<BuildingType, BuildingDefinition>
     constructionTime: 20,
     workRadius: 0,
     populationCapacity: SMALL_HOUSE_CAPACITY,
+    upgradesTo: 'medium_house',
+    upgradeCost: [
+      { resource: ResourceType.Wood, amount: 2 },
+      { resource: ResourceType.Planks, amount: 2 },
+      { resource: ResourceType.Stone, amount: 2 },
+    ],
+    upgradeTime: 25,
   },
 
   ['medium_house']: {
@@ -58,6 +65,14 @@ export const HOUSING_BUILDINGS: Partial<Record<BuildingType, BuildingDefinition>
     constructionTime: 35,
     workRadius: 0,
     populationCapacity: MEDIUM_HOUSE_CAPACITY,
+    upgradesTo: 'large_house',
+    upgradeCost: [
+      { resource: ResourceType.Wood, amount: 2 },
+      { resource: ResourceType.Planks, amount: 2 },
+      { resource: ResourceType.Stone, amount: 3 },
+      { resource: ResourceType.IronBars, amount: 2 },
+    ],
+    upgradeTime: 40,
   },
 
   ['large_house']: {

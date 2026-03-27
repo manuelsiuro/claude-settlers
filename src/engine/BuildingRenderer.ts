@@ -193,6 +193,12 @@ export class BuildingRenderer {
 
   }
 
+  /** Replace a building's 3D model (for type transformation like house upgrades) */
+  swapBuildingModel(building: Building, grid: HexGrid): void {
+    this.removeBuilding(building.id);
+    this.addBuilding(building, grid);
+  }
+
   /** Get the 3D mesh for a building (for selection highlighting etc.) */
   getMesh(buildingId: string): THREE.Group | undefined {
     return this.buildingMeshes.get(buildingId);

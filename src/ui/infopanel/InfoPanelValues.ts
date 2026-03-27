@@ -28,6 +28,7 @@ import {
   updateTradeValues,
 } from '../TradePanel';
 import { getSeenInventoryKeys } from './BuildingInfoRenderer';
+import { UpgradeManager, BUILDING_TYPE_UPGRADE_AXIS } from '../../game/UpgradeManager';
 
 /** Update dynamic values without rebuilding DOM */
 export function updateInfoValues(
@@ -214,6 +215,42 @@ export function updateInfoValues(
         }
       }
     }
+  }
+
+  // Housing population
+  if (def.category === 'housing' && building.state === BuildingState.Active) {
+    const popMgr = getGame().getPopulationManager();
+    const playerId = building.playerId;
+    const totalCap = popMgr.getCapacity(playerId);
+    const currentPop = popMgr.getCurrentPopulation(playerId);
+    const available = popMgr.getAvailableSlots(playerId);
+    updater.setText('pop-current', `${currentPop} / ${totalCap}`);
+    updater.setText('pop-available', `${available}`);
+  }
+
+  // Building-type upgrade progress (house upgrades)
+  if (def.upgradesTo && def.upgradeCost && building.activeUpgrade?.axis === BUILDING_TYPE_UPGRADE_AXIS) {
+    const cost = def.upgradeCost;
+    const allDelivered = cost.every((c) => {
+      const delivered = getInventoryAmount(building.activeUpgrade!.resourcesDelivered, c.resource);
+      return delivered >= c.amount;
+    });
+    if (!allDelivered) {
+      const gatherParts = cost.map((c) => {
+        const delivered = getInventoryAmount(building.activeUpgrade!.resourcesDelivered, c.resource);
+        return `${delivered}/${c.amount} ${RESOURCE_PROPERTIES[c.resource].label}`;
+      });
+      updater.setText('bt-upgrade-gather', gatherParts.join(', '));
+    } else {
+      const pct = Math.round((building.activeUpgrade.constructionProgress ?? 0) * 100);
+      updater.setWidth('bt-upgrade-bar', `${pct}%`);
+      updater.setText('bt-upgrade-pct', `${pct}%`);
+    }
+  } else if (def.upgradesTo && def.upgradeCost && UpgradeManager.canBuildingUpgrade(building)) {
+    const castle = getGame().getGameState().findCastle(building.playerId);
+    const canAfford = castle ? def.upgradeCost.every((c) => getInventoryAmount(castle.outputInventory, c.resource) >= c.amount) : false;
+    const btn = infoPanelContent.querySelector('.info-building-upgrade-btn') as HTMLButtonElement | null;
+    if (btn) btn.disabled = !canAfford;
   }
 
   // Trade value updates

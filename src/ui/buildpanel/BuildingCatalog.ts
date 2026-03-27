@@ -98,6 +98,9 @@ export function generateTooltipContent(
   const milInfo = def.knightSlots > 0
     ? `<div class="build-item-section"><span class="build-item-section-label">Military</span><div class="build-item-section-content"><span class="build-item-military">${def.knightSlots} knight slot${def.knightSlots > 1 ? 's' : ''} \u00b7 range ${def.influenceRadius}</span></div></div>`
     : '';
+  const popInfo = def.populationCapacity > 0
+    ? `<div class="build-item-section"><span class="build-item-section-label">Population</span><div class="build-item-section-content"><span class="build-item-population">+${def.populationCapacity} residents</span></div></div>`
+    : '';
   return `
     <div class="build-tooltip-name">${def.label}</div>
     <div class="build-tooltip-desc">${def.description}</div>
@@ -105,6 +108,7 @@ export function generateTooltipContent(
       <span class="build-item-section-label">Cost</span>
       <div class="build-item-section-content">${formatCost(def, available)}</div>
     </div>
+    ${popInfo}
     ${prodSummary ? `<div class="build-item-section"><span class="build-item-section-label">Production</span><div class="build-item-section-content">${prodSummary}</div></div>` : ''}
     ${milInfo}
   `;
@@ -155,9 +159,13 @@ export function generateBuildHTML(
     for (const def of buildings) {
       const affordable = canAfford(def, available);
       const tileClass = affordable ? 'build-tile' : 'build-tile build-tile-disabled';
+      const popInfo = def.populationCapacity > 0
+        ? `<div class="build-tile-pop">👤 +${def.populationCapacity}</div>`
+        : '';
       html += `<button class="${tileClass}" data-field="build-${def.type}" data-building-type="${def.type}">
         <div class="build-tile-thumb">${buildingIcon(def.type, 48)}</div>
         <span class="build-tile-name">${def.label}</span>
+        ${popInfo}
         <div class="build-tile-cost">${formatCost(def, available, true)}</div>
       </button>`;
 
@@ -183,6 +191,10 @@ function generateExpandedDetailHTML(
     ? `<div class="build-item-section"><span class="build-item-section-label">Military</span><div class="build-item-section-content"><span class="build-item-military">${def.knightSlots} knight slot${def.knightSlots > 1 ? 's' : ''} \u00b7 range ${def.influenceRadius}</span></div></div>`
     : '';
 
+  const popInfo = def.populationCapacity > 0
+    ? `<div class="build-item-section"><span class="build-item-section-label">Population</span><div class="build-item-section-content"><span class="build-item-population">+${def.populationCapacity} residents</span></div></div>`
+    : '';
+
   return `<div class="build-tile-expanded">
     <div class="build-tile-expanded-name">${buildingIcon(def.type, 24)} ${def.label}</div>
     <div class="build-tile-expanded-desc">${def.description}</div>
@@ -190,6 +202,7 @@ function generateExpandedDetailHTML(
       <span class="build-item-section-label">Cost</span>
       <div class="build-item-section-content">${formatCost(def, available)}</div>
     </div>
+    ${popInfo}
     ${prodSummary ? `<div class="build-item-section"><span class="build-item-section-label">Production</span><div class="build-item-section-content">${prodSummary}</div></div>` : ''}
     ${milInfo}
     <button class="build-tile-place-btn" data-building-type="${def.type}" ${!affordable ? 'disabled' : ''}>Place ${def.label}</button>

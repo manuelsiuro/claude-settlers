@@ -36,6 +36,7 @@ import {
   canTrade, getTradeStructureKey,
   generateTradeHTML,
 } from '../TradePanel';
+import { UpgradeManager, BUILDING_TYPE_UPGRADE_AXIS } from '../../game/UpgradeManager';
 
 // ── Monotonic inventory key tracking ─────────────────────────────────────
 // Once a resource key is observed, it stays in the structure key for the
@@ -117,7 +118,7 @@ function getStateDisplay(state: BuildingState): { label: string; cssClass: strin
 /** Get a structure key fingerprint for the building's panel layout */
 export function getInfoStructureKey(building: Building, getGame: () => Game): string {
   const def = BUILDING_DEFINITIONS[building.type];
-  const parts: string[] = [String(building.state), 'p:' + building.playerId];
+  const parts: string[] = [building.type, String(building.state), 'p:' + building.playerId];
 
   // Construction remaining resource keys
   if (building.state === BuildingState.Planned || building.state === BuildingState.UnderConstruction) {
@@ -206,6 +207,20 @@ export function getInfoStructureKey(building: Building, getGame: () => Game): st
   // Trade state fingerprint
   if (canTrade(building)) {
     parts.push(getTradeStructureKey(building));
+  }
+
+  // Building-type upgrade state (house upgrades)
+  if (def.upgradesTo) {
+    let btState = 'idle';
+    if (building.activeUpgrade?.axis === BUILDING_TYPE_UPGRADE_AXIS) {
+      const cost = def.upgradeCost;
+      const allDelivered = cost ? cost.every((c) => {
+        const delivered = getInventoryAmount(building.activeUpgrade!.resourcesDelivered, c.resource);
+        return delivered >= c.amount;
+      }) : true;
+      btState = allDelivered ? 'bld' : 'gth';
+    }
+    parts.push('bt:' + btState);
   }
 
   return parts.join('|');
@@ -306,6 +321,31 @@ export function generateInfoHTML(building: Building, getGame: () => Game, isDesk
     }
   }
   html += '</div>';
+
+  // Housing population info
+  if (def.category === 'housing' && building.state === BuildingState.Active) {
+    const popMgr = getGame().getPopulationManager();
+    const playerId = building.playerId;
+    const capacity = def.populationCapacity;
+    const totalCap = popMgr.getCapacity(playerId);
+    const currentPop = popMgr.getCurrentPopulation(playerId);
+    const available = popMgr.getAvailableSlots(playerId);
+    html += `<div class="info-section">
+      <div class="info-section-label">${icon('people')} Population</div>
+      <div class="info-row">
+        <span class="info-label">This house</span>
+        <span class="info-value" data-field="house-capacity">${capacity} residents</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Total population</span>
+        <span class="info-value" data-field="pop-current">${currentPop} / ${totalCap}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Available slots</span>
+        <span class="info-value" data-field="pop-available">${available}</span>
+      </div>
+    </div>`;
+  }
 
   // Tool waiting alert
   if (building.waitingForTool && building.state === BuildingState.Active) {
@@ -715,6 +755,43 @@ export function generateInfoHTML(building: Building, getGame: () => Game, isDesk
       } else if (currentLevel >= config.maxLevel) {
         html += `<div class="info-row"><span class="info-label"></span><span class="info-value" style="color: #4caf50;">MAX</span></div>`;
       }
+    }
+    html += '</div>';
+  }
+
+  // Building-type upgrade (house upgrades: Small → Medium → Large)
+  if (def.upgradesTo && def.upgradeCost && building.state === BuildingState.Active && building.playerId === getGame().getHumanPlayerId()) {
+    const targetDef = BUILDING_DEFINITIONS[def.upgradesTo];
+    html += '<div class="info-section">';
+    html += `<div class="info-section-label">${icon('hammer')} Upgrade Building</div>`;
+    html += `<div class="info-row">
+      <span class="info-label">Upgrade to</span>
+      <span class="info-value" data-field="bt-upgrade-target">${targetDef.label} (${targetDef.populationCapacity} pop)</span>
+    </div>`;
+
+    if (building.activeUpgrade?.axis === BUILDING_TYPE_UPGRADE_AXIS) {
+      const cost = def.upgradeCost;
+      const allDelivered = cost.every((c) => {
+        const delivered = getInventoryAmount(building.activeUpgrade!.resourcesDelivered, c.resource);
+        return delivered >= c.amount;
+      });
+      if (!allDelivered) {
+        const gatherParts = cost.map((c) => {
+          const delivered = getInventoryAmount(building.activeUpgrade!.resourcesDelivered, c.resource);
+          return `${delivered}/${c.amount} ${RESOURCE_PROPERTIES[c.resource].label}`;
+        });
+        html += `<div class="info-row"><span class="info-label">Gathering</span><span class="info-value" data-field="bt-upgrade-gather">${gatherParts.join(', ')}</span></div>`;
+      } else {
+        const pct = Math.round((building.activeUpgrade.constructionProgress ?? 0) * 100);
+        html += `<div class="info-progress-bar"><div class="info-progress-fill info-progress-upgrade" data-field="bt-upgrade-bar" style="width:${pct}%"></div></div>`;
+        html += `<div class="info-row"><span class="info-label">Building...</span><span class="info-value" data-field="bt-upgrade-pct">${pct}%</span></div>`;
+      }
+      html += `<button class="info-upgrade-cancel-btn" data-building-id="${building.id}">Cancel Upgrade</button>`;
+    } else if (UpgradeManager.canBuildingUpgrade(building)) {
+      const castle = getGame().getGameState().findCastle(building.playerId);
+      const canAfford = castle ? def.upgradeCost.every((c) => getInventoryAmount(castle.outputInventory, c.resource) >= c.amount) : false;
+      const costStr = def.upgradeCost.map((c) => `${c.amount} ${RESOURCE_PROPERTIES[c.resource].label}`).join(', ');
+      html += `<button class="info-building-upgrade-btn" data-building-id="${building.id}"${canAfford ? '' : ' disabled'}>Upgrade to ${targetDef.label} (${costStr})</button>`;
     }
     html += '</div>';
   }

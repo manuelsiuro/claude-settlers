@@ -283,6 +283,8 @@ export class Game {
       depositRenderer: this.rnds.depositRenderer,
       particleSystem: this.rnds.particleSystem,
       mapRenderer: this.rnds.mapRenderer,
+      upgradeManager: this.mgrs.upgradeManager,
+      buildingRenderer: this.rnds.buildingRenderer,
       grid: this.grid,
       humanPlayerId: this.humanPlayerId,
       aiPlayers: this.aiPlayers,

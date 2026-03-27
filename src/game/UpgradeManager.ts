@@ -4,6 +4,8 @@ import {
   removeFromInventory,
   addToInventory,
 } from './Building';
+import { BuildingState } from './Building';
+import { BUILDING_DEFINITIONS } from './BuildingType';
 import type { GameState } from './GameState';
 import type { Unit } from './Unit';
 import { UnitState, setUnitPath } from './Unit';
@@ -16,6 +18,9 @@ import {
   getUpgradeTime,
 } from './BuildingUpgrade';
 import type { UpgradeAxis } from './BuildingUpgrade';
+
+/** Discriminator value for building-type upgrades (e.g., Small House → Medium House) */
+export const BUILDING_TYPE_UPGRADE_AXIS = 'building_type';
 
 /**
  * Manages building upgrade lifecycle:
@@ -84,6 +89,33 @@ export class UpgradeManager {
   }
 
   /**
+   * Start a building-type upgrade (e.g., Small House → Medium House).
+   * Uses the building definition's upgradesTo/upgradeCost/upgradeTime data.
+   */
+  startBuildingUpgrade(buildingId: string): boolean {
+    const building = this.gameState.getBuilding(buildingId);
+    if (!building) return false;
+    if (!UpgradeManager.canBuildingUpgrade(building)) return false;
+
+    building.activeUpgrade = {
+      axis: BUILDING_TYPE_UPGRADE_AXIS,
+      targetLevel: 1,
+      resourcesDelivered: {},
+      constructionProgress: 0,
+    };
+
+    return true;
+  }
+
+  /** Check if a building can be upgraded to a different type */
+  static canBuildingUpgrade(building: Building): boolean {
+    if (building.state !== BuildingState.Active) return false;
+    if (building.activeUpgrade) return false;
+    const def = BUILDING_DEFINITIONS[building.type];
+    return !!def.upgradesTo && !!def.upgradeCost;
+  }
+
+  /**
    * Cancel an active upgrade on a building. Refunds delivered resources to Castle.
    * Returns true if an upgrade was cancelled.
    */
@@ -128,6 +160,16 @@ export class UpgradeManager {
     this.advanceUpgradeConstruction(deltaTime);
   }
 
+  /** Get the resource cost for an active upgrade (handles both axis and building-type upgrades) */
+  private getActiveUpgradeCost(building: Building): { resource: ResourceType; amount: number }[] | null {
+    if (!building.activeUpgrade) return null;
+    if (building.activeUpgrade.axis === BUILDING_TYPE_UPGRADE_AXIS) {
+      return BUILDING_DEFINITIONS[building.type].upgradeCost ?? null;
+    }
+    const currentLevel = building.upgradeLevels[building.activeUpgrade.axis] ?? 0;
+    return getUpgradeCost(building.type, building.activeUpgrade.axis as UpgradeAxis, currentLevel);
+  }
+
   /**
    * Pull resources from Castle to buildings with active upgrades.
    * Delivers one resource at a time per building per tick.
@@ -144,12 +186,7 @@ export class UpgradeManager {
       // Skip if builder already assigned (resources fully delivered)
       if (this.builderAssignments.has(building.id)) continue;
 
-      const currentLevel = building.upgradeLevels[building.activeUpgrade.axis] ?? 0;
-      const cost = getUpgradeCost(
-        building.type,
-        building.activeUpgrade.axis as UpgradeAxis,
-        currentLevel,
-      );
+      const cost = this.getActiveUpgradeCost(building);
       if (!cost) continue;
 
       // Check if all resources are delivered
@@ -189,12 +226,7 @@ export class UpgradeManager {
       if (!building.activeUpgrade) continue;
       if (this.builderAssignments.has(building.id)) continue;
 
-      const currentLevel = building.upgradeLevels[building.activeUpgrade.axis] ?? 0;
-      const cost = getUpgradeCost(
-        building.type,
-        building.activeUpgrade.axis as UpgradeAxis,
-        currentLevel,
-      );
+      const cost = this.getActiveUpgradeCost(building);
       if (!cost) continue;
 
       // Check all resources delivered
@@ -244,16 +276,28 @@ export class UpgradeManager {
 
       if (builder.state !== UnitState.Working) continue;
 
-      const upgradeTime = getUpgradeTime(building, building.activeUpgrade.targetLevel);
+      const isBuildingTypeUpgrade = building.activeUpgrade.axis === BUILDING_TYPE_UPGRADE_AXIS;
+      const upgradeTime = isBuildingTypeUpgrade
+        ? (BUILDING_DEFINITIONS[building.type].upgradeTime ?? 30)
+        : getUpgradeTime(building, building.activeUpgrade.targetLevel);
       const rate = 1 / upgradeTime;
       building.activeUpgrade.constructionProgress += rate * deltaTime;
 
       if (building.activeUpgrade.constructionProgress >= 1.0) {
-        // Complete the upgrade
         const axis = building.activeUpgrade.axis;
-        building.upgradeLevels[axis] = building.activeUpgrade.targetLevel;
-        building.activeUpgrade = null;
 
+        if (isBuildingTypeUpgrade) {
+          // Building-type transformation: change the building type
+          const def = BUILDING_DEFINITIONS[building.type];
+          if (def.upgradesTo) {
+            building.type = def.upgradesTo;
+          }
+        } else {
+          // Standard axis upgrade: increment the level
+          building.upgradeLevels[axis] = building.activeUpgrade.targetLevel;
+        }
+
+        building.activeUpgrade = null;
         this.onUpgradeComplete?.(building, axis);
         this.sendBuilderHome(builder);
         this.builderAssignments.delete(buildingId);
