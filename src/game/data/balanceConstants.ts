@@ -239,6 +239,33 @@ export let WILD_ANIMAL_SCALE_RABBIT = 0.30;
 export let WILD_ANIMAL_SCALE_MOUNTAIN_GOAT = 0.12;
 export let WILD_ANIMAL_SCALE_FISH = 0.30;
 
+/** Bird flock rendering */
+export let BIRD_MODEL_SCALE = 0.25;
+export let BIRD_FLOCK_COUNT = 5;
+export let BIRD_MIN_PER_FLOCK = 3;
+export let BIRD_MAX_PER_FLOCK = 8;
+export let BIRD_FLOCK_SPREAD = 2.0;
+export let BIRD_MIN_HEIGHT = 6;
+export let BIRD_MAX_HEIGHT = 12;
+export let BIRD_MIN_SPEED = 1.5;
+export let BIRD_MAX_SPEED = 3.0;
+export let BIRD_WING_FLAP_FREQ = 6.0;
+export let BIRD_WING_FLAP_AMPLITUDE = 0.4;
+export let BIRD_WRAP_DISTANCE = 20;
+export let BIRD_NIGHTNESS_FADE_START = 0.5;
+export let BIRD_NIGHTNESS_FADE_END = 0.7;
+
+/** Bee rendering near flowers */
+export let BEE_MODEL_SCALE = 0.08;
+export let BEE_MAX_COUNT_DESKTOP = 25;
+export let BEE_MAX_COUNT_MOBILE = 15;
+export let BEE_WING_FLAP_FREQ = 20.0;
+export let BEE_WING_FLAP_AMPLITUDE = 0.3;
+export let BEE_WANDER_RADIUS = 0.5;
+export let BEE_HOVER_HEIGHT = 0.2;
+export let BEE_NIGHTNESS_FADE_START = 0.3;
+export let BEE_NIGHTNESS_FADE_END = 0.5;
+
 /** Grassland flower patch placement */
 export let FLOWER_PATCHES_MIN = 3;
 export let FLOWER_PATCHES_MAX = 6;
@@ -403,6 +430,13 @@ export interface BalanceConfigOverrides {
     flowerPatchesMin?: number; flowerPatchesMax?: number;
     flowerPatchScaleMin?: number; flowerPatchScaleMax?: number;
     flowerPatchSpread?: number;
+    birdScale?: number; birdFlockCount?: number;
+    birdMinPerFlock?: number; birdMaxPerFlock?: number;
+    birdMinHeight?: number; birdMaxHeight?: number;
+    birdWingFlapFreq?: number; birdWingFlapAmplitude?: number;
+    beeScale?: number; beeMaxCountDesktop?: number; beeMaxCountMobile?: number;
+    beeWingFlapFreq?: number; beeWingFlapAmplitude?: number;
+    beeWanderRadius?: number; beeHoverHeight?: number;
   };
   marketplace?: {
     fee?: number; tradeCooldown?: number; maxTradeSize?: number;
@@ -504,6 +538,21 @@ export function applyBalanceOverrides(config: BalanceConfigOverrides): void {
   if (config.ambientLife?.flowerPatchScaleMin !== undefined) FLOWER_PATCH_SCALE_MIN = config.ambientLife.flowerPatchScaleMin;
   if (config.ambientLife?.flowerPatchScaleMax !== undefined) FLOWER_PATCH_SCALE_MAX = config.ambientLife.flowerPatchScaleMax;
   if (config.ambientLife?.flowerPatchSpread !== undefined) FLOWER_PATCH_SPREAD = config.ambientLife.flowerPatchSpread;
+  if (config.ambientLife?.birdScale !== undefined) BIRD_MODEL_SCALE = config.ambientLife.birdScale;
+  if (config.ambientLife?.birdFlockCount !== undefined) BIRD_FLOCK_COUNT = config.ambientLife.birdFlockCount;
+  if (config.ambientLife?.birdMinPerFlock !== undefined) BIRD_MIN_PER_FLOCK = config.ambientLife.birdMinPerFlock;
+  if (config.ambientLife?.birdMaxPerFlock !== undefined) BIRD_MAX_PER_FLOCK = config.ambientLife.birdMaxPerFlock;
+  if (config.ambientLife?.birdMinHeight !== undefined) BIRD_MIN_HEIGHT = config.ambientLife.birdMinHeight;
+  if (config.ambientLife?.birdMaxHeight !== undefined) BIRD_MAX_HEIGHT = config.ambientLife.birdMaxHeight;
+  if (config.ambientLife?.birdWingFlapFreq !== undefined) BIRD_WING_FLAP_FREQ = config.ambientLife.birdWingFlapFreq;
+  if (config.ambientLife?.birdWingFlapAmplitude !== undefined) BIRD_WING_FLAP_AMPLITUDE = config.ambientLife.birdWingFlapAmplitude;
+  if (config.ambientLife?.beeScale !== undefined) BEE_MODEL_SCALE = config.ambientLife.beeScale;
+  if (config.ambientLife?.beeMaxCountDesktop !== undefined) BEE_MAX_COUNT_DESKTOP = config.ambientLife.beeMaxCountDesktop;
+  if (config.ambientLife?.beeMaxCountMobile !== undefined) BEE_MAX_COUNT_MOBILE = config.ambientLife.beeMaxCountMobile;
+  if (config.ambientLife?.beeWingFlapFreq !== undefined) BEE_WING_FLAP_FREQ = config.ambientLife.beeWingFlapFreq;
+  if (config.ambientLife?.beeWingFlapAmplitude !== undefined) BEE_WING_FLAP_AMPLITUDE = config.ambientLife.beeWingFlapAmplitude;
+  if (config.ambientLife?.beeWanderRadius !== undefined) BEE_WANDER_RADIUS = config.ambientLife.beeWanderRadius;
+  if (config.ambientLife?.beeHoverHeight !== undefined) BEE_HOVER_HEIGHT = config.ambientLife.beeHoverHeight;
   // Marketplace
   if (config.marketplace?.fee !== undefined) MARKETPLACE_FEE = config.marketplace.fee;
   if (config.marketplace?.tradeCooldown !== undefined) MARKETPLACE_TRADE_COOLDOWN = config.marketplace.tradeCooldown;
@@ -619,6 +668,29 @@ export function resetBalanceDefaults(): void {
   FLOWER_PATCH_SCALE_MIN = 3.0;
   FLOWER_PATCH_SCALE_MAX = 5.0;
   FLOWER_PATCH_SPREAD = 0.45;
+  BIRD_MODEL_SCALE = 0.25;
+  BIRD_FLOCK_COUNT = 5;
+  BIRD_MIN_PER_FLOCK = 3;
+  BIRD_MAX_PER_FLOCK = 8;
+  BIRD_FLOCK_SPREAD = 2.0;
+  BIRD_MIN_HEIGHT = 6;
+  BIRD_MAX_HEIGHT = 12;
+  BIRD_MIN_SPEED = 1.5;
+  BIRD_MAX_SPEED = 3.0;
+  BIRD_WING_FLAP_FREQ = 6.0;
+  BIRD_WING_FLAP_AMPLITUDE = 0.4;
+  BIRD_WRAP_DISTANCE = 20;
+  BIRD_NIGHTNESS_FADE_START = 0.5;
+  BIRD_NIGHTNESS_FADE_END = 0.7;
+  BEE_MODEL_SCALE = 0.08;
+  BEE_MAX_COUNT_DESKTOP = 25;
+  BEE_MAX_COUNT_MOBILE = 15;
+  BEE_WING_FLAP_FREQ = 20.0;
+  BEE_WING_FLAP_AMPLITUDE = 0.3;
+  BEE_WANDER_RADIUS = 0.5;
+  BEE_HOVER_HEIGHT = 0.2;
+  BEE_NIGHTNESS_FADE_START = 0.3;
+  BEE_NIGHTNESS_FADE_END = 0.5;
   // Marketplace
   MARKETPLACE_BASE_VALUES = {
     wood: 2, stone: 3, grain: 2, fish: 3,
