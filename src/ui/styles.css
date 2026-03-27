@@ -1752,8 +1752,7 @@ html[data-theme="night"] .state-destroyed {
   background: linear-gradient(90deg, #2e7d32, #43a047);
 }
 
-.info-upgrade-btn,
-.info-building-upgrade-btn {
+.info-upgrade-btn {
   width: 100%;
   padding: 8px 12px;
   margin-top: 6px;
@@ -1766,13 +1765,11 @@ html[data-theme="night"] .state-destroyed {
   cursor: pointer;
 }
 
-.info-upgrade-btn:active,
-.info-building-upgrade-btn:active {
+.info-upgrade-btn:active {
   background: #1b5e20;
 }
 
-.info-upgrade-btn:disabled,
-.info-building-upgrade-btn:disabled {
+.info-upgrade-btn:disabled {
   background: #666;
   cursor: not-allowed;
 }

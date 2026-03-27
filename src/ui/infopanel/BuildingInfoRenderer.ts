@@ -329,7 +329,7 @@ export function generateInfoHTML(building: Building, getGame: () => Game, isDesk
     const capacity = def.populationCapacity;
     const totalCap = popMgr.getCapacity(playerId);
     const currentPop = popMgr.getCurrentPopulation(playerId);
-    const available = popMgr.getAvailableSlots(playerId);
+    const available = Math.max(0, totalCap - currentPop);
     html += `<div class="info-section">
       <div class="info-section-label">${icon('people')} Population</div>
       <div class="info-row">
@@ -791,7 +791,7 @@ export function generateInfoHTML(building: Building, getGame: () => Game, isDesk
       const castle = getGame().getGameState().findCastle(building.playerId);
       const canAfford = castle ? def.upgradeCost.every((c) => getInventoryAmount(castle.outputInventory, c.resource) >= c.amount) : false;
       const costStr = def.upgradeCost.map((c) => `${c.amount} ${RESOURCE_PROPERTIES[c.resource].label}`).join(', ');
-      html += `<button class="info-building-upgrade-btn" data-building-id="${building.id}"${canAfford ? '' : ' disabled'}>Upgrade to ${targetDef.label} (${costStr})</button>`;
+      html += `<button class="info-upgrade-btn info-building-upgrade-btn" data-building-id="${building.id}"${canAfford ? '' : ' disabled'}>Upgrade to ${targetDef.label} (${costStr})</button>`;
     }
     html += '</div>';
   }

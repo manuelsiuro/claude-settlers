@@ -289,7 +289,7 @@ export function wireGameCallbacks(params: WireCallbacksParams): void {
       particleSystem.emitBurst(x, y + 0.3, z, ParticleEffect.CompletionFlash, 20);
       if (building.playerId === humanPlayerId) {
         const def = BUILDING_DEFINITIONS[building.type];
-        getNotification()?.({ type: 'building_complete', message: `House upgraded to ${def.label}!` });
+        getNotification()?.({ type: 'building_complete', message: `Upgraded to ${def.label}!` });
       }
     }
   };

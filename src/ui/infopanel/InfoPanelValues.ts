@@ -223,9 +223,8 @@ export function updateInfoValues(
     const playerId = building.playerId;
     const totalCap = popMgr.getCapacity(playerId);
     const currentPop = popMgr.getCurrentPopulation(playerId);
-    const available = popMgr.getAvailableSlots(playerId);
     updater.setText('pop-current', `${currentPop} / ${totalCap}`);
-    updater.setText('pop-available', `${available}`);
+    updater.setText('pop-available', `${Math.max(0, totalCap - currentPop)}`);
   }
 
   // Building-type upgrade progress (house upgrades)

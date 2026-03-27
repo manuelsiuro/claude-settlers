@@ -37,6 +37,7 @@ let getGame: () => Game;
 let closeBuildPanelFn: () => void;
 let closeStatsPanelFn: () => void;
 let selectedBuildingId: string | null = null;
+let lastTitleType: string | null = null;
 
 /** Mobile bottom sheet controller (null on desktop) */
 let bottomSheet: BottomSheetController | null = null;
@@ -255,6 +256,7 @@ export function initInfoPanel(
 /** Show the info panel for a building and start live updates */
 export function showInfoPanel(building: Building): void {
   selectedBuildingId = building.id;
+  lastTitleType = building.type;
   const def = BUILDING_DEFINITIONS[building.type];
   infoPanelTitle.innerHTML = `${buildingIcon(building.type, 24)} ${def.label}`;
   updater.reset();
@@ -277,9 +279,11 @@ export function showInfoPanel(building: Building): void {
   infoPanelUpdateInterval = setInterval(() => {
     const current = getGame().getGameState().getBuilding(building.id);
     if (current) {
-      // Update title in case building type changed (house upgrade)
-      const currentDef = BUILDING_DEFINITIONS[current.type];
-      infoPanelTitle.innerHTML = `${buildingIcon(current.type, 24)} ${currentDef.label}`;
+      if (current.type !== lastTitleType) {
+        lastTitleType = current.type;
+        const currentDef = BUILDING_DEFINITIONS[current.type];
+        infoPanelTitle.innerHTML = `${buildingIcon(current.type, 24)} ${currentDef.label}`;
+      }
       updateBuilding(current);
     } else {
       closeInfoPanel();

@@ -86,6 +86,20 @@ export function formatProductionSummary(def: BuildingDefinition): string {
 }
 
 // ============================================================
+// Shared section formatters
+// ============================================================
+
+function formatMilInfoSection(def: BuildingDefinition): string {
+  if (def.knightSlots <= 0) return '';
+  return `<div class="build-item-section"><span class="build-item-section-label">Military</span><div class="build-item-section-content"><span class="build-item-military">${def.knightSlots} knight slot${def.knightSlots > 1 ? 's' : ''} \u00b7 range ${def.influenceRadius}</span></div></div>`;
+}
+
+function formatPopInfoSection(def: BuildingDefinition): string {
+  if (def.populationCapacity <= 0) return '';
+  return `<div class="build-item-section"><span class="build-item-section-label">Population</span><div class="build-item-section-content"><span class="build-item-population">+${def.populationCapacity} residents</span></div></div>`;
+}
+
+// ============================================================
 // Tooltip
 // ============================================================
 
@@ -95,12 +109,6 @@ export function generateTooltipContent(
   available: Partial<Record<ResourceType, number>>,
 ): string {
   const prodSummary = formatProductionSummary(def);
-  const milInfo = def.knightSlots > 0
-    ? `<div class="build-item-section"><span class="build-item-section-label">Military</span><div class="build-item-section-content"><span class="build-item-military">${def.knightSlots} knight slot${def.knightSlots > 1 ? 's' : ''} \u00b7 range ${def.influenceRadius}</span></div></div>`
-    : '';
-  const popInfo = def.populationCapacity > 0
-    ? `<div class="build-item-section"><span class="build-item-section-label">Population</span><div class="build-item-section-content"><span class="build-item-population">+${def.populationCapacity} residents</span></div></div>`
-    : '';
   return `
     <div class="build-tooltip-name">${def.label}</div>
     <div class="build-tooltip-desc">${def.description}</div>
@@ -108,9 +116,9 @@ export function generateTooltipContent(
       <span class="build-item-section-label">Cost</span>
       <div class="build-item-section-content">${formatCost(def, available)}</div>
     </div>
-    ${popInfo}
+    ${formatPopInfoSection(def)}
     ${prodSummary ? `<div class="build-item-section"><span class="build-item-section-label">Production</span><div class="build-item-section-content">${prodSummary}</div></div>` : ''}
-    ${milInfo}
+    ${formatMilInfoSection(def)}
   `;
 }
 
@@ -187,13 +195,6 @@ function generateExpandedDetailHTML(
   affordable: boolean,
 ): string {
   const prodSummary = formatProductionSummary(def);
-  const milInfo = def.knightSlots > 0
-    ? `<div class="build-item-section"><span class="build-item-section-label">Military</span><div class="build-item-section-content"><span class="build-item-military">${def.knightSlots} knight slot${def.knightSlots > 1 ? 's' : ''} \u00b7 range ${def.influenceRadius}</span></div></div>`
-    : '';
-
-  const popInfo = def.populationCapacity > 0
-    ? `<div class="build-item-section"><span class="build-item-section-label">Population</span><div class="build-item-section-content"><span class="build-item-population">+${def.populationCapacity} residents</span></div></div>`
-    : '';
 
   return `<div class="build-tile-expanded">
     <div class="build-tile-expanded-name">${buildingIcon(def.type, 24)} ${def.label}</div>
@@ -202,9 +203,9 @@ function generateExpandedDetailHTML(
       <span class="build-item-section-label">Cost</span>
       <div class="build-item-section-content">${formatCost(def, available)}</div>
     </div>
-    ${popInfo}
+    ${formatPopInfoSection(def)}
     ${prodSummary ? `<div class="build-item-section"><span class="build-item-section-label">Production</span><div class="build-item-section-content">${prodSummary}</div></div>` : ''}
-    ${milInfo}
+    ${formatMilInfoSection(def)}
     <button class="build-tile-place-btn" data-building-type="${def.type}" ${!affordable ? 'disabled' : ''}>Place ${def.label}</button>
   </div>`;
 }
