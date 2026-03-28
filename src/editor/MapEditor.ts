@@ -25,6 +25,13 @@ import type { BuildingType } from '../game/BuildingType';
 
 const PLAYER_COLORS = [0x4488ff, 0xff4444, 0x44cc44, 0xffcc00];
 
+function generateId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
 /**
  * Lightweight Three.js editor scene — no game managers/logic.
  * Reuses MapRenderer, HexPicker, and CameraController.
@@ -117,7 +124,7 @@ export class MapEditor implements CameraHost {
     // Start with a blank 32x32 grid
     this.grid = this.createBlankGrid(32);
     this.roadNetwork = new RoadNetwork(this.grid);
-    this.mapId = crypto.randomUUID();
+    this.mapId = generateId();
     this.createdAtTime = Date.now();
 
     // Pointer events
@@ -305,7 +312,7 @@ export class MapEditor implements CameraHost {
     this.startingPositions = [];
     this.clearEditorBuildings();
     this.roadNetwork = new RoadNetwork(this.grid);
-    this.mapId = crypto.randomUUID();
+    this.mapId = generateId();
     this.mapName = 'Untitled Map';
     this.mapDescription = '';
     this.balanceConfig = undefined;
@@ -326,7 +333,7 @@ export class MapEditor implements CameraHost {
     this.startingPositions = [];
     this.clearEditorBuildings();
     this.roadNetwork = new RoadNetwork(this.grid);
-    this.mapId = crypto.randomUUID();
+    this.mapId = generateId();
     this.mapName = 'Untitled Map';
     this.mapDescription = '';
     this.balanceConfig = undefined;

@@ -302,7 +302,8 @@ export function closeInfoPanel(): void {
     updater.reset();
     resetTradeState();
     if (!isAttackModeActive()) {
-      const selection = getGame().getSelectionController();
+      const game = typeof getGame === 'function' ? getGame() : undefined;
+      const selection = game?.getSelectionController();
       if (selection?.selected) {
         selection.deselect();
       }

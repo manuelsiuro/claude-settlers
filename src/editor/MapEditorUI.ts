@@ -1,6 +1,7 @@
-import { icon } from '../ui/icons';
+import { icon, buildingIcon } from '../ui/icons';
 import { TerrainType } from '../game/TerrainType';
 import { BuildingType, BUILDING_DEFINITIONS } from '../game/BuildingType';
+import type { BuildingCategory } from '../game/BuildingType';
 import { MapEditor } from './MapEditor';
 import { MapEditorTools } from './MapEditorTools';
 import { EditorTool, createDefaultEditorState } from './MapEditorState';
@@ -32,6 +33,16 @@ const TOOL_DEFS: { tool: EditorTool; label: string; icon: string; shortcut: stri
   { tool: EditorTool.Eraser, label: 'Eraser', icon: 'delete', shortcut: '9' },
 ];
 
+const CATEGORY_TABS: { key: string; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'core', label: 'Core' },
+  { key: 'gathering', label: 'Gathering' },
+  { key: 'processing', label: 'Processing' },
+  { key: 'military', label: 'Military' },
+  { key: 'logistics', label: 'Logistics' },
+  { key: 'housing', label: 'Housing' },
+];
+
 /**
  * Full editor UI — toolbar, panels, dialogs, keyboard shortcuts.
  */
@@ -49,11 +60,20 @@ export class MapEditorUI {
   private brushSizeEl: HTMLElement | null = null;
   private nameInput: HTMLInputElement | null = null;
   private descInput: HTMLTextAreaElement | null = null;
+  private buildingFilterCategory = 'all';
 
   /** Callback to go back to setup screen */
   onBack: (() => void) | null = null;
   /** Callback to play the current map */
   onPlay: ((mapData: MapData) => void) | null = null;
+
+  private devToolsOutsideClickHandler = (e: MouseEvent): void => {
+    const btn = this.rootEl.querySelector('#editor-devtools-btn');
+    const menu = this.rootEl.querySelector('#editor-devtools-menu');
+    if (btn && menu && !btn.contains(e.target as Node) && !menu.contains(e.target as Node)) {
+      menu.classList.add('hidden');
+    }
+  };
 
   constructor(container: HTMLElement) {
     this.state = createDefaultEditorState();
@@ -89,6 +109,7 @@ export class MapEditorUI {
     this.wireToolbar();
     this.wirePropertiesPanel();
     this.wireTopBar();
+    this.wireDevTools();
     this.wireKeyboard();
     this.updateActiveToolUI();
   }
@@ -103,6 +124,7 @@ export class MapEditorUI {
     this.editor.dispose();
     this.rootEl.remove();
     window.removeEventListener('keydown', this.keyHandler);
+    document.removeEventListener('click', this.devToolsOutsideClickHandler);
   }
 
   /** Get the MapEditor instance */
@@ -119,6 +141,14 @@ export class MapEditorUI {
         <span class="map-editor-topbar-title">Map Editor</span>
         <span class="map-editor-map-name" id="editor-map-name-display">Untitled Map</span>
         <div class="map-editor-topbar-spacer"></div>
+        <div class="editor-devtools-wrapper">
+          <button class="btn-outlined btn-sm" id="editor-devtools-btn">${icon('settings')} Dev Tools</button>
+          <div class="editor-devtools-menu hidden" id="editor-devtools-menu">
+            <button class="editor-devtools-item" data-tool="audio">${icon('volume_up')} Audio Generator</button>
+            <button class="editor-devtools-item" data-tool="thumbnail">${icon('construction')} Thumbnail Generator</button>
+            <button class="editor-devtools-item" data-tool="balance">${icon('bar_chart')} Balance Tool</button>
+          </div>
+        </div>
         <button class="btn-outlined btn-sm" id="editor-import-btn">Import</button>
         <button class="btn-outlined btn-sm" id="editor-export-btn">Export</button>
         <button class="btn-filled btn-sm" id="editor-save-btn">${icon('save')} Save</button>
@@ -160,11 +190,7 @@ export class MapEditorUI {
 
           <div class="map-editor-prop-section" id="editor-building-section" style="display:none;">
             <div class="map-editor-prop-title">Building</div>
-            <select id="editor-building-select" class="map-editor-select">
-              ${Object.entries(BUILDING_DEFINITIONS)
-                .map(([type, def]) => `<option value="${type}">${def.label}</option>`)
-                .join('')}
-            </select>
+            <div id="editor-building-catalog">${this.buildBuildingCatalogHTML('all')}</div>
           </div>
 
           <div class="map-editor-prop-section" id="editor-road-hint-section" style="display:none;">
@@ -234,6 +260,57 @@ export class MapEditorUI {
     `;
   }
 
+  // ─── Building Catalog ─────────────────────────────────────────────────
+
+  private buildBuildingCatalogHTML(category: string): string {
+    const tabs = CATEGORY_TABS.map(
+      (t) =>
+        `<button class="editor-building-tab${t.key === category ? ' active' : ''}" data-cat="${t.key}">${t.label}</button>`,
+    ).join('');
+
+    // Get buildings filtered by category, sorted by tier
+    let buildings: { type: string; label: string; tier: number }[];
+    if (category === 'all') {
+      buildings = Object.entries(BUILDING_DEFINITIONS).map(([type, def]) => ({
+        type,
+        label: def.label,
+        tier: def.tier,
+      }));
+    } else {
+      buildings = Object.entries(BUILDING_DEFINITIONS)
+        .filter(([, def]) => def.category === (category as BuildingCategory))
+        .map(([type, def]) => ({ type, label: def.label, tier: def.tier }));
+    }
+    buildings.sort((a, b) => a.tier - b.tier || a.label.localeCompare(b.label));
+
+    // Group by tier
+    const tiers = new Map<number, typeof buildings>();
+    for (const b of buildings) {
+      if (!tiers.has(b.tier)) tiers.set(b.tier, []);
+      tiers.get(b.tier)!.push(b);
+    }
+
+    const tierLabels: Record<number, string> = { 0: 'Core', 1: 'Basic', 2: 'Advanced', 3: 'Specialized' };
+
+    let gridHTML = '';
+    for (const [tier, items] of tiers) {
+      gridHTML += `<div class="editor-building-tier-label"><span class="tier-badge tier-badge-${tier <= 0 ? '1' : tier}">${tier}</span> ${tierLabels[tier] ?? `Tier ${tier}`}</div>`;
+      for (const b of items) {
+        const sel = b.type === this.state.selectedBuildingType ? ' selected' : '';
+        gridHTML += `<button class="editor-building-card${sel}" data-building="${b.type}" title="${b.label}">${buildingIcon(b.type, 40)}<span class="editor-building-card-name">${b.label}</span></button>`;
+      }
+    }
+
+    return `<div class="editor-building-tabs">${tabs}</div><div class="editor-building-grid">${gridHTML}</div>`;
+  }
+
+  private updateBuildingCatalog(): void {
+    const container = this.rootEl.querySelector('#editor-building-catalog');
+    if (container) {
+      container.innerHTML = this.buildBuildingCatalogHTML(this.buildingFilterCategory);
+    }
+  }
+
   // ─── Wiring ───────────────────────────────────────────────────────────
 
   private wireToolbar(): void {
@@ -266,13 +343,34 @@ export class MapEditorUI {
     }
     this.updateActiveTerrainUI();
 
-    // Building select
-    const buildingSelect = this.rootEl.querySelector('#editor-building-select') as HTMLSelectElement;
-    if (buildingSelect) {
-      buildingSelect.addEventListener('change', () => {
-        this.tools.setState({ selectedBuildingType: buildingSelect.value as BuildingType });
-      });
-    }
+    // Building catalog — event delegation
+    const catalogEl = this.rootEl.querySelector('#editor-building-catalog')!;
+    catalogEl.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+
+      // Category tab click
+      const tab = target.closest<HTMLElement>('.editor-building-tab');
+      if (tab) {
+        this.buildingFilterCategory = tab.dataset.cat ?? 'all';
+        this.updateBuildingCatalog();
+        return;
+      }
+
+      // Building card click
+      const card = target.closest<HTMLElement>('.editor-building-card');
+      if (card) {
+        const type = card.dataset.building as BuildingType;
+        this.tools.setState({ selectedBuildingType: type });
+        // Auto-switch to Building tool
+        if (this.state.tool !== EditorTool.Building) {
+          this.tools.setState({ tool: EditorTool.Building });
+          this.updateActiveToolUI();
+        }
+        // Update selection visual
+        catalogEl.querySelectorAll('.editor-building-card.selected').forEach((el) => el.classList.remove('selected'));
+        card.classList.add('selected');
+      }
+    });
 
     // Brush size
     this.brushSizeEl = this.rootEl.querySelector('#editor-brush-size');
@@ -333,6 +431,35 @@ export class MapEditorUI {
       this.rootEl.querySelector('#editor-map-name-display')!.textContent = this.editor.getMapName();
       this.updateTileCount();
       showSnackbar('New map created', 'success');
+    });
+  }
+
+  private wireDevTools(): void {
+    const btn = this.rootEl.querySelector('#editor-devtools-btn')!;
+    const menu = this.rootEl.querySelector('#editor-devtools-menu')!;
+
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      menu.classList.toggle('hidden');
+    });
+
+    document.addEventListener('click', this.devToolsOutsideClickHandler);
+
+    menu.querySelectorAll<HTMLElement>('.editor-devtools-item').forEach((item) => {
+      item.addEventListener('click', () => {
+        menu.classList.add('hidden');
+        switch (item.dataset.tool) {
+          case 'audio':
+            window.open('http://localhost:7860', '_blank');
+            break;
+          case 'thumbnail':
+            window.open('http://localhost:3001', '_blank');
+            break;
+          case 'balance':
+            window.open('/tools/balance-tool.html', '_blank');
+            break;
+        }
+      });
     });
   }
 

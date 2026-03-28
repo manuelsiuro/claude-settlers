@@ -106,7 +106,9 @@ export function importMapFromFile(): Promise<MapData | null> {
             return;
           }
           // Assign new ID to avoid collisions
-          data.id = crypto.randomUUID();
+          data.id = (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
+            ? crypto.randomUUID()
+            : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
           resolve(data);
         } catch {
           resolve(null);
