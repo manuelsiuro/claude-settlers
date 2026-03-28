@@ -114,12 +114,18 @@ export interface AudioSettings {
   masterVolume: number;
   sfxVolume: number;
   musicVolume: number;
+  spatialVolume: number;
+  ambientVolume: number;
   muted: boolean;
+  spatialAudio: boolean;
 }
 
 export const DEFAULT_AUDIO: AudioSettings = {
   masterVolume: 0.5,
   sfxVolume: 0.8,
   musicVolume: 0.3,
+  spatialVolume: 0.6,
+  ambientVolume: 0.4,
   muted: false,
+  spatialAudio: true,
 };

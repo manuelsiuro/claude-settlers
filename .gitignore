@@ -52,3 +52,10 @@ ios/
 
 # Tauri build output
 src-tauri/target/
+
+# Audio generator tool
+tools/audio-generator/venv/
+tools/audio-generator/ezaudio_repo/
+tools/audio-generator/generated/
+tools/audio-generator/accepted/
+tools/audio-generator/ckpts/

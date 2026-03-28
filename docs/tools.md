@@ -1,6 +1,6 @@
 # Developer Tools
 
-Feudal Realm Manager ships two standalone browser tools for game tuning and asset management. Neither requires a build step — they run as plain HTML with CDN dependencies.
+Feudal Realm Manager ships three standalone tools for game tuning, asset management, and audio generation. The Balance Tool and Thumbnail Generator are browser-based (plain HTML with CDN dependencies). The Audio Generator is a Python/Gradio application.
 
 ---
 
@@ -198,6 +198,48 @@ These are called across 12 UI files: BuildPanel, InfoPanel, StatsPanel, Dashboar
 - After creating or modifying a 3D model in Blender and exporting to `public/models/`
 - After adding a new building, unit, or resource type to the game
 - After changing the rendering config (lighting, camera, materials)
+
+---
+
+## 3. Audio Generator
+
+A Python/Gradio application for generating game sound effects and ambient audio using AI models running locally on your Mac. See **[docs/audio-generator.md](audio-generator.md)** for the full guide.
+
+### Quick Start
+
+```bash
+cd tools/audio-generator
+python3 -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+git clone https://github.com/haidog-yaqub/EzAudio.git ezaudio_repo  # primary model
+pip install -r ezaudio_repo/requirements.txt
+python app.py         # opens Gradio UI at http://localhost:7860
+```
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `tools/audio-generator/app.py` | Gradio UI with 4 tabs (Catalog, Custom, Library, Export) |
+| `tools/audio-generator/data/audio_catalog.json` | 100+ pre-filled prompts for all game sounds |
+| `tools/audio-generator/models/` | Wrappers for EzAudio and MusicGen |
+| `tools/audio-generator/utils/` | Audio processing (trim, normalize, fade, OGG conversion) |
+| `public/audio/manifest.json` | Generated manifest consumed by the game engine |
+
+### Supported Models
+
+| Model | Best For | Speed | License |
+|-------|---------|-------|---------|
+| EzAudio | Sound effects (hyperrealistic) | ~5-15s/10s clip | MIT |
+| MusicGen Small | Ambient music loops | ~10s/clip | CC-BY-NC |
+
+### Workflow
+
+1. Open the Catalog Browser tab — all 100+ game sounds are pre-filled with prompts
+2. Generate audio (single or batch per category)
+3. Preview, accept, or reject and regenerate
+4. Export accepted audio to `public/audio/` with one click
+5. The game's `SpatialAudioEngine` auto-discovers new sounds from `manifest.json` — zero code changes
 
 ---
 

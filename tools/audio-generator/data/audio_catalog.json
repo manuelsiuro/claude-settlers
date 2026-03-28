@@ -1,0 +1,931 @@
+{
+  "version": 1,
+  "entries": {
+    "buildings/castle_ambient": {
+      "prompt": "medieval castle courtyard ambience, distant voices, stone echo, flags flapping in wind",
+      "duration": 8.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_ambient",
+      "gameType": "castle",
+      "gameTypeKind": "building",
+      "status": "pending"
+    },
+    "buildings/woodcutter_hut_production": {
+      "prompt": "axe chopping wood rhythmically, tree being cut, wood splitting sounds",
+      "duration": 4.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_production",
+      "gameType": "woodcutter_hut",
+      "gameTypeKind": "building",
+      "status": "pending"
+    },
+    "buildings/forester_hut_production": {
+      "prompt": "digging in soil, planting seedling, gentle rustling of young trees",
+      "duration": 4.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_production",
+      "gameType": "forester_hut",
+      "gameTypeKind": "building",
+      "status": "pending"
+    },
+    "buildings/quarry_production": {
+      "prompt": "stone quarry sounds, pickaxe hitting rock, stone chipping, heavy impacts",
+      "duration": 5.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_production",
+      "gameType": "quarry",
+      "gameTypeKind": "building",
+      "status": "pending"
+    },
+    "buildings/fisherman_hut_production": {
+      "prompt": "fishing by a lake, water splashing, fishing line casting, gentle water lapping",
+      "duration": 5.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_production",
+      "gameType": "fisherman_hut",
+      "gameTypeKind": "building",
+      "status": "pending"
+    },
+    "buildings/guard_hut_ambient": {
+      "prompt": "guard post ambience, metal armor clinking, footsteps on stone, distant watchman",
+      "duration": 6.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_ambient",
+      "gameType": "guard_hut",
+      "gameTypeKind": "building",
+      "status": "pending"
+    },
+    "buildings/sawmill_production": {
+      "prompt": "circular saw cutting timber, wood sawing in workshop, rhythmic sawmill sounds, sawdust",
+      "duration": 4,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_production",
+      "gameType": "sawmill",
+      "gameTypeKind": "building",
+      "status": "accepted",
+      "_generated_path": "/Users/manuel.siuro/ClaudeProjects/claude-settlers/tools/audio-generator/generated/buildings_sawmill_production_1774649048.wav"
+    },
+    "buildings/farm_production": {
+      "prompt": "farming sounds, scythe cutting grain, wheat rustling, harvest field ambience",
+      "duration": 5,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_production",
+      "gameType": "farm",
+      "gameTypeKind": "building",
+      "status": "generated",
+      "_generated_path": "/Users/manuel.siuro/ClaudeProjects/claude-settlers/tools/audio-generator/generated/buildings_farm_production_1774631517.wav"
+    },
+    "buildings/geologist_hut_production": {
+      "prompt": "geologist tapping rocks with small hammer, examining stones, scratching samples",
+      "duration": 4.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_production",
+      "gameType": "geologist_hut",
+      "gameTypeKind": "building",
+      "status": "pending"
+    },
+    "buildings/iron_mine_production": {
+      "prompt": "underground mine sounds, pickaxe on iron ore, mining cart wheels, echo in tunnel",
+      "duration": 5.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_production",
+      "gameType": "iron_mine",
+      "gameTypeKind": "building",
+      "status": "pending"
+    },
+    "buildings/coal_mine_production": {
+      "prompt": "coal mining underground, pick hitting coal seam, rubble falling, mine echo",
+      "duration": 5,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_production",
+      "gameType": "coal_mine",
+      "gameTypeKind": "building",
+      "status": "generated",
+      "_generated_path": "/Users/manuel.siuro/ClaudeProjects/claude-settlers/tools/audio-generator/generated/buildings_coal_mine_production_1774649009.wav"
+    },
+    "buildings/gold_mine_production": {
+      "prompt": "gold mining sounds, careful chiseling, precious metal extraction, underground echo",
+      "duration": 5,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_production",
+      "gameType": "gold_mine",
+      "gameTypeKind": "building",
+      "status": "generated",
+      "_generated_path": "/Users/manuel.siuro/ClaudeProjects/claude-settlers/tools/audio-generator/generated/buildings_gold_mine_production_1774647463.wav"
+    },
+    "buildings/stone_mine_production": {
+      "prompt": "stone mining quarry, heavy hammer on stone, rock cracking, rubble sliding",
+      "duration": 5.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_production",
+      "gameType": "stone_mine",
+      "gameTypeKind": "building",
+      "status": "pending"
+    },
+    "buildings/watchtower_ambient": {
+      "prompt": "watchtower guard post, wind at height, wooden creaking, distant horn signal",
+      "duration": 6.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_ambient",
+      "gameType": "watchtower",
+      "gameTypeKind": "building",
+      "status": "pending"
+    },
+    "buildings/windmill_production": {
+      "prompt": "windmill sails turning, grain grinding millstone, mechanical creaking, flour dust",
+      "duration": 5.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_production",
+      "gameType": "windmill",
+      "gameTypeKind": "building",
+      "status": "pending"
+    },
+    "buildings/bakery_production": {
+      "prompt": "bakery sounds, bread baking in stone oven, fire crackling, dough kneading",
+      "duration": 5.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_production",
+      "gameType": "bakery",
+      "gameTypeKind": "building",
+      "status": "pending"
+    },
+    "buildings/pig_farm_production": {
+      "prompt": "pig farm sounds, pigs oinking and snorting, feeding trough, straw rustling",
+      "duration": 5.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_production",
+      "gameType": "pig_farm",
+      "gameTypeKind": "building",
+      "status": "pending"
+    },
+    "buildings/slaughterhouse_production": {
+      "prompt": "butcher workshop sounds, cleaver on cutting board, meat processing, wooden block",
+      "duration": 4.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_production",
+      "gameType": "slaughterhouse",
+      "gameTypeKind": "building",
+      "status": "pending"
+    },
+    "buildings/iron_smelter_production": {
+      "prompt": "iron smelting furnace, bubbling molten metal, forge bellows pumping, hot coals hissing",
+      "duration": 5.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_production",
+      "gameType": "iron_smelter",
+      "gameTypeKind": "building",
+      "status": "pending"
+    },
+    "buildings/toolmaker_workshop_production": {
+      "prompt": "craftsman workshop, small hammer on metal, filing and grinding tools, workbench sounds",
+      "duration": 4.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_production",
+      "gameType": "toolmaker_workshop",
+      "gameTypeKind": "building",
+      "status": "pending"
+    },
+    "buildings/goldsmith_mint_production": {
+      "prompt": "goldsmith workshop, precise hammering on gold, small furnace, delicate metalwork",
+      "duration": 4.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_production",
+      "gameType": "goldsmith_mint",
+      "gameTypeKind": "building",
+      "status": "pending"
+    },
+    "buildings/blacksmith_armory_production": {
+      "prompt": "blacksmith forge, hammer striking hot iron on anvil, sparks flying, bellows pumping",
+      "duration": 5.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_production",
+      "gameType": "blacksmith_armory",
+      "gameTypeKind": "building",
+      "status": "pending"
+    },
+    "buildings/barracks_ambient": {
+      "prompt": "military barracks, soldiers training, sword practice, armor clanking, marching drills",
+      "duration": 6.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_ambient",
+      "gameType": "barracks",
+      "gameTypeKind": "building",
+      "status": "pending"
+    },
+    "buildings/warehouse_ambient": {
+      "prompt": "warehouse storage room, wooden crates being moved, barrel rolling, quiet storage",
+      "duration": 5.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_ambient",
+      "gameType": "warehouse",
+      "gameTypeKind": "building",
+      "status": "pending"
+    },
+    "buildings/harbor_ambient": {
+      "prompt": "harbor dock sounds, water lapping against wood, boats creaking, seagulls, rope pulleys",
+      "duration": 6.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_ambient",
+      "gameType": "harbor",
+      "gameTypeKind": "building",
+      "status": "pending"
+    },
+    "buildings/well_ambient": {
+      "prompt": "stone well, bucket chain creaking, water splashing in deep well, pulley mechanism",
+      "duration": 4.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_ambient",
+      "gameType": "well",
+      "gameTypeKind": "building",
+      "status": "pending"
+    },
+    "buildings/orchard_production": {
+      "prompt": "orchard fruit picking, climbing ladder, apples dropping into basket, tree branches",
+      "duration": 5.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_production",
+      "gameType": "orchard",
+      "gameTypeKind": "building",
+      "status": "pending"
+    },
+    "buildings/vineyard_production": {
+      "prompt": "vineyard grape harvesting, snipping vines with shears, basket filling, countryside",
+      "duration": 5.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_production",
+      "gameType": "vineyard",
+      "gameTypeKind": "building",
+      "status": "pending"
+    },
+    "buildings/winery_production": {
+      "prompt": "wine cellar sounds, liquid pouring into barrels, cork popping, fermentation bubbles",
+      "duration": 5.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_production",
+      "gameType": "winery",
+      "gameTypeKind": "building",
+      "status": "pending"
+    },
+    "buildings/brewery_production": {
+      "prompt": "brewery sounds, boiling kettle, liquid bubbling, barrel tapping, hop aroma sizzle",
+      "duration": 5.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_production",
+      "gameType": "brewery",
+      "gameTypeKind": "building",
+      "status": "pending"
+    },
+    "buildings/dairy_farm_production": {
+      "prompt": "dairy farm, cow mooing gently, milk pail filling, barn ambience, hay rustling",
+      "duration": 5.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_production",
+      "gameType": "dairy_farm",
+      "gameTypeKind": "building",
+      "status": "pending"
+    },
+    "buildings/cheese_maker_production": {
+      "prompt": "cheese making workshop, stirring curds, pressing cheese wheel, liquid draining",
+      "duration": 4.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_production",
+      "gameType": "cheese_maker_building",
+      "gameTypeKind": "building",
+      "status": "pending"
+    },
+    "buildings/hayfield_production": {
+      "prompt": "hayfield harvesting, scythe cutting hay, dry grass rustling, countryside breeze",
+      "duration": 5.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_production",
+      "gameType": "hayfield",
+      "gameTypeKind": "building",
+      "status": "pending"
+    },
+    "buildings/tannery_production": {
+      "prompt": "leather tannery workshop, scraping hides, water splashing in vats, stretching leather",
+      "duration": 5.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_production",
+      "gameType": "tannery",
+      "gameTypeKind": "building",
+      "status": "pending"
+    },
+    "buildings/weavers_hut_production": {
+      "prompt": "weaving loom sounds, shuttle clicking back and forth, thread spinning, fabric weaving",
+      "duration": 4.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_production",
+      "gameType": "weavers_hut",
+      "gameTypeKind": "building",
+      "status": "pending"
+    },
+    "buildings/charcoal_burner_production": {
+      "prompt": "charcoal kiln burning, smoldering wood, crackling fire, smoke and embers",
+      "duration": 5.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_production",
+      "gameType": "charcoal_burner",
+      "gameTypeKind": "building",
+      "status": "pending"
+    },
+    "buildings/fletchers_workshop_production": {
+      "prompt": "arrow crafting workshop, whittling wood shafts, feather trimming, bowstring tightening",
+      "duration": 4.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_production",
+      "gameType": "fletchers_workshop",
+      "gameTypeKind": "building",
+      "status": "pending"
+    },
+    "buildings/siege_workshop_production": {
+      "prompt": "siege workshop, heavy timber construction, rope tightening, large wooden machines",
+      "duration": 5.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_production",
+      "gameType": "siege_workshop",
+      "gameTypeKind": "building",
+      "status": "pending"
+    },
+    "buildings/stable_ambient": {
+      "prompt": "horse stable sounds, horses neighing and snorting, hooves on straw, hay munching",
+      "duration": 5.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_ambient",
+      "gameType": "stable",
+      "gameTypeKind": "building",
+      "status": "pending"
+    },
+    "buildings/cattle_ranch_production": {
+      "prompt": "cattle ranch, cows lowing, fence gate creaking, herding sounds, open pasture",
+      "duration": 5.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_production",
+      "gameType": "cattle_ranch",
+      "gameTypeKind": "building",
+      "status": "pending"
+    },
+    "buildings/sheep_farm_production": {
+      "prompt": "sheep farm, sheep baaing, wool shearing with scissors, shepherd whistle",
+      "duration": 5,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_production",
+      "gameType": "sheep_farm",
+      "gameTypeKind": "building",
+      "status": "generated",
+      "_generated_path": "/Users/manuel.siuro/ClaudeProjects/claude-settlers/tools/audio-generator/generated/buildings_sheep_farm_production_1774627014.wav"
+    },
+    "buildings/butchery_production": {
+      "prompt": "butcher shop, meat cleaver chopping, cutting board sounds, knife sharpening",
+      "duration": 4,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_production",
+      "gameType": "butchery",
+      "gameTypeKind": "building",
+      "status": "generated",
+      "_generated_path": "/Users/manuel.siuro/ClaudeProjects/claude-settlers/tools/audio-generator/generated/buildings_butchery_production_1774630792.wav"
+    },
+    "buildings/fortress_ambient": {
+      "prompt": "fortress military base, soldiers marching, heavy armor, war drums in distance, flags",
+      "duration": 6.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_ambient",
+      "gameType": "fortress",
+      "gameTypeKind": "building",
+      "status": "pending"
+    },
+    "buildings/archery_range_production": {
+      "prompt": "archery range, arrows being shot at targets, bowstring release, arrows hitting wood",
+      "duration": 4.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_production",
+      "gameType": "archery_range",
+      "gameTypeKind": "building",
+      "status": "pending"
+    },
+    "buildings/torch_tower_ambient": {
+      "prompt": "burning torch crackling on tower, fire flickering in wind, wooden structure creaking",
+      "duration": 5.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_ambient",
+      "gameType": "torch_tower",
+      "gameTypeKind": "building",
+      "status": "pending"
+    },
+    "buildings/inn_tavern_ambient": {
+      "prompt": "medieval tavern interior, mugs clinking, crowd chatter, laughter, fire crackling",
+      "duration": 6.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_ambient",
+      "gameType": "inn_tavern",
+      "gameTypeKind": "building",
+      "status": "pending"
+    },
+    "buildings/market_ambient": {
+      "prompt": "medieval marketplace, merchants calling, coins jingling, crowd bustle, trading sounds",
+      "duration": 6,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_ambient",
+      "gameType": "market",
+      "gameTypeKind": "building",
+      "status": "generated",
+      "_generated_path": "/Users/manuel.siuro/ClaudeProjects/claude-settlers/tools/audio-generator/generated/buildings_market_ambient_1774626969.wav"
+    },
+    "buildings/hunting_lodge_production": {
+      "prompt": "hunter in forest, stalking through undergrowth, bow drawing, arrow release, game falling",
+      "duration": 5.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_production",
+      "gameType": "hunting_lodge",
+      "gameTypeKind": "building",
+      "status": "pending"
+    },
+    "buildings/trappers_hut_production": {
+      "prompt": "setting animal traps in forest, rope snapping, wooden trap mechanism, quiet woods",
+      "duration": 5.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_production",
+      "gameType": "trappers_hut",
+      "gameTypeKind": "building",
+      "status": "pending"
+    },
+    "buildings/furrier_production": {
+      "prompt": "furrier workshop, scraping pelts, stitching fur, leather stretching on frame",
+      "duration": 4.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_production",
+      "gameType": "furrier",
+      "gameTypeKind": "building",
+      "status": "pending"
+    },
+    "buildings/apiary_production": {
+      "prompt": "beehive buzzing, swarm of bees, honey dripping, beekeeper tending hives",
+      "duration": 5.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_production",
+      "gameType": "apiary",
+      "gameTypeKind": "building",
+      "status": "pending"
+    },
+    "buildings/meadery_production": {
+      "prompt": "mead brewing, honey being stirred into liquid, fermentation bubbles, barrel filling",
+      "duration": 5.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "building_production",
+      "gameType": "meadery",
+      "gameTypeKind": "building",
+      "status": "pending"
+    },
+    "units/woodcutter_work": {
+      "prompt": "lumberjack chopping tree with axe, rhythmic wood chopping, tree creaking",
+      "duration": 3.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "unit_work",
+      "gameType": "woodcutter",
+      "gameTypeKind": "unit",
+      "status": "pending"
+    },
+    "units/miner_work": {
+      "prompt": "miner swinging pickaxe in cave, metal on rock, ore chipping, underground echo",
+      "duration": 3.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "unit_work",
+      "gameType": "miner",
+      "gameTypeKind": "unit",
+      "status": "pending"
+    },
+    "units/stonemason_work": {
+      "prompt": "stonemason chiseling stone block, hammer and chisel, stone dust, precise tapping",
+      "duration": 3.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "unit_work",
+      "gameType": "stonemason",
+      "gameTypeKind": "unit",
+      "status": "pending"
+    },
+    "units/farmer_work": {
+      "prompt": "farmer harvesting with sickle, wheat stalks cutting, grain basket filling",
+      "duration": 3.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "unit_work",
+      "gameType": "farmer",
+      "gameTypeKind": "unit",
+      "status": "pending"
+    },
+    "units/fisherman_work": {
+      "prompt": "fisherman casting fishing net, net splashing in water, pulling catch from water",
+      "duration": 3.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "unit_work",
+      "gameType": "fisherman",
+      "gameTypeKind": "unit",
+      "status": "pending"
+    },
+    "units/builder_work": {
+      "prompt": "construction worker hammering nails into wood, building scaffolding, sawing planks",
+      "duration": 3.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "unit_work",
+      "gameType": "builder",
+      "gameTypeKind": "unit",
+      "status": "pending"
+    },
+    "units/transporter_walk": {
+      "prompt": "person walking on dirt road carrying supplies, footsteps on gravel, sack bouncing",
+      "duration": 3.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "unit_work",
+      "gameType": "transporter",
+      "gameTypeKind": "unit",
+      "status": "pending"
+    },
+    "units/hunter_work": {
+      "prompt": "hunter stalking through forest, quiet footsteps, bow drawing, arrow release",
+      "duration": 3.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "unit_work",
+      "gameType": "hunter",
+      "gameTypeKind": "unit",
+      "status": "pending"
+    },
+    "units/trapper_work": {
+      "prompt": "trapper setting snare in woods, rope tying, branch snapping, quiet forest",
+      "duration": 3.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "unit_work",
+      "gameType": "trapper",
+      "gameTypeKind": "unit",
+      "status": "pending"
+    },
+    "units/knight_combat": {
+      "prompt": "medieval knight sword fighting, sword clashing on shield, metal armor clanking, battle",
+      "duration": 3.0,
+      "loop": false,
+      "model": "ezaudio",
+      "category": "unit_combat",
+      "gameType": "knight",
+      "gameTypeKind": "unit",
+      "status": "pending"
+    },
+    "units/archer_combat": {
+      "prompt": "archer drawing bow and releasing arrow, arrow whistling through air, thud on target",
+      "duration": 2.0,
+      "loop": false,
+      "model": "ezaudio",
+      "category": "unit_combat",
+      "gameType": "archer",
+      "gameTypeKind": "unit",
+      "status": "pending"
+    },
+    "units/cavalry_charge": {
+      "prompt": "cavalry horse galloping charge, hooves thundering, lance impact, war horse neighing",
+      "duration": 3.0,
+      "loop": false,
+      "model": "ezaudio",
+      "category": "unit_combat",
+      "gameType": "cavalry",
+      "gameTypeKind": "unit",
+      "status": "pending"
+    },
+    "units/siege_operator_work": {
+      "prompt": "battering ram hitting castle gate, heavy wood impact, soldiers pushing, chains rattling",
+      "duration": 4.0,
+      "loop": false,
+      "model": "ezaudio",
+      "category": "unit_combat",
+      "gameType": "siege_operator",
+      "gameTypeKind": "unit",
+      "status": "pending"
+    },
+    "animals/donkey_ambient": {
+      "prompt": "donkey braying, hooves on dirt path, snorting, carrying load",
+      "duration": 3.0,
+      "loop": false,
+      "model": "ezaudio",
+      "category": "animal",
+      "gameType": "donkey",
+      "gameTypeKind": "unit",
+      "status": "pending"
+    },
+    "animals/horse_ambient": {
+      "prompt": "horse neighing, hooves trotting on road, snorting, harness jingling",
+      "duration": 3,
+      "loop": false,
+      "model": "ezaudio",
+      "category": "animal",
+      "gameType": "horse_transport",
+      "gameTypeKind": "unit",
+      "status": "generated",
+      "_generated_path": "/Users/manuel.siuro/ClaudeProjects/claude-settlers/tools/audio-generator/generated/animals_horse_ambient_1774647356.wav"
+    },
+    "animals/deer_ambient": {
+      "prompt": "deer in forest, gentle hoofsteps on leaves, distant deer call, quiet woodland",
+      "duration": 4.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "animal_wild",
+      "status": "pending"
+    },
+    "animals/goat_ambient": {
+      "prompt": "mountain goats bleating, hooves on rocks, wind on hillside",
+      "duration": 4.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "animal_wild",
+      "status": "pending"
+    },
+    "animals/rabbit_ambient": {
+      "prompt": "rabbit scurrying through grass, small quick footsteps, leaves rustling",
+      "duration": 3.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "animal_wild",
+      "status": "pending"
+    },
+    "animals/fish_splash": {
+      "prompt": "fish jumping out of water, small splash, ripples on lake surface",
+      "duration": 2.0,
+      "loop": false,
+      "model": "ezaudio",
+      "category": "animal_wild",
+      "status": "pending"
+    },
+    "animals/bees_buzzing": {
+      "prompt": "honeybees buzzing around flowers, bee swarm humming, pollination sounds",
+      "duration": 5.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "animal_wild",
+      "status": "pending"
+    },
+    "animals/birds_chirping": {
+      "prompt": "small songbirds chirping in tree branches, various bird calls, perched birds",
+      "duration": 4,
+      "loop": true,
+      "model": "musicgen",
+      "category": "animal_wild",
+      "status": "generated",
+      "_generated_path": "/Users/manuel.siuro/ClaudeProjects/claude-settlers/tools/audio-generator/generated/animals_birds_chirping_1774630672.wav"
+    },
+    "ambient/wind_light": {
+      "prompt": "gentle breeze blowing through meadow, soft wind ambience, grass rustling",
+      "duration": 10.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "environment",
+      "timeOfDay": [
+        "dawn",
+        "morning",
+        "midday",
+        "golden_hour",
+        "evening",
+        "night"
+      ],
+      "status": "pending"
+    },
+    "ambient/wind_strong": {
+      "prompt": "strong gusting wind, whistling through trees, leaves blowing, stormy breeze",
+      "duration": 10.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "environment",
+      "status": "pending"
+    },
+    "ambient/birds_daytime": {
+      "prompt": "",
+      "duration": 5,
+      "loop": false,
+      "model": "ezaudio",
+      "category": "environment",
+      "timeOfDay": [
+        "dawn",
+        "morning",
+        "midday",
+        "golden_hour"
+      ],
+      "status": "generated",
+      "_generated_path": "/Users/manuel.siuro/ClaudeProjects/claude-settlers/tools/audio-generator/generated/ambient_birds_daytime_1774647327.wav"
+    },
+    "ambient/dawn_chorus": {
+      "prompt": "early morning dawn bird chorus, first light birdsong, quiet awakening nature",
+      "duration": 10,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "environment",
+      "timeOfDay": [
+        "dawn"
+      ],
+      "status": "generated",
+      "_generated_path": "/Users/manuel.siuro/ClaudeProjects/claude-settlers/tools/audio-generator/generated/ambient_dawn_chorus_1774631001.wav"
+    },
+    "ambient/crickets_night": {
+      "prompt": "nighttime crickets chirping, cicadas, nocturnal insects, quiet summer night",
+      "duration": 10,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "environment",
+      "timeOfDay": [
+        "evening",
+        "night"
+      ],
+      "status": "generated",
+      "_generated_path": "/Users/manuel.siuro/ClaudeProjects/claude-settlers/tools/audio-generator/generated/ambient_crickets_night_1774630973.wav"
+    },
+    "ambient/owl_night": {
+      "prompt": "owl hooting in dark forest, distant owl calls, nighttime woodland",
+      "duration": 8,
+      "loop": true,
+      "model": "musicgen",
+      "category": "environment",
+      "timeOfDay": [
+        "night"
+      ],
+      "status": "generated",
+      "_generated_path": "/Users/manuel.siuro/ClaudeProjects/claude-settlers/tools/audio-generator/generated/ambient_owl_night_1774647726.wav"
+    },
+    "ambient/water_stream": {
+      "prompt": "gentle stream flowing over rocks, babbling brook, water trickling, peaceful creek",
+      "duration": 10.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "environment",
+      "terrain": "water",
+      "status": "pending"
+    },
+    "ambient/water_lake": {
+      "prompt": "calm lake water lapping on shore, gentle waves, water surface ambience",
+      "duration": 10.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "environment",
+      "terrain": "water",
+      "status": "pending"
+    },
+    "ambient/forest_rustle": {
+      "prompt": "deep forest ambience, leaves rustling, branches creaking, woodland atmosphere",
+      "duration": 10,
+      "loop": true,
+      "model": "musicgen",
+      "category": "environment",
+      "terrain": "forest",
+      "status": "accepted",
+      "_generated_path": "/Users/manuel.siuro/ClaudeProjects/claude-settlers/tools/audio-generator/generated/ambient_forest_rustle_1774631100.wav"
+    },
+    "ambient/rain_light": {
+      "prompt": "light rainfall on leaves and ground, gentle rain drops, overcast rain ambience",
+      "duration": 10.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "weather",
+      "status": "pending"
+    },
+    "ambient/rain_heavy": {
+      "prompt": "heavy rainstorm, loud rain pouring, thunder rumbling in distance, downpour",
+      "duration": 10.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "weather",
+      "status": "pending"
+    },
+    "ambient/snow_quiet": {
+      "prompt": "quiet snowfall ambience, muffled winter landscape, very soft wind, peaceful silence",
+      "duration": 10.0,
+      "loop": true,
+      "model": "ezaudio",
+      "category": "weather",
+      "status": "pending"
+    },
+    "ambient/medieval_background": {
+      "prompt": "peaceful medieval village background, gentle pastoral ambience, countryside calm",
+      "duration": 15,
+      "loop": true,
+      "model": "musicgen",
+      "category": "music",
+      "status": "accepted",
+      "_generated_path": "/Users/manuel.siuro/ClaudeProjects/claude-settlers/tools/audio-generator/generated/ambient_medieval_background_1774630301.wav"
+    },
+    "ambient/medieval_night": {
+      "prompt": "calm medieval night atmosphere, distant torch crackling, quiet mysterious evening",
+      "duration": 15,
+      "loop": true,
+      "model": "musicgen",
+      "category": "music",
+      "timeOfDay": [
+        "evening",
+        "night"
+      ],
+      "status": "accepted",
+      "_generated_path": "/Users/manuel.siuro/ClaudeProjects/claude-settlers/tools/audio-generator/generated/ambient_medieval_night_1774630593.wav"
+    },
+    "sfx/building_construction": {
+      "prompt": "construction site, hammering nails, sawing wood, building a wooden structure",
+      "duration": 3.0,
+      "loop": false,
+      "model": "ezaudio",
+      "category": "sfx",
+      "status": "pending"
+    },
+    "sfx/building_demolish": {
+      "prompt": "building collapsing, wood cracking and breaking, debris falling, destruction",
+      "duration": 2.0,
+      "loop": false,
+      "model": "ezaudio",
+      "category": "sfx",
+      "status": "pending"
+    },
+    "sfx/coin_trade": {
+      "prompt": "coins clinking, money bag dropping on table, medieval marketplace transaction",
+      "duration": 1.5,
+      "loop": false,
+      "model": "ezaudio",
+      "category": "sfx",
+      "status": "generated",
+      "_generated_path": "/Users/manuel.siuro/ClaudeProjects/claude-settlers/tools/audio-generator/generated/sfx_coin_trade_1774630932.wav"
+    },
+    "sfx/horn_territory": {
+      "prompt": "medieval war horn blowing, single horn blast, territory claim signal",
+      "duration": 2.0,
+      "loop": false,
+      "model": "ezaudio",
+      "category": "sfx",
+      "status": "pending"
+    },
+    "sfx/recruitment_horn": {
+      "prompt": "military recruitment horn fanfare, short trumpet blast, call to arms",
+      "duration": 2.0,
+      "loop": false,
+      "model": "ezaudio",
+      "category": "sfx",
+      "status": "pending"
+    },
+    "sfx/victory_fanfare": {
+      "prompt": "triumphant medieval victory fanfare, horns and drums celebration, conquest achieved",
+      "duration": 4.0,
+      "loop": false,
+      "model": "ezaudio",
+      "category": "sfx",
+      "status": "pending"
+    }
+  }
+}

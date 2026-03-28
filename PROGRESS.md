@@ -4,6 +4,17 @@
 
 ## Task Board
 
+### Audio System [COMPLETE]
+- [DONE] Audio Generation Tool — Created `tools/audio-generator/` Python/Gradio app with 4-tab UI (Catalog Browser, Custom Generator, Audio Library, Export). Supports 2 AI models: EzAudio (Tencent AI Lab, Interspeech 2025, hyperrealistic sound effects, MIT) and MusicGen Small (ambient loops). Pre-filled `audio_catalog.json` with 100+ entries covering all 48 buildings, 15 unit work sounds, 12 ambient environments, 8 animal sounds, 6 military SFX, 5 UI one-shots. Audio processing pipeline: trim, normalize, fade, loop crossfade, WAV→OGG export + manifest.json generation. — 2026-03-27
+- [DONE] In-Game Audio Foundation — Extended `AudioManager.ts` with `spatialGain` and `ambientGain` nodes in the audio graph, plus `getContext()`, `getSpatialGain()`, `getAmbientGain()` accessors and `spatialVolume`/`ambientVolume` properties. Extended `AudioSettings` in `GameConfig.ts` with `spatialVolume`, `ambientVolume`, `spatialAudio` fields. — 2026-03-27
+- [DONE] AudioAssetLoader — Manifest-driven lazy loader: fetches `public/audio/manifest.json` once, lazy-loads individual OGG files on demand via `fetch()` + `decodeAudioData()`, LRU cache with 50MB ceiling, returns null gracefully for missing files. — 2026-03-27
+- [DONE] AudioSourcePool — Concurrent Web Audio source manager: 48 sources desktop / 24 mobile, priority-based eviction (closest sounds win), building sounds keyed by ID to prevent duplicates, one-shot auto-release. PannerNode with HRTF (desktop) / equalpower (mobile). — 2026-03-27
+- [DONE] AmbientSoundscape — Non-spatial background layer that cross-fades between ambient sounds based on time of day (dawn chorus, daytime birds, evening crickets, night owls) and weather (rain, snow). 3-second crossfade transitions via `linearRampToValueAtTime()`. Uses rawDelta (continues when paused). — 2026-03-27
+- [DONE] SpatialAudioEngine — Core orchestrator: reads manifest.json at startup, auto-indexes sounds by `gameType`, scans buildings/units within 15-hex camera range every 10 frames, starts/stops looping PannerNode sources with quadratic distance falloff. Night volume reduction (25%), fade-out on pause, graceful no-op when no audio files exist. Integrated into Game.ts animate loop and GameSystems.ts factory. — 2026-03-27
+- [DONE] Settings UI — Added Spatial Audio and Ambient Audio volume sliders to AppBar settings panel with persistence via SettingsStorage. Initial values restored from localStorage on startup. — 2026-03-27
+- [DONE] Documentation — Created `docs/audio-generator.md` (full installation and usage guide). Updated `docs/tools.md` with Audio Generator section. — 2026-03-27
+- Design: Fully data-driven architecture. `manifest.json` is the single source of truth. Adding a new building/unit sound = add entry to `audio_catalog.json` → generate → export → game auto-discovers. Zero TypeScript mapping files. 779 tests passing.
+
 ### Code Quality Refactoring [COMPLETE]
 - [DONE] Audit — Full codebase audit (128 source files, ~37,700 lines). Found: 3 files >1,000 lines, 7 files >800 lines, ~40 lines dead code, 1 pattern inconsistency. No unfinished features. Overall score 7.5/10. — 2026-03-26
 - [DONE] Phase 1: Hygiene fixes — Removed dead Season infrastructure from TerrainColors.ts. Fixed missing onProductionComplete callback cleanup in Game.ts dispose. Fixed WebGL context listener leak. Fixed risky non-null assertions. Replaced all direct console.* with Logger (5 files, 13 call sites). 779 tests passing. — 2026-03-26

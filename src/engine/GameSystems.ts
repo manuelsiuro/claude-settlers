@@ -56,6 +56,8 @@ import { WildAnimalRenderer } from './WildAnimalRenderer';
 import { BeeRenderer } from './FlowerButterflyRenderer';
 import { FlagLightSystem } from './FlagLightSystem';
 import { WorkAreaRenderer } from './WorkAreaRenderer';
+import { SpatialAudioEngine } from './SpatialAudioEngine';
+import { audioManager } from './AudioManager';
 import type { AtmosphereController, ColorGradingParams } from './AtmosphereController';
 import type * as THREE from 'three';
 
@@ -116,6 +118,7 @@ export interface GameRenderers {
   beeRenderer: BeeRenderer;
   flagLightSystem: FlagLightSystem;
   workAreaRenderer: WorkAreaRenderer;
+  spatialAudioEngine: SpatialAudioEngine;
 }
 
 export interface CreateManagersParams {
@@ -263,6 +266,7 @@ export function createRenderers(params: CreateRenderersParams): GameRenderers {
   const beeRenderer = new BeeRenderer();
   const flagLightSystem = new FlagLightSystem();
   const workAreaRenderer = new WorkAreaRenderer();
+  const spatialAudioEngine = new SpatialAudioEngine(audioManager);
 
   atmosphereController.onNightnessUpdate = (nightness) => {
     onNightnessUpdate(nightness);
@@ -299,6 +303,7 @@ export function createRenderers(params: CreateRenderersParams): GameRenderers {
     beeRenderer,
     flagLightSystem,
     workAreaRenderer,
+    spatialAudioEngine,
   };
 }
 
