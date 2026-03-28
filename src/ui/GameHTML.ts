@@ -257,6 +257,7 @@ export function getGameHTML(currentTheme: string): string {
     <div id="tool-alert-bar"></div>
     <div id="capacity-alert-bar"></div>
     <div id="food-alert-bar"></div>
+    <div id="alert-bar-badge" class="alert-bar-badge" style="display:none"></div>
   </div>
 
   <!-- Pause Overlay -->
@@ -341,6 +342,10 @@ export function getGameHTML(currentTheme: string): string {
               <option value="island">Island</option>
               <option value="continent">Continent</option>
               <option value="archipelago">Archipelago</option>
+              <option value="river_valley">River Valley</option>
+              <option value="mountain_pass">Mountain Pass</option>
+              <option value="oasis">Oasis</option>
+              <option value="peninsula">Peninsula</option>
             </select>
             <div id="setup-landscape-desc" class="setup-field-desc">Balanced mix of all terrain types</div>
           </div>

@@ -66,6 +66,8 @@ import { wireNotifications } from './ui/NotificationWiring';
 import { initToolAlertBar, disposeToolAlertBar } from './ui/ToolAlertBar';
 import { initCapacityAlertBar, disposeCapacityAlertBar } from './ui/CapacityAlertBar';
 import { initFoodAlertBar, disposeFoodAlertBar } from './ui/FoodAlertBar';
+import { initMobileAlertConsolidator, disposeMobileAlertConsolidator } from './ui/MobileAlertConsolidator';
+import { initTutorial, disposeTutorial } from './ui/TutorialSystem';
 import { initGameOverScreen, showGameOver } from './ui/GameOverScreen';
 import { initSetupScreen, handleLoadFromFile } from './ui/SetupScreen';
 import { initAppBar, updatePauseSpeedUI, setupGameControlsPosition } from './ui/AppBar';
@@ -264,6 +266,8 @@ async function startGame(config: Partial<GameConfig>, savedData?: SaveData): Pro
     disposeToolAlertBar();
     disposeCapacityAlertBar();
     disposeFoodAlertBar();
+    disposeMobileAlertConsolidator();
+    disposeTutorial();
     disposeResourceBar();
     game.dispose();
   }
@@ -277,6 +281,7 @@ async function startGame(config: Partial<GameConfig>, savedData?: SaveData): Pro
   initToolAlertBar(getGame);
   initCapacityAlertBar(getGame);
   initFoodAlertBar(getGame, () => showStatsPanel('population'));
+  initMobileAlertConsolidator();
   updatePauseSpeedUI(false, 1);
 
   // Dispose previous tooltip controller
@@ -312,6 +317,11 @@ async function startGame(config: Partial<GameConfig>, savedData?: SaveData): Pro
   popCounterInterval = result.popCounterInterval;
 
   initResourceBar(getGame, () => showStatsPanel('resources'));
+
+  // Tutorial: show for new games (no saved data)
+  if (!savedData) {
+    initTutorial(game);
+  }
 }
 
 // Prevent context menu on canvas for right-click cancel

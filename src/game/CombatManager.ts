@@ -50,6 +50,9 @@ export class CombatManager {
   /** Random function (injectable for testing) */
   random: () => number = Math.random;
 
+  /** Morale combat multiplier per player (set by Game each frame) */
+  moraleMultipliers: Map<number, number> = new Map();
+
   constructor(gameState: GameState, knightManager: KnightManager) {
     this.gameState = gameState;
     this.knightManager = knightManager;
@@ -79,6 +82,10 @@ export class CombatManager {
 
     let attackerStrength = this.knightManager.getKnightStrength(attackerId);
     let defenderStrength = this.knightManager.getKnightStrength(defenderId);
+
+    // Apply morale combat multiplier
+    attackerStrength *= this.moraleMultipliers.get(attacker.playerId) ?? 1.0;
+    defenderStrength *= this.moraleMultipliers.get(defender.playerId) ?? 1.0;
 
     // Apply cavalry charge bonus on first engagement
     const attackerDef = UNIT_DEFINITIONS[attacker.type];

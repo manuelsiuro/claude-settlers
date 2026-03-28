@@ -18,6 +18,10 @@ const LANDSCAPE_DESCRIPTIONS: Record<string, string> = {
   island: 'Land masses surrounded by sea (35% water)',
   continent: 'Vast land with minimal water (5% water)',
   archipelago: 'Many small islands across open ocean (45% water)',
+  river_valley: 'Fertile valleys with rivers and grassland (20% water)',
+  mountain_pass: 'Rugged highlands with narrow passes (55% mountain)',
+  oasis: 'Vast desert with scarce water and greenery (60% desert)',
+  peninsula: 'Land jutting into the sea with long coastlines (40% water)',
 };
 
 const DIFFICULTY_DESCRIPTIONS: Record<string, string> = {

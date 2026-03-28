@@ -14,6 +14,7 @@ import {
   NIGHT_SPEED_PENALTY_KNIGHT,
   NIGHT_SPEED_PENALTY_BUILDER,
 } from './data/balanceConstants';
+import { getHungerSpeedMultiplier } from './FeedingManager';
 
 /**
  * Manages unit spawning, job assignment, and movement updates.
@@ -290,7 +291,8 @@ export class UnitManager {
 
       const def = UNIT_DEFINITIONS[unit.type];
       const nightPenalty = this.getNightSpeedPenalty(unit);
-      const speed = def.moveSpeed * (1 - nightPenalty);
+      const hungerMultiplier = getHungerSpeedMultiplier(unit.satiation);
+      const speed = def.moveSpeed * (1 - nightPenalty) * hungerMultiplier;
 
       // Advance moveProgress
       unit.moveProgress += speed * deltaTime;

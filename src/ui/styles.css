@@ -676,11 +676,32 @@ html, body {
     left: 8px;
     right: auto;
   }
+  .alert-bar.collapsed > *:not(:empty) ~ *:not(:empty) {
+    display: none;
+  }
   .tool-alert-chip,
   .capacity-alert-chip {
     padding: 6px 12px;
     font-size: 13px;
   }
+  .alert-bar-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 22px;
+    border-radius: 11px;
+    background: rgba(255, 152, 0, 0.85);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 0 6px;
+    cursor: pointer;
+    pointer-events: auto;
+  }
+}
+@media (min-width: 769px) {
+  .alert-bar-badge { display: none; }
 }
 
 .capacity-alert-chip {

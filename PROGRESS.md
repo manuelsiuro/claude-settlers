@@ -1,8 +1,20 @@
 # Project Progress
 
-## Current Phase: Map Editor Polish — Complete
+## Current Phase: Gameplay Polish & QoL — Complete
 
 ## Task Board
+
+### Gameplay Polish & QoL [COMPLETE]
+- [DONE] Wire hunger penalties — Called `getHungerSpeedMultiplier()` in UnitManager (movement speed) and `getHungerProductionMultiplier()` in ProductionManager (production rate). Workers with low satiation now produce and move slower. — 2026-03-28
+- [DONE] Wire morale multipliers — Called `getProductionMultiplier()` in ProductionManager and `getCombatMultiplier()` in CombatManager. Game.ts feeds per-player morale multipliers each frame. Morale now affects actual gameplay, not just UI display. — 2026-03-28
+- [DONE] Tutorial system — Created `TutorialSystem.ts` with 5-step onboarding (Build Woodcutter → Connect Flag+Road → Build Sawmill → Wait for Production → Build Guard Hut). Persistent blue banner with Skip button. Polls game state every 1s. First-time detection via `localStorage('feudal-tutorial-completed')`. Auto-dismisses on completion. — 2026-03-28
+- [DONE] Building status diagnostics — Added `getStatusDiagnostic()` to BuildingInfoRenderer: shows contextual hints ("Waiting for: Wood", "Output storage full", "No worker assigned", "Production paused", "Producing...") with color-coded text below the Status row. Integrated into structure key for live updates. — 2026-03-28
+- [DONE] New map scenarios — Added 4 scenarios: River Valley (fertile, 20% water, 40% grassland), Mountain Pass (55% mountain), Oasis (60% desert), Peninsula (40% water). Updated Scenario enum, SCENARIO_TERRAIN_BALANCE, SetupScreen descriptions, and GameHTML select options. — 2026-03-28
+- [DONE] Mobile alert bar consolidation — Created `MobileAlertConsolidator.ts`: on mobile, collapses stacked ToolAlertBar/CapacityAlertBar/FoodAlertBar to show only the most critical one with a "+N more" badge. CSS `.alert-bar.collapsed` hides subsequent non-empty children. Tap badge to toggle. — 2026-03-28
+- [DONE] Camera bookmarks — Added position bookmarks to CameraController: Ctrl+1-5 saves camera position+zoom, 1-5 recalls. Ignores key events when typing in input fields. — 2026-03-28
+- [DONE] Random events system — Created `RandomEventManager.ts` with 7 event types across 3 categories: positive (Bumper Harvest +50% farm, Traveling Craftsman +25% all, Lucky Find +30% speed), negative (Building Fire disables building, Harsh Weather -25%/-30%, Supply Shortage -20%), neutral (Wandering Merchant). Events fire every 180-360s. Duration-limited effects with production/speed multipliers. Integrated into GameSystems, Game.ts update loop, and notification system. — 2026-03-28
+- [DONE] AI dynamic adaptation — Added terrain-aware building skip (skips FishermanHut on waterless maps), reactive military balance (builds GuardHut when outmatched by 2+ enemy military units). — 2026-03-28
+- [DONE] Engine test coverage — Created GameSystems.test.ts (9 tests: exports, factory function, manager keys, single-player victory, manager wiring) and CameraController.test.ts (22 tests: zoom logic, pan clamping, pinch distance, keyboard mapping). 810 tests passing. — 2026-03-28
 
 ### Map Editor Polish [COMPLETE]
 - [DONE] Building catalog with thumbnails — Replaced plain `<select>` dropdown with categorized 2-column thumbnail grid (40x40 images from `/public/thumbnails/buildings/`). 7 category filter tabs (All, Core, Gathering, Processing, Military, Logistics, Housing) with tier grouping (Core/Basic/Advanced/Specialized). Clicking a card auto-switches to the Building tool. Properties panel widened from 200px to 260px. — 2026-03-28

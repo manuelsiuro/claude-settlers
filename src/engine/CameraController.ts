@@ -37,6 +37,9 @@ export class CameraController {
   /** When true, single-finger touch pan is suppressed (placement mode active) */
   placementActive = false;
 
+  /** Camera position bookmarks (slots 1-5) */
+  private bookmarks = new Map<number, { x: number; z: number; frustum: number }>();
+
   // Camera target point (what the camera looks at)
   private target: THREE.Vector3;
   // Isometric direction vector (normalized)
@@ -293,6 +296,25 @@ export class CameraController {
   // --- Keyboard handlers ---
 
   private onKeyDown = (e: KeyboardEvent): void => {
+    // Camera bookmarks: Ctrl+1-5 save, 1-5 recall
+    const slot = parseInt(e.key);
+    if (slot >= 1 && slot <= 5 && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement)) {
+      if (e.ctrlKey || e.metaKey) {
+        this.bookmarks.set(slot, {
+          x: this.target.x,
+          z: this.target.z,
+          frustum: this.game.getFrustum(),
+        });
+        e.preventDefault();
+        return;
+      }
+      const bm = this.bookmarks.get(slot);
+      if (bm) {
+        this.panTo(bm.x, bm.z);
+        this.game.setFrustum(bm.frustum);
+        return;
+      }
+    }
     this.keys.add(e.key);
   };
 

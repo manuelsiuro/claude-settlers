@@ -22,6 +22,10 @@ export const Scenario = {
   Island: 'island',
   Continent: 'continent',
   Archipelago: 'archipelago',
+  RiverValley: 'river_valley',
+  MountainPass: 'mountain_pass',
+  Oasis: 'oasis',
+  Peninsula: 'peninsula',
 } as const;
 
 export type Scenario = (typeof Scenario)[keyof typeof Scenario];
@@ -89,6 +93,34 @@ export const SCENARIO_TERRAIN_BALANCE: Record<
     [TerrainType.Forest]: 0.18,
     [TerrainType.Mountain]: 0.10,
     [TerrainType.Desert]: 0.05,
+  },
+  [Scenario.RiverValley]: {
+    [TerrainType.Water]: 0.20,
+    [TerrainType.Grassland]: 0.40,
+    [TerrainType.Forest]: 0.25,
+    [TerrainType.Mountain]: 0.05,
+    [TerrainType.Desert]: 0.10,
+  },
+  [Scenario.MountainPass]: {
+    [TerrainType.Water]: 0.05,
+    [TerrainType.Grassland]: 0.20,
+    [TerrainType.Forest]: 0.15,
+    [TerrainType.Mountain]: 0.55,
+    [TerrainType.Desert]: 0.05,
+  },
+  [Scenario.Oasis]: {
+    [TerrainType.Water]: 0.10,
+    [TerrainType.Grassland]: 0.15,
+    [TerrainType.Forest]: 0.05,
+    [TerrainType.Mountain]: 0.10,
+    [TerrainType.Desert]: 0.60,
+  },
+  [Scenario.Peninsula]: {
+    [TerrainType.Water]: 0.40,
+    [TerrainType.Grassland]: 0.30,
+    [TerrainType.Forest]: 0.15,
+    [TerrainType.Mountain]: 0.12,
+    [TerrainType.Desert]: 0.03,
   },
 };
 

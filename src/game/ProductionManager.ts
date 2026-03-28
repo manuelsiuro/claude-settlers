@@ -6,6 +6,7 @@ import { type ResourceType, RESOURCE_PROPERTIES } from './ResourceType';
 import { UnitState } from './Unit';
 import { getProductionSpeedMultiplier } from './BuildingUpgrade';
 import { NIGHT_PRODUCTION_SLOWDOWN } from './data/balanceConstants';
+import { getHungerProductionMultiplier } from './FeedingManager';
 
 /** Compute the distance multiplier for gathering buildings */
 export function getDistanceMultiplier(distance: number): number {
@@ -40,6 +41,9 @@ export class ProductionManager {
 
   /** Light mitigation factor 0.0–1.0 per building ID (from TorchTower proximity) */
   lightMitigation: Map<string, number> = new Map();
+
+  /** Morale production multiplier per player (set by Game each frame) */
+  moraleMultipliers: Map<number, number> = new Map();
 
   /** Optional callback fired when production completes (for economy tracking) */
   onProductionComplete: ((inputs: { resource: ResourceType; amount: number }[], outputs: { resource: ResourceType; amount: number }[], building: Building) => void) | null = null;
@@ -108,7 +112,14 @@ export class ProductionManager {
       const effectiveNightness = this.nightness * (1 - mitigation);
       const nightSlowdown = 1 / (1 - effectiveNightness * NIGHT_PRODUCTION_SLOWDOWN);
 
-      const rate = activeWorkers / (def.production.productionTime * distMultiplier * speedMultiplier * nightSlowdown);
+      // Hunger penalty: average worker satiation affects production speed
+      const workerSatiation = this.getAverageWorkerSatiation(building);
+      const hungerMultiplier = getHungerProductionMultiplier(workerSatiation);
+
+      // Morale bonus/penalty
+      const moraleMultiplier = this.moraleMultipliers.get(building.playerId) ?? 1.0;
+
+      const rate = activeWorkers / (def.production.productionTime * distMultiplier * speedMultiplier * nightSlowdown) * hungerMultiplier * moraleMultiplier;
       building.productionProgress += rate * deltaTime;
 
       // Production cycle complete
@@ -131,6 +142,21 @@ export class ProductionManager {
       if (unit?.state === UnitState.Working) count++;
     }
     return count;
+  }
+
+  /**
+   * Get average satiation of active workers at a building. Returns 1.0 if no workers found.
+   */
+  private getAverageWorkerSatiation(building: Building): number {
+    let total = 0;
+    let count = 0;
+    const primary = this.gameState.getWorkerForBuilding(building.id);
+    if (primary?.state === UnitState.Working) { total += primary.satiation; count++; }
+    for (const id of (building.extraWorkerIds ?? [])) {
+      const unit = this.gameState.getUnit(id);
+      if (unit?.state === UnitState.Working) { total += unit.satiation; count++; }
+    }
+    return count > 0 ? total / count : 1.0;
   }
 
   /**

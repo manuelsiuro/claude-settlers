@@ -27,6 +27,7 @@ import { FeedingManager } from '../game/FeedingManager';
 import { MoraleManager } from '../game/MoraleManager';
 import { MarketplaceManager } from '../game/MarketplaceManager';
 import { AnimalLifecycleManager } from '../game/AnimalLifecycleManager';
+import { RandomEventManager } from '../game/RandomEventManager';
 import { TerrainGatheringManager } from '../game/TerrainGatheringManager';
 import { DashboardTracker } from '../game/DashboardTracker';
 import { createDefaultDistribution } from '../game/GoodsDistribution';
@@ -91,6 +92,7 @@ export interface GameManagers {
   fogOfWarManager: FogOfWarManager;
   distributionSettings: GoodsDistributionSettings;
   dashboardTracker: DashboardTracker;
+  randomEventManager: RandomEventManager;
 }
 
 export interface GameRenderers {
@@ -184,6 +186,7 @@ export function createManagers(params: CreateManagersParams): GameManagers {
   const dashboardTracker = new DashboardTracker(
     gameState, populationManager, moraleManager, humanPlayerId,
   );
+  const randomEventManager = new RandomEventManager(gameState, humanPlayerId);
 
   return {
     populationManager,
@@ -215,6 +218,7 @@ export function createManagers(params: CreateManagersParams): GameManagers {
     fogOfWarManager,
     distributionSettings,
     dashboardTracker,
+    randomEventManager,
   };
 }
 

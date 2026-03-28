@@ -136,6 +136,7 @@ export class AIPlayer {
       // Some difficulties skip a fraction of decision ticks
       if (this.config.skipChance === 0 || Math.random() >= this.config.skipChance) {
         this.checkHousingNeeds();
+        this.checkMilitaryBalance();
         this.tryBuildNext();
         this.manageToolQueue();
         // Only try upgrades once economy is established
@@ -202,6 +203,13 @@ export class AIPlayer {
     if (this.buildOrderIndex >= this.buildOrder.length) return;
 
     const type = this.buildOrder[this.buildOrderIndex];
+
+    // Skip buildings that need terrain the AI doesn't have
+    if (this.shouldSkipForTerrain(type)) {
+      this.buildOrderIndex++;
+      this.hexRetryCount = 0;
+      return;
+    }
 
     // Wait for resources if we can't afford it yet.
     // Reset hexRetryCount so resource-wait periods don't consume the retry budget.
@@ -411,6 +419,64 @@ export class AIPlayer {
       }
     }
     return totals;
+  }
+
+  /**
+   * Skip buildings that require terrain not present in the AI's territory.
+   * E.g., skip FishermanHut if no water nearby, skip StoneMine if no mountain.
+   */
+  /**
+   * Skip buildings that require water/desert terrain not present anywhere on the map.
+   * Forest/mountain are common enough that we don't skip for them.
+   */
+  private shouldSkipForTerrain(type: BuildingType): boolean {
+    const def = BUILDING_DEFINITIONS[type];
+    if (!def.harvestTerrain) return false;
+    // Only skip for rare terrain types that may be completely absent
+    if (def.harvestTerrain !== 'water' && def.harvestTerrain !== 'desert') return false;
+
+    const grid = this.gameState.getGrid();
+    for (let q = 0; q < grid.width; q++) {
+      for (let r = 0; r < grid.height; r++) {
+        const tile = grid.getTile(q, r);
+        if (tile?.terrain === def.harvestTerrain) return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Reactively build military when the human player has more military presence.
+   * Inserts a GuardHut into the build sequence if outmatched.
+   */
+  private checkMilitaryBalance(): void {
+    const myMilitary = this.gameState.getAllUnits().filter(
+      u => u.playerId === this.playerId && u.type === UnitType.Knight
+    ).length;
+
+    // Count all enemy military buildings
+    let enemyMilitaryCount = 0;
+    for (const b of this.gameState.getAllBuildings()) {
+      if (b.playerId !== this.playerId && b.state === BuildingState.Active) {
+        const bdef = BUILDING_DEFINITIONS[b.type];
+        if (bdef.knightSlots > 0) enemyMilitaryCount += b.knightIds.length;
+      }
+    }
+
+    // If enemy has 2+ more military units, try to build a GuardHut
+    if (enemyMilitaryCount >= myMilitary + 2) {
+      if (this.canAfford(BuildingType.GuardHut)) {
+        const coord = this.findBorderHex(BuildingType.GuardHut);
+        if (coord) {
+          const result = this.gameState.placeBuilding(BuildingType.GuardHut, coord, this.playerId);
+          if (result.ok) {
+            this.onBuildingPlaced(result.building, this.gameState.getGrid());
+            this.territoryManager.markDirty();
+            autoConnectBuilding(coord, this.playerId, this.roadNetwork, this.gameState.getGrid());
+          }
+        }
+      }
+    }
   }
 
   /**

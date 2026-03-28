@@ -6,7 +6,7 @@
 import type { Game } from '../../engine/Game';
 import { icon, resourceIcon, unitIcon } from '../icons';
 import { BuildingType, BUILDING_DEFINITIONS } from '../../game/BuildingType';
-import { BuildingState, getInventoryAmount, getInventoryTotal } from '../../game/Building';
+import { BuildingState, getInventoryAmount, getInventoryTotal, hasOutputSpace } from '../../game/Building';
 import type { Building, ResourceInventory } from '../../game/Building';
 import { RESOURCE_PROPERTIES, ResourceType, TOOL_TYPES } from '../../game/ResourceType';
 import { UNIT_DEFINITIONS } from '../../game/UnitType';
@@ -113,12 +113,43 @@ function getStateDisplay(state: BuildingState): { label: string; cssClass: strin
   }
 }
 
+/** Get a diagnostic hint explaining why a building isn't producing */
+function getStatusDiagnostic(building: Building): { text: string; color: string } | null {
+  if (building.state !== BuildingState.Active) return null;
+  const def = BUILDING_DEFINITIONS[building.type];
+
+  if (building.productionPaused) return { text: 'Production paused by player', color: '#78909C' };
+  if (!building.hasWorker) return { text: 'No worker assigned — needs idle serf', color: '#FF9800' };
+  if (building.waitingForTool) {
+    const toolLabel = RESOURCE_PROPERTIES[building.waitingForTool].label;
+    return { text: `Waiting for tool: ${toolLabel}`, color: '#e65100' };
+  }
+  if (!def.production) return null;
+
+  // Check missing inputs
+  if (def.production.inputs.length > 0) {
+    const missing = def.production.inputs
+      .filter(inp => (building.inputInventory[inp.resource] ?? 0) < inp.amount)
+      .map(inp => RESOURCE_PROPERTIES[inp.resource].label);
+    if (missing.length > 0) return { text: `Waiting for: ${missing.join(', ')}`, color: '#FF9800' };
+  }
+
+  // Check output full
+  if (!hasOutputSpace(building)) return { text: 'Output storage full — connect to road network', color: '#EF5350' };
+
+  // Producing normally
+  if (building.productionProgress > 0) return { text: 'Producing...', color: '#4CAF50' };
+
+  return null;
+}
+
 // ── Structure key ────────────────────────────────────────────────────────
 
 /** Get a structure key fingerprint for the building's panel layout */
 export function getInfoStructureKey(building: Building, getGame: () => Game): string {
   const def = BUILDING_DEFINITIONS[building.type];
-  const parts: string[] = [building.type, String(building.state), 'p:' + building.playerId];
+  const diag = getStatusDiagnostic(building);
+  const parts: string[] = [building.type, String(building.state), 'p:' + building.playerId, 'diag:' + (diag?.text ?? '')];
 
   // Construction remaining resource keys
   if (building.state === BuildingState.Planned || building.state === BuildingState.UnderConstruction) {
@@ -277,11 +308,15 @@ export function generateInfoHTML(building: Building, getGame: () => Game, isDesk
   const humanPid = getGame().getHumanPlayerId();
   const ownerColor = getPlayerCssColor(building.playerId);
   const ownerLabel = getPlayerLabel(building.playerId, humanPid);
+  const diagnostic = getStatusDiagnostic(building);
   html += `<div class="info-section">
     <div class="info-row">
       <span class="info-label">Status</span>
       <span class="info-value ${stateDisplay.cssClass}" data-field="status-label">${stateDisplay.label}</span>
-    </div>
+    </div>${diagnostic ? `
+    <div class="info-row">
+      <span class="info-value" data-field="status-hint" style="font-size:0.75rem;color:${diagnostic.color};padding-left:2px">${diagnostic.text}</span>
+    </div>` : ''}
     <div class="info-row">
       <span class="info-label">Owner</span>
       <span class="info-value" data-field="owner-label"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${ownerColor};margin-right:6px;vertical-align:middle"></span>${ownerLabel}</span>

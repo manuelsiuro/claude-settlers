@@ -291,6 +291,11 @@ export class Game {
       getNotification: () => this.onNotification,
     });
 
+    // Wire random event notifications
+    this.mgrs.randomEventManager.onEvent = (event) => {
+      this.onNotification?.({ type: 'building_complete', message: `${event.label}: ${event.message}` });
+    };
+
     // Handle resize
     this.onResize = this.onResize.bind(this);
     window.addEventListener('resize', this.onResize);
@@ -561,6 +566,13 @@ export class Game {
       // Pass nightness to managers for day/night gameplay effects
       this.mgrs.unitManager.nightness = this.currentNightness;
       this.mgrs.productionManager.nightness = this.currentNightness;
+      // Pass morale + random event multipliers per player
+      for (let pid = 1; pid <= this.config.numPlayers; pid++) {
+        const moraleProd = this.mgrs.moraleManager.getProductionMultiplier(pid);
+        const eventProd = this.mgrs.randomEventManager.getProductionMultiplier(pid);
+        this.mgrs.productionManager.moraleMultipliers.set(pid, moraleProd * eventProd);
+        this.mgrs.combatManager.moraleMultipliers.set(pid, this.mgrs.moraleManager.getCombatMultiplier(pid));
+      }
       this.updateLightMitigation();
       this.mgrs.unitManager.update(deltaTime);
       this.mgrs.constructionManager.update(deltaTime);
@@ -589,6 +601,7 @@ export class Game {
       this.mgrs.animalLifecycleManager.update(deltaTime);
       this.mgrs.economyTracker.update(deltaTime);
       this.mgrs.dashboardTracker.update(deltaTime);
+      this.mgrs.randomEventManager.update(deltaTime);
       this.rnds.roadRenderer.sync(this.mgrs.roadNetwork, (id) => this.gameState.getUnit(id));
       this.rnds.territoryRenderer.sync(this.mgrs.territoryManager);
       this.mgrs.fogOfWarManager.markDirty(); // Units move every frame
@@ -1223,6 +1236,10 @@ export class Game {
 
   getDashboardTracker(): DashboardTracker {
     return this.mgrs.dashboardTracker;
+  }
+
+  getRandomEventManager() {
+    return this.mgrs.randomEventManager;
   }
 
   /** Get the count of idle (unassigned) serfs at the Castle */
