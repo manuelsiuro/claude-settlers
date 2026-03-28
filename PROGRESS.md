@@ -1,8 +1,14 @@
 # Project Progress
 
-## Current Phase: Code Quality Refactoring — Complete
+## Current Phase: Map Editor Polish — Complete
 
 ## Task Board
+
+### Map Editor Polish [COMPLETE]
+- [DONE] Building catalog with thumbnails — Replaced plain `<select>` dropdown with categorized 2-column thumbnail grid (40x40 images from `/public/thumbnails/buildings/`). 7 category filter tabs (All, Core, Gathering, Processing, Military, Logistics, Housing) with tier grouping (Core/Basic/Advanced/Specialized). Clicking a card auto-switches to the Building tool. Properties panel widened from 200px to 260px. — 2026-03-28
+- [DONE] Dev Tools dropdown — Added gear-icon "Dev Tools" dropdown in the top bar with links to Audio Generator (localhost:7860), Thumbnail Generator (localhost:3001), and Balance Tool (/tools/balance-tool.html). Outside-click dismiss with proper cleanup. — 2026-03-28
+- [DONE] Bug fixes — Fixed `crypto.randomUUID` crash in non-secure contexts (shared `generateId()` utility in `src/editor/editorUtils.ts`). Fixed `getGame()` undefined error in InfoPanelController when media query change fires before initialization. — 2026-03-28
+- [DONE] Code quality — Extracted shared `generateId()` to `editorUtils.ts`. Typed category tabs as `BuildingCategory | 'all'`. Cached devtools DOM refs to avoid querySelector on every document click. Applied `getGame()` guard consistently in both mobile and desktop paths. 779 tests passing. — 2026-03-28
 
 ### Audio System [COMPLETE]
 - [DONE] Audio Generation Tool — Created `tools/audio-generator/` Python/Gradio app with 4-tab UI (Catalog Browser, Custom Generator, Audio Library, Export). Supports 2 AI models: EzAudio (Tencent AI Lab, Interspeech 2025, hyperrealistic sound effects, MIT) and MusicGen Small (ambient loops). Pre-filled `audio_catalog.json` with 100+ entries covering all 48 buildings, 15 unit work sounds, 12 ambient environments, 8 animal sounds, 6 military SFX, 5 UI one-shots. Audio processing pipeline: trim, normalize, fade, loop crossfade, WAV→OGG export + manifest.json generation. — 2026-03-27
