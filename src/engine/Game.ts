@@ -505,6 +505,9 @@ export class Game {
     // Road placement controller (flag & road building)
     this.roadPlacementController = new RoadPlacementController(this);
 
+    // Initialize spatial audio engine (async, non-blocking)
+    this.rnds.spatialAudioEngine.initialize();
+
     const clock = new THREE.Clock();
     const animate = (): void => {
       this.animationId = requestAnimationFrame(animate);
@@ -633,6 +636,22 @@ export class Game {
       this.rnds.waterEffectRenderer.update(rawDelta, this.camera.position, this.frustum);
       this.rnds.wildAnimalRenderer.update(deltaTime, this.camera.position);
       this.rnds.beeRenderer.update(rawDelta, this.camera.position, this.frustum);
+
+      // Spatial audio — proximity-based building/unit/ambient sounds
+      {
+        const cycleState = this.atmosphereController.getCycleState();
+        const weatherType = this.rnds.weatherController.getWeatherType();
+        this.rnds.spatialAudioEngine.update(
+          rawDelta,
+          deltaTime,
+          this.camera.position,
+          this.gameState,
+          cycleState.phase,
+          cycleState.nightness,
+          weatherType,
+          this._paused,
+        );
+      }
 
       // Apply weather atmosphere overlay
       const wt = this.rnds.weatherController.getWeatherType();
@@ -1003,6 +1022,7 @@ export class Game {
     this.rnds.waterEffectRenderer.dispose();
     this.rnds.wildAnimalRenderer.dispose();
     this.rnds.beeRenderer.dispose();
+    this.rnds.spatialAudioEngine.dispose();
     this.rnds.particleSystem.dispose();
     this.rnds.treeRenderer.dispose();
     this.rnds.depositRenderer.dispose();

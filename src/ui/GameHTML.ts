@@ -46,6 +46,10 @@ export function getGameHTML(currentTheme: string): string {
         <input type="range" id="vol-sfx" min="0" max="100" value="80" class="audio-slider">
         <label class="audio-slider-label">Music Volume</label>
         <input type="range" id="vol-music" min="0" max="100" value="30" class="audio-slider">
+        <label class="audio-slider-label">Spatial Audio</label>
+        <input type="range" id="vol-spatial" min="0" max="100" value="60" class="audio-slider">
+        <label class="audio-slider-label">Ambient Audio</label>
+        <input type="range" id="vol-ambient" min="0" max="100" value="40" class="audio-slider">
       </div>
       <div class="nav-drawer-divider"></div>
       <li data-headline="Graphics" data-nonclickable>${icon('settings')} Graphics</li>

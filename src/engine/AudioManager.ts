@@ -26,11 +26,15 @@ export class AudioManager {
   private masterGain: GainNode | null = null;
   private sfxGain: GainNode | null = null;
   private musicGain: GainNode | null = null;
+  private spatialGain: GainNode | null = null;
+  private ambientGain: GainNode | null = null;
 
   private _muted = false;
   private _masterVolume = 0.5;
   private _sfxVolume = 0.8;
   private _musicVolume = 0.3;
+  private _spatialVolume = 0.6;
+  private _ambientVolume = 0.4;
 
   // Ambient music state
   private musicOscillators: OscillatorNode[] = [];
@@ -53,6 +57,14 @@ export class AudioManager {
       this.musicGain = this.ctx.createGain();
       this.musicGain.gain.value = this._musicVolume;
       this.musicGain.connect(this.masterGain);
+
+      this.spatialGain = this.ctx.createGain();
+      this.spatialGain.gain.value = this._spatialVolume;
+      this.spatialGain.connect(this.masterGain);
+
+      this.ambientGain = this.ctx.createGain();
+      this.ambientGain.gain.value = this._ambientVolume;
+      this.ambientGain.connect(this.masterGain);
     }
     // Resume context if suspended (e.g. after tab goes background)
     if (this.ctx.state === 'suspended') {
@@ -110,6 +122,45 @@ export class AudioManager {
     if (this.musicGain) {
       this.musicGain.gain.value = this._musicVolume;
     }
+  }
+
+  get spatialVolume(): number {
+    return this._spatialVolume;
+  }
+
+  set spatialVolume(v: number) {
+    this._spatialVolume = Math.max(0, Math.min(1, v));
+    if (this.spatialGain) {
+      this.spatialGain.gain.value = this._spatialVolume;
+    }
+  }
+
+  get ambientVolume(): number {
+    return this._ambientVolume;
+  }
+
+  set ambientVolume(v: number) {
+    this._ambientVolume = Math.max(0, Math.min(1, v));
+    if (this.ambientGain) {
+      this.ambientGain.gain.value = this._ambientVolume;
+    }
+  }
+
+  /** Get the AudioContext (lazily created). For use by SpatialAudioEngine. */
+  getContext(): AudioContext {
+    return this.ensureContext();
+  }
+
+  /** Get the spatial gain node for positioned building/unit sounds. */
+  getSpatialGain(): GainNode {
+    this.ensureContext();
+    return this.spatialGain!;
+  }
+
+  /** Get the ambient gain node for environmental soundscape. */
+  getAmbientGain(): GainNode {
+    this.ensureContext();
+    return this.ambientGain!;
   }
 
   // ---------------------------------------------------------------
@@ -477,6 +528,8 @@ export class AudioManager {
     this.masterGain = null;
     this.sfxGain = null;
     this.musicGain = null;
+    this.spatialGain = null;
+    this.ambientGain = null;
   }
 }
 

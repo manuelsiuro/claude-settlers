@@ -108,6 +108,8 @@ export function initAppBar(
   const volMaster = document.getElementById('vol-master') as HTMLInputElement;
   const volSfx = document.getElementById('vol-sfx') as HTMLInputElement;
   const volMusic = document.getElementById('vol-music') as HTMLInputElement;
+  const volSpatial = document.getElementById('vol-spatial') as HTMLInputElement;
+  const volAmbient = document.getElementById('vol-ambient') as HTMLInputElement;
 
   function updateMuteUI(): void {
     muteIconOn.classList.toggle('hidden', audioManager.muted);
@@ -142,7 +144,10 @@ export function initAppBar(
         masterVolume: Number(volMaster.value) / 100,
         sfxVolume: Number(volSfx.value) / 100,
         musicVolume: Number(volMusic.value) / 100,
+        spatialVolume: Number(volSpatial.value) / 100,
+        ambientVolume: Number(volAmbient.value) / 100,
         muted: audioManager.muted,
+        spatialAudio: true,
       },
     });
   }
@@ -157,6 +162,14 @@ export function initAppBar(
   });
   volMusic.addEventListener('input', () => {
     audioManager.musicVolume = Number(volMusic.value) / 100;
+    persistCurrentSettings();
+  });
+  volSpatial.addEventListener('input', () => {
+    audioManager.spatialVolume = Number(volSpatial.value) / 100;
+    persistCurrentSettings();
+  });
+  volAmbient.addEventListener('input', () => {
+    audioManager.ambientVolume = Number(volAmbient.value) / 100;
     persistCurrentSettings();
   });
 

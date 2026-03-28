@@ -182,6 +182,8 @@ wireMobileToolbar({
   (document.getElementById('vol-master') as HTMLInputElement).value = String(Math.round(saved.audio.masterVolume * 100));
   (document.getElementById('vol-sfx') as HTMLInputElement).value = String(Math.round(saved.audio.sfxVolume * 100));
   (document.getElementById('vol-music') as HTMLInputElement).value = String(Math.round(saved.audio.musicVolume * 100));
+  (document.getElementById('vol-spatial') as HTMLInputElement).value = String(Math.round(saved.audio.spatialVolume * 100));
+  (document.getElementById('vol-ambient') as HTMLInputElement).value = String(Math.round(saved.audio.ambientVolume * 100));
   (document.getElementById('gfx-shadows') as HTMLSelectElement).value = saved.graphics.shadows;
   (document.getElementById('gfx-post') as HTMLSelectElement).value = saved.graphics.postProcessing;
   (document.getElementById('gfx-weather') as HTMLSelectElement).value = saved.graphics.weather;
@@ -191,6 +193,8 @@ wireMobileToolbar({
   audioManager.masterVolume = saved.audio.masterVolume;
   audioManager.sfxVolume = saved.audio.sfxVolume;
   audioManager.musicVolume = saved.audio.musicVolume;
+  audioManager.spatialVolume = saved.audio.spatialVolume;
+  audioManager.ambientVolume = saved.audio.ambientVolume;
   if (saved.audio.muted) audioManager.muted = true;
 }
 
