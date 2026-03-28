@@ -22,15 +22,9 @@ import { RoadNetwork } from '../game/RoadNetwork';
 import type { Building } from '../game/Building';
 import { createBuilding, BuildingState } from '../game/Building';
 import type { BuildingType } from '../game/BuildingType';
+import { generateId } from './editorUtils';
 
 const PLAYER_COLORS = [0x4488ff, 0xff4444, 0x44cc44, 0xffcc00];
-
-function generateId(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID();
-  }
-  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-}
 
 /**
  * Lightweight Three.js editor scene — no game managers/logic.

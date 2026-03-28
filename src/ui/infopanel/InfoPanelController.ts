@@ -58,7 +58,8 @@ function setupBottomSheet(): void {
       stopInfoPanelUpdates();
       updater.reset();
       if (!isAttackModeActive()) {
-        const selection = getGame().getSelectionController();
+        const game = typeof getGame === 'function' ? getGame() : undefined;
+        const selection = game?.getSelectionController();
         if (selection?.selected) {
           selection.deselect();
         }

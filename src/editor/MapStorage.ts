@@ -1,6 +1,7 @@
 import type { MapData, MapListEntry } from '../game/MapData';
 import { validateMapData } from '../game/MapData';
 import { logger } from '../util/Logger';
+import { generateId } from './editorUtils';
 
 const INDEX_KEY = 'feudal_maps_index';
 const MAP_KEY_PREFIX = 'feudal_map_';
@@ -106,9 +107,7 @@ export function importMapFromFile(): Promise<MapData | null> {
             return;
           }
           // Assign new ID to avoid collisions
-          data.id = (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
-            ? crypto.randomUUID()
-            : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+          data.id = generateId();
           resolve(data);
         } catch {
           resolve(null);

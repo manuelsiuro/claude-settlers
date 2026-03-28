@@ -33,7 +33,9 @@ const TOOL_DEFS: { tool: EditorTool; label: string; icon: string; shortcut: stri
   { tool: EditorTool.Eraser, label: 'Eraser', icon: 'delete', shortcut: '9' },
 ];
 
-const CATEGORY_TABS: { key: string; label: string }[] = [
+type CategoryFilter = BuildingCategory | 'all';
+
+const CATEGORY_TABS: { key: CategoryFilter; label: string }[] = [
   { key: 'all', label: 'All' },
   { key: 'core', label: 'Core' },
   { key: 'gathering', label: 'Gathering' },
@@ -60,7 +62,9 @@ export class MapEditorUI {
   private brushSizeEl: HTMLElement | null = null;
   private nameInput: HTMLInputElement | null = null;
   private descInput: HTMLTextAreaElement | null = null;
-  private buildingFilterCategory = 'all';
+  private buildingFilterCategory: CategoryFilter = 'all';
+  private devToolsBtnEl: HTMLElement | null = null;
+  private devToolsMenuEl: HTMLElement | null = null;
 
   /** Callback to go back to setup screen */
   onBack: (() => void) | null = null;
@@ -68,9 +72,10 @@ export class MapEditorUI {
   onPlay: ((mapData: MapData) => void) | null = null;
 
   private devToolsOutsideClickHandler = (e: MouseEvent): void => {
-    const btn = this.rootEl.querySelector('#editor-devtools-btn');
-    const menu = this.rootEl.querySelector('#editor-devtools-menu');
-    if (btn && menu && !btn.contains(e.target as Node) && !menu.contains(e.target as Node)) {
+    const menu = this.devToolsMenuEl;
+    if (!menu || menu.classList.contains('hidden')) return;
+    const btn = this.devToolsBtnEl;
+    if (btn && !btn.contains(e.target as Node) && !menu.contains(e.target as Node)) {
       menu.classList.add('hidden');
     }
   };
@@ -262,13 +267,12 @@ export class MapEditorUI {
 
   // ─── Building Catalog ─────────────────────────────────────────────────
 
-  private buildBuildingCatalogHTML(category: string): string {
+  private buildBuildingCatalogHTML(category: CategoryFilter): string {
     const tabs = CATEGORY_TABS.map(
       (t) =>
         `<button class="editor-building-tab${t.key === category ? ' active' : ''}" data-cat="${t.key}">${t.label}</button>`,
     ).join('');
 
-    // Get buildings filtered by category, sorted by tier
     let buildings: { type: string; label: string; tier: number }[];
     if (category === 'all') {
       buildings = Object.entries(BUILDING_DEFINITIONS).map(([type, def]) => ({
@@ -278,12 +282,11 @@ export class MapEditorUI {
       }));
     } else {
       buildings = Object.entries(BUILDING_DEFINITIONS)
-        .filter(([, def]) => def.category === (category as BuildingCategory))
+        .filter(([, def]) => def.category === category)
         .map(([type, def]) => ({ type, label: def.label, tier: def.tier }));
     }
     buildings.sort((a, b) => a.tier - b.tier || a.label.localeCompare(b.label));
 
-    // Group by tier
     const tiers = new Map<number, typeof buildings>();
     for (const b of buildings) {
       if (!tiers.has(b.tier)) tiers.set(b.tier, []);
@@ -351,7 +354,7 @@ export class MapEditorUI {
       // Category tab click
       const tab = target.closest<HTMLElement>('.editor-building-tab');
       if (tab) {
-        this.buildingFilterCategory = tab.dataset.cat ?? 'all';
+        this.buildingFilterCategory = (tab.dataset.cat ?? 'all') as CategoryFilter;
         this.updateBuildingCatalog();
         return;
       }
@@ -437,6 +440,8 @@ export class MapEditorUI {
   private wireDevTools(): void {
     const btn = this.rootEl.querySelector('#editor-devtools-btn')!;
     const menu = this.rootEl.querySelector('#editor-devtools-menu')!;
+    this.devToolsBtnEl = btn as HTMLElement;
+    this.devToolsMenuEl = menu as HTMLElement;
 
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
