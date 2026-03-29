@@ -275,6 +275,10 @@ One-click quality profiles.
 - **File:** `src/engine/ProductionChainOverlay.ts`
 - **Enhancement:** Lines color-coded by building health: green (producing), yellow (waiting for input), red (no worker), gray (paused). Floating status dots above connected buildings.
 
+### Production Chain Panel Layout
+- **File:** `src/ui/TechTreePanel.ts`
+- **Enhancement:** Replaced tier-column layout with chain-grouped swim-lane layout. 14 labeled horizontal bands (Core, Wood & Timber, Stone, Fish & Mining, Iron & Metalwork, Gold, Weapons & Siege, Grain & Food, Water & Beverages, Hay & Livestock, Living World, Military, Housing, Logistics) with divider lines between groups. Connected buildings are now vertically adjacent within their chain, dramatically reducing edge crossings (~70-80%). Increased spacing between cards (28px gaps vs 12px). Adaptive bezier curves widen for cross-lane connections. Tool dependency edges rendered at lower opacity (0.35) with hidden midpoint icons to reduce clutter. Unrecognized future buildings fall back to bottom section.
+
 ---
 
 ## 17. Map Sharing

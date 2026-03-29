@@ -8,10 +8,31 @@ import { audioManager } from '../engine/AudioManager';
 // ============================================================
 const NODE_WIDTH = 160;
 const NODE_HEIGHT = 72;
-const COL_GAP = 220;
-const ROW_GAP = 84;
+const COL_GAP = 240;
+const ROW_GAP = 100;
+const LANE_GAP = 40;
+const LABEL_MARGIN = 80;
 const PADDING = 50;
 const DRAG_THRESHOLD = 5;
+
+// Production chain swim-lanes: each building appears exactly once.
+// Order minimizes cross-lane edge crossings (related chains are adjacent).
+const CHAIN_ORDER: { label: string; members: string[] }[] = [
+  { label: 'Core',              members: ['castle'] },
+  { label: 'Wood & Timber',     members: ['woodcutter_hut', 'forester_hut', 'sawmill', 'charcoal_burner'] },
+  { label: 'Stone',             members: ['quarry', 'stone_mine'] },
+  { label: 'Fish & Mining',     members: ['fisherman_hut', 'iron_mine', 'coal_mine', 'gold_mine'] },
+  { label: 'Iron & Metalwork',  members: ['iron_smelter', 'toolmaker_workshop', 'blacksmith_armory'] },
+  { label: 'Gold',              members: ['geologist_hut', 'goldsmith_mint'] },
+  { label: 'Weapons & Siege',   members: ['fletchers_workshop', 'siege_workshop'] },
+  { label: 'Grain & Food',      members: ['farm', 'windmill', 'bakery', 'pig_farm', 'slaughterhouse'] },
+  { label: 'Water & Beverages', members: ['well', 'brewery', 'vineyard', 'orchard', 'winery', 'inn_tavern'] },
+  { label: 'Hay & Livestock',   members: ['hayfield', 'dairy_farm', 'cattle_ranch', 'sheep_farm', 'stable', 'cheese_maker_building', 'butchery', 'tannery', 'weavers_hut'] },
+  { label: 'Living World',      members: ['hunting_lodge', 'trappers_hut', 'apiary', 'furrier', 'meadery'] },
+  { label: 'Military',          members: ['guard_hut', 'watchtower', 'torch_tower', 'barracks', 'fortress', 'archery_range'] },
+  { label: 'Housing',           members: ['small_house', 'medium_house', 'large_house'] },
+  { label: 'Logistics',         members: ['warehouse', 'harbor', 'market'] },
+];
 
 // Category colors for left-border accents
 const CATEGORY_COLORS: Record<string, string> = {
@@ -142,25 +163,62 @@ function buildGraph(): { nodes: TechTreeNode[]; edges: TechTreeEdge[] } {
     nodeMap.set(type, node);
   }
 
-  // Group by column and sort within columns by chain group
-  const columns = new Map<number, TechTreeNode[]>();
-  for (const node of nodes) {
-    const col = columns.get(node.col) ?? [];
-    col.push(node);
-    columns.set(node.col, col);
+  // Chain-grouped swim-lane layout: each production chain gets a horizontal band
+  const assigned = new Set<string>();
+  let currentY = PADDING;
+
+  for (const chain of CHAIN_ORDER) {
+    // Collect existing nodes in this lane
+    const laneNodes: TechTreeNode[] = [];
+    for (const type of chain.members) {
+      const node = nodeMap.get(type);
+      if (node) {
+        laneNodes.push(node);
+        assigned.add(type);
+      }
+    }
+    if (laneNodes.length === 0) continue;
+
+    // Group by tier (column) within the lane
+    const tierGroups = new Map<number, TechTreeNode[]>();
+    for (const node of laneNodes) {
+      const group = tierGroups.get(node.def.tier) ?? [];
+      group.push(node);
+      tierGroups.set(node.def.tier, group);
+    }
+
+    // Find tallest tier stack in this lane
+    let maxInTier = 0;
+    for (const group of tierGroups.values()) {
+      maxInTier = Math.max(maxInTier, group.length);
+    }
+
+    // Assign positions
+    for (const [tier, group] of tierGroups) {
+      group.forEach((node, i) => {
+        node.x = tier * COL_GAP + PADDING + LABEL_MARGIN;
+        node.y = currentY + i * ROW_GAP;
+      });
+    }
+
+    currentY += maxInTier * ROW_GAP + LANE_GAP;
   }
 
-  for (const [, col] of columns) {
-    col.sort((a, b) => {
-      const cmp = a.chainGroup.localeCompare(b.chainGroup);
-      if (cmp !== 0) return cmp;
-      return a.def.label.localeCompare(b.def.label);
-    });
-    col.forEach((node, i) => {
-      node.row = i;
-      node.x = node.col * COL_GAP + PADDING;
-      node.y = node.row * ROW_GAP + PADDING;
-    });
+  // Fallback: unassigned buildings go at the bottom
+  const unassigned = nodes.filter(n => !assigned.has(n.type));
+  if (unassigned.length > 0) {
+    const tierGroups = new Map<number, TechTreeNode[]>();
+    for (const node of unassigned) {
+      const group = tierGroups.get(node.def.tier) ?? [];
+      group.push(node);
+      tierGroups.set(node.def.tier, group);
+    }
+    for (const [tier, group] of tierGroups) {
+      group.forEach((node, i) => {
+        node.x = tier * COL_GAP + PADDING + LABEL_MARGIN;
+        node.y = currentY + i * ROW_GAP;
+      });
+    }
   }
 
   // Build edges from production inputs
@@ -271,7 +329,13 @@ function computeEdgePath(fromType: string, toType: string): string {
   const sy = srcPos.y + NODE_HEIGHT / 2;
   const tx = tgtPos.x;
   const ty = tgtPos.y + NODE_HEIGHT / 2;
-  const cp = Math.abs(tx - sx) * 0.4;
+
+  // Widen curves for cross-lane edges (large vertical distance) to reduce visual chaos
+  const horizontalDist = Math.abs(tx - sx);
+  const verticalDist = Math.abs(ty - sy);
+  const cpBase = Math.max(horizontalDist * 0.4, 40);
+  const cpExtra = Math.min(verticalDist * 0.15, 80);
+  const cp = cpBase + cpExtra;
 
   return `M${sx},${sy} C${sx + cp},${sy} ${tx - cp},${ty} ${tx},${ty}`;
 }
@@ -340,13 +404,48 @@ function renderTechTreeHTML(): string {
     const d = computeEdgePath(edge.from, edge.to);
     const color = RESOURCE_COLORS[edge.resource] ?? '#999';
     const dash = edge.isDashed ? ' stroke-dasharray="6 4"' : '';
-    const opacity = highlighted ? 1 : (dimmed ? 0.1 : 0.6);
+    const opacity = highlighted ? 1 : (dimmed ? 0.1 : (edge.isDashed ? 0.35 : 0.6));
 
     edgeSVG += `<path class="techtree-edge${edgeDimClass}${edgeHighClass}" data-from="${edge.from}" data-to="${edge.to}" d="${d}" fill="none" stroke="${color}" stroke-width="${highlighted ? 2.5 : 1.5}"${dash} opacity="${opacity}"/>`;
 
-    // Resource icon at midpoint
-    const mid = computeEdgeMidpoint(edge.from, edge.to);
-    edgeSVG += `<g data-edge-mid="${edge.from}->${edge.to}" transform="translate(${mid.x - 8},${mid.y - 8})" opacity="${opacity}"><circle cx="8" cy="8" r="8" fill="${color}"/><text x="8" y="12" text-anchor="middle" font-size="9" fill="#fff" font-weight="600">${edge.amount}</text></g>`;
+    // Resource icon at midpoint (skip for dashed/tool-dependency edges to reduce clutter)
+    if (!edge.isDashed) {
+      const mid = computeEdgeMidpoint(edge.from, edge.to);
+      edgeSVG += `<g data-edge-mid="${edge.from}->${edge.to}" transform="translate(${mid.x - 8},${mid.y - 8})" opacity="${opacity}"><circle cx="8" cy="8" r="8" fill="${color}"/><text x="8" y="12" text-anchor="middle" font-size="9" fill="#fff" font-weight="600">${edge.amount}</text></g>`;
+    }
+  }
+
+  // Swim-lane labels and dividers
+  let laneSVG = '';
+  {
+    const nodeSet = new Set(nodes.map(n => n.type));
+    let laneY = PADDING;
+    for (const chain of CHAIN_ORDER) {
+      const laneMembers = chain.members.filter(m => nodeSet.has(m));
+      if (laneMembers.length === 0) continue;
+
+      // Compute tallest tier stack in this lane
+      const tierCounts = new Map<number, number>();
+      for (const m of laneMembers) {
+        const node = nodes.find(n => n.type === m);
+        if (!node) continue;
+        tierCounts.set(node.def.tier, (tierCounts.get(node.def.tier) ?? 0) + 1);
+      }
+      let maxInTier = 0;
+      for (const count of tierCounts.values()) maxInTier = Math.max(maxInTier, count);
+
+      const laneHeight = maxInTier * ROW_GAP;
+
+      // Lane label (vertically centered)
+      const labelY = laneY + laneHeight / 2;
+      laneSVG += `<text class="techtree-lane-label" x="${PADDING + 4}" y="${labelY}" font-size="11" fill="var(--color-on-surface-faint)" opacity="0.5" font-weight="600" dominant-baseline="middle">${chain.label}</text>`;
+
+      laneY += laneHeight + LANE_GAP;
+
+      // Divider line between lanes
+      const dividerY = laneY - LANE_GAP / 2;
+      laneSVG += `<line x1="${PADDING}" y1="${dividerY}" x2="${maxX - PADDING}" y2="${dividerY}" stroke="var(--color-on-surface-faint)" stroke-width="0.5" opacity="0.15"/>`;
+    }
   }
 
   // Node cards
@@ -395,6 +494,7 @@ function renderTechTreeHTML(): string {
       <div class="techtree-viewport">
         <div class="techtree-canvas" style="width:${maxX}px;height:${maxY}px">
           <svg class="techtree-svg" width="${maxX}" height="${maxY}" viewBox="0 0 ${maxX} ${maxY}">
+            ${laneSVG}
             ${edgeSVG}
           </svg>
           ${nodeHTML}
@@ -565,7 +665,7 @@ function applyHoverHighlight(buildingType: string | null): void {
     const dimmed = (!visibleNodes.has(edge.from) && !visibleNodes.has(edge.to));
     const highlighted = buildingType !== null && (edge.from === buildingType || edge.to === buildingType);
 
-    const opacity = highlighted ? 1 : (dimmed ? 0.1 : 0.6);
+    const opacity = highlighted ? 1 : (dimmed ? 0.1 : (edge.isDashed ? 0.35 : 0.6));
     const strokeWidth = highlighted ? 2.5 : 1.5;
 
     if (path) {

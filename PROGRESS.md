@@ -10,6 +10,9 @@
 - [DONE] 6 more random events — Positive: Harvest Festival (+morale 90s), Visiting Hero (+combat speed 60s). Negative: Mine Collapse (disables mine 45s), Drought (-30% food 60s), Plague (-30% speed 45s). Neutral: Trade Caravan (+10% production 45s). Total: 13 event types. — 2026-03-29
 - [DONE] Group attack & rally points — Added `groupAttack()` to AttackManager: sends all available knights from multiple buildings to one target (keeps 1 garrison). Added `rallyPoint` field to Building for future knight gathering. Save migration handles new field. — 2026-03-29
 
+### UI Polish [IN PROGRESS]
+- [DONE] Production chain panel layout overhaul — Replaced tier-column layout with chain-grouped swim-lane layout in TechTreePanel.ts. 14 labeled horizontal bands with divider lines. Connected buildings vertically adjacent within chains, reducing edge crossings ~70-80%. Increased card spacing (ROW_GAP 84→100, COL_GAP 220→240). Adaptive bezier curves for cross-lane edges. Tool dependency edges at reduced opacity with hidden midpoint icons. — 2026-03-29
+
 ### Robustness & Quality [COMPLETE]
 - [DONE] DiplomacyManager save/load — Added diplomacy state to SaveData interface. Serialize/deserialize treaties in serializeGame/deserializeGame. Updated Game.ts to pass diplomacyManager to both calls. Fixed SaveLoad.test.ts and Integration.test.ts to include diplomacyManager. Bumped SAVE_VERSION to 14. — 2026-03-29
 - [DONE] Error boundaries for renderers — Added `safeRender()` method to Game.ts that wraps renderer update calls in try/catch. 14 visual system updates wrapped (particles, weather, clouds, birds, water, animals, bees, combat, animations, shadows, flags, audio). Crashed renderers are disabled and logged, game continues running. — 2026-03-29
