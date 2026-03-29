@@ -37,6 +37,9 @@ export class ConstructionManager {
   /** Optional callback when a building transitions to Active */
   onBuildingActivated: ((building: Building) => void) | null = null;
 
+  /** Sandbox mode: skip resource delivery — buildings go straight to UnderConstruction */
+  sandbox = false;
+
   constructor(gameState: GameState, populationManager: PopulationManager) {
     this.gameState = gameState;
     this.populationManager = populationManager;
@@ -79,6 +82,14 @@ export class ConstructionManager {
 
     const buildings = this.gameState.getAllBuildings()
       .filter(b => b.state === BuildingState.Planned);
+
+    // Sandbox: skip resource delivery — all buildings go straight to construction
+    if (this.sandbox) {
+      for (const building of buildings) {
+        building.state = BuildingState.UnderConstruction;
+      }
+      return;
+    }
 
     // Sort by completion % descending — finish nearly-done buildings first
     buildings.sort((a, b) => {

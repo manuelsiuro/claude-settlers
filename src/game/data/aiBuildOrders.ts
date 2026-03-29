@@ -175,3 +175,116 @@ export const DIFFICULTY_CONFIGS: Record<Difficulty, DifficultyConfig> = {
     knightsPerAttack: 2,
   },
 };
+
+// ============================================================
+// AI Personalities
+// ============================================================
+
+export type AIPersonality = 'balanced' | 'economist' | 'militarist' | 'turtle';
+
+export const AI_PERSONALITY_LABELS: Record<AIPersonality, string> = {
+  balanced: 'Balanced',
+  economist: 'Economist',
+  militarist: 'Militarist',
+  turtle: 'Turtle',
+};
+
+export const AI_PERSONALITY_DESCRIPTIONS: Record<AIPersonality, string> = {
+  balanced: 'Mixed economy and military strategy',
+  economist: 'Focuses on production chains and trading',
+  militarist: 'Aggressive early military expansion',
+  turtle: 'Defensive, builds walls of guard huts',
+};
+
+/**
+ * Turtle: defensive economy-first player. Extra guard huts, delayed attacks.
+ */
+const TURTLE_BUILD_ORDER: BuildingType[] = [
+  BuildingType.WoodcutterHut,
+  BuildingType.ForesterHut,
+  BuildingType.WoodcutterHut,
+  BuildingType.Quarry,
+  BuildingType.Sawmill,
+  BuildingType.SmallHouse,
+  BuildingType.GuardHut,
+  BuildingType.GuardHut,
+  BuildingType.GuardHut,
+  BuildingType.FishermanHut,
+  BuildingType.Farm,
+  BuildingType.Warehouse,
+  BuildingType.Windmill,
+  BuildingType.Bakery,
+  BuildingType.MediumHouse,
+  BuildingType.GeologistHut,
+  BuildingType.IronMine,
+  BuildingType.CoalMine,
+  BuildingType.IronSmelter,
+  BuildingType.ToolmakerWorkshop,
+  BuildingType.Watchtower,
+  BuildingType.Watchtower,
+  BuildingType.BlacksmithArmory,
+  BuildingType.LargeHouse,
+  BuildingType.GoldMine,
+  BuildingType.GoldsmithMint,
+  BuildingType.Fortress,
+  BuildingType.Barracks,
+];
+
+/** Personality overrides applied on top of the base difficulty config. */
+export interface PersonalityOverrides {
+  buildOrder?: BuildingType[];
+  attackThresholdDelta: number;
+  decisionIntervalMultiplier: number;
+  attackIntervalMultiplier: number;
+  knightsPerAttackDelta: number;
+}
+
+export const PERSONALITY_OVERRIDES: Record<AIPersonality, PersonalityOverrides> = {
+  balanced: {
+    attackThresholdDelta: 0,
+    decisionIntervalMultiplier: 1.0,
+    attackIntervalMultiplier: 1.0,
+    knightsPerAttackDelta: 0,
+  },
+  economist: {
+    buildOrder: ECONOMIC_BUILD_ORDER,
+    attackThresholdDelta: 4,
+    decisionIntervalMultiplier: 0.8,
+    attackIntervalMultiplier: 1.5,
+    knightsPerAttackDelta: 0,
+  },
+  militarist: {
+    buildOrder: AGGRESSIVE_BUILD_ORDER,
+    attackThresholdDelta: -3,
+    decisionIntervalMultiplier: 0.7,
+    attackIntervalMultiplier: 0.7,
+    knightsPerAttackDelta: 1,
+  },
+  turtle: {
+    buildOrder: TURTLE_BUILD_ORDER,
+    attackThresholdDelta: 6,
+    decisionIntervalMultiplier: 1.2,
+    attackIntervalMultiplier: 2.0,
+    knightsPerAttackDelta: 0,
+  },
+};
+
+/** Apply personality overrides to a base difficulty config */
+export function applyPersonality(base: DifficultyConfig, personality: AIPersonality): DifficultyConfig {
+  const overrides = PERSONALITY_OVERRIDES[personality];
+  return {
+    buildOrder: overrides.buildOrder ?? base.buildOrder,
+    attackThreshold: Math.max(1, base.attackThreshold + overrides.attackThresholdDelta),
+    decisionInterval: base.decisionInterval * overrides.decisionIntervalMultiplier,
+    attackInterval: base.attackInterval * overrides.attackIntervalMultiplier,
+    skipChance: base.skipChance,
+    knightsPerAttack: Math.max(1, base.knightsPerAttack + overrides.knightsPerAttackDelta),
+  };
+}
+
+/** Deterministically assign a personality to an AI player based on player index */
+const PERSONALITY_ROTATION: AIPersonality[] = ['balanced', 'militarist', 'economist', 'turtle'];
+
+export function getPersonalityForPlayer(playerIndex: number): AIPersonality {
+  return PERSONALITY_ROTATION[playerIndex % PERSONALITY_ROTATION.length];
+}

@@ -20,6 +20,7 @@ export class ProductionChainOverlay {
   private selectedBuildingId: string | null = null;
   private dashOffset = 0;
   private enabled = true;
+  private dotBuildings: Set<string> = new Set();
 
   addToScene(scene: THREE.Scene, grid: HexGrid): void {
     this.scene = scene;
@@ -41,7 +42,7 @@ export class ProductionChainOverlay {
     }
   }
 
-  /** Show production chain for a building */
+  /** Show production chain for a building with status-based coloring */
   show(building: Building, gameState: GameState): void {
     if (!this.scene || !this.grid || !this.enabled) return;
 
@@ -66,7 +67,10 @@ export class ProductionChainOverlay {
         const producesInput = otherDef.production.outputs.some((o) => o.resource === input.resource);
         if (!producesInput) continue;
 
-        this.addLine(other, building, 0x44aaff); // Blue for inputs
+        // Color by source building health
+        const color = this.getBuildingHealthColor(other);
+        this.addLine(other, building, color);
+        this.addStatusDot(other);
         connectionCount++;
       }
       if (connectionCount >= 10) break;
@@ -84,11 +88,54 @@ export class ProductionChainOverlay {
         const consumesOutput = otherDef.production.inputs.some((i) => i.resource === output.resource);
         if (!consumesOutput) continue;
 
-        this.addLine(building, other, 0xff8844); // Orange for outputs
+        const color = this.getBuildingHealthColor(other);
+        this.addLine(building, other, color);
+        this.addStatusDot(other);
         connectionCount++;
       }
       if (connectionCount >= 10) break;
     }
+
+    // Status dot for the selected building itself
+    this.addStatusDot(building);
+  }
+
+  /** Get a color indicating building production health */
+  private getBuildingHealthColor(building: Building): number {
+    if (!building.hasWorker) return 0xff4444; // red — no worker
+    if (building.productionPaused) return 0x888888; // gray — paused
+
+    const def = BUILDING_DEFINITIONS[building.type];
+    if (def.production && def.production.inputs.length > 0) {
+      // Check if any input is missing
+      const hasMissing = def.production.inputs.some(
+        inp => (building.inputInventory[inp.resource] ?? 0) < inp.amount
+      );
+      if (hasMissing) return 0xffaa00; // yellow — waiting for input
+    }
+
+    if (building.productionProgress > 0) return 0x44cc44; // green — producing
+    return 0x44aaff; // blue — idle/ready
+  }
+
+  /** Add a floating status dot above a building */
+  private addStatusDot(building: Building): void {
+    if (!this.scene || !this.grid) return;
+    // Don't duplicate dots
+    if (this.dotBuildings.has(building.id)) return;
+    this.dotBuildings.add(building.id);
+
+    const world = HexGrid.hexToWorld(building.coord.q, building.coord.r);
+    const tile = this.grid.getTile(building.coord.q, building.coord.r);
+    const y = tile ? MapRenderer.getTileY(tile) + 1.2 : 1.2;
+    const color = this.getBuildingHealthColor(building);
+
+    const dotGeom = new THREE.SphereGeometry(0.08, 6, 6);
+    const dotMat = new THREE.MeshBasicMaterial({ color });
+    const dot = new THREE.Mesh(dotGeom, dotMat);
+    dot.position.set(world.x, y, world.z);
+    this.scene.add(dot);
+    this.arrows.push(dot); // reuse arrows array for cleanup
   }
 
   private addLine(from: Building, to: Building, color: number): void {
@@ -149,6 +196,7 @@ export class ProductionChainOverlay {
     this.arrows = [];
 
     this.selectedBuildingId = null;
+    this.dotBuildings.clear();
   }
 
   /** Get currently shown building ID (for checking if we need to update) */

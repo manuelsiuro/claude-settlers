@@ -1,8 +1,50 @@
 # Project Progress
 
-## Current Phase: Gameplay Polish & QoL — Complete
+## Current Phase: Gameplay Content — Complete
 
 ## Task Board
+
+### Gameplay Content [COMPLETE]
+- [DONE] AI diplomacy behavior — AI evaluates diplomacy every 30-60s based on personality and relative military strength. Economists propose trade agreements, Turtles propose non-aggression, Militarists only propose when weak (and break treaties when 2.5x stronger). Notifications when AI proposes or breaks treaties. — 2026-03-29
+- [DONE] 6 more campaign scenarios — The Peaceful Builder (sandbox economy), Speed Run (50 gold in 15 min), Archipelago Explorer (island territory), Four Kingdoms (4-player diplomacy survival), Dark Forest (fog+elimination), Gold Rush (mining race). Total: 12 campaigns. — 2026-03-29
+- [DONE] 6 more random events — Positive: Harvest Festival (+morale 90s), Visiting Hero (+combat speed 60s). Negative: Mine Collapse (disables mine 45s), Drought (-30% food 60s), Plague (-30% speed 45s). Neutral: Trade Caravan (+10% production 45s). Total: 13 event types. — 2026-03-29
+- [DONE] Group attack & rally points — Added `groupAttack()` to AttackManager: sends all available knights from multiple buildings to one target (keeps 1 garrison). Added `rallyPoint` field to Building for future knight gathering. Save migration handles new field. — 2026-03-29
+
+### Robustness & Quality [COMPLETE]
+- [DONE] DiplomacyManager save/load — Added diplomacy state to SaveData interface. Serialize/deserialize treaties in serializeGame/deserializeGame. Updated Game.ts to pass diplomacyManager to both calls. Fixed SaveLoad.test.ts and Integration.test.ts to include diplomacyManager. Bumped SAVE_VERSION to 14. — 2026-03-29
+- [DONE] Error boundaries for renderers — Added `safeRender()` method to Game.ts that wraps renderer update calls in try/catch. 14 visual system updates wrapped (particles, weather, clouds, birds, water, animals, bees, combat, animations, shadows, flags, audio). Crashed renderers are disabled and logged, game continues running. — 2026-03-29
+- [DONE] Formal save migration chain — Created sequential migration system in SaveLoad.ts. `MIGRATIONS` record maps version→migration function. `migrateSaveData()` runs all needed migrations sequentially. Migrations v7→v8 (tool fields), v8→v9 (dismissal), v9→v10 (satiation), v10→v11 (roads/HP/animals), v13→v14 (diplomacy). Applied in loadFromLocalStorage, loadFromKey, loadFromFile. Removed version ceiling check. — 2026-03-29
+- [DONE] New tests — Added DiplomacyManager.test.ts (11 tests: treaties, attack checks, trade/alliance, serialization), CampaignData.test.ts (7 tests: validation, objectives, difficulty), aiBuildOrders.test.ts (12 tests: configs, personalities, overrides), SaveMigration.test.ts (3 tests: v7→v14 migration, version rejection). 843 tests passing. — 2026-03-29
+- [DONE] Enhanced performance monitor — PerformanceMonitor now shows draw calls, triangle count, and geometry count alongside FPS. Press P to toggle. Renderer reference wired via setRenderer(). — 2026-03-29
+
+### Visual Polish & Community — Phases C/D [COMPLETE]
+- [DONE] Animated water rendering — Replaced flat MeshLambertMaterial with ShaderMaterial featuring vertex wave displacement (3 overlapping sine waves), animated color shimmer between teal tones. Registered with ShaderTimeManager for automatic uTime updates. Unregisters on dispose. — 2026-03-29
+- [DONE] Night glow on buildings — BuildingAnimator now receives `nightness` from Game.ts. Active buildings get warm emissive glow (1.0, 0.8, 0.4) when nightness > 0.4. Production buildings get brighter glow. Furnace-animated buildings excluded to avoid double-glow. — 2026-03-29
+- [DONE] Smooth camera pan — CameraController.panTo() now interpolates smoothly via lerp in update() instead of instant jump. All navigation (event log, Home key, bookmarks, alerts) uses smooth pan. Added panToInstant() for programmatic use. — 2026-03-29
+- [DONE] Achievements system — 24 achievements across 5 categories (Victory, Economy, Military, Exploration, Misc). Persisted in localStorage. Unlocked via game events (notifications, game over stats, game start). Achievement gallery accessible from nav drawer. Cross-game progress tracking. — 2026-03-29
+- [DONE] Accessibility features — Added colorblind modes (Deuteranopia, Protanopia, Tritanopia) via CSS SVG filters on game canvas. Text scaling options (Normal, Large +20%, XL +40%) via root font-size. Both persisted in localStorage and restored on startup. Settings in nav drawer. — 2026-03-29
+- [DONE] Production chain visualizer — Enhanced ProductionChainOverlay with status-based coloring: green (producing), yellow (waiting for input), red (no worker), gray (paused). Added floating status dots above connected buildings. — 2026-03-29
+- [DONE] Fog of war polish — Replaced MeshBasicMaterial with ShaderMaterial using per-vertex alpha for soft edge gradients. Fog tiles adjacent to visible areas get 0.3 edge alpha vs 1.0 center alpha for smooth transitions. Darker unexplored color (0x111828). — 2026-03-29
+- [DONE] Map sharing — Added Share button to map editor (copies map JSON to clipboard). Added Paste button to setup screen custom map tab (imports map from clipboard). Export/Import via files already existed. — 2026-03-29
+- [DONE] Campaign mode — 6 hand-crafted scenarios (The First Settlement, Mountain Fortress, Island Survival, Oasis Trade Empire, Last Stand, Total Conquest). Each has custom objectives (build count, population, territory, gold, military, time survival). Campaign tab in setup screen with card UI showing completion status. VictoryManager checks all objectives each tick. Completed campaigns persisted in localStorage. — 2026-03-29
+- [DONE] Diplomacy system — DiplomacyManager tracks treaties between player pairs (none/non_aggression/trade_agreement/alliance). Alliance shares fog of war, trade agreement reduces fees, non-aggression prevents attacks. AI respects diplomacy when selecting attack targets. Diplomacy panel in nav drawer with player cards, treaty badges, propose/break/upgrade buttons. — 2026-03-29
+- [DONE] Graphics presets — Low/Medium/High/Ultra one-click buttons in settings panel. Each sets shadows, post-processing, weather, time of day, and ambient life together. Persisted via saveSettings. — 2026-03-29
+- [DONE] Game speed hotkeys — F1-F4 for 0.5x/1x/2x/3x speed. Added `setSpeed()` to Game.ts. Extended furnace glow animation to Brewery, Winery, Charcoal Burner, and Cheese Maker buildings. — 2026-03-29
+
+### Gameplay Depth — Phase B [COMPLETE] — 2026-03-29
+- [DONE] Sandbox / creative mode — Added `sandbox` boolean to GameConfig. When enabled: AI never attacks (AIPlayer.tryAttack skipped), no defeat condition (VictoryManager skips castle-destroyed checks), free building (ConstructionManager skips resource delivery — buildings go straight to UnderConstruction). Toggle in setup screen with description. — 2026-03-29
+- [DONE] Combat unit counters — Added rock-paper-scissors counter bonuses to CombatManager.preComputeDuel: Knight beats Archer (1.4x), Archer beats Cavalry (1.5x), Cavalry beats Knight (1.3x). Applied symmetrically for both attacker and defender. — 2026-03-29
+- [DONE] AI personalities — Added 4 personalities (Balanced, Economist, Militarist, Turtle) with distinct build orders and attack behavior. Turtle has 3 guard huts early + delayed attacks + fortress. Militarist has early military + faster attacks + 2 knights per attack. Personalities assigned deterministically per player index. `applyPersonality()` overlays on difficulty config. Shown in setup screen player dots tooltips. — 2026-03-29
+- [DONE] Smart placement suggestions — Enhanced placement preview to warn when no flag is within 2 hexes of placement site ("No flag nearby — place a flag to connect this building"). Exposed `currentPreviewHex` from PlacementController. Distance rating system already existed. — 2026-03-29
+- [TODO] Diplomacy system — deferred (requires UI design, state management, AI diplomacy logic)
+
+### Core Polish — Phase A [COMPLETE]
+- [DONE] Loading screen with progress bar — Created `LoadingScreen.ts` with animated progress bar, percentage counter, model name display, and randomized gameplay tips. Added `AssetProgressCallback` to `AssetLoader` with per-model progress tracking across 4 categories. Shown during `Game.start()`, hidden on completion. — 2026-03-29
+- [DONE] Auto-save system — Added rotating 3-slot auto-save to localStorage every 2 minutes via `autoSaveToSlot()`. Added `listSaveSlots()` and `loadFromKey()` for save slot management. Continue button loads most recent save across all slots. Added `beforeunload` warning for active games. — 2026-03-29
+- [DONE] Event log / history panel — Created `EventLog.ts` with bell button in AppBar, unread badge counter, scrollable list of last 100 events. Color-coded by severity (danger/warning/success/info). Click events with position to navigate camera. Wired into `NotificationWiring.ts` to capture all game notifications. — 2026-03-29
+- [DONE] In-game encyclopedia — Created `EncyclopediaPanel.ts` with 3 searchable tabs (Buildings, Resources, Units). Each entry shows full detail: description, cost, production recipe, inputs/outputs, worker requirements, stats, placement terrain. Resources show "Produced By" and "Consumed By" building cross-references. Accessible via nav drawer "Encyclopedia" item. — 2026-03-29
+- [DONE] Enhanced endgame stats screen — Upgraded `GameOverScreen.ts` with sectioned stats: Game (duration, territory %), Economy (active buildings, stored resources, gold bars), Population (total, civilians, military breakdown by unit type). — 2026-03-29
+- [DONE] Keyboard shortcuts — Created `KeyboardShortcuts.ts` with global hotkeys: B (build), S (stats), D (dashboard), E (encyclopedia), Home (center on castle), ? (show shortcuts reference). Shortcuts overlay with all keybindings. Respects input focus and setup screen state. — 2026-03-29
 
 ### Gameplay Polish & QoL [COMPLETE]
 - [DONE] Wire hunger penalties — Called `getHungerSpeedMultiplier()` in UnitManager (movement speed) and `getHungerProductionMultiplier()` in ProductionManager (production rate). Workers with low satiation now produce and move slower. — 2026-03-28

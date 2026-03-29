@@ -97,6 +97,26 @@ export class CombatManager {
       defenderStrength *= defenderDef.chargeMultiplier;
     }
 
+    // Unit type counters (rock-paper-scissors)
+    // Knight (infantry) beats Archer in melee
+    if (attacker.type === UnitType.Knight && defender.type === UnitType.Archer) {
+      attackerStrength *= 1.4;
+    } else if (defender.type === UnitType.Knight && attacker.type === UnitType.Archer) {
+      defenderStrength *= 1.4;
+    }
+    // Archer beats Cavalry (ranged kiting advantage)
+    if (attacker.type === UnitType.Archer && defender.type === UnitType.Cavalry) {
+      attackerStrength *= 1.5;
+    } else if (defender.type === UnitType.Archer && attacker.type === UnitType.Cavalry) {
+      defenderStrength *= 1.5;
+    }
+    // Cavalry beats Knight (mounted advantage)
+    if (attacker.type === UnitType.Cavalry && defender.type === UnitType.Knight) {
+      attackerStrength *= 1.3;
+    } else if (defender.type === UnitType.Cavalry && attacker.type === UnitType.Knight) {
+      defenderStrength *= 1.3;
+    }
+
     // Probability that attacker wins
     const totalStrength = attackerStrength + defenderStrength;
     const attackerWinProb = totalStrength > 0 ? attackerStrength / totalStrength : 0.5;

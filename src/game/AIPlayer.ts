@@ -8,8 +8,8 @@ import type { AttackManager } from './AttackManager';
 import type { KnightManager } from './KnightManager';
 import type { UpgradeManager } from './UpgradeManager';
 import { Difficulty } from './GameConfig';
-import { DIFFICULTY_CONFIGS, MAX_HEX_RETRIES } from './data/aiBuildOrders';
-import type { DifficultyConfig } from './data/aiBuildOrders';
+import { DIFFICULTY_CONFIGS, MAX_HEX_RETRIES, applyPersonality, getPersonalityForPlayer } from './data/aiBuildOrders';
+import type { DifficultyConfig, AIPersonality } from './data/aiBuildOrders';
 import { UnitType } from './UnitType';
 import { UnitState } from './Unit';
 import type { ResourceType } from './ResourceType';
@@ -23,6 +23,7 @@ import { autoConnectBuilding } from './AutoRoad';
 import type { RoadNetwork } from './RoadNetwork';
 import type { PopulationManager } from './PopulationManager';
 import type { MarketplaceManager } from './MarketplaceManager';
+import type { DiplomacyManager } from './DiplomacyManager';
 import {
   AI_TRADE_CHECK_INTERVAL,
   AI_TRADE_SURPLUS_THRESHOLD,
@@ -82,11 +83,23 @@ export class AIPlayer {
   /** Set to true when the AI is under attack; halves attack cooldown for one cycle. */
   private underThreat = false;
 
+  /** Sandbox mode: AI will not attack */
+  sandbox = false;
+
+  /** AI personality (affects build order and aggression) */
+  readonly personality: AIPersonality;
+
   /** Marketplace manager reference (set after construction) */
   private marketplaceManager: MarketplaceManager | null = null;
 
+  /** Diplomacy manager reference (set after construction) */
+  private diplomacyManager: DiplomacyManager | null = null;
+
   /** Timer for AI trade evaluations */
   private tradeCooldown = AI_TRADE_CHECK_INTERVAL;
+
+  /** Timer for diplomacy evaluations (every 30-60s) */
+  private diplomacyCooldown = 30 + Math.random() * 30;
 
   constructor(
     playerId: number,
@@ -111,7 +124,10 @@ export class AIPlayer {
     this.populationManager = populationManager;
     this.onBuildingPlaced = onBuildingPlaced;
 
-    this.config = DIFFICULTY_CONFIGS[difficulty];
+    // Assign personality based on player index (0-based: player 2 = index 0, player 3 = index 1, etc.)
+    this.personality = getPersonalityForPlayer(playerId - 2);
+    const baseConfig = DIFFICULTY_CONFIGS[difficulty];
+    this.config = applyPersonality(baseConfig, this.personality);
     this.buildOrder = this.config.buildOrder;
     this.decisionInterval = this.config.decisionInterval;
     this.attackInterval = this.config.attackInterval;
@@ -125,6 +141,10 @@ export class AIPlayer {
   /** Set the marketplace manager for AI trading. */
   setMarketplaceManager(mp: MarketplaceManager): void {
     this.marketplaceManager = mp;
+  }
+
+  setDiplomacyManager(dm: DiplomacyManager): void {
+    this.diplomacyManager = dm;
   }
 
   update(deltaTime: number): void {
@@ -155,6 +175,15 @@ export class AIPlayer {
       // Reset threat flag after one attack cycle
       this.underThreat = false;
       this.tryAttack();
+    }
+
+    // Diplomacy evaluation
+    if (this.diplomacyManager) {
+      this.diplomacyCooldown -= deltaTime;
+      if (this.diplomacyCooldown <= 0) {
+        this.diplomacyCooldown = 30 + Math.random() * 30;
+        this.evaluateDiplomacy();
+      }
     }
 
     // Trade evaluation
@@ -268,6 +297,7 @@ export class AIPlayer {
    * strategy's attack threshold). Hard difficulty sends up to 2 knights per attack.
    */
   private tryAttack(): void {
+    if (this.sandbox) return;
     if (this.buildOrderIndex < this.config.attackThreshold) return;
 
     const availableKnights = this.getAvailableKnights();
@@ -300,6 +330,81 @@ export class AIPlayer {
     const knightsToSend = this.config.knightsPerAttack;
     for (let i = 0; i < Math.min(knightsToSend, availableKnights.length); i++) {
       this.attackManager.orderAttack(availableKnights[i].id, target.id);
+    }
+  }
+
+  /**
+   * Evaluate and propose/break diplomatic treaties based on personality and game state.
+   */
+  private evaluateDiplomacy(): void {
+    if (!this.diplomacyManager) return;
+
+    const allPlayers = new Set<number>();
+    for (const b of this.gameState.getAllBuildings()) allPlayers.add(b.playerId);
+
+    const myMilitary = this.getAvailableKnights().length;
+    const myBuildings = this.gameState.getBuildingsByPlayer(this.playerId).length;
+
+    for (const otherId of allPlayers) {
+      if (otherId === this.playerId) continue;
+      const currentTreaty = this.diplomacyManager.getTreaty(this.playerId, otherId);
+      const otherMilitary = this.gameState.getAllBuildings()
+        .filter(b => b.playerId === otherId && b.knightIds.length > 0)
+        .reduce((sum, b) => sum + b.knightIds.length, 0);
+
+      // Strength ratio: >1 means we're stronger
+      const strengthRatio = (myMilitary + 1) / (otherMilitary + 1);
+
+      if (currentTreaty === 'none') {
+        // Consider proposing a treaty
+        const shouldPropose = this.shouldProposeTreaty(strengthRatio, myBuildings);
+        if (shouldPropose) {
+          const treatyType = this.getPreferredTreaty();
+          this.diplomacyManager.setTreaty(this.playerId, otherId, treatyType, 0);
+        }
+      } else {
+        // Consider breaking treaty if militarist and much stronger
+        if (this.personality === 'militarist' && strengthRatio > 2.5 && currentTreaty !== 'alliance') {
+          this.diplomacyManager.setTreaty(this.playerId, otherId, 'none', 0);
+        }
+      }
+    }
+  }
+
+  private shouldProposeTreaty(strengthRatio: number, myBuildings: number): boolean {
+    // Don't propose too early in the game
+    if (myBuildings < 5) return false;
+
+    switch (this.personality) {
+      case 'economist':
+        // Economists love treaties — propose if not overwhelmingly strong
+        return strengthRatio < 3.0;
+      case 'turtle':
+        // Turtles always want non-aggression
+        return true;
+      case 'militarist':
+        // Militarists only propose when weaker
+        return strengthRatio < 0.7;
+      case 'balanced':
+        // Balanced proposes when roughly equal or weaker
+        return strengthRatio < 1.5;
+      default:
+        return false;
+    }
+  }
+
+  private getPreferredTreaty(): 'non_aggression' | 'trade_agreement' | 'alliance' {
+    switch (this.personality) {
+      case 'economist':
+        return 'trade_agreement';
+      case 'turtle':
+        return 'non_aggression';
+      case 'militarist':
+        return 'non_aggression'; // militarist only proposes minimal treaties
+      case 'balanced':
+        return 'trade_agreement';
+      default:
+        return 'non_aggression';
     }
   }
 
@@ -581,6 +686,8 @@ export class AIPlayer {
     return this.gameState.getAllBuildings().filter((b) => {
       if (b.playerId === this.playerId) return false;
       if (b.state !== BuildingState.Active) return false;
+      // Diplomacy: skip allies
+      if (this.diplomacyManager && !this.diplomacyManager.canAttack(this.playerId, b.playerId)) return false;
       const def = BUILDING_DEFINITIONS[b.type];
       return def.knightSlots > 0 || def.influenceRadius > 0;
     });

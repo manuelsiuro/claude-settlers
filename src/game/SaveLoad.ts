@@ -33,13 +33,21 @@ import { TerrainType } from './TerrainType';
 import type { GoodsDistributionSettings } from './GoodsDistribution';
 import { serializeDistribution, deserializeDistribution } from './GoodsDistribution';
 import type { TerrainGatheringManager, TerrainGatheringPhase } from './TerrainGatheringManager';
+import type { DiplomacyManager } from './DiplomacyManager';
 import type { HexCoord } from './HexGrid';
 
 /** Current save format version */
-const SAVE_VERSION = 13;
+const SAVE_VERSION = 14;
 
-/** localStorage key for auto-save */
+/** localStorage key for manual quick-save (legacy) */
 const STORAGE_KEY = 'feudal_realm_save';
+
+/** localStorage key prefix for auto-save slots */
+const AUTO_SAVE_PREFIX = 'feudal_autosave_';
+/** Number of rotating auto-save slots */
+const AUTO_SAVE_SLOTS = 3;
+/** localStorage key tracking which auto-save slot to write next */
+const AUTO_SAVE_INDEX_KEY = 'feudal_autosave_index';
 
 /**
  * Complete serializable game state.
@@ -173,6 +181,11 @@ export interface SaveData {
     }][];
   };
 
+  // Diplomacy
+  diplomacyManager?: {
+    treaties: [string, { type: string; establishedAt: number }][];
+  };
+
   // Economy settings
   goodsDistribution?: ReturnType<typeof serializeDistribution>;
 
@@ -220,6 +233,7 @@ export function serializeGame(
     marketplaceManager: MarketplaceManager;
     animalLifecycleManager?: { _getState(): { feedCooldown: number } };
     terrainGatheringManager: TerrainGatheringManager;
+    diplomacyManager: DiplomacyManager;
   },
   aiPlayers: AIPlayer[],
   camera: { frustum: number; position: { x: number; y: number; z: number }; target: { x: number; y: number; z: number } },
@@ -297,6 +311,7 @@ export function serializeGame(
     marketplaceManager: managers.marketplaceManager._getState(),
     animalLifecycleManager: managers.animalLifecycleManager?._getState(),
     terrainGatheringManager: managers.terrainGatheringManager._getState(),
+    diplomacyManager: managers.diplomacyManager._getState(),
 
     goodsDistribution: distributionSettings ? serializeDistribution(distributionSettings) : undefined,
 
@@ -339,6 +354,7 @@ export function deserializeGame(
     marketplaceManager: MarketplaceManager;
     animalLifecycleManager?: { _loadState(state: { feedCooldown: number }): void };
     terrainGatheringManager: TerrainGatheringManager;
+    diplomacyManager: DiplomacyManager;
   },
   aiPlayers: AIPlayer[],
 ): GoodsDistributionSettings | null {
@@ -416,6 +432,9 @@ export function deserializeGame(
   }
   if (data.terrainGatheringManager) {
     managers.terrainGatheringManager._loadState(data.terrainGatheringManager);
+  }
+  if (data.diplomacyManager) {
+    managers.diplomacyManager._loadState(data.diplomacyManager);
   }
 
   // Backward compat: patch buildings missing fields from older versions
@@ -514,6 +533,106 @@ export function deserializeGame(
   return null;
 }
 
+// ============================================================
+// Save Migration Chain
+// ============================================================
+
+type MigrationFn = (data: Record<string, unknown>) => void;
+
+/** Sequential migrations: key is the version being migrated FROM */
+const MIGRATIONS: Record<number, MigrationFn> = {
+  // v3→v4: no structural changes needed (handled by field defaults)
+  // v4→v5: no structural changes needed
+  // v5→v6: no structural changes needed
+  // v6→v7: no structural changes needed
+  // v7→v8: tool system fields on buildings/units
+  7: (data) => {
+    const buildings = data.buildings as Record<string, unknown>[];
+    if (buildings) {
+      for (const b of buildings) {
+        if (b.waitingForTool === undefined) b.waitingForTool = null;
+        if (b.waitingForToolSince === undefined) b.waitingForToolSince = null;
+        if (b.currentToolProduction === undefined) b.currentToolProduction = null;
+      }
+    }
+    const units = data.units as Record<string, unknown>[];
+    if (units) {
+      for (const u of units) {
+        if (u.carriedTool === undefined) u.carriedTool = null;
+      }
+    }
+  },
+  // v8→v9: pendingDismissal on units
+  8: (data) => {
+    const units = data.units as Record<string, unknown>[];
+    if (units) {
+      for (const u of units) {
+        if (u.pendingDismissal === undefined) u.pendingDismissal = false;
+      }
+    }
+  },
+  // v9→v10: satiation on units
+  9: (data) => {
+    const units = data.units as Record<string, unknown>[];
+    if (units) {
+      for (const u of units) {
+        if (u.satiation === undefined) u.satiation = 1.0;
+      }
+    }
+  },
+  // v10→v11: road quality, building HP, animal fields on units
+  10: (data) => {
+    const roads = data.roads as Record<string, unknown>[];
+    if (roads) {
+      for (const r of roads) {
+        if (r.quality === undefined) r.quality = 0;
+      }
+    }
+    const buildings = data.buildings as Record<string, unknown>[];
+    if (buildings) {
+      for (const b of buildings) {
+        if (b.hp === undefined) b.hp = 1.0;
+      }
+    }
+    const units = data.units as Record<string, unknown>[];
+    if (units) {
+      for (const u of units) {
+        if (u.fedAt === undefined) u.fedAt = 0;
+        if (u.age === undefined) u.age = 0;
+        if (u.cargo === undefined) u.cargo = null;
+      }
+    }
+  },
+  // v11→v12: no structural changes (custom map save format)
+  // v12→v13: no structural changes (living world + marketplace fields)
+  // v13→v14: diplomacy manager state
+  13: (data) => {
+    if (data.diplomacyManager === undefined) {
+      data.diplomacyManager = { treaties: [] };
+    }
+    // Add rallyPoint field to buildings
+    const buildings = data.buildings as Record<string, unknown>[];
+    if (buildings) {
+      for (const b of buildings) {
+        if (b.rallyPoint === undefined) b.rallyPoint = null;
+      }
+    }
+  },
+};
+
+/** Apply all necessary migrations to bring a save from its version to current */
+function migrateSaveData(data: Record<string, unknown>): void {
+  let version = data.version as number;
+  while (version < SAVE_VERSION) {
+    const migration = MIGRATIONS[version];
+    if (migration) {
+      migration(data);
+    }
+    version++;
+    data.version = version;
+  }
+}
+
 /**
  * Save game to localStorage.
  */
@@ -535,10 +654,11 @@ export function loadFromLocalStorage(): SaveData | null {
     const json = localStorage.getItem(STORAGE_KEY);
     if (!json) return null;
     const data = JSON.parse(json) as SaveData;
-    if (data.version < 3 || data.version > SAVE_VERSION) {
-      logger.warn(`Save version mismatch: expected ${SAVE_VERSION}, got ${data.version}`);
+    if (data.version < 3) {
+      logger.warn(`Save version too old: ${data.version}`);
       return null;
     }
+    migrateSaveData(data as unknown as Record<string, unknown>);
     return data;
   } catch (err) {
     logger.warn('Failed to load game from localStorage:', err);
@@ -574,6 +694,84 @@ export function downloadSave(data: SaveData): void {
   URL.revokeObjectURL(url);
 }
 
+// ============================================================
+// Auto-save slot system
+// ============================================================
+
+/** Write to the next rotating auto-save slot */
+export function autoSaveToSlot(data: SaveData): void {
+  try {
+    const idx = Number(localStorage.getItem(AUTO_SAVE_INDEX_KEY) || '0');
+    const slot = idx % AUTO_SAVE_SLOTS;
+    const json = JSON.stringify(data);
+    localStorage.setItem(`${AUTO_SAVE_PREFIX}${slot}`, json);
+    localStorage.setItem(AUTO_SAVE_INDEX_KEY, String(idx + 1));
+  } catch (err) {
+    logger.warn('Auto-save failed:', err);
+  }
+}
+
+/** Metadata for a save slot shown in UI */
+export interface SaveSlotInfo {
+  key: string;
+  label: string;
+  timestamp: number | null;
+  mapSize?: number;
+  numPlayers?: number;
+}
+
+/** List all available saves (quick-save + auto-save slots) */
+export function listSaveSlots(): SaveSlotInfo[] {
+  const slots: SaveSlotInfo[] = [];
+
+  // Quick save (legacy)
+  const quick = localStorage.getItem(STORAGE_KEY);
+  if (quick) {
+    try {
+      const d = JSON.parse(quick) as SaveData;
+      slots.push({ key: STORAGE_KEY, label: 'Quick Save', timestamp: d.timestamp, mapSize: d.config?.mapSize, numPlayers: d.config?.numPlayers });
+    } catch { /* ignore corrupt */ }
+  }
+
+  // Auto-save slots (newest first)
+  const currentIdx = Number(localStorage.getItem(AUTO_SAVE_INDEX_KEY) || '0');
+  for (let i = 0; i < AUTO_SAVE_SLOTS; i++) {
+    // Read slots in reverse order so newest is first
+    const slot = ((currentIdx - 1 - i) % AUTO_SAVE_SLOTS + AUTO_SAVE_SLOTS) % AUTO_SAVE_SLOTS;
+    const key = `${AUTO_SAVE_PREFIX}${slot}`;
+    const json = localStorage.getItem(key);
+    if (json) {
+      try {
+        const d = JSON.parse(json) as SaveData;
+        if (d.version >= 3) {
+          slots.push({ key, label: `Auto-Save ${i + 1}`, timestamp: d.timestamp, mapSize: d.config?.mapSize, numPlayers: d.config?.numPlayers });
+        }
+      } catch { /* ignore corrupt */ }
+    }
+  }
+
+  return slots;
+}
+
+/** Load a save from a specific localStorage key */
+export function loadFromKey(key: string): SaveData | null {
+  try {
+    const json = localStorage.getItem(key);
+    if (!json) return null;
+    const data = JSON.parse(json) as SaveData;
+    if (data.version < 3) return null;
+    migrateSaveData(data as unknown as Record<string, unknown>);
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+/** Delete a specific save slot */
+export function deleteSaveSlot(key: string): void {
+  localStorage.removeItem(key);
+}
+
 /**
  * Prompt user to select a save file and parse it.
  * Returns a Promise that resolves to SaveData or null if cancelled/invalid.
@@ -592,11 +790,12 @@ export function loadFromFile(): Promise<SaveData | null> {
       try {
         const text = await file.text();
         const data = JSON.parse(text) as SaveData;
-        if (data.version < 3 || data.version > SAVE_VERSION) {
-          logger.warn(`Save version mismatch: expected ${SAVE_VERSION}, got ${data.version}`);
+        if (data.version < 3) {
+          logger.warn(`Save version too old: ${data.version}`);
           resolve(null);
           return;
         }
+        migrateSaveData(data as unknown as Record<string, unknown>);
         resolve(data);
       } catch (err) {
         logger.warn('Failed to parse save file:', err);

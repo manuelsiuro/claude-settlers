@@ -65,6 +65,22 @@ const POSITIVE_EVENTS: EventGenerator[] = [
     playerId: pid,
     category: 'positive',
   }),
+  (_gs, pid) => ({
+    id: 'festival',
+    label: 'Harvest Festival',
+    message: 'A festival lifts everyone\'s spirits! Morale boosted for 90 seconds.',
+    duration: 90,
+    playerId: pid,
+    category: 'positive',
+  }),
+  (_gs, pid) => ({
+    id: 'visiting_hero',
+    label: 'Visiting Hero',
+    message: 'A legendary warrior visits! Military combat strength boosted for 60 seconds.',
+    duration: 60,
+    playerId: pid,
+    category: 'positive',
+  }),
 ];
 
 const NEGATIVE_EVENTS: EventGenerator[] = [
@@ -98,6 +114,37 @@ const NEGATIVE_EVENTS: EventGenerator[] = [
     playerId: pid,
     category: 'negative',
   }),
+  (gs, pid) => {
+    const mines = gs.getAllBuildings().filter(
+      b => (b.type === BuildingType.IronMine || b.type === BuildingType.CoalMine || b.type === BuildingType.GoldMine)
+        && b.playerId === pid && b.state === BuildingState.Active
+    );
+    if (mines.length === 0) return null;
+    return {
+      id: 'mine_collapse',
+      label: 'Mine Collapse',
+      message: 'A mine shaft collapsed! One mine is temporarily disabled.',
+      duration: 45,
+      playerId: pid,
+      category: 'negative',
+    };
+  },
+  (_gs, pid) => ({
+    id: 'drought',
+    label: 'Drought',
+    message: 'A drought reduces food production for 60 seconds.',
+    duration: 60,
+    playerId: pid,
+    category: 'negative',
+  }),
+  (_gs, pid) => ({
+    id: 'plague',
+    label: 'Plague',
+    message: 'A plague sweeps through! Worker speed reduced for 45 seconds.',
+    duration: 45,
+    playerId: pid,
+    category: 'negative',
+  }),
 ];
 
 const NEUTRAL_EVENTS: EventGenerator[] = [
@@ -106,6 +153,14 @@ const NEUTRAL_EVENTS: EventGenerator[] = [
     label: 'Wandering Merchant',
     message: 'A wandering merchant offers favorable trade rates for 60 seconds!',
     duration: 60,
+    playerId: pid,
+    category: 'neutral',
+  }),
+  (_gs, pid) => ({
+    id: 'trade_caravan',
+    label: 'Trade Caravan',
+    message: 'A trade caravan passes through, bringing supplies and opportunities.',
+    duration: 45,
     playerId: pid,
     category: 'neutral',
   }),
@@ -195,10 +250,25 @@ export class RandomEventManager {
         this.disabledBuildingId = building.id;
       }
     }
+
+    if (event.id === 'mine_collapse') {
+      // Disable a random mine
+      const mines = this.gameState.getAllBuildings().filter(
+        b => b.playerId === event.playerId &&
+             b.state === BuildingState.Active &&
+             (b.type === BuildingType.IronMine || b.type === BuildingType.CoalMine || b.type === BuildingType.GoldMine) &&
+             !b.productionPaused
+      );
+      if (mines.length > 0) {
+        const mine = mines[Math.floor(this.random() * mines.length)];
+        mine.productionPaused = true;
+        this.disabledBuildingId = mine.id;
+      }
+    }
   }
 
   private expireEffect(effect: ActiveEffect): void {
-    if (effect.event.id === 'building_fire' && this.disabledBuildingId) {
+    if ((effect.event.id === 'building_fire' || effect.event.id === 'mine_collapse') && this.disabledBuildingId) {
       const building = this.gameState.getBuilding(this.disabledBuildingId);
       if (building) building.productionPaused = false;
       this.disabledBuildingId = null;
@@ -214,6 +284,8 @@ export class RandomEventManager {
       if (event.id === 'traveling_craftsman') mult *= 1.25;
       if (event.id === 'harsh_weather') mult *= 0.75;
       if (event.id === 'supply_shortage') mult *= 0.80;
+      if (event.id === 'drought') mult *= 0.70;
+      if (event.id === 'trade_caravan') mult *= 1.1;
     }
     return mult;
   }
@@ -225,6 +297,8 @@ export class RandomEventManager {
       if (event.playerId !== 0 && event.playerId !== playerId) continue;
       if (event.id === 'harsh_weather') mult *= 0.70;
       if (event.id === 'lucky_find') mult *= 1.3;
+      if (event.id === 'plague') mult *= 0.70;
+      if (event.id === 'visiting_hero') mult *= 1.2;
     }
     return mult;
   }

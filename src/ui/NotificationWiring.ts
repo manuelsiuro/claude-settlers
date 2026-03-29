@@ -3,6 +3,8 @@ import { VictoryCondition } from '../game/VictoryManager';
 import { audioManager } from '../engine/AudioManager';
 import type { SfxType } from '../engine/AudioManager';
 import { showSnackbar } from './Snackbar';
+import { addEvent } from './EventLog';
+import { unlockAchievement } from './Achievements';
 
 type ShowGameOverFn = (result: import('../game/VictoryManager').VictoryResult) => void;
 type UpdatePauseSpeedUIFn = (paused: boolean, speed: number) => void;
@@ -34,6 +36,13 @@ export function wireNotifications(
   g.onNotification = (notification: GameNotification) => {
     showSnackbar(notification.message);
     audioManager.play(notificationToSfx(notification.type));
+    // Use economy tracker game time (seconds → ms) for event log timestamps
+    const gameTimeSec = g.getEconomyTracker().getGameTime();
+    addEvent(notification, gameTimeSec * 1000);
+
+    // Achievement triggers
+    if (notification.type === 'knight_recruited') unlockAchievement('first_knight');
+    if (notification.type === 'building_captured') unlockAchievement('capture_building');
 
     if (notification.type === 'victory' || notification.type === 'defeat') {
       const victoryMgr = g.getVictoryManager();

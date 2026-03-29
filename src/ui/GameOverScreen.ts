@@ -1,7 +1,9 @@
 import type { Game } from '../engine/Game';
 import type { VictoryResult } from '../game/VictoryManager';
 import { VictoryCondition } from '../game/VictoryManager';
-import { UnitType } from '../game/UnitType';
+import { UnitType, UNIT_DEFINITIONS } from '../game/UnitType';
+import { BuildingState, getInventoryTotal } from '../game/Building';
+import { recordVictory, unlockAchievement } from './Achievements';
 
 let gameOverOverlay: HTMLElement;
 let gameOverTitle: HTMLElement;
@@ -86,18 +88,73 @@ export function showGameOver(result: VictoryResult): void {
   const gameState = g.getGameState();
   const buildings = gameState.getBuildingsByPlayer(pid);
   const units = gameState.getUnitsByPlayer(pid);
-  const knights = units.filter(u => u.type === UnitType.Knight);
+  const militaryTypeList: UnitType[] = [UnitType.Knight, UnitType.Archer, UnitType.Cavalry, UnitType.SiegeOperator, UnitType.Scout];
+  const militaryUnits = units.filter(u => militaryTypeList.includes(u.type));
+  const civilians = units.length - militaryUnits.length;
   const victoryMgr = g.getVictoryManager();
   const goldBars = victoryMgr.getPlayerGoldBars(pid);
   const territoryPct = Math.round(victoryMgr.getPlayerTerritoryFraction(pid) * 100);
 
+  // Game duration
+  const elapsed = victoryMgr.getElapsedTime();
+  const mins = Math.floor(elapsed / 60);
+  const secs = Math.floor(elapsed % 60);
+  const durationStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+
+  // Building breakdown
+  const activeBuildings = buildings.filter(b => b.state === BuildingState.Active).length;
+  const constructing = buildings.filter(b => b.state === BuildingState.UnderConstruction || b.state === BuildingState.Planned).length;
+
+  // Military breakdown
+  const militaryBreakdown = militaryTypeList
+    .map(t => ({ type: t, count: units.filter(u => u.type === t).length }))
+    .filter(e => e.count > 0)
+    .map(e => `${UNIT_DEFINITIONS[e.type]?.label ?? e.type}: ${e.count}`)
+    .join(', ');
+
+  // Total resources in all buildings
+  let totalResources = 0;
+  for (const b of buildings) {
+    totalResources += getInventoryTotal(b.inputInventory) + getInventoryTotal(b.outputInventory);
+  }
+
   gameOverStats.innerHTML = `
-    <div class="game-over-stat-row"><span>Buildings</span><span>${buildings.length}</span></div>
-    <div class="game-over-stat-row"><span>Population</span><span>${units.length}</span></div>
-    <div class="game-over-stat-row"><span>Knights</span><span>${knights.length}</span></div>
-    <div class="game-over-stat-row"><span>Gold Bars</span><span>${goldBars}</span></div>
-    <div class="game-over-stat-row"><span>Territory</span><span>${territoryPct}%</span></div>
+    <div class="game-over-stat-section">
+      <div class="game-over-stat-label">Game</div>
+      <div class="game-over-stat-row"><span>Duration</span><span>${durationStr}</span></div>
+      <div class="game-over-stat-row"><span>Territory</span><span>${territoryPct}%</span></div>
+    </div>
+    <div class="game-over-stat-section">
+      <div class="game-over-stat-label">Economy</div>
+      <div class="game-over-stat-row"><span>Buildings</span><span>${activeBuildings} active${constructing > 0 ? `, ${constructing} building` : ''}</span></div>
+      <div class="game-over-stat-row"><span>Stored Resources</span><span>${totalResources}</span></div>
+      <div class="game-over-stat-row"><span>Gold Bars</span><span>${goldBars}</span></div>
+    </div>
+    <div class="game-over-stat-section">
+      <div class="game-over-stat-label">Population</div>
+      <div class="game-over-stat-row"><span>Total Units</span><span>${units.length}</span></div>
+      <div class="game-over-stat-row"><span>Civilians</span><span>${civilians}</span></div>
+      <div class="game-over-stat-row"><span>Military</span><span>${militaryUnits.length}${militaryBreakdown ? ` (${militaryBreakdown})` : ''}</span></div>
+    </div>
   `;
+
+  // Achievement tracking
+  if (isWin) {
+    const g2 = getGame();
+    const diff = g2.getConfig().difficulty ?? 'normal';
+    recordVictory(result.condition, diff);
+  }
+  // Building count achievements
+  if (activeBuildings >= 10) unlockAchievement('build_10');
+  if (activeBuildings >= 25) unlockAchievement('build_25');
+  if (activeBuildings >= 50) unlockAchievement('build_50');
+  // Population achievements
+  if (units.length >= 50) unlockAchievement('population_50');
+  if (units.length >= 100) unlockAchievement('population_100');
+  // Military achievements
+  if (militaryUnits.length >= 10) unlockAchievement('army_10');
+  // Territory achievement
+  if (territoryPct >= 50) unlockAchievement('territory_50');
 
   // Stop live updates — panels are hidden behind the overlay
   stopInfoPanelUpdatesFn();

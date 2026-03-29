@@ -72,6 +72,8 @@ export interface Building {
   currentToolProduction: ResourceType | null;
   /** Building health points (1.0 = full health, 0 = destroyed). Military buildings only. */
   hp: number;
+  /** Rally point: hex coordinate where newly recruited knights gather. null = stay in building. */
+  rallyPoint: HexCoord | null;
 }
 
 let nextBuildingId = 1;
@@ -107,6 +109,7 @@ export function createBuilding(
     toolQueue: undefined,
     currentToolProduction: null,
     hp: 1.0,
+    rallyPoint: null,
   };
 }
 

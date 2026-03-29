@@ -46,6 +46,8 @@ export type GameNotificationType =
 export interface GameNotification {
   type: GameNotificationType;
   message: string;
+  /** Optional hex position for camera navigation */
+  position?: { q: number; r: number };
 }
 
 export interface WireCallbacksParams {

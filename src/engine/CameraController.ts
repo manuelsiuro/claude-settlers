@@ -125,6 +125,20 @@ export class CameraController {
     const speed = 0.15;
     const camera = this.game.getCamera();
 
+    // Smooth pan interpolation
+    if (this.smoothTarget) {
+      const dx = this.smoothTarget.x - this.target.x;
+      const dz = this.smoothTarget.z - this.target.z;
+      const dist = Math.sqrt(dx * dx + dz * dz);
+      if (dist < 0.05) {
+        this.panBy(dx, dz);
+        this.smoothTarget = null;
+      } else {
+        const t = Math.min(1.0, CameraController.SMOOTH_SPEED * 0.016); // ~60fps
+        this.panBy(dx * t, dz * t);
+      }
+    }
+
     // Get camera's right and "forward" vectors projected onto XZ plane
     const right = new THREE.Vector3();
     const forward = new THREE.Vector3();
@@ -323,7 +337,16 @@ export class CameraController {
   };
 
   /** Smoothly pan camera to a world position */
+  /** Smooth pan target — when set, camera interpolates toward this point */
+  private smoothTarget: { x: number; z: number } | null = null;
+  private static SMOOTH_SPEED = 5.0; // lerp speed factor
+
   panTo(x: number, z: number): void {
+    this.smoothTarget = { x, z };
+  }
+
+  /** Instant pan (no animation) */
+  panToInstant(x: number, z: number): void {
     const dx = x - this.target.x;
     const dz = z - this.target.z;
     this.panBy(dx, dz);

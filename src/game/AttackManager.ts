@@ -140,6 +140,25 @@ export class AttackManager {
   }
 
   /**
+   * Send all available knights from specified buildings to attack a target.
+   * Returns the number of knights sent.
+   */
+  groupAttack(sourceBuildingIds: string[], targetBuildingId: string): number {
+    let sent = 0;
+    for (const srcId of sourceBuildingIds) {
+      const building = this.gameState.getBuilding(srcId);
+      if (!building) continue;
+      // Send all knights except 1 (keep a garrison)
+      const knightsToSend = [...building.knightIds];
+      if (knightsToSend.length > 1) knightsToSend.pop(); // keep 1
+      for (const knightId of knightsToSend) {
+        if (this.orderAttack(knightId, targetBuildingId)) sent++;
+      }
+    }
+    return sent;
+  }
+
+  /**
    * Update attack orders each frame.
    * Checks for arrivals and processes combat.
    */

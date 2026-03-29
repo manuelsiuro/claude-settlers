@@ -79,7 +79,9 @@ export class FogOfWarRenderer {
     this.clearMeshes();
 
     const unexploredVerts: Float32Array[] = [];
+    const unexploredAlphas: Float32Array[] = [];
     const exploredVerts: Float32Array[] = [];
+    const exploredAlphas: Float32Array[] = [];
 
     for (let q = 0; q < this.grid.width; q++) {
       for (let r = 0; r < this.grid.height; r++) {
@@ -90,25 +92,61 @@ export class FogOfWarRenderer {
         const tile = this.grid.getTile(q, r);
         const y = (tile ? MapRenderer.getTileY(tile) : 0) + 0.15;
 
+        // Check if any neighbor is visible (for edge softening)
+        const hasVisibleNeighbor = this.hasVisibleNeighbor(q, r, fogManager);
+
         const verts = this.createHexFillVertices(x, y, z);
+        // Edge softening: hex tiles adjacent to visible tiles get softer edges
+        const alphas = this.createHexAlphas(hasVisibleNeighbor);
 
         if (vis === 0) {
           unexploredVerts.push(verts);
+          unexploredAlphas.push(alphas);
         } else {
           exploredVerts.push(verts);
+          exploredAlphas.push(alphas);
         }
       }
     }
 
     if (unexploredVerts.length > 0) {
-      this.unexploredMesh = this.createMergedMesh(unexploredVerts, 0x1a2030, 0.70);
+      this.unexploredMesh = this.createMergedMeshWithAlpha(unexploredVerts, unexploredAlphas, 0x111828, 0.75);
       this.group.add(this.unexploredMesh);
     }
 
     if (exploredVerts.length > 0) {
-      this.exploredMesh = this.createMergedMesh(exploredVerts, 0x2a3040, 0.25);
+      // Explored-but-not-visible: desaturated blue-grey, lower opacity
+      this.exploredMesh = this.createMergedMeshWithAlpha(exploredVerts, exploredAlphas, 0x283040, 0.20);
       this.group.add(this.exploredMesh);
     }
+  }
+
+  /** Check if any hex neighbor is visible (for edge softening) */
+  private hasVisibleNeighbor(q: number, r: number, fogManager: FogOfWarManager): boolean {
+    // Hex neighbor offsets (pointy-top)
+    const neighbors = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, -1], [-1, 1]];
+    for (const [dq, dr] of neighbors) {
+      const nq = q + dq;
+      const nr = r + dr;
+      if (nq >= 0 && nq < this.grid.width && nr >= 0 && nr < this.grid.height) {
+        if (fogManager.getVisibility(nq, nr, this.playerId) === 2) return true;
+      }
+    }
+    return false;
+  }
+
+  /** Create per-vertex alpha multipliers for edge softening */
+  private createHexAlphas(hasVisibleNeighbor: boolean): Float32Array {
+    const alphas = new Float32Array(6 * 3); // 6 triangles * 3 vertices
+    const centerAlpha = 1.0;
+    const edgeAlpha = hasVisibleNeighbor ? 0.3 : 1.0; // Soften edges near visible tiles
+    for (let i = 0; i < 6; i++) {
+      const offset = i * 3;
+      alphas[offset] = centerAlpha; // center vertex
+      alphas[offset + 1] = edgeAlpha; // edge vertex 1
+      alphas[offset + 2] = edgeAlpha; // edge vertex 2
+    }
+    return alphas;
   }
 
   /** Create 6 triangle vertices for hex fill (fan from center) */
@@ -131,27 +169,56 @@ export class FogOfWarRenderer {
     return verts;
   }
 
-  /** Merge multiple Float32Arrays into one mesh */
-  private createMergedMesh(
+  /** Merge vertex arrays with per-vertex alpha for edge softening */
+  private createMergedMeshWithAlpha(
     vertexArrays: Float32Array[],
+    alphaArrays: Float32Array[],
     color: number,
-    opacity: number,
+    baseOpacity: number,
   ): THREE.Mesh {
-    const totalLength = vertexArrays.reduce((sum, arr) => sum + arr.length, 0);
-    const merged = new Float32Array(totalLength);
-    let offset = 0;
+    const totalVerts = vertexArrays.reduce((sum, arr) => sum + arr.length, 0);
+    const mergedPos = new Float32Array(totalVerts);
+    let posOffset = 0;
     for (const arr of vertexArrays) {
-      merged.set(arr, offset);
-      offset += arr.length;
+      mergedPos.set(arr, posOffset);
+      posOffset += arr.length;
+    }
+
+    const totalAlphas = alphaArrays.reduce((sum, arr) => sum + arr.length, 0);
+    const mergedAlpha = new Float32Array(totalAlphas);
+    let alphaOffset = 0;
+    for (const arr of alphaArrays) {
+      mergedAlpha.set(arr, alphaOffset);
+      alphaOffset += arr.length;
     }
 
     const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute('position', new THREE.BufferAttribute(merged, 3));
+    geometry.setAttribute('position', new THREE.BufferAttribute(mergedPos, 3));
+    geometry.setAttribute('aAlpha', new THREE.BufferAttribute(mergedAlpha, 1));
 
-    const material = new THREE.MeshBasicMaterial({
-      color,
+    const col = new THREE.Color(color);
+    const material = new THREE.ShaderMaterial({
+      uniforms: {
+        uColor: { value: col },
+        uOpacity: { value: baseOpacity },
+      },
+      vertexShader: `
+        attribute float aAlpha;
+        varying float vAlpha;
+        void main() {
+          vAlpha = aAlpha;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 uColor;
+        uniform float uOpacity;
+        varying float vAlpha;
+        void main() {
+          gl_FragColor = vec4(uColor, uOpacity * vAlpha);
+        }
+      `,
       transparent: true,
-      opacity,
       side: THREE.DoubleSide,
       depthWrite: false,
     });

@@ -156,6 +156,7 @@ export class MapEditorUI {
         </div>
         <button class="btn-outlined btn-sm" id="editor-import-btn">Import</button>
         <button class="btn-outlined btn-sm" id="editor-export-btn">Export</button>
+        <button class="btn-outlined btn-sm" id="editor-share-btn">Share</button>
         <button class="btn-filled btn-sm" id="editor-save-btn">${icon('save')} Save</button>
         <button class="btn-filled btn-sm editor-play-btn" id="editor-play-btn">${icon('play_arrow')} Play</button>
       </div>
@@ -483,6 +484,22 @@ export class MapEditorUI {
       const data = this.editor.getMapData(thumb);
       downloadMap(data);
       showSnackbar('Map exported', 'success');
+    });
+
+    // Share (copy map JSON to clipboard)
+    this.rootEl.querySelector('#editor-share-btn')!.addEventListener('click', async () => {
+      const thumb = generateThumbnail(this.editor.getGrid(), this.editor.getStartingPositions());
+      const data = this.editor.getMapData(thumb);
+      const exportData = { ...data, thumbnail: undefined };
+      const json = JSON.stringify(exportData);
+      try {
+        await navigator.clipboard.writeText(json);
+        showSnackbar('Map copied to clipboard — share with others!', 'success');
+      } catch {
+        // Fallback: download file
+        downloadMap(data);
+        showSnackbar('Clipboard unavailable — file downloaded instead', 'success');
+      }
     });
 
     // Import

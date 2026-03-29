@@ -94,6 +94,12 @@ export class VictoryManager {
   /** Callbacks */
   onVictory: ((result: VictoryResult) => void) | null = null;
   onDefeat: ((result: DefeatResult) => void) | null = null;
+  /** Sandbox mode: defeat detection is disabled */
+  sandbox = false;
+  /** Campaign objectives — when all met, victory is declared */
+  campaignObjectives: { type: string; target: number }[] = [];
+  /** Campaign ID for tracking completion */
+  campaignId: string | null = null;
 
   constructor(
     gameState: GameState,
@@ -308,14 +314,16 @@ export class VictoryManager {
   }
 
   private checkConditions(): void {
-    // Check for defeats first (Castle destroyed)
-    for (const playerId of this.playerIds) {
-      if (this.eliminatedPlayers.has(playerId)) continue;
+    // Check for defeats first (Castle destroyed) — skip in sandbox mode
+    if (!this.sandbox) {
+      for (const playerId of this.playerIds) {
+        if (this.eliminatedPlayers.has(playerId)) continue;
 
-      const castle = this.gameState.findCastle(playerId);
-      if (!castle) {
-        this.eliminatedPlayers.add(playerId);
-        this.onDefeat?.({ playerId, reason: 'castle_destroyed' });
+        const castle = this.gameState.findCastle(playerId);
+        if (!castle) {
+          this.eliminatedPlayers.add(playerId);
+          this.onDefeat?.({ playerId, reason: 'castle_destroyed' });
+        }
       }
     }
 
@@ -396,6 +404,48 @@ export class VictoryManager {
           this.result = victoryResult;
           this.onVictory?.(victoryResult);
           return;
+        }
+      }
+    }
+
+    // Campaign objectives: check if all objectives met for human player (player 1)
+    if (this.campaignObjectives.length > 0) {
+      const pid = this.playerIds[0]; // human player
+      const allMet = this.campaignObjectives.every(obj => {
+        switch (obj.type) {
+          case 'buildings':
+            return this.gameState.getBuildingsByPlayer(pid)
+              .filter(b => b.state === BuildingState.Active).length >= obj.target;
+          case 'population':
+            return this.gameState.getUnitsByPlayer(pid).length >= obj.target;
+          case 'territory':
+            return this.getPlayerTerritoryFraction(pid) * 100 >= obj.target;
+          case 'gold':
+            return this.getPlayerGoldBars(pid) >= obj.target;
+          case 'military': {
+            const militaryTypes = new Set(['knight', 'archer', 'cavalry', 'siege_operator', 'scout']);
+            return this.gameState.getUnitsByPlayer(pid)
+              .filter(u => militaryTypes.has(u.type)).length >= obj.target;
+          }
+          case 'time_survive':
+            return this.elapsedTime >= obj.target * 60; // target in minutes
+          default:
+            return false;
+        }
+      });
+
+      if (allMet) {
+        const victoryResult: VictoryResult = {
+          winnerId: pid,
+          condition: VictoryCondition.Peaceful, // Use peaceful as campaign victory type
+        };
+        this.gameOver = true;
+        this.result = victoryResult;
+        this.onVictory?.(victoryResult);
+
+        // Mark campaign as completed
+        if (this.campaignId) {
+          import('./CampaignData').then(m => m.completeCampaign(this.campaignId!));
         }
       }
     }

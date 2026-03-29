@@ -34,6 +34,7 @@ import { FeedingManager } from './FeedingManager';
 import { MoraleManager } from './MoraleManager';
 import { MarketplaceManager } from './MarketplaceManager';
 import { TerrainGatheringManager } from './TerrainGatheringManager';
+import { DiplomacyManager } from './DiplomacyManager';
 import { serializeGame, deserializeGame } from './SaveLoad';
 import type { SaveData } from './SaveLoad';
 
@@ -1274,6 +1275,7 @@ describe('Integration: Save/Load Round-Trip', () => {
   let feedingManager: FeedingManager;
   let moraleManager: MoraleManager;
   let marketplaceManager: MarketplaceManager;
+  let diplomacyManager: DiplomacyManager;
   let terrainGatheringManager: TerrainGatheringManager;
   let aiPlayer: AIPlayer;
 
@@ -1299,6 +1301,7 @@ describe('Integration: Save/Load Round-Trip', () => {
       moraleManager,
       marketplaceManager,
       terrainGatheringManager,
+      diplomacyManager,
     };
   }
 
@@ -1352,6 +1355,7 @@ describe('Integration: Save/Load Round-Trip', () => {
     moraleManager = new MoraleManager(gameState);
     marketplaceManager = new MarketplaceManager(gameState);
     terrainGatheringManager = new TerrainGatheringManager(gameState);
+    diplomacyManager = new DiplomacyManager();
 
     gameState.territoryCheck = (q, r, pid) => territoryManager.isOwnedBy(q, r, pid);
 
@@ -1473,6 +1477,7 @@ describe('Integration: Save/Load Round-Trip', () => {
         marketplaceManager: new MarketplaceManager(gs2),
         animalLifecycleManager: { _loadState: () => {} },
         terrainGatheringManager: new TerrainGatheringManager(gs2),
+        diplomacyManager: new DiplomacyManager(),
       },
       [ai2],
     );
@@ -1572,6 +1577,7 @@ describe('Integration: Save/Load Round-Trip', () => {
         marketplaceManager: new MarketplaceManager(gs2),
         animalLifecycleManager: { _loadState: () => {} },
         terrainGatheringManager: new TerrainGatheringManager(gs2),
+        diplomacyManager: new DiplomacyManager(),
       },
       [ai2],
     );
@@ -1655,6 +1661,7 @@ describe('Integration: Save/Load Round-Trip', () => {
         marketplaceManager: new MarketplaceManager(gs2),
         animalLifecycleManager: { _loadState: () => {} },
         terrainGatheringManager: new TerrainGatheringManager(gs2),
+        diplomacyManager: new DiplomacyManager(),
       },
       [ai2],
     );

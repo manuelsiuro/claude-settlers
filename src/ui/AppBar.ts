@@ -4,6 +4,9 @@ import { showSnackbar } from './Snackbar';
 import { logger } from '../util/Logger';
 import { showTechTreePanel } from './TechTreePanel';
 import { showDashboard } from './DashboardPanel';
+import { showEncyclopedia } from './EncyclopediaPanel';
+import { showAchievements } from './Achievements';
+import { showDiplomacy } from './DiplomacyPanel';
 import { saveToLocalStorage, downloadSave } from '../game/SaveLoad';
 import { loadSettings, saveSettings } from '../game/SettingsStorage';
 import type { GraphicsSettings } from '../game/GameConfig';
@@ -83,6 +86,12 @@ export function initAppBar(
         showTechTreePanel();
       } else if (headline === 'Dashboard') {
         showDashboard();
+      } else if (headline === 'Encyclopedia') {
+        showEncyclopedia();
+      } else if (headline === 'Achievements') {
+        showAchievements();
+      } else if (headline === 'Diplomacy') {
+        showDiplomacy();
       } else {
         showSnackbar(`${headline} — coming soon`);
       }
@@ -241,6 +250,62 @@ export function initAppBar(
       saveSettings({ graphics, audio: current.audio });
     });
   }
+
+  // Graphics presets
+  const PRESETS: Record<string, GraphicsSettings> = {
+    low: { shadows: 'off', postProcessing: 'off', weather: 'none', timeOfDay: 'midday', fogOfWar: true, ambientLife: 'off' },
+    medium: { shadows: 'blob_only', postProcessing: 'color_only', weather: 'none', timeOfDay: 'midday', fogOfWar: true, ambientLife: 'minimal' },
+    high: { shadows: 'blob_only', postProcessing: 'color_only', weather: 'none', timeOfDay: 'auto', fogOfWar: true, ambientLife: 'full' },
+    ultra: { shadows: 'high', postProcessing: 'full', weather: 'rain', timeOfDay: 'auto', fogOfWar: true, ambientLife: 'full' },
+  };
+
+  document.querySelectorAll('.gfx-preset-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const preset = (btn as HTMLElement).dataset.preset;
+      if (!preset || !PRESETS[preset]) return;
+      const gfx = PRESETS[preset];
+
+      // Apply to selects
+      (document.getElementById('gfx-shadows') as HTMLSelectElement).value = gfx.shadows;
+      (document.getElementById('gfx-post') as HTMLSelectElement).value = gfx.postProcessing;
+      (document.getElementById('gfx-weather') as HTMLSelectElement).value = gfx.weather;
+      (document.getElementById('gfx-time') as HTMLSelectElement).value = gfx.timeOfDay;
+      (document.getElementById('gfx-fog') as HTMLSelectElement).value = gfx.fogOfWar ? 'on' : 'off';
+
+      // Apply to game
+      game = getGame();
+      game?.applyGraphicsSettings(gfx);
+      const current = loadSettings();
+      saveSettings({ graphics: gfx, audio: current.audio });
+      showSnackbar(`Graphics: ${preset.charAt(0).toUpperCase() + preset.slice(1)}`, 'success');
+    });
+  });
+
+  // Accessibility settings
+  const a11yColorblind = document.getElementById('a11y-colorblind') as HTMLSelectElement;
+  const a11yTextsize = document.getElementById('a11y-textsize') as HTMLSelectElement;
+
+  // Restore persisted accessibility settings
+  const savedA11yColorblind = localStorage.getItem('feudal-a11y-colorblind') ?? 'none';
+  const savedA11yTextsize = localStorage.getItem('feudal-a11y-textsize') ?? 'normal';
+  a11yColorblind.value = savedA11yColorblind;
+  a11yTextsize.value = savedA11yTextsize;
+  if (savedA11yColorblind !== 'none') document.documentElement.setAttribute('data-colorblind', savedA11yColorblind);
+  if (savedA11yTextsize !== 'normal') document.documentElement.setAttribute('data-textsize', savedA11yTextsize);
+
+  a11yColorblind.addEventListener('change', () => {
+    const val = a11yColorblind.value;
+    if (val === 'none') document.documentElement.removeAttribute('data-colorblind');
+    else document.documentElement.setAttribute('data-colorblind', val);
+    localStorage.setItem('feudal-a11y-colorblind', val);
+  });
+
+  a11yTextsize.addEventListener('change', () => {
+    const val = a11yTextsize.value;
+    if (val === 'normal') document.documentElement.removeAttribute('data-textsize');
+    else document.documentElement.setAttribute('data-textsize', val);
+    localStorage.setItem('feudal-a11y-textsize', val);
+  });
 
   /** Save the current game to localStorage */
   function handleSaveGame(): void {

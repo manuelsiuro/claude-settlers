@@ -28,6 +28,7 @@ import { MoraleManager } from '../game/MoraleManager';
 import { MarketplaceManager } from '../game/MarketplaceManager';
 import { AnimalLifecycleManager } from '../game/AnimalLifecycleManager';
 import { RandomEventManager } from '../game/RandomEventManager';
+import { DiplomacyManager } from '../game/DiplomacyManager';
 import { TerrainGatheringManager } from '../game/TerrainGatheringManager';
 import { DashboardTracker } from '../game/DashboardTracker';
 import { createDefaultDistribution } from '../game/GoodsDistribution';
@@ -93,6 +94,7 @@ export interface GameManagers {
   distributionSettings: GoodsDistributionSettings;
   dashboardTracker: DashboardTracker;
   randomEventManager: RandomEventManager;
+  diplomacyManager: DiplomacyManager;
 }
 
 export interface GameRenderers {
@@ -187,6 +189,7 @@ export function createManagers(params: CreateManagersParams): GameManagers {
     gameState, populationManager, moraleManager, humanPlayerId,
   );
   const randomEventManager = new RandomEventManager(gameState, humanPlayerId);
+  const diplomacyManager = new DiplomacyManager();
 
   return {
     populationManager,
@@ -219,6 +222,7 @@ export function createManagers(params: CreateManagersParams): GameManagers {
     distributionSettings,
     dashboardTracker,
     randomEventManager,
+    diplomacyManager,
   };
 }
 
@@ -256,6 +260,7 @@ export function createRenderers(params: CreateRenderersParams): GameRenderers {
   const fogOfWarRenderer = new FogOfWarRenderer();
   const blobShadowRenderer = new BlobShadowRenderer();
   const performanceMonitor = new PerformanceMonitor();
+  performanceMonitor.setRenderer(renderer);
   const postProcessing = new PostProcessing(renderer, scene, camera);
 
   atmosphereController.onColorGradingUpdate = (cgParams) => {

@@ -19,6 +19,7 @@ import { SelectionController } from './SelectionController';
 import { RoadPlacementController } from './RoadPlacementController';
 import { CameraController } from './CameraController';
 import { assetLoader } from './AssetLoader';
+import type { AssetProgressCallback } from './AssetLoader';
 import { shaderTimeManager } from './ShaderTimeManager';
 import type { SaveData } from '../game/SaveLoad';
 import { serializeGame, deserializeGame } from '../game/SaveLoad';
@@ -34,6 +35,9 @@ import type { KnightManager } from '../game/KnightManager';
 import type { CombatManager } from '../game/CombatManager';
 import type { AttackManager } from '../game/AttackManager';
 import type { VictoryManager } from '../game/VictoryManager';
+import type { DiplomacyManager } from '../game/DiplomacyManager';
+import { logger } from '../util/Logger';
+import type { PerformanceMonitor } from './PerformanceMonitor';
 import type { GeologistManager } from '../game/GeologistManager';
 import type { TreeManager } from '../game/TreeManager';
 import type { WoodcutterManager } from '../game/WoodcutterManager';
@@ -84,6 +88,9 @@ export class Game {
   private camera: THREE.OrthographicCamera;
   private container: HTMLElement;
   private animationId: number | null = null;
+
+  /** Set of renderer names that have crashed and are disabled */
+  private disabledRenderers: Set<string> = new Set();
 
   // Managers (created by factory)
   private mgrs: GameManagers;
@@ -245,6 +252,26 @@ export class Game {
       humanPlayerId: this.humanPlayerId,
     });
 
+    // Propagate sandbox mode to managers
+    if (this.config.sandbox) {
+      this.mgrs.victoryManager.sandbox = true;
+      this.mgrs.constructionManager.sandbox = true;
+    }
+
+    // Campaign objectives
+    if (this.config.campaignId) {
+      import('../game/CampaignData').then(({ CAMPAIGN_SCENARIOS }) => {
+        const scenario = CAMPAIGN_SCENARIOS.find(s => s.id === this.config.campaignId);
+        if (scenario) {
+          this.mgrs.victoryManager.campaignId = scenario.id;
+          this.mgrs.victoryManager.campaignObjectives = scenario.objectives.map(o => ({
+            type: o.type,
+            target: o.target,
+          }));
+        }
+      });
+    }
+
     // Create all renderers via factory
     this.rnds = createRenderers({
       renderer: this.renderer,
@@ -310,6 +337,17 @@ export class Game {
     return this.container.clientHeight || window.innerHeight;
   }
 
+  /** Safely call a renderer function, disabling it on crash */
+  private safeRender(name: string, fn: () => void): void {
+    if (this.disabledRenderers.has(name)) return;
+    try {
+      fn();
+    } catch (err) {
+      this.disabledRenderers.add(name);
+      logger.error(`Renderer "${name}" crashed and was disabled:`, err);
+    }
+  }
+
   private onResize(): void {
     const aspect = this.width / this.height;
 
@@ -323,14 +361,17 @@ export class Game {
     this.rnds.postProcessing.resize(this.width, this.height);
   }
 
-  async start(savedData?: SaveData): Promise<void> {
+  async start(savedData?: SaveData, onProgress?: AssetProgressCallback): Promise<void> {
     // Load all GLTF assets before building the map
+    assetLoader.resetProgress();
+    assetLoader.onProgress = onProgress ?? null;
     await Promise.all([
       assetLoader.loadTerrainModels(),
       assetLoader.loadBuildingModels(),
       assetLoader.loadUnitModels(),
       assetLoader.loadResourceModels(),
     ]);
+    assetLoader.onProgress = null;
 
     // Build terrain
     this.rnds.mapRenderer.render(this.grid, this.scene);
@@ -425,6 +466,7 @@ export class Game {
           marketplaceManager: this.mgrs.marketplaceManager,
           animalLifecycleManager: this.mgrs.animalLifecycleManager,
           terrainGatheringManager: this.mgrs.terrainGatheringManager,
+          diplomacyManager: this.mgrs.diplomacyManager,
         },
         this.aiPlayers,
       );
@@ -613,45 +655,53 @@ export class Game {
       this.rnds.unitRenderer.updatePositions(allUnits, deltaTime);
 
       // Visual systems (shadows, particles, animations, overlays)
-      this.rnds.blobShadowRenderer.update(allBuildings, allUnits);
-      this.rnds.flagLightSystem.update(
+      // Each wrapped in safeRender to prevent one crash from killing the game
+      this.safeRender('blobShadow', () => this.rnds.blobShadowRenderer.update(allBuildings, allUnits));
+      this.safeRender('flagLight', () => this.rnds.flagLightSystem.update(
         deltaTime,
         this.mgrs.roadNetwork.getAllFlags(),
         allBuildings,
         this.grid,
         (id) => this.rnds.buildingRenderer.getMesh(id),
-      );
-      this.rnds.particleSystem.update(deltaTime, allBuildings, this.grid, this.frustum);
-      this.rnds.buildingAnimator.update(
-        deltaTime,
-        allBuildings,
-        (id) => this.rnds.buildingRenderer.getMesh(id),
-      );
-      this.rnds.buildingStatusOverlay.update(
+      ));
+      this.safeRender('particles', () => this.rnds.particleSystem.update(deltaTime, allBuildings, this.grid, this.frustum));
+      this.safeRender('buildingAnim', () => {
+        this.rnds.buildingAnimator.nightness = this.currentNightness;
+        this.rnds.buildingAnimator.update(
+          deltaTime,
+          allBuildings,
+          (id) => this.rnds.buildingRenderer.getMesh(id),
+        );
+      });
+      this.safeRender('statusOverlay', () => this.rnds.buildingStatusOverlay.update(
         deltaTime,
         allBuildings,
         this.gameState,
         (id) => this.rnds.buildingRenderer.getMesh(id),
-      );
-      this.rnds.combatRenderer.update(
+      ));
+      this.safeRender('combat', () => this.rnds.combatRenderer.update(
         deltaTime,
         this.mgrs.duelAnimationManager.getActiveDuels(),
         (id) => this.rnds.unitRenderer.getMesh(id),
-      );
-      this.rnds.productionChainOverlay.update(deltaTime);
-      this.rnds.weatherController.update(rawDelta, this.camera.position, this.frustum);
+      ));
+      this.safeRender('chainOverlay', () => this.rnds.productionChainOverlay.update(deltaTime));
+      this.safeRender('weather', () => this.rnds.weatherController.update(rawDelta, this.camera.position, this.frustum));
       // Pass dynamic wind direction from weather to ambient renderers
       const wind = this.rnds.weatherController.getWindDirection();
-      this.rnds.cloudRenderer.setWindDirection(wind);
-      this.rnds.beeRenderer.setWindDirection(wind);
-      this.rnds.cloudRenderer.update(rawDelta, this.camera.position, this.frustum);
-      this.rnds.birdFlockRenderer.update(rawDelta, this.camera.position, this.frustum);
-      this.rnds.waterEffectRenderer.update(rawDelta, this.camera.position, this.frustum);
-      this.rnds.wildAnimalRenderer.update(deltaTime, this.camera.position);
-      this.rnds.beeRenderer.update(rawDelta, this.camera.position, this.frustum);
+      this.safeRender('clouds', () => {
+        this.rnds.cloudRenderer.setWindDirection(wind);
+        this.rnds.cloudRenderer.update(rawDelta, this.camera.position, this.frustum);
+      });
+      this.safeRender('birds', () => this.rnds.birdFlockRenderer.update(rawDelta, this.camera.position, this.frustum));
+      this.safeRender('water', () => this.rnds.waterEffectRenderer.update(rawDelta, this.camera.position, this.frustum));
+      this.safeRender('animals', () => this.rnds.wildAnimalRenderer.update(deltaTime, this.camera.position));
+      this.safeRender('bees', () => {
+        this.rnds.beeRenderer.setWindDirection(wind);
+        this.rnds.beeRenderer.update(rawDelta, this.camera.position, this.frustum);
+      });
 
       // Spatial audio — proximity-based building/unit/ambient sounds
-      {
+      this.safeRender('spatialAudio', () => {
         const cycleState = this.atmosphereController.getCycleState();
         const weatherType = this.rnds.weatherController.getWeatherType();
         this.rnds.spatialAudioEngine.update(
@@ -664,7 +714,7 @@ export class Game {
           weatherType,
           this._paused,
         );
-      }
+      });
 
       // Apply weather atmosphere overlay
       const wt = this.rnds.weatherController.getWeatherType();
@@ -706,8 +756,26 @@ export class Game {
         },
       );
       ai.setMarketplaceManager(this.mgrs.marketplaceManager);
+      ai.setDiplomacyManager(this.mgrs.diplomacyManager);
+      if (this.config.sandbox) ai.sandbox = true;
       this.aiPlayers.push(ai);
     }
+
+    // Notify human player when AI proposes/breaks treaties
+    const TREATY_LABELS: Record<string, string> = {
+      none: 'broken their treaty',
+      non_aggression: 'proposed a Non-Aggression Pact',
+      trade_agreement: 'proposed a Trade Agreement',
+      alliance: 'proposed an Alliance',
+    };
+    this.mgrs.diplomacyManager.onTreatyChanged = (p1, p2, type) => {
+      // Only notify if human player is involved and the change was AI-initiated
+      const humanId = this.humanPlayerId;
+      if (p1 !== humanId && p2 !== humanId) return;
+      const aiId = p1 === humanId ? p2 : p1;
+      const label = TREATY_LABELS[type] ?? type;
+      this.onNotification?.({ type: 'building_complete', message: `Player ${aiId} has ${label}` });
+    };
   }
 
   /** Place starting Castles for all players, spread across the map */
@@ -887,6 +955,12 @@ export class Game {
     this._gameSpeed = idx >= 0 ? speeds[(idx + 1) % speeds.length] : speeds[0];
     this.onSpeedChange?.(this._paused, this._gameSpeed);
     return this._gameSpeed;
+  }
+
+  setSpeed(speed: number): void {
+    this._gameSpeed = speed;
+    this._paused = false;
+    this.onSpeedChange?.(false, speed);
   }
 
   /** Set game speed directly (clamped to 0.5-3, rounded to nearest 0.5) */
@@ -1162,8 +1236,16 @@ export class Game {
     return this.mgrs.victoryManager;
   }
 
+  getDiplomacyManager(): DiplomacyManager {
+    return this.mgrs.diplomacyManager;
+  }
+
   getRoadRenderer(): RoadRenderer {
     return this.rnds.roadRenderer;
+  }
+
+  getPerformanceMonitor(): PerformanceMonitor {
+    return this.rnds.performanceMonitor;
   }
 
   getPlacementController(): PlacementController | null {
@@ -1368,6 +1450,7 @@ export class Game {
         marketplaceManager: this.mgrs.marketplaceManager,
         animalLifecycleManager: this.mgrs.animalLifecycleManager,
         terrainGatheringManager: this.mgrs.terrainGatheringManager,
+        diplomacyManager: this.mgrs.diplomacyManager,
       },
       this.aiPlayers,
       {

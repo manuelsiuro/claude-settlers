@@ -10,6 +10,9 @@ import { BuildingType } from '../game/BuildingType';
 export class BuildingAnimator {
   private elapsedTime = 0;
 
+  /** Current nightness level 0.0–1.0 for night glow effects */
+  nightness = 0;
+
   /** Track buildings pending destruction animation: buildingId → { mesh, timer } */
   private destroyAnimations: Map<string, { mesh: THREE.Group; timer: number; startScale: THREE.Vector3 }> = new Map();
 
@@ -46,11 +49,38 @@ export class BuildingAnimator {
         case BuildingType.BlacksmithArmory:
         case BuildingType.Bakery:
         case BuildingType.GoldsmithMint:
+        case BuildingType.Brewery:
+        case BuildingType.Winery:
+        case BuildingType.CharcoalBurner:
+        case BuildingType.CheeseMakerBuilding:
           this.animateFurnace(mesh, t, isProducing);
           break;
         case BuildingType.Sawmill:
           this.animateSawmill(mesh, t, isProducing);
           break;
+      }
+
+      // Night glow: warm window light on active buildings at night
+      if (this.nightness > 0.4 && !isProducing) {
+        const nightIntensity = Math.min(1.0, (this.nightness - 0.4) / 0.3) * 0.08;
+        this.setEmissive(mesh, 1.0, 0.8, 0.4, nightIntensity);
+      } else if (this.nightness > 0.4 && isProducing) {
+        // Producing buildings get a slightly brighter warm glow at night
+        const nightIntensity = Math.min(1.0, (this.nightness - 0.4) / 0.3) * 0.12;
+        // Only apply if not already handled by furnace animation
+        if (building.type !== BuildingType.IronSmelter &&
+            building.type !== BuildingType.BlacksmithArmory &&
+            building.type !== BuildingType.Bakery &&
+            building.type !== BuildingType.GoldsmithMint &&
+            building.type !== BuildingType.Brewery &&
+            building.type !== BuildingType.Winery &&
+            building.type !== BuildingType.CharcoalBurner &&
+            building.type !== BuildingType.CheeseMakerBuilding) {
+          this.setEmissive(mesh, 1.0, 0.7, 0.3, nightIntensity);
+        }
+      } else if (this.nightness <= 0.4 && !isProducing) {
+        // Reset emissive when not night and not producing
+        this.resetEmissive(mesh);
       }
 
       // Completion glow

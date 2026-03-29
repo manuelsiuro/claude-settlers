@@ -100,9 +100,17 @@ import {
 } from './ui/StatsPanel';
 import { initDemolishDialog } from './ui/DemolishDialog';
 import { initTechTreePanel } from './ui/TechTreePanel';
-import { initDashboard } from './ui/DashboardPanel';
+import { initDashboard, showDashboard } from './ui/DashboardPanel';
 import { initVictoryProgressHUD, disposeVictoryProgressHUD } from './ui/VictoryProgressHUD';
 import { initResourceBar, disposeResourceBar } from './ui/ResourceBar';
+import { showLoadingScreen, updateLoadingProgress, hideLoadingScreen } from './ui/LoadingScreen';
+import { autoSaveToSlot } from './game/SaveLoad';
+import { initEventLog, disposeEventLog } from './ui/EventLog';
+import { initEncyclopedia } from './ui/EncyclopediaPanel';
+import { initKeyboardShortcuts } from './ui/KeyboardShortcuts';
+import { initDiplomacyPanel } from './ui/DiplomacyPanel';
+import { recordGameStart, unlockAchievement } from './ui/Achievements';
+import { HexGrid } from './game/HexGrid';
 
 // Extracted modules
 import { getGameHTML } from './ui/GameHTML';
@@ -137,7 +145,11 @@ let game: Game | undefined;
 let currentTooltip: TooltipController | undefined;
 let currentMinimap: Minimap | undefined;
 let popCounterInterval: ReturnType<typeof setInterval> | null = null;
+let autoSaveInterval: ReturnType<typeof setInterval> | null = null;
 let currentEditor: MapEditorUI | undefined;
+
+/** Auto-save interval in ms (2 minutes) */
+const AUTO_SAVE_INTERVAL = 2 * 60 * 1000;
 
 /** Get the active Game instance (only call from UI handlers after game starts) */
 function getGame(): Game {
@@ -166,6 +178,14 @@ initAppBar(
 
 initTechTreePanel();
 initDashboard(getGame);
+initEncyclopedia();
+initDiplomacyPanel(() => game);
+initKeyboardShortcuts({
+  getGame: () => game,
+  toggleBuildPanel,
+  showStatsPanel,
+  showDashboard,
+});
 initSetupScreen(startGame, openMapEditor);
 
 // ============================================================
@@ -247,6 +267,7 @@ async function startGame(config: Partial<GameConfig>, savedData?: SaveData): Pro
   stopStatsPanelUpdates();
   stopBuildPanelUpdates();
   if (popCounterInterval) { clearInterval(popCounterInterval); popCounterInterval = null; }
+  if (autoSaveInterval) { clearInterval(autoSaveInterval); autoSaveInterval = null; }
   hideInfoPanelElement();
   hideStatsPanelElement();
   hideBuildPanelElement();
@@ -269,15 +290,26 @@ async function startGame(config: Partial<GameConfig>, savedData?: SaveData): Pro
     disposeMobileAlertConsolidator();
     disposeTutorial();
     disposeResourceBar();
+    disposeEventLog();
     game.dispose();
   }
 
   await loadBalanceConfig();
 
+  showLoadingScreen();
+
   game = new Game(container, config);
   (window as unknown as Record<string, unknown>).__game = game;
 
   wireNotifications(game, showGameOver, updatePauseSpeedUI);
+  initEventLog((q, r) => {
+    // Navigate camera to event location
+    const cam = game?.getCameraController();
+    if (cam) {
+      const pos = HexGrid.hexToWorld(q, r);
+      cam.panTo(pos.x, pos.z);
+    }
+  });
   initToolAlertBar(getGame);
   initCapacityAlertBar(getGame);
   initFoodAlertBar(getGame, () => showStatsPanel('population'));
@@ -287,7 +319,8 @@ async function startGame(config: Partial<GameConfig>, savedData?: SaveData): Pro
   // Dispose previous tooltip controller
   currentTooltip?.dispose();
 
-  await game.start(savedData);
+  await game.start(savedData, updateLoadingProgress);
+  hideLoadingScreen();
 
   // Apply persisted graphics settings
   game.applyGraphicsSettings(loadSettings().graphics);
@@ -322,7 +355,28 @@ async function startGame(config: Partial<GameConfig>, savedData?: SaveData): Pro
   if (!savedData) {
     initTutorial(game);
   }
+
+  // Achievement tracking
+  const scenario = config.scenario ?? 'default';
+  recordGameStart(scenario);
+  if (config.sandbox) unlockAchievement('sandbox_builder');
+
+  // Auto-save every 2 minutes
+  autoSaveInterval = setInterval(() => {
+    if (!game) return;
+    try {
+      const data = game.serialize();
+      autoSaveToSlot(data);
+    } catch { /* silent — don't disrupt gameplay */ }
+  }, AUTO_SAVE_INTERVAL);
 }
+
+// Warn before leaving with an active game
+window.addEventListener('beforeunload', (e) => {
+  if (game) {
+    e.preventDefault();
+  }
+});
 
 // Prevent context menu on canvas for right-click cancel
 container.addEventListener('contextmenu', (e) => e.preventDefault());

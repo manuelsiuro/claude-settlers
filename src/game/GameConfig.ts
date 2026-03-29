@@ -56,6 +56,10 @@ export interface GameConfig {
   scenario: Scenario;
   victory?: VictoryConfig;
   customMapId?: string; // If set, load from MapStorage instead of generateMap()
+  /** Sandbox mode: AI never attacks, no defeat condition, free building (no resource cost) */
+  sandbox?: boolean;
+  /** Campaign scenario ID — enables objective tracking */
+  campaignId?: string;
 }
 
 export const DEFAULT_CONFIG: GameConfig = {

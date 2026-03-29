@@ -201,6 +201,9 @@ const RESOURCE_MODELS = [
 
 export type ResourceModelName = (typeof RESOURCE_MODELS)[number];
 
+/** Progress callback: (loaded, total, currentName) */
+export type AssetProgressCallback = (loaded: number, total: number, name: string) => void;
+
 /**
  * Loads and caches GLTF models for reuse via cloning.
  * All models are loaded once at startup; instances are cloned per use.
@@ -215,6 +218,15 @@ function isNetworkError(error: unknown): boolean {
 export class AssetLoader {
   private loader = new GLTFLoader();
   private models = new Map<string, THREE.Group>();
+  private _loadedCount = 0;
+
+  /** Callback invoked after each model finishes loading */
+  onProgress: AssetProgressCallback | null = null;
+
+  /** Total number of models across all categories */
+  get totalModelCount(): number {
+    return TERRAIN_MODELS.length + BUILDING_MODELS.length + UNIT_MODELS.length + RESOURCE_MODELS.length;
+  }
 
   /**
    * Load a GLTF model with retry logic for transient network failures.
@@ -255,6 +267,7 @@ export class AssetLoader {
 
   /** Load a batch of models from a directory. Logs warnings for failed loads. */
   private async loadModels(names: readonly string[], directory: string): Promise<void> {
+    const total = this.totalModelCount;
     const promises = names.map(async (name) => {
       const path = `/models/${directory}/${name}.glb`;
       try {
@@ -265,9 +278,16 @@ export class AssetLoader {
       } catch (err) {
         logger.warn(`Failed to load model "${path}":`, err);
       }
+      this._loadedCount++;
+      this.onProgress?.(this._loadedCount, total, name);
     });
 
     await Promise.all(promises);
+  }
+
+  /** Reset progress counter (call before a fresh loadAll) */
+  resetProgress(): void {
+    this._loadedCount = 0;
   }
 
   /** Load all terrain models. Call once before rendering. */

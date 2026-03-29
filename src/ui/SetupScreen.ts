@@ -1,6 +1,11 @@
 import type { GameConfig, VictoryConfig } from '../game/GameConfig';
 import type { SaveData } from '../game/SaveLoad';
-import { hasSave, loadFromLocalStorage, loadFromFile } from '../game/SaveLoad';
+import { hasSave, loadFromLocalStorage, loadFromFile, listSaveSlots, loadFromKey } from '../game/SaveLoad';
+import { validateMapData } from '../game/MapData';
+import type { MapData } from '../game/MapData';
+import { AI_PERSONALITY_LABELS, getPersonalityForPlayer } from '../game/data/aiBuildOrders';
+import { CAMPAIGN_SCENARIOS, getCompletedCampaigns } from '../game/CampaignData';
+import type { CampaignScenario } from '../game/CampaignData';
 import { showSnackbar } from './Snackbar';
 import { logger } from '../util/Logger';
 import { hideGameOverOverlay } from './GameOverScreen';
@@ -69,26 +74,94 @@ export function initSetupScreen(startGame: StartGameFn, onOpenEditor?: () => voi
   let selectedMapId: string | null = null;
   let selectedMapSize = 32;
   let selectedMapPlayers = 1;
-  let mapSourceMode: 'generated' | 'custom' = 'generated';
+  let mapSourceMode: 'generated' | 'custom' | 'campaign' = 'generated';
+  let selectedCampaign: CampaignScenario | null = null;
 
-  function setMapSource(mode: 'generated' | 'custom'): void {
+  const tabCampaign = document.getElementById('setup-tab-campaign');
+  const campaignFields = document.getElementById('setup-campaign-fields');
+  const campaignList = document.getElementById('setup-campaign-list');
+
+  function setMapSource(mode: 'generated' | 'custom' | 'campaign'): void {
     mapSourceMode = mode;
+    selectedCampaign = null;
     tabGenerated?.classList.toggle('active', mode === 'generated');
     tabCustom?.classList.toggle('active', mode === 'custom');
+    tabCampaign?.classList.toggle('active', mode === 'campaign');
     generatedFields?.classList.toggle('hidden', mode !== 'generated');
     customFields?.classList.toggle('hidden', mode !== 'custom');
+    campaignFields?.classList.toggle('hidden', mode !== 'campaign');
     if (mode === 'custom') {
       refreshMapGallery();
     }
+    if (mode === 'campaign') {
+      renderCampaignList();
+    }
+  }
+
+  function renderCampaignList(): void {
+    if (!campaignList) return;
+    const completed = getCompletedCampaigns();
+    campaignList.innerHTML = CAMPAIGN_SCENARIOS.map(s => {
+      const done = completed.includes(s.id);
+      const sel = selectedCampaign?.id === s.id;
+      return `<div class="campaign-card ${sel ? 'selected' : ''} ${done ? 'completed' : ''}" data-campaign="${s.id}">
+        <div class="campaign-card-header">
+          <span class="campaign-card-name">${s.name}</span>
+          ${done ? '<span class="campaign-card-check">&#10003;</span>' : ''}
+        </div>
+        <p class="campaign-card-desc">${s.description}</p>
+        <div class="campaign-card-meta">
+          <span>${s.difficulty}</span>
+          <span>${s.numPlayers} player${s.numPlayers > 1 ? 's' : ''}</span>
+          <span>${s.objectives.length} objective${s.objectives.length > 1 ? 's' : ''}</span>
+        </div>
+      </div>`;
+    }).join('');
+
+    // Event delegation for campaign selection
+    campaignList.onclick = (e) => {
+      const card = (e.target as HTMLElement).closest('.campaign-card') as HTMLElement | null;
+      if (!card) return;
+      const id = card.dataset.campaign;
+      const scenario = CAMPAIGN_SCENARIOS.find(s => s.id === id);
+      if (scenario) {
+        selectedCampaign = scenario;
+        campaignList.querySelectorAll('.campaign-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+      }
+    };
   }
 
   tabGenerated?.addEventListener('click', () => setMapSource('generated'));
   tabCustom?.addEventListener('click', () => setMapSource('custom'));
+  tabCampaign?.addEventListener('click', () => setMapSource('campaign'));
   setMapSource('generated');
 
   // Editor button
   editorBtn?.addEventListener('click', () => {
     onOpenEditorCallback?.();
+  });
+
+  // Paste map from clipboard
+  const pasteMapBtn = document.getElementById('setup-paste-map-btn');
+  pasteMapBtn?.addEventListener('click', async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      const data = JSON.parse(text) as MapData;
+      const errors = validateMapData(data);
+      if (errors.length > 0) {
+        showSnackbar('Invalid map data in clipboard', 'error');
+        return;
+      }
+      const { saveMap } = await import('../editor/MapStorage');
+      const { generateId } = await import('../editor/editorUtils');
+      data.id = generateId();
+      saveMap(data);
+      showSnackbar(`Map "${data.name}" imported from clipboard`, 'success');
+      refreshMapGallery();
+    } catch {
+      showSnackbar('No valid map data in clipboard', 'error');
+    }
   });
 
   // Import map button
@@ -197,12 +270,39 @@ export function initSetupScreen(startGame: StartGameFn, onOpenEditor?: () => voi
     `;
   }
 
-  // Show "Continue Saved Game" button if a save exists in localStorage
-  if (hasSave()) {
+  // Show "Continue" button if any save exists (quick-save or auto-save slots)
+  const saveSlots = listSaveSlots();
+  if (saveSlots.length > 0 || hasSave()) {
     setupContinueBtn.classList.remove('hidden');
   }
 
   setupContinueBtn.addEventListener('click', () => {
+    // If there are multiple save slots, load the most recent one
+    const slots = listSaveSlots();
+    if (slots.length > 0) {
+      // Find the most recent save across all slots
+      let newest = slots[0];
+      for (const s of slots) {
+        if (s.timestamp && (!newest.timestamp || s.timestamp > newest.timestamp)) {
+          newest = s;
+        }
+      }
+      const data = loadFromKey(newest.key);
+      if (data) {
+        setupOverlay.classList.add('hidden');
+        hideGameOverOverlay();
+        startGame(data.config, data).then(() => {
+          showSnackbar(`Loaded: ${newest.label}`, 'success');
+        }).catch((err) => {
+          logger.error('Load failed:', err);
+          showSnackbar('Failed to load saved game', 'error');
+          import('./LoadingScreen').then((m) => m.hideLoadingScreen());
+          setupOverlay.classList.remove('hidden');
+        });
+        return;
+      }
+    }
+    // Fallback to legacy quick-save
     handleLoadFromStorage(startGame);
   });
 
@@ -226,7 +326,8 @@ export function initSetupScreen(startGame: StartGameFn, onOpenEditor?: () => voi
     let html = '';
     for (let i = 0; i < count; i++) {
       const cls = i === 0 ? ' setup-color-you' : '';
-      const label = i === 0 ? 'You' : `AI ${i}`;
+      const personality = i > 0 ? AI_PERSONALITY_LABELS[getPersonalityForPlayer(i)] : null;
+      const label = i === 0 ? 'You' : `AI ${i} — ${personality}`;
       html += `<span class="setup-color-dot${cls}" style="background:${PLAYER_CSS_COLORS[i]};" title="Player ${i + 1} (${label})"></span>`;
     }
     playerColorsContainer.innerHTML = html;
@@ -278,6 +379,8 @@ export function initSetupScreen(startGame: StartGameFn, onOpenEditor?: () => voi
       peaceful: victoryPeaceful.checked,
     };
 
+    const sandboxCheckbox = document.getElementById('setup-sandbox') as HTMLInputElement;
+
     const config: Partial<GameConfig> = {
       seed: rawSeed > 0 ? Math.floor(rawSeed) : 42,
       mapSize: Number(setupMapSizeSelect.value) as GameConfig['mapSize'],
@@ -285,7 +388,23 @@ export function initSetupScreen(startGame: StartGameFn, onOpenEditor?: () => voi
       scenario: setupLandscapeSelect.value as GameConfig['scenario'],
       difficulty: setupDifficultySelect.value as GameConfig['difficulty'],
       victory,
+      sandbox: sandboxCheckbox?.checked || false,
     };
+
+    // Campaign mode: override config from scenario
+    if (mapSourceMode === 'campaign') {
+      if (!selectedCampaign) {
+        showSnackbar('Select a campaign scenario', 'warning');
+        return;
+      }
+      config.seed = selectedCampaign.seed;
+      config.mapSize = selectedCampaign.mapSize as GameConfig['mapSize'];
+      config.numPlayers = selectedCampaign.numPlayers;
+      config.scenario = selectedCampaign.scenario as GameConfig['scenario'];
+      config.difficulty = selectedCampaign.difficulty as GameConfig['difficulty'];
+      config.victory = selectedCampaign.victory;
+      config.campaignId = selectedCampaign.id;
+    }
 
     // If custom map is selected, add customMapId to config
     if (mapSourceMode === 'custom' && selectedMapId) {
@@ -301,6 +420,8 @@ export function initSetupScreen(startGame: StartGameFn, onOpenEditor?: () => voi
     startGame(config).catch((err) => {
       logger.error('Failed to start game:', err);
       showSnackbar('Failed to load game assets. Please reload the page.', 'error');
+      // Hide loading screen on failure (imported dynamically to avoid circular dep)
+      import('./LoadingScreen').then((m) => m.hideLoadingScreen());
       setupOverlay.classList.remove('hidden');
     });
   });

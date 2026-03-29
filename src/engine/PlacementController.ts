@@ -100,6 +100,10 @@ export class PlacementController {
     return this._placementRating;
   }
 
+  get currentPreviewHex(): HexCoord | null {
+    return this.currentHex;
+  }
+
   private bindEvents(): void {
     this.canvas.addEventListener('mousemove', this.onMouseMove);
     this.canvas.addEventListener('mousedown', this.onMouseDown);

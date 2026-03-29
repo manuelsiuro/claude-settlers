@@ -5,6 +5,7 @@ import { TerrainType } from '../game/TerrainType';
 import { getTerrainColor } from './TerrainColors';
 import { createRng } from '../game/noise';
 import { assetLoader } from './AssetLoader';
+import { shaderTimeManager } from './ShaderTimeManager';
 import {
   FLOWER_PATCHES_MIN, FLOWER_PATCHES_MAX,
   FLOWER_PATCH_SCALE_MIN, FLOWER_PATCH_SCALE_MAX, FLOWER_PATCH_SPREAD,
@@ -183,9 +184,44 @@ export class MapRenderer {
       this.instancedMeshes.push(mesh);
     }
 
-    // Water tiles: 1 InstancedMesh with flat blue material
+    // Water tiles: animated ShaderMaterial with vertex wave displacement
     if (waterEntries.length > 0) {
-      const waterMat = new THREE.MeshLambertMaterial({ color: 0x3399cc, transparent: true, opacity: 0.85 });
+      const waterMat = new THREE.ShaderMaterial({
+        uniforms: {
+          uTime: { value: 0.0 },
+          uColor1: { value: new THREE.Color(0x2288bb) },
+          uColor2: { value: new THREE.Color(0x44aadd) },
+        },
+        vertexShader: `
+          uniform float uTime;
+          varying vec3 vWorldPos;
+          void main() {
+            vec4 worldPos = instanceMatrix * vec4(position, 1.0);
+            // Gentle wave displacement
+            float wave = sin(worldPos.x * 1.5 + uTime * 0.8) * 0.03
+                       + sin(worldPos.z * 2.0 + uTime * 1.2) * 0.02
+                       + sin((worldPos.x + worldPos.z) * 1.0 + uTime * 0.5) * 0.015;
+            worldPos.y += wave;
+            vWorldPos = worldPos.xyz;
+            gl_Position = projectionMatrix * viewMatrix * worldPos;
+          }
+        `,
+        fragmentShader: `
+          uniform float uTime;
+          uniform vec3 uColor1;
+          uniform vec3 uColor2;
+          varying vec3 vWorldPos;
+          void main() {
+            // Animate color blend for subtle shimmer
+            float blend = sin(vWorldPos.x * 0.8 + vWorldPos.z * 0.6 + uTime * 0.4) * 0.5 + 0.5;
+            vec3 color = mix(uColor1, uColor2, blend * 0.4 + 0.3);
+            gl_FragColor = vec4(color, 0.82);
+          }
+        `,
+        transparent: true,
+        side: THREE.DoubleSide,
+      });
+      shaderTimeManager.register(waterMat as unknown as THREE.ShaderMaterial & { uniforms: { uTime: { value: number } } });
       this.ownedMaterials.push(waterMat);
       const waterMesh = new THREE.InstancedMesh(hexGeo, waterMat, waterEntries.length);
 
@@ -311,6 +347,10 @@ export class MapRenderer {
 
     // Dispose only materials we created (NOT shared AssetLoader materials/geometries)
     for (const mat of this.ownedMaterials) {
+      // Unregister shader materials from time manager
+      if (mat instanceof THREE.ShaderMaterial && 'uTime' in (mat as THREE.ShaderMaterial).uniforms) {
+        shaderTimeManager.unregister(mat as THREE.ShaderMaterial & { uniforms: { uTime: { value: number } } });
+      }
       mat.dispose();
     }
     this.ownedMaterials = [];

@@ -131,6 +131,7 @@ describe('createManagers', () => {
       'combatManager',
       'constructionManager',
       'dashboardTracker',
+      'diplomacyManager',
       'distributionSettings',
       'duelAnimationManager',
       'economyTracker',

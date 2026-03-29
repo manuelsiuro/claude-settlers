@@ -24,6 +24,9 @@ export function getGameHTML(currentTheme: string): string {
       <li data-headline="Resource Priority">${icon('tune')} Resource Priority</li>
       <li data-headline="Minimap">${icon('map')} Minimap</li>
       <li data-headline="Tech Tree">${icon('account_tree')} Tech Tree</li>
+      <li data-headline="Encyclopedia">${icon('crown')} Encyclopedia</li>
+      <li data-headline="Achievements">${icon('trophy')} Achievements</li>
+      <li data-headline="Diplomacy">${icon('people')} Diplomacy</li>
       <div class="nav-drawer-divider"></div>
       <div class="nav-drawer-section-label">Data</div>
       <li data-headline="Save Game">${icon('save')} Save Game</li>
@@ -54,6 +57,12 @@ export function getGameHTML(currentTheme: string): string {
       <div class="nav-drawer-divider"></div>
       <li data-headline="Graphics" data-nonclickable>${icon('settings')} Graphics</li>
       <div class="graphics-settings" style="padding:4px 24px 12px;">
+        <div class="gfx-presets">
+          <button class="btn-outlined btn-sm gfx-preset-btn" data-preset="low">Low</button>
+          <button class="btn-outlined btn-sm gfx-preset-btn" data-preset="medium">Medium</button>
+          <button class="btn-filled btn-sm gfx-preset-btn" data-preset="high">High</button>
+          <button class="btn-outlined btn-sm gfx-preset-btn" data-preset="ultra">Ultra</button>
+        </div>
         <label class="audio-slider-label">Shadows</label>
         <select id="gfx-shadows" class="settings-select">
           <option value="off">Off</option>
@@ -87,6 +96,20 @@ export function getGameHTML(currentTheme: string): string {
         <select id="gfx-fog" class="settings-select">
           <option value="on">On</option>
           <option value="off">Off</option>
+        </select>
+        <div class="settings-section-label">Accessibility</div>
+        <label class="audio-slider-label">Colorblind Mode</label>
+        <select id="a11y-colorblind" class="settings-select">
+          <option value="none">Off</option>
+          <option value="deuteranopia">Deuteranopia (Red-Green)</option>
+          <option value="protanopia">Protanopia (Red-Weak)</option>
+          <option value="tritanopia">Tritanopia (Blue-Yellow)</option>
+        </select>
+        <label class="audio-slider-label">Text Size</label>
+        <select id="a11y-textsize" class="settings-select">
+          <option value="normal">Normal</option>
+          <option value="large">Large (+20%)</option>
+          <option value="xlarge">Extra Large (+40%)</option>
         </select>
       </div>
     </ul>
@@ -312,7 +335,8 @@ export function getGameHTML(currentTheme: string): string {
         <!-- Map Source Tabs -->
         <div class="setup-map-tabs">
           <button class="setup-map-tab active" id="setup-tab-generated">${icon('map')} Generated</button>
-          <button class="setup-map-tab" id="setup-tab-custom">${icon('construction')} Custom Map</button>
+          <button class="setup-map-tab" id="setup-tab-custom">${icon('construction')} Custom</button>
+          <button class="setup-map-tab" id="setup-tab-campaign">${icon('shield_icon')} Campaign</button>
         </div>
 
         <!-- Generated map fields -->
@@ -356,8 +380,13 @@ export function getGameHTML(currentTheme: string): string {
           <div id="setup-map-gallery" style="margin-bottom:8px;"></div>
           <div style="display:flex;gap:6px;">
             <button class="btn-outlined btn-sm" id="setup-import-map-btn">${icon('folder_open')} Import</button>
+            <button class="btn-outlined btn-sm" id="setup-paste-map-btn">${icon('add')} Paste</button>
             <button class="btn-filled btn-sm" id="setup-editor-btn">${icon('construction')} Map Editor</button>
           </div>
+        </div>
+
+        <div id="setup-campaign-fields" class="hidden">
+          <div id="setup-campaign-list" class="campaign-list"></div>
         </div>
       </div>
 
@@ -447,6 +476,12 @@ export function getGameHTML(currentTheme: string): string {
           </label>
         </div>
       </div>
+
+      <label class="setup-sandbox-row">
+        <input type="checkbox" id="setup-sandbox" class="setup-toggle">
+        <span class="setup-sandbox-label">Sandbox Mode</span>
+        <span class="setup-sandbox-desc">No attacks, no defeat, free building</span>
+      </label>
 
       <button id="setup-start-btn" class="btn-filled setup-start-btn">
         Start Game

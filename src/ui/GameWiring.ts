@@ -130,12 +130,32 @@ export function wireGameControllers(deps: GameControllerDeps): GameControllerRes
     placement.onPreviewUpdated = () => {
       const dist = placement.placementDistance;
       const rating = placement.placementRating;
+      const hex = placement.currentPreviewHex;
+      let info = '';
+
       if (dist !== null && rating) {
-        placementDistanceEl.style.display = '';
-        placementDistanceEl.style.color = rating.color;
-        placementDistanceEl.innerHTML =
-          `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${rating.color};margin-right:4px;vertical-align:middle"></span>` +
+        info = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${rating.color};margin-right:4px;vertical-align:middle"></span>` +
           `Distance: ${dist} tile${dist !== 1 ? 's' : ''} — ${rating.label}`;
+      }
+
+      // Check if any flag is within 2 hexes — warn if not connected
+      if (hex) {
+        const flags = game.getRoadNetwork().getAllFlags();
+        const pid = game.getHumanPlayerId();
+        const nearbyFlag = flags.some(f => {
+          if (f.playerId !== pid) return false;
+          const d = Math.abs(f.coord.q - hex.q) + Math.abs(f.coord.r - hex.r) + Math.abs(f.coord.q + f.coord.r - hex.q - hex.r);
+          return d / 2 <= 2;
+        });
+        if (!nearbyFlag && flags.length > 0) {
+          info += (info ? '<br>' : '') + '<span style="color:#f59e0b">No flag nearby — place a flag to connect this building</span>';
+        }
+      }
+
+      if (info) {
+        placementDistanceEl.style.display = '';
+        placementDistanceEl.style.color = rating?.color ?? '';
+        placementDistanceEl.innerHTML = info;
       } else {
         placementDistanceEl.style.display = 'none';
       }
