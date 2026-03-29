@@ -91,6 +91,12 @@ export let LARGE_HOUSE_CAPACITY = 25;
 export let POPULATION_WARNING_THRESHOLD = 0.9;
 /** Usage ratio below which the HUD counter is normal (green) */
 export let POPULATION_CAUTION_THRESHOLD = 0.75;
+/** Minimum pop slots reserved for builders when buildings are under construction */
+export let POP_RESERVE_BUILDERS = 2;
+/** Minimum pop slots reserved for production workers when active buildings need staff */
+export let POP_RESERVE_WORKERS = 3;
+/** Random jitter added to hex distance when AI picks building placement (higher = more spread) */
+export let AI_PLACEMENT_DISTANCE_JITTER = 2;
 
 /** Population color severity based on usage ratio */
 export function getPopulationSeverity(ratio: number): 'critical' | 'warning' | 'normal' {
@@ -400,6 +406,8 @@ export interface BalanceConfigOverrides {
     castleCapacity?: number; smallHouseCapacity?: number;
     mediumHouseCapacity?: number; largeHouseCapacity?: number;
     warningThreshold?: number; cautionThreshold?: number;
+    reserveBuilders?: number; reserveWorkers?: number;
+    aiPlacementDistanceJitter?: number;
   };
   hunger?: {
     decayRate?: number; workingMultiplier?: number; garrisonedMultiplier?: number;
@@ -492,6 +500,9 @@ export function applyBalanceOverrides(config: BalanceConfigOverrides): void {
   if (config.population?.largeHouseCapacity !== undefined) LARGE_HOUSE_CAPACITY = config.population.largeHouseCapacity;
   if (config.population?.warningThreshold !== undefined) POPULATION_WARNING_THRESHOLD = config.population.warningThreshold;
   if (config.population?.cautionThreshold !== undefined) POPULATION_CAUTION_THRESHOLD = config.population.cautionThreshold;
+  if (config.population?.reserveBuilders !== undefined) POP_RESERVE_BUILDERS = config.population.reserveBuilders;
+  if (config.population?.reserveWorkers !== undefined) POP_RESERVE_WORKERS = config.population.reserveWorkers;
+  if (config.population?.aiPlacementDistanceJitter !== undefined) AI_PLACEMENT_DISTANCE_JITTER = config.population.aiPlacementDistanceJitter;
   // Hunger
   if (config.hunger?.decayRate !== undefined) HUNGER_DECAY_RATE = config.hunger.decayRate;
   if (config.hunger?.workingMultiplier !== undefined) HUNGER_WORKING_MULTIPLIER = config.hunger.workingMultiplier;
@@ -626,6 +637,9 @@ export function resetBalanceDefaults(): void {
   LARGE_HOUSE_CAPACITY = 25;
   POPULATION_WARNING_THRESHOLD = 0.9;
   POPULATION_CAUTION_THRESHOLD = 0.75;
+  POP_RESERVE_BUILDERS = 2;
+  POP_RESERVE_WORKERS = 3;
+  AI_PLACEMENT_DISTANCE_JITTER = 2;
   HUNGER_DECAY_RATE = 0.001;
   HUNGER_WORKING_MULTIPLIER = 1.0;
   HUNGER_GARRISONED_MULTIPLIER = 0.5;

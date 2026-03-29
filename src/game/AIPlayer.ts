@@ -1,7 +1,7 @@
 import { BuildingType, BUILDING_DEFINITIONS } from './BuildingType';
 import { BuildingState, getInventoryTotal, getInventoryAmount } from './Building';
 import type { Building } from './Building';
-import type { HexGrid, HexCoord } from './HexGrid';
+import { HexGrid, type HexCoord } from './HexGrid';
 import type { GameState } from './GameState';
 import type { TerritoryManager } from './TerritoryManager';
 import type { AttackManager } from './AttackManager';
@@ -28,6 +28,7 @@ import {
   AI_TRADE_SURPLUS_THRESHOLD,
   AI_TRADE_SHORTAGE_THRESHOLD,
   AI_TRADE_PRICE_SENSITIVITY,
+  AI_PLACEMENT_DISTANCE_JITTER,
 } from './data/balanceConstants';
 
 /** Callback to render a newly placed building. */
@@ -168,15 +169,25 @@ export class AIPlayer {
 
   /**
    * Reactively build housing when population usage is high.
-   * Tries the best affordable house (Large > Medium > Small).
+   * Prefers cheapest house first (Small > Medium > Large) for faster pop relief.
+   * Won't queue a second house while one is already planned or under construction.
    */
   private checkHousingNeeds(): void {
     if (this.populationManager.getUsageRatio(this.playerId) < 0.8) return;
 
+    // Don't queue another house if one is already being built
+    const houseTypes: Set<BuildingType> = new Set([BuildingType.SmallHouse, BuildingType.MediumHouse, BuildingType.LargeHouse]);
+    const hasHouseInProgress = this.gameState.getBuildingsByPlayer(this.playerId).some(b =>
+      (b.state === BuildingState.Planned || b.state === BuildingState.UnderConstruction) &&
+      houseTypes.has(b.type),
+    );
+    if (hasHouseInProgress) return;
+
+    // Cheapest first — faster to complete, unblocks pop sooner
     const housePriority: BuildingType[] = [
-      BuildingType.LargeHouse,
-      BuildingType.MediumHouse,
       BuildingType.SmallHouse,
+      BuildingType.MediumHouse,
+      BuildingType.LargeHouse,
     ];
 
     for (const type of housePriority) {
@@ -481,16 +492,27 @@ export class AIPlayer {
 
   /**
    * Find a valid hex in the AI's territory where the given building type can be placed.
-   * Iterates territory in shuffled order to spread buildings around.
+   * Prefers hexes closer to the Castle to minimize road segments (and thus transporters).
+   * A tunable random jitter keeps placement from clustering on the same hex.
    */
   private findValidHex(type: BuildingType): HexCoord | null {
     const territory = this.territoryManager.getPlayerTerritory(this.playerId);
     if (territory.length === 0) return null;
 
-    // Fisher-Yates shuffle (in-place on the copy returned by getPlayerTerritory)
-    for (let i = territory.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [territory[i], territory[j]] = [territory[j], territory[i]];
+    const castle = this.gameState.findCastle(this.playerId);
+    if (castle) {
+      // Sort by distance to Castle with random jitter for variety
+      territory.sort((a, b) => {
+        const distA = HexGrid.hexDistance(a, castle.coord) + Math.random() * AI_PLACEMENT_DISTANCE_JITTER;
+        const distB = HexGrid.hexDistance(b, castle.coord) + Math.random() * AI_PLACEMENT_DISTANCE_JITTER;
+        return distA - distB;
+      });
+    } else {
+      // No castle — fall back to random shuffle
+      for (let i = territory.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [territory[i], territory[j]] = [territory[j], territory[i]];
+      }
     }
 
     for (const coord of territory) {

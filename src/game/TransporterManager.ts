@@ -6,7 +6,9 @@ import { UnitType } from './UnitType';
 import { findPath } from './Pathfinding';
 import { hasInputSpace } from './Building';
 import { BUILDING_DEFINITIONS } from './BuildingType';
+import { BuildingState } from './Building';
 import type { PopulationManager } from './PopulationManager';
+import { POP_RESERVE_BUILDERS, POP_RESERVE_WORKERS } from './data/balanceConstants';
 
 /**
  * Transporter state machine within a road segment.
@@ -219,6 +221,14 @@ export class TransporterManager {
 
       // Check population capacity before spawning
       if (!this.populationManager.canSpawn(flagA.playerId)) continue;
+
+      // Population priority: reserve slots for builders and production workers
+      const available = this.populationManager.getAvailableSlots(flagA.playerId);
+      const builderNeeds = this.countBuildingsNeedingBuilders(flagA.playerId);
+      const workerNeeds = this.countBuildingsNeedingWorkers(flagA.playerId);
+      const reserved = Math.min(builderNeeds, POP_RESERVE_BUILDERS)
+                     + Math.min(workerNeeds, POP_RESERVE_WORKERS);
+      if (available <= reserved) continue;
 
       // Select transport type based on road quality
       let unitType: UnitType = UnitType.Transporter;
@@ -515,6 +525,29 @@ export class TransporterManager {
       }
     }
     state.carrying = [];
+  }
+
+  /** Count buildings that are under construction and have no builder assigned */
+  private countBuildingsNeedingBuilders(playerId: number): number {
+    let count = 0;
+    for (const b of this.gameState.getAllBuildings()) {
+      if (b.playerId !== playerId) continue;
+      if (b.state === BuildingState.UnderConstruction && !b.hasWorker) count++;
+    }
+    return count;
+  }
+
+  /** Count active production buildings that have no worker assigned */
+  private countBuildingsNeedingWorkers(playerId: number): number {
+    let count = 0;
+    for (const b of this.gameState.getAllBuildings()) {
+      if (b.playerId !== playerId) continue;
+      if (b.state === BuildingState.Active && !b.hasWorker) {
+        const def = BUILDING_DEFINITIONS[b.type];
+        if (def.worker) count++;
+      }
+    }
+    return count;
   }
 
   /**

@@ -134,11 +134,55 @@ export class ConstructionManager {
       if (building.state !== BuildingState.UnderConstruction) continue;
       if (this.builderAssignments.has(building.id)) continue;
 
-      // Find this player's Castle to spawn from
+      // Find this player's Castle to pull tools from
       const castle = this.gameState.findCastle(building.playerId);
       if (!castle) continue;
 
-      // Check population capacity before spawning
+      // Try to reuse an idle builder before spawning a new one.
+      // Idle builders already returned their tool on arrival, so re-acquire from Castle.
+      const idleBuilder = this.gameState.getIdleUnitsAtCastle(building.playerId)
+        .find(u => u.type === UnitType.Builder);
+
+      if (idleBuilder) {
+        // Re-acquire tool from Castle
+        if (builderTool) {
+          const available = getInventoryAmount(castle.outputInventory, builderTool);
+          if (available <= 0) {
+            if (!building.waitingForTool) {
+              building.waitingForTool = builderTool;
+              building.waitingForToolSince = Date.now();
+              this.onBuildingWaitingForTool?.(building);
+            }
+            continue;
+          }
+          removeFromInventory(castle.outputInventory, builderTool, 1);
+          idleBuilder.carriedTool = builderTool;
+        }
+
+        building.waitingForTool = null;
+        building.waitingForToolSince = null;
+        this.gameState.assignWorkerToBuilding(idleBuilder.id, building.id);
+        this.builderAssignments.set(building.id, idleBuilder.id);
+
+        const path = findPath(this.gameState.getGrid(), idleBuilder.coord, building.coord);
+        if (path.length > 0) {
+          setUnitPath(idleBuilder, path);
+          idleBuilder.state = UnitState.WalkingToWork;
+        } else {
+          logger.warn(
+            `[ConstructionManager] No path from idle builder to building ${building.id}`,
+          );
+          this.gameState.unassignWorker(idleBuilder.id);
+          this.builderAssignments.delete(building.id);
+          if (builderTool) {
+            addToInventory(castle.outputInventory, builderTool, 1);
+            idleBuilder.carriedTool = null;
+          }
+        }
+        continue;
+      }
+
+      // No idle builder available — spawn a new one if population allows
       if (!this.populationManager.canSpawn(building.playerId)) continue;
 
       // Check tool availability for the builder
