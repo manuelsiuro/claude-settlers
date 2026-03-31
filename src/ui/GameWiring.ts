@@ -148,7 +148,7 @@ export function wireGameControllers(deps: GameControllerDeps): GameControllerRes
           return d / 2 <= 2;
         });
         if (!nearbyFlag && flags.length > 0) {
-          info += (info ? '<br>' : '') + '<span style="color:#f59e0b">No flag nearby — place a flag to connect this building</span>';
+          info += (info ? '<br>' : '') + '<span class="text-warning">No flag nearby — place a flag to connect this building</span>';
         }
       }
 

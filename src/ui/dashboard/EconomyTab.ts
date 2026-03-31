@@ -46,14 +46,13 @@ export function renderEconomy(
     const prod = tracker.getProductionRate(r);
     const cons = tracker.getConsumptionRate(r);
     const net = prod - cons;
-    const netColor = net >= 0 ? '#4CAF50' : '#EF5350';
     const netSign = net >= 0 ? '+' : '';
     const selected = selectedEconResource === r ? ' dashboard-row-selected' : '';
     tableHtml += `<div class="dashboard-econ-row${selected}" data-eres="${r}">
       <span class="dashboard-econ-name">${resourceIcon(r)} ${RESOURCE_PROPERTIES[r].label}</span>
-      <span style="color:#4CAF50">+${prod.toFixed(1)}</span>
-      <span style="color:#EF5350">-${cons.toFixed(1)}</span>
-      <span style="color:${netColor};font-weight:600">${netSign}${net.toFixed(1)}</span>
+      <span class="text-positive">+${prod.toFixed(1)}</span>
+      <span class="text-critical">-${cons.toFixed(1)}</span>
+      <span class="${net >= 0 ? 'text-positive' : 'text-critical'}" style="font-weight:600">${netSign}${net.toFixed(1)}</span>
     </div>`;
   }
 

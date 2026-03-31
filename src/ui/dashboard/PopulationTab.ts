@@ -85,16 +85,16 @@ export function renderPopulation(el: HTMLElement, getGame: () => Game): void {
             <div class="dashboard-kpi-label">Population</div>
           </div>
           <div class="dashboard-kpi-card">
-            <div class="dashboard-kpi-value" style="color:${avgSatPct >= 60 ? '#4CAF50' : avgSatPct >= 30 ? '#FFB74D' : '#EF5350'}">${avgSatPct}%</div>
+            <div class="dashboard-kpi-value ${avgSatPct >= 60 ? 'text-positive' : avgSatPct >= 30 ? 'text-warning' : 'text-critical'}">${avgSatPct}%</div>
             <div class="dashboard-kpi-label">Avg Satiation</div>
           </div>
           <div class="dashboard-kpi-card">
             <div class="dashboard-kpi-value">${hungryCount}</div>
-            <div class="dashboard-kpi-label" style="color:#FFB74D">Hungry</div>
+            <div class="dashboard-kpi-label text-warning">Hungry</div>
           </div>
           <div class="dashboard-kpi-card">
             <div class="dashboard-kpi-value">${starvingCount}</div>
-            <div class="dashboard-kpi-label" style="color:#EF5350">Starving</div>
+            <div class="dashboard-kpi-label text-critical">Starving</div>
           </div>
         </div>
         <div class="dashboard-kpi-row" style="grid-template-columns:1fr 1fr">

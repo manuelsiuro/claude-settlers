@@ -32,7 +32,7 @@ export function renderOverview(el: HTMLElement, getGame: () => Game): void {
   if (bottlenecks.length > 0) {
     const items = bottlenecks.slice(0, 5).map(r => {
       const net = tracker.getNetBalance(r);
-      return `<span class="dashboard-bottleneck-item">${resourceIcon(r)} ${RESOURCE_PROPERTIES[r].label} <span style="color:#EF5350">${net.toFixed(1)}/m</span></span>`;
+      return `<span class="dashboard-bottleneck-item">${resourceIcon(r)} ${RESOURCE_PROPERTIES[r].label} <span class="text-critical">${net.toFixed(1)}/m</span></span>`;
     }).join('');
     bottleneckHtml = `<div class="dashboard-section">
       <div class="dashboard-section-label">Bottlenecks</div>

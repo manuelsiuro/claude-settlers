@@ -37,7 +37,7 @@ export function generatePopulationHTML(
   const capacity = popMgr.getCapacity(pid);
   const ratio = popMgr.getUsageRatio(pid);
   const severity = getPopulationSeverity(ratio);
-  const barColor = severity === 'critical' ? '#EF5350' : severity === 'warning' ? '#FFB74D' : '#4CAF50';
+  const barColor = severity === 'critical' ? 'var(--color-critical)' : severity === 'warning' ? 'var(--color-warning)' : 'var(--color-positive)';
 
   let html = '';
 
@@ -102,7 +102,7 @@ export function generatePopulationHTML(
     const starvingCount = allUnits.filter(u => u.satiation < HUNGER_STARVING_THRESHOLD).length;
 
     html += '<div class="info-section"><div class="info-section-label">Food Supply</div>';
-    const totalFoodColor = totalFood > 0 ? '#4CAF50' : '#EF5350';
+    const totalFoodColor = totalFood > 0 ? 'var(--color-positive)' : 'var(--color-critical)';
     html += `<div class="info-resource-row">
         <span class="info-resource-name">In Storage</span>
         <span class="info-resource-amount" data-field="pop-food-total" style="color:${totalFoodColor}">${totalFood}</span>
@@ -116,14 +116,14 @@ export function generatePopulationHTML(
     }
     if (hungryCount > 0) {
       html += `<div class="info-resource-row">
-          <span class="info-resource-name" style="color:#FFB74D">Hungry Units</span>
-          <span class="info-resource-amount" data-field="pop-hungry-count" style="color:#FFB74D">${hungryCount}</span>
+          <span class="info-resource-name text-warning">Hungry Units</span>
+          <span class="info-resource-amount text-warning" data-field="pop-hungry-count">${hungryCount}</span>
         </div>`;
     }
     if (starvingCount > 0) {
       html += `<div class="info-resource-row">
-          <span class="info-resource-name" style="color:#EF5350">Starving Units</span>
-          <span class="info-resource-amount" data-field="pop-starving-count" style="color:#EF5350">${starvingCount}</span>
+          <span class="info-resource-name text-critical">Starving Units</span>
+          <span class="info-resource-amount text-critical" data-field="pop-starving-count">${starvingCount}</span>
         </div>`;
     }
     html += '</div>';
@@ -184,7 +184,7 @@ export function updatePopulationValues(
       }
     }
     updater.setText('pop-food-total', `${totalFood}`);
-    updater.setColor('pop-food-total', totalFood > 0 ? '#4CAF50' : '#EF5350');
+    updater.setColor('pop-food-total', totalFood > 0 ? 'var(--color-positive)' : 'var(--color-critical)');
 
     const hungryCount = allUnits.filter(u => u.satiation < HUNGER_HUNGRY_THRESHOLD && u.satiation >= HUNGER_STARVING_THRESHOLD).length;
     const starvingCount = allUnits.filter(u => u.satiation < HUNGER_STARVING_THRESHOLD).length;

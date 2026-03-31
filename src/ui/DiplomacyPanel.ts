@@ -85,7 +85,7 @@ export function showDiplomacy(): void {
             <button class="btn-outlined btn-sm" data-action="trade_agreement" data-target="${pid}">Propose Trade Agreement</button>
             <button class="btn-filled btn-sm" data-action="alliance" data-target="${pid}">Propose Alliance</button>
           ` : `
-            <button class="btn-outlined btn-sm" data-action="none" data-target="${pid}" style="color:#e53935;border-color:#e53935;">Break Treaty</button>
+            <button class="btn-outlined btn-sm btn-danger" data-action="none" data-target="${pid}">Break Treaty</button>
             ${treaty === 'non_aggression' ? `<button class="btn-outlined btn-sm" data-action="trade_agreement" data-target="${pid}">Upgrade to Trade</button>` : ''}
             ${treaty === 'trade_agreement' ? `<button class="btn-filled btn-sm" data-action="alliance" data-target="${pid}">Upgrade to Alliance</button>` : ''}
           `}

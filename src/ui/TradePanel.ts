@@ -137,7 +137,7 @@ export function generateTradeHTML(building: Building): string {
     </div>`;
 
   // Price impact
-  const impactColors: Record<string, string> = { none: '#4CAF50', low: '#8BC34A', medium: '#FF9800', high: '#F44336' };
+  const impactColors: Record<string, string> = { none: 'var(--color-positive)', low: 'var(--color-positive)', medium: 'var(--color-warning)', high: 'var(--color-critical)' };
   html += `<div class="trade-impact" data-field="trade-impact" style="color:${impactColors[preview.priceImpact] ?? '#4CAF50'}">
       Price impact: <span data-field="trade-impact-text">${preview.priceImpact}</span>
     </div>`;
@@ -238,7 +238,7 @@ function generatePriceTrendsHTML(building: Building): string {
   for (const { res, mul } of resources.slice(0, 6)) {
     const label = RESOURCE_PROPERTIES[res]?.label ?? res;
     const pct = Math.round(mul * 100);
-    const color = mul < 1.0 ? '#4CAF50' : mul > 1.0 ? '#F44336' : '#888';
+    const color = mul < 1.0 ? 'var(--color-positive)' : mul > 1.0 ? 'var(--color-negative)' : 'var(--color-on-surface-faint)';
     const tag = mul < 0.9 ? 'cheap' : mul > 1.1 ? 'expensive' : 'normal';
     html += `<div class="info-resource-row">
       <span class="info-resource-name">${resourceIcon(res)} ${label}</span>
@@ -358,7 +358,7 @@ export function updateTradeValues(building: Building, updater: PanelUpdater): vo
   updater.setText('trade-receive-amt', String(preview.amountReceived));
   updater.setText('trade-rate', `Rate: ${preview.exchangeRate > 0 ? preview.exchangeRate.toFixed(2) : '—'}`);
 
-  const impactColors: Record<string, string> = { none: '#4CAF50', low: '#8BC34A', medium: '#FF9800', high: '#F44336' };
+  const impactColors: Record<string, string> = { none: 'var(--color-positive)', low: 'var(--color-positive)', medium: 'var(--color-warning)', high: 'var(--color-critical)' };
   updater.setColor('trade-impact', impactColors[preview.priceImpact] ?? '#4CAF50');
   updater.setText('trade-impact-text', preview.priceImpact);
 
@@ -385,7 +385,7 @@ export function updateTradeValues(building: Building, updater: PanelUpdater): vo
     const mul = mp.getPriceMultiplier(playerId, r);
     if (mul !== 1.0) {
       const pct = Math.round(mul * 100);
-      const color = mul < 1.0 ? '#4CAF50' : mul > 1.0 ? '#F44336' : '#888';
+      const color = mul < 1.0 ? 'var(--color-positive)' : mul > 1.0 ? 'var(--color-negative)' : 'var(--color-on-surface-faint)';
       const tag = mul < 0.9 ? 'cheap' : mul > 1.1 ? 'expensive' : 'normal';
       updater.setText(`price-trend-${r}`, `${pct}% (${tag})`);
       updater.setColor(`price-trend-${r}`, color);

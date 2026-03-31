@@ -37,6 +37,10 @@
   --color-tier-1: #4CAF50;
   --color-tier-2: #FF8F00;
   --color-tier-3: #7B1FA2;
+  --color-positive: #2e7d32;
+  --color-negative: #c62828;
+  --color-warning: #FFB74D;
+  --color-critical: #EF5350;
 }
 
 /* Day theme defaults (unlayered so they resolve outside @layer theme) */
@@ -77,6 +81,10 @@
   --color-tier-1: #4CAF50;
   --color-tier-2: #FF8F00;
   --color-tier-3: #7B1FA2;
+  --color-positive: #2e7d32;
+  --color-negative: #c62828;
+  --color-warning: #FFB74D;
+  --color-critical: #EF5350;
 }
 
 /* Night theme overrides */
@@ -117,6 +125,10 @@ html[data-theme="night"] {
   --color-tier-1: #66BB6A;
   --color-tier-2: #FFB74D;
   --color-tier-3: #BA68C8;
+  --color-positive: #66BB6A;
+  --color-negative: #EF5350;
+  --color-warning: #FFB74D;
+  --color-critical: #EF5350;
 }
 
 /* Z-index layers */
@@ -191,7 +203,7 @@ html, body {
   background: transparent;
   border: none;
   cursor: pointer;
-  color: currentColor;
+  color: var(--color-on-surface-variant);
   transition: background 0.15s;
 }
 @media (max-width: 768px) {
@@ -265,6 +277,29 @@ html, body {
 }
 .btn-text:hover {
   background: rgba(26, 115, 232, 0.08);
+}
+
+.btn-outlined.btn-danger {
+  color: #e53935;
+  border-color: #e53935;
+}
+.btn-outlined.btn-danger:hover {
+  background: rgba(229,57,53,0.08);
+}
+
+/* Semantic status color utilities */
+.text-positive { color: var(--color-positive); }
+.text-negative { color: var(--color-negative); }
+.text-warning  { color: var(--color-warning); }
+.text-critical { color: var(--color-critical); }
+
+/* Focus outlines for accessibility */
+.icon-btn:focus-visible,
+.btn-filled:focus-visible,
+.btn-outlined:focus-visible,
+.btn-text:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 /* ============================================================
@@ -3388,28 +3423,20 @@ html[data-theme="night"] .economy-bottleneck-alert {
 }
 
 .economy-rate-positive {
-  color: #2e7d32;
+  color: var(--color-positive);
   font-size: 0.6875rem;
   font-variant-numeric: tabular-nums;
 }
 
 .economy-rate-negative {
-  color: #c62828;
+  color: var(--color-negative);
   font-size: 0.6875rem;
   font-variant-numeric: tabular-nums;
 }
 
-html[data-theme="night"] .economy-rate-positive {
-  color: #66BB6A;
-}
-
-html[data-theme="night"] .economy-rate-negative {
-  color: #EF5350;
-}
-
 .economy-net-positive {
   font-weight: 600;
-  color: #2e7d32;
+  color: var(--color-positive);
   font-size: 0.6875rem;
   font-variant-numeric: tabular-nums;
   min-width: 36px;
@@ -3418,19 +3445,11 @@ html[data-theme="night"] .economy-rate-negative {
 
 .economy-net-negative {
   font-weight: 600;
-  color: #c62828;
+  color: var(--color-negative);
   font-size: 0.6875rem;
   font-variant-numeric: tabular-nums;
   min-width: 36px;
   text-align: right;
-}
-
-html[data-theme="night"] .economy-net-positive {
-  color: #66BB6A;
-}
-
-html[data-theme="night"] .economy-net-negative {
-  color: #EF5350;
 }
 
 .economy-sparkline {
@@ -5254,11 +5273,12 @@ html[data-theme="night"] .priority-importance-dot.filled {
   flex: 1;
   overflow-y: auto;
   padding: 20px 24px;
+  background: var(--color-overlay-bg);
 }
 
 .enc-group-label {
   padding: 6px 16px 4px;
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -5336,6 +5356,10 @@ html[data-theme="night"] .priority-importance-dot.filled {
 
 .enc-detail-section {
   margin-bottom: 16px;
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-card-border);
+  border-radius: 8px;
+  padding: 12px 14px;
 }
 
 .enc-detail-section h4 {

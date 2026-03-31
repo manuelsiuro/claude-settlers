@@ -44,8 +44,8 @@ export function renderResources(
       <span class="dashboard-econ-name">${resourceIcon(r)} ${RESOURCE_PROPERTIES[r].label}</span>
       <span style="font-weight:600">${amount}</span>
       <span>${trendIcon}</span>
-      <span style="color:#4CAF50">${prod > 0 ? '+' + prod.toFixed(1) : '-'}</span>
-      <span style="color:#EF5350">${cons > 0 ? '-' + cons.toFixed(1) : '-'}</span>
+      <span class="text-positive">${prod > 0 ? '+' + prod.toFixed(1) : '-'}</span>
+      <span class="text-critical">${cons > 0 ? '-' + cons.toFixed(1) : '-'}</span>
     </div>`;
   }
 

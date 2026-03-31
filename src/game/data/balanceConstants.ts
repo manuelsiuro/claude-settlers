@@ -130,9 +130,9 @@ export let HUNGER_PRODUCTION_PENALTY_STARVING = 0.15;
 
 /** Get the display color for a satiation value, aligned with penalty thresholds */
 export function getSatiationColor(satiation: number): string {
-  if (satiation >= HUNGER_HUNGRY_THRESHOLD) return '#4CAF50';   // green: no penalties
-  if (satiation >= HUNGER_STARVING_THRESHOLD) return '#FFB74D'; // amber: hungry
-  return '#EF5350';                                              // red: starving
+  if (satiation >= HUNGER_HUNGRY_THRESHOLD) return 'var(--color-positive)';
+  if (satiation >= HUNGER_STARVING_THRESHOLD) return 'var(--color-warning)';
+  return 'var(--color-critical)';
 }
 
 /** Get the status label for a satiation value */

@@ -51,7 +51,7 @@ export function generateMilitaryHTML(
   // Morale section
   const morale = game.getMoraleManager().getMorale(pid);
   const moralePct = Math.round(morale * 100);
-  const moraleColor = morale >= 0.7 ? '#4CAF50' : morale >= 0.4 ? '#FFB74D' : '#EF5350';
+  const moraleColor = morale >= 0.7 ? 'var(--color-positive)' : morale >= 0.4 ? 'var(--color-warning)' : 'var(--color-critical)';
   const prodMult = game.getMoraleManager().getProductionMultiplier(pid);
   const combatMult = game.getMoraleManager().getCombatMultiplier(pid);
   html += '<div class="info-section"><div class="info-section-label">Morale</div>';

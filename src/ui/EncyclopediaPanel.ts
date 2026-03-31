@@ -169,13 +169,13 @@ function renderResourceDetail(key: string): string {
 
   if (producers.length > 0) {
     html += `<div class="enc-detail-section"><h4>Produced By</h4>`;
-    html += `<div class="enc-detail-row">${producers.join(', ')}</div>`;
+    html += `<div class="enc-detail-row">${producers.map(p => `<span class="enc-chip">${p}</span>`).join('')}</div>`;
     html += `</div>`;
   }
 
   if (consumers.length > 0) {
     html += `<div class="enc-detail-section"><h4>Consumed By</h4>`;
-    html += `<div class="enc-detail-row">${consumers.join(', ')}</div>`;
+    html += `<div class="enc-detail-row">${consumers.map(p => `<span class="enc-chip">${p}</span>`).join('')}</div>`;
     html += `</div>`;
   }
 
@@ -222,7 +222,7 @@ function renderUnitDetail(key: string): string {
   }
   if (workplaces.length > 0) {
     html += `<div class="enc-detail-section"><h4>Works At</h4>`;
-    html += `<div class="enc-detail-row">${workplaces.join(', ')}</div>`;
+    html += `<div class="enc-detail-row">${workplaces.map(p => `<span class="enc-chip">${p}</span>`).join('')}</div>`;
     html += `</div>`;
   }
 
