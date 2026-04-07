@@ -49,6 +49,10 @@ export class WebSocketAdapter implements NetworkAdapter {
 
   submitCommands(commands: GameCommand[]): void {
     this.commandLog.push(...commands);
+    // Cap log to prevent unbounded memory growth
+    if (this.commandLog.length > 10000) {
+      this.commandLog = this.commandLog.slice(-10000);
+    }
   }
 
   getCommandsForTick(): GameCommand[] {
@@ -145,6 +149,10 @@ export class WebSocketAdapter implements NetworkAdapter {
     const cmds: SerializedCommand[] = commands.map(c => c as unknown as SerializedCommand);
     this.send({ type: 'COMMANDS', turn: turnNumber, cmds });
     this.commandLog.push(...commands);
+    // Cap log to prevent unbounded memory growth
+    if (this.commandLog.length > 10000) {
+      this.commandLog = this.commandLog.slice(-10000);
+    }
   }
 
   hasTurnPacket(): boolean {
@@ -213,16 +221,12 @@ export class WebSocketAdapter implements NetworkAdapter {
         });
         break;
 
-      case 'TURN_PACKET':
-        this.turnPacketQueue.push({
-          turnNumber: msg.turn,
-          commandsByPlayer: msg.cmdsByPlayer,
-        });
-        this.onTurnPacket?.({
-          turnNumber: msg.turn,
-          commandsByPlayer: msg.cmdsByPlayer,
-        });
+      case 'TURN_PACKET': {
+        const packet: TurnPacket = { turnNumber: msg.turn, commandsByPlayer: msg.cmdsByPlayer };
+        this.turnPacketQueue.push(packet);
+        this.onTurnPacket?.(packet);
         break;
+      }
 
       case 'DESYNC_DETECTED':
         this.onDesyncDetected?.(msg.turn, msg.affectedPlayers);
@@ -276,6 +280,13 @@ export class WebSocketAdapter implements NetworkAdapter {
 
     this.reconnectTimer = setTimeout(() => {
       if (this.intentionalDisconnect) return;
+
+      // Clean up old WebSocket before creating a new one
+      if (this.ws) {
+        this.ws.onclose = null;
+        this.ws.onerror = null;
+        this.ws.close();
+      }
 
       try {
         this.ws = new WebSocket(this.lastAddress);

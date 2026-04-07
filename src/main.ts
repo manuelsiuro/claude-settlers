@@ -112,6 +112,7 @@ import { initKeyboardShortcuts } from './ui/KeyboardShortcuts';
 import { initDiplomacyPanel } from './ui/DiplomacyPanel';
 import { recordGameStart, unlockAchievement } from './ui/Achievements';
 import { HexGrid } from './game/HexGrid';
+import { showWaitingOverlay, hideWaitingOverlay, showDisconnectedOverlay, hideDisconnectedOverlay } from './ui/MultiplayerOverlay';
 
 // Extracted modules
 import { getGameHTML } from './ui/GameHTML';
@@ -388,24 +389,18 @@ async function startGame(config: Partial<GameConfig>, savedData?: SaveData): Pro
   if (config.isMultiplayer && mpResult) {
     const mpAdapter = mpResult.adapter;
 
-    game.onMultiplayerWaiting = () => {
-      import('./ui/MultiplayerOverlay').then(m => m.showWaitingOverlay());
-    };
-    game.onMultiplayerResumed = () => {
-      import('./ui/MultiplayerOverlay').then(m => m.hideWaitingOverlay());
-    };
+    game.onMultiplayerWaiting = () => showWaitingOverlay();
+    game.onMultiplayerResumed = () => hideWaitingOverlay();
     mpAdapter.onDisconnected = () => {
-      import('./ui/MultiplayerOverlay').then(m => {
-        m.showDisconnectedOverlay(() => {
-          m.hideDisconnectedOverlay();
-          game?.dispose();
-          game = undefined;
-          import('./ui/SetupScreen').then(s => s.showSetupOverlay());
-        });
+      showDisconnectedOverlay(() => {
+        hideDisconnectedOverlay();
+        game?.dispose();
+        game = undefined;
+        import('./ui/SetupScreen').then(s => s.showSetupOverlay());
       });
     };
     mpAdapter.onReconnected = () => {
-      import('./ui/MultiplayerOverlay').then(m => m.hideDisconnectedOverlay());
+      hideDisconnectedOverlay();
       showSnackbar('Reconnected!');
     };
     mpAdapter.onReconnectFailed = () => {

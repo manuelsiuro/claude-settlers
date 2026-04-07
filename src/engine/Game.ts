@@ -800,7 +800,7 @@ export class Game {
     if (!packet) return;
 
     // Execute all commands from the turn packet
-    const buildingsBefore = new Set(this.gameState.getAllBuildings().map(b => b.id));
+    const buildingCountBefore = this.gameState.getAllBuildings().length;
     for (const [, cmds] of Object.entries(packet.commandsByPlayer)) {
       for (const cmd of cmds) {
         this.commandExecutor.execute(cmd as unknown as GameCommand);
@@ -808,10 +808,9 @@ export class Game {
     }
 
     // Sync renderers for any new buildings created by commands
-    for (const building of this.gameState.getAllBuildings()) {
-      if (!buildingsBefore.has(building.id)) {
-        this.rnds.buildingRenderer.addBuilding(building, this.grid);
-      }
+    const allBuildingsAfter = this.gameState.getAllBuildings();
+    for (let i = buildingCountBefore; i < allBuildingsAfter.length; i++) {
+      this.rnds.buildingRenderer.addBuilding(allBuildingsAfter[i], this.grid);
     }
 
     // Run one simulation tick
@@ -1260,6 +1259,7 @@ export class Game {
   }
 
   dispose(): void {
+    this.networkAdapter.disconnect?.();
     if (this.animationId !== null) {
       cancelAnimationFrame(this.animationId);
     }

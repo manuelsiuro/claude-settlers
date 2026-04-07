@@ -191,7 +191,7 @@ export class Room {
     const AI_PERSONALITIES = ['Balanced', 'Economist', 'Militarist', 'Turtle'];
     const aiCount = this.config.aiCount ?? 0;
     for (let i = 0; i < aiCount; i++) {
-      const aiPlayerId = this.players.size + 1 + i;
+      const aiPlayerId = this.nextPlayerId + i;
       assignments.push({
         playerId: aiPlayerId,
         name: `AI (${AI_PERSONALITIES[i % AI_PERSONALITIES.length]})`,
@@ -331,7 +331,7 @@ export class Room {
   }
 
   private send(player: ConnectedPlayer, msg: ServerMessage): void {
-    if (player.ws.readyState === 1) { // OPEN
+    if (player.ws.readyState === 1) { // WebSocket.OPEN
       player.ws.send(JSON.stringify(msg));
     }
   }
@@ -339,7 +339,7 @@ export class Room {
   private broadcast(msg: ServerMessage): void {
     const data = JSON.stringify(msg);
     for (const [, player] of this.players) {
-      if (!player.disconnected && player.ws.readyState === 1) {
+      if (!player.disconnected && player.ws.readyState === 1) { // WebSocket.OPEN
         player.ws.send(data);
       }
     }
@@ -348,7 +348,7 @@ export class Room {
   private broadcastExcept(excludeId: number, msg: ServerMessage): void {
     const data = JSON.stringify(msg);
     for (const [pid, player] of this.players) {
-      if (pid !== excludeId && !player.disconnected && player.ws.readyState === 1) {
+      if (pid !== excludeId && !player.disconnected && player.ws.readyState === 1) { // WebSocket.OPEN
         player.ws.send(data);
       }
     }

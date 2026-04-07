@@ -70,6 +70,10 @@ export class LocalAdapter implements NetworkAdapter {
   submitCommands(commands: GameCommand[]): void {
     this.pending.push(...commands);
     this.log.push(...commands);
+    // Cap log to prevent unbounded memory growth
+    if (this.log.length > 10000) {
+      this.log = this.log.slice(-10000);
+    }
   }
 
   getCommandsForTick(): GameCommand[] {

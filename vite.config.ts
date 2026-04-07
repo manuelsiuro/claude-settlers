@@ -32,7 +32,7 @@ function relayServerPlugin(): PluginOption {
 
   return {
     name: 'relay-server',
-    configureServer() {
+    configureServer(server) {
       // Spawn the relay server as a child process
       relayProcess = spawn('npx', ['tsx', 'server/index.ts', String(RELAY_PORT)], {
         cwd: process.cwd(),
@@ -56,12 +56,11 @@ function relayServerPlugin(): PluginOption {
         }
         relayProcess = null;
       });
-    },
-    buildEnd() {
-      if (relayProcess) {
-        relayProcess.kill();
-        relayProcess = null;
-      }
+
+      // Kill relay when dev server closes
+      server.httpServer?.on('close', () => {
+        if (relayProcess) { relayProcess.kill(); relayProcess = null; }
+      });
     },
   };
 }
