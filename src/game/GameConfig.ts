@@ -60,6 +60,14 @@ export interface GameConfig {
   sandbox?: boolean;
   /** Campaign scenario ID — enables objective tracking */
   campaignId?: string;
+  /** Multiplayer mode — game uses lockstep networking */
+  isMultiplayer?: boolean;
+  /** Relay server WebSocket address (e.g., ws://192.168.1.42:9876) */
+  serverAddress?: string;
+  /** Room code for joining an existing game */
+  roomCode?: string;
+  /** Player name for multiplayer lobby */
+  playerName?: string;
 }
 
 export const DEFAULT_CONFIG: GameConfig = {

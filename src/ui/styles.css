@@ -5817,3 +5817,103 @@ html[data-theme="night"] .priority-importance-dot.filled {
   font-size: 0.6875rem !important;
   padding: 4px 6px !important;
 }
+
+/* ── Multiplayer Lobby ──────────────────────────────────────────────── */
+
+.lobby-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lobby-card {
+  background: var(--color-surface);
+  color: var(--color-on-surface);
+  border-radius: 16px;
+  padding: 32px;
+  width: 420px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+}
+
+.lobby-card h2 {
+  margin: 0 0 16px;
+  font-size: 1.25rem;
+  text-align: center;
+}
+
+.lobby-room-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.lobby-code {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  font-family: monospace;
+  flex: 1;
+}
+
+.lobby-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  opacity: 0.6;
+  margin-bottom: 4px;
+}
+
+.lobby-qr {
+  text-align: center;
+  margin: 12px 0;
+}
+
+.lobby-qr svg {
+  width: 140px;
+  height: 140px;
+}
+
+.lobby-player-list {
+  margin-bottom: 16px;
+}
+
+.lobby-player {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.lobby-player-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.lobby-player-name {
+  flex: 1;
+  font-weight: 500;
+}
+
+.lobby-player-status {
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+.lobby-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.lobby-actions button {
+  flex: 1;
+}

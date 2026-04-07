@@ -17,7 +17,8 @@
     "cap:ios": "npm run build && npx cap sync ios && npx cap open ios",
     "cap:run:android": "npm run build && npx cap sync android && npx cap run android",
     "tauri:dev": "npx tauri dev",
-    "tauri:build": "npx tauri build"
+    "tauri:build": "npx tauri build",
+    "server:dev": "npx tsx server/index.ts"
   },
   "dependencies": {
     "@capacitor/android": "^8.2.0",

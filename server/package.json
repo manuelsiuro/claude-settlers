@@ -1,0 +1,21 @@
+{
+  "name": "feudal-realm-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch index.ts",
+    "start": "node --loader ts-node/esm index.ts",
+    "build": "tsc",
+    "lint": "eslint . --ext .ts"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3",
+    "tsx": "^4.19.0",
+    "@types/ws": "^8.5.10",
+    "@types/node": "^22.0.0"
+  }
+}

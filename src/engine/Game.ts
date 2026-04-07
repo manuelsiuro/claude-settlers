@@ -147,6 +147,15 @@ export class Game {
   /** Whether the game is paused */
   private _paused = false;
 
+  /** Current lockstep turn number (multiplayer) */
+  private currentTurn = 0;
+
+  /** Commands queued locally for the current turn (multiplayer) */
+  private localCommandBuffer: GameCommand[] = [];
+
+  /** Whether commands for the current turn have been sent to server */
+  private turnCommandsSent = false;
+
   /** Seeded PRNG for deterministic game logic (multiplayer + replays) */
   private gameRng: GameRng;
 
@@ -634,15 +643,20 @@ export class Game {
       // Pass nightness to weather controller for rain vs snow selection
       this.rnds.weatherController.setNightness(this.atmosphereController.getCycleState().nightness);
 
-      // Fixed-timestep simulation: accumulate game time, run discrete ticks
-      if (!this._paused) {
-        this.accumulator += rawDelta * this._gameSpeed;
-        // Cap accumulator to prevent spiral of death on slow frames
-        this.accumulator = Math.min(this.accumulator, Game.FIXED_STEP * 10);
-        while (this.accumulator >= Game.FIXED_STEP) {
-          this.simulationTick(Game.FIXED_STEP);
-          this.accumulator -= Game.FIXED_STEP;
+      // Simulation: two modes based on adapter type
+      if (this.networkAdapter.isLocal()) {
+        // Single-player: fixed-timestep accumulator (Phase 1 behavior)
+        if (!this._paused) {
+          this.accumulator += rawDelta * this._gameSpeed;
+          this.accumulator = Math.min(this.accumulator, Game.FIXED_STEP * 10);
+          while (this.accumulator >= Game.FIXED_STEP) {
+            this.simulationTick(Game.FIXED_STEP);
+            this.accumulator -= Game.FIXED_STEP;
+          }
         }
+      } else {
+        // Multiplayer lockstep: advance one tick per turn packet
+        this.processMultiplayerTurn();
       }
 
       // Sync renderers with latest simulation state (once per frame)
@@ -739,6 +753,64 @@ export class Game {
       this.rnds.postProcessing.render();
     };
     animate();
+  }
+
+  /**
+   * Process multiplayer lockstep turn.
+   * Send local commands to server if not yet sent, then check for
+   * a turn packet. When received, execute all commands and run one tick.
+   */
+  private processMultiplayerTurn(): void {
+    const adapter = this.networkAdapter;
+
+    // Send local commands for current turn if not yet sent
+    if (!this.turnCommandsSent) {
+      adapter.sendTurnCommands?.(this.currentTurn, this.localCommandBuffer);
+      this.localCommandBuffer = [];
+      this.turnCommandsSent = true;
+    }
+
+    // Check if a turn packet is available
+    if (!adapter.hasTurnPacket?.()) return; // Still waiting for server
+
+    const packet = adapter.getTurnPacket?.();
+    if (!packet) return;
+
+    // Execute all commands from the turn packet
+    for (const [, cmds] of Object.entries(packet.commandsByPlayer)) {
+      for (const cmd of cmds) {
+        this.commandExecutor.execute(cmd as unknown as GameCommand);
+      }
+    }
+
+    // Run one simulation tick
+    this.simulationTick(Game.FIXED_STEP);
+
+    // Advance turn
+    this.currentTurn++;
+    this.turnCommandsSent = false;
+
+    // Send checksum every 10 turns for desync detection
+    if (this.currentTurn % 10 === 0 && adapter.sendChecksum) {
+      const checksum = this.computeChecksum();
+      adapter.sendChecksum(this.currentTurn, checksum);
+    }
+  }
+
+  /**
+   * Compute a simple state checksum for desync detection.
+   * Hashes key numerical values from the game state.
+   */
+  private computeChecksum(): number {
+    let hash = 0;
+    const combine = (h: number, v: number) => ((h << 5) - h + v) | 0;
+    hash = combine(hash, this.gameState.getAllBuildings().length);
+    hash = combine(hash, this.gameState.getAllUnits().length);
+    hash = combine(hash, this.mgrs.territoryManager.getVersion());
+    hash = combine(hash, this.mgrs.roadNetwork.getAllFlags().length);
+    hash = combine(hash, this.mgrs.roadNetwork.getAllRoads().length);
+    hash = combine(hash, this.gameRng.getState());
+    return hash;
   }
 
   /**
@@ -1300,11 +1372,23 @@ export class Game {
     return this.gameRng;
   }
 
-  /** Execute a game command through the command system. */
+  /**
+   * Execute a game command through the command system.
+   * In single-player: executes immediately.
+   * In multiplayer: buffers the command to be sent with the next turn.
+   */
   executeCommand(cmd: GameCommand): CommandResult {
-    const result = this.commandExecutor.execute(cmd);
-    if (result.success) this.networkAdapter.submitCommands([cmd]);
-    return result;
+    if (this.networkAdapter.isLocal()) {
+      // Single-player: execute immediately
+      const result = this.commandExecutor.execute(cmd);
+      if (result.success) this.networkAdapter.submitCommands([cmd]);
+      return result;
+    } else {
+      // Multiplayer: buffer for next turn (will execute when turn packet arrives)
+      this.localCommandBuffer.push(cmd);
+      // Return optimistic success — actual execution happens when the turn packet comes back
+      return { success: true };
+    }
   }
 
   /** Get the command executor (for AI players and tests). */
@@ -1315,6 +1399,16 @@ export class Game {
   /** Get the network adapter (for replay access). */
   getNetworkAdapter(): NetworkAdapter {
     return this.networkAdapter;
+  }
+
+  /** Set the network adapter (for switching to multiplayer). */
+  setNetworkAdapter(adapter: NetworkAdapter): void {
+    this.networkAdapter = adapter;
+  }
+
+  /** Get the current lockstep turn number. */
+  getCurrentTurn(): number {
+    return this.currentTurn;
   }
 
   /** Get current nightness level 0.0–1.0 */
