@@ -18,6 +18,8 @@ export interface PlayerAssignment {
 
 export interface RoomConfig {
   maxPlayers: number;
+  /** Number of AI opponents (included in maxPlayers total) */
+  aiCount: number;
   mapSeed: number;
   mapSize: number;
   scenario: string;

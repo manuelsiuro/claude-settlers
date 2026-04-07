@@ -165,7 +165,10 @@ export class Room {
 
   private checkAllReady(): void {
     if (this.started) return;
-    if (this.players.size < 2) return;
+
+    // Need all human slots filled
+    const requiredHumans = this.config.maxPlayers - (this.config.aiCount ?? 0);
+    if (this.players.size < requiredHumans) return;
 
     const allReady = Array.from(this.players.values()).every(p => p.info.ready);
     if (!allReady) return;
@@ -173,11 +176,23 @@ export class Room {
     this.started = true;
     this.currentTurn = 0;
 
+    // Build player assignments: humans first, then AI
     const assignments: PlayerAssignment[] = Array.from(this.players.values()).map(p => ({
       playerId: p.info.playerId,
       name: p.info.name,
       isHuman: true,
     }));
+
+    const AI_PERSONALITIES = ['Balanced', 'Economist', 'Militarist', 'Turtle'];
+    const aiCount = this.config.aiCount ?? 0;
+    for (let i = 0; i < aiCount; i++) {
+      const aiPlayerId = this.players.size + 1 + i;
+      assignments.push({
+        playerId: aiPlayerId,
+        name: `AI (${AI_PERSONALITIES[i % AI_PERSONALITIES.length]})`,
+        isHuman: false,
+      });
+    }
 
     this.broadcast({
       type: 'GAME_START',

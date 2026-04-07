@@ -420,14 +420,17 @@ async function startGame(config: Partial<GameConfig>, savedData?: SaveData): Pro
  */
 async function startMultiplayerGame(result: LobbyResult): Promise<void> {
   pendingMultiplayerResult = result;
-  const numHumans = result.playerAssignments.filter(p => p.isHuman).length;
-  // Don't hide setup overlay here — startGame() calls showLoadingScreen() which
-  // covers the screen immediately, and the setup overlay is harmlessly behind it.
+  // Total players = humans + AI (all get castles and participate)
+  const totalPlayers = result.playerAssignments.length;
+  const humanPlayerIds = result.playerAssignments
+    .filter(p => p.isHuman)
+    .map(p => p.playerId);
   try {
     await startGame({
       seed: result.seed,
       isMultiplayer: true,
-      numPlayers: numHumans, // Only human players — no AI in multiplayer for now
+      numPlayers: totalPlayers,
+      humanPlayerIds,
     });
   } catch (err) {
     // Loading failed — restore setup screen so the player can try again

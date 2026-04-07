@@ -125,7 +125,7 @@ export class WebSocketAdapter implements NetworkAdapter {
 
   // ── Room operations ─────────────────────────────────────────────────
 
-  createRoom(config: { maxPlayers: number; mapSeed: number; mapSize: number; scenario: string; difficulty: string }, playerName: string): void {
+  createRoom(config: { maxPlayers: number; aiCount: number; mapSeed: number; mapSize: number; scenario: string; difficulty: string }, playerName: string): void {
     this.lastPlayerName = playerName;
     this.send({ type: 'CREATE_ROOM', config, playerName });
   }

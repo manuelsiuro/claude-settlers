@@ -485,6 +485,40 @@ export function initSetupScreen(startGame: StartGameFn, onOpenEditor?: () => voi
       : 'ws://localhost:9876';
   }
 
+  // Host: Total Players / AI Opponents dropdown wiring
+  const mpTotalSelect = document.getElementById('setup-mp-total') as HTMLSelectElement;
+  const mpAiSelect = document.getElementById('setup-mp-ai') as HTMLSelectElement;
+  const mpSlotsDesc = document.getElementById('setup-mp-slots-desc');
+
+  function updateAiOptions(): void {
+    const total = Number(mpTotalSelect?.value ?? 2);
+    const maxAi = total - 1; // At least 1 human slot (the host)
+    if (mpAiSelect) {
+      const currentAi = Number(mpAiSelect.value);
+      mpAiSelect.innerHTML = '';
+      for (let i = 0; i <= maxAi; i++) {
+        const opt = document.createElement('option');
+        opt.value = String(i);
+        opt.textContent = i === 0 ? '0 (All Human)' : `${i} AI`;
+        mpAiSelect.appendChild(opt);
+      }
+      mpAiSelect.value = String(Math.min(currentAi, maxAi));
+    }
+    updateSlotsDesc();
+  }
+
+  function updateSlotsDesc(): void {
+    const total = Number(mpTotalSelect?.value ?? 2);
+    const ai = Number(mpAiSelect?.value ?? 0);
+    const humanSlots = total - ai;
+    if (mpSlotsDesc) {
+      mpSlotsDesc.textContent = `${humanSlots} human slot${humanSlots > 1 ? 's' : ''} to fill${ai > 0 ? `, ${ai} AI opponent${ai > 1 ? 's' : ''}` : ''}. Map settings above will be used.`;
+    }
+  }
+
+  mpTotalSelect?.addEventListener('change', updateAiOptions);
+  mpAiSelect?.addEventListener('change', updateSlotsDesc);
+
   // Host: Create Game
   mpCreateBtn?.addEventListener('click', () => {
     const playerName = mpNameHost?.value.trim() || 'Player';
@@ -492,6 +526,8 @@ export function initSetupScreen(startGame: StartGameFn, onOpenEditor?: () => voi
 
     const rawSeed = Number(setupSeedInput.value);
     const seed = rawSeed > 0 ? Math.floor(rawSeed) : 42;
+    const totalPlayers = Number(mpTotalSelect?.value ?? 2);
+    const aiCount = Number(mpAiSelect?.value ?? 0);
 
     showLobby({
       serverAddress: getRelayAddress(),
@@ -499,7 +535,8 @@ export function initSetupScreen(startGame: StartGameFn, onOpenEditor?: () => voi
       mapSize: Number(setupMapSizeSelect.value),
       scenario: setupLandscapeSelect.value,
       difficulty: setupDifficultySelect.value,
-      maxPlayers: 2,
+      maxPlayers: totalPlayers,
+      aiCount,
       playerName,
     }, onMultiplayerGameStart);
   });

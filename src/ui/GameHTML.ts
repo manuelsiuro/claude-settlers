@@ -503,7 +503,24 @@ export function getGameHTML(currentTheme: string): string {
             <label class="setup-field-label" for="setup-mp-name-host">Your Name</label>
             <input type="text" id="setup-mp-name-host" class="setup-input" value="Player" maxlength="20" placeholder="Enter your name">
           </div>
-          <p style="font-size:0.75rem;opacity:0.5;margin:8px 0;">Map settings above will be used for the game.</p>
+          <div style="display:flex;gap:12px;">
+            <div class="setup-field" style="flex:1;">
+              <label class="setup-field-label" for="setup-mp-total">Total Players</label>
+              <select id="setup-mp-total" class="setup-input">
+                <option value="2" selected>2 Players</option>
+                <option value="3">3 Players</option>
+                <option value="4">4 Players</option>
+              </select>
+            </div>
+            <div class="setup-field" style="flex:1;">
+              <label class="setup-field-label" for="setup-mp-ai">AI Opponents</label>
+              <select id="setup-mp-ai" class="setup-input">
+                <option value="0" selected>0 (All Human)</option>
+                <option value="1">1 AI</option>
+              </select>
+            </div>
+          </div>
+          <p id="setup-mp-slots-desc" style="font-size:0.75rem;opacity:0.5;margin:8px 0;">2 human slots to fill. Map settings above will be used.</p>
           <button class="btn-filled" id="setup-mp-create-btn" style="width:100%;">Create Game</button>
         </div>
 

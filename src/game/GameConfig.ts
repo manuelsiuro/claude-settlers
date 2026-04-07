@@ -62,6 +62,8 @@ export interface GameConfig {
   campaignId?: string;
   /** Multiplayer mode — game uses lockstep networking */
   isMultiplayer?: boolean;
+  /** Player IDs controlled by humans (multiplayer). AI is created for all other IDs. */
+  humanPlayerIds?: number[];
   /** Relay server WebSocket address (e.g., ws://192.168.1.42:9876) */
   serverAddress?: string;
   /** Room code for joining an existing game */

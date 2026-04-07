@@ -19,6 +19,7 @@ export interface LobbyConfig {
   scenario: string;
   difficulty: string;
   maxPlayers: number;
+  aiCount: number;
   playerName: string;
 }
 
@@ -36,11 +37,15 @@ let adapter: WebSocketAdapter | null = null;
 let currentPlayers: PlayerInfo[] = [];
 let isHost = false;
 let onGameStartCallback: OnGameStart | null = null;
+let lobbyAiCount = 0;
+let lobbyMaxPlayers = 2;
 
 export function showLobby(config: LobbyConfig, onGameStart: OnGameStart): void {
   onGameStartCallback = onGameStart;
   currentPlayers = [];
   isHost = false;
+  lobbyAiCount = config.aiCount;
+  lobbyMaxPlayers = config.maxPlayers;
 
   // Create or reuse overlay
   if (!lobbyOverlay) {
@@ -60,6 +65,7 @@ export function showLobby(config: LobbyConfig, onGameStart: OnGameStart): void {
     // Connected — create or join room
     adapter!.createRoom({
       maxPlayers: config.maxPlayers,
+      aiCount: config.aiCount,
       mapSeed: config.mapSeed,
       mapSize: config.mapSize,
       scenario: config.scenario,
@@ -85,7 +91,7 @@ export function joinLobby(serverAddress: string, roomCode: string, playerName: s
   lobbyOverlay.innerHTML = renderConnecting();
 
   adapter = new WebSocketAdapter();
-  setupCallbacks({ serverAddress, mapSeed: 0, mapSize: 0, scenario: '', difficulty: '', maxPlayers: 0, playerName });
+  setupCallbacks({ serverAddress, mapSeed: 0, mapSize: 0, scenario: '', difficulty: '', maxPlayers: 0, aiCount: 0, playerName });
 
   adapter.connect(serverAddress).then(() => {
     adapter!.joinRoom(roomCode, playerName);
@@ -249,13 +255,44 @@ function renderLobby(roomCode: string, serverAddress: string): void {
 
 function renderPlayerList(): string {
   const COLORS = ['#4488ff', '#ff4444', '#44cc44', '#ffcc00'];
-  return currentPlayers.map((p, i) => `
-    <div class="lobby-player">
-      <span class="lobby-player-dot" style="background:${COLORS[i % COLORS.length]}"></span>
-      <span class="lobby-player-name">${p.name}${i === 0 ? ' <span class="lobby-host-badge">Host</span>' : ''}</span>
-      <span class="lobby-player-status ${p.ready ? 'lobby-status-ready' : ''}">${p.ready ? '✓ Ready' : 'Waiting...'}</span>
-    </div>
-  `).join('');
+  const humanSlots = lobbyMaxPlayers - lobbyAiCount;
+  const AI_PERSONALITIES = ['Balanced', 'Economist', 'Militarist', 'Turtle'];
+
+  let html = '';
+
+  // Human player slots
+  for (let i = 0; i < humanSlots; i++) {
+    const player = currentPlayers[i];
+    if (player) {
+      html += `
+        <div class="lobby-player">
+          <span class="lobby-player-dot" style="background:${COLORS[i % COLORS.length]}"></span>
+          <span class="lobby-player-name">${player.name}${i === 0 ? ' <span class="lobby-host-badge">Host</span>' : ''}</span>
+          <span class="lobby-player-status ${player.ready ? 'lobby-status-ready' : ''}">${player.ready ? '✓ Ready' : 'Waiting...'}</span>
+        </div>`;
+    } else {
+      html += `
+        <div class="lobby-player" style="opacity:0.4">
+          <span class="lobby-player-dot" style="background:${COLORS[i % COLORS.length]};opacity:0.3"></span>
+          <span class="lobby-player-name">Waiting for player...</span>
+          <span class="lobby-player-status">Empty</span>
+        </div>`;
+    }
+  }
+
+  // AI slots
+  for (let i = 0; i < lobbyAiCount; i++) {
+    const colorIdx = humanSlots + i;
+    const personality = AI_PERSONALITIES[i % AI_PERSONALITIES.length];
+    html += `
+      <div class="lobby-player">
+        <span class="lobby-player-dot" style="background:${COLORS[colorIdx % COLORS.length]}"></span>
+        <span class="lobby-player-name">AI (${personality})</span>
+        <span class="lobby-player-status lobby-status-ready">Computer</span>
+      </div>`;
+  }
+
+  return html;
 }
 
 function updatePlayerList(): void {
@@ -267,9 +304,9 @@ function updatePlayerList(): void {
 function checkStartEnabled(): void {
   const btn = document.getElementById('lobby-start-btn') as HTMLButtonElement;
   if (btn && isHost) {
-    // Host can start when at least 2 players are present
-    // (clicking Start sends READY which triggers GAME_START on server when all ready)
-    btn.disabled = currentPlayers.length < 2;
+    // Host can start when all human slots are filled
+    const requiredHumans = lobbyMaxPlayers - lobbyAiCount;
+    btn.disabled = currentPlayers.length < requiredHumans;
   }
 }
 

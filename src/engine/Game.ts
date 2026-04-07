@@ -901,7 +901,10 @@ export class Game {
 
   /** Create AI controllers for all non-human players (player IDs 2..N). */
   private initAIPlayers(): void {
+    // In multiplayer, humanPlayerIds tells us which IDs are human — skip AI for those
+    const humanIds = new Set(this.config.humanPlayerIds ?? [this.humanPlayerId]);
     for (let i = 2; i <= this.config.numPlayers; i++) {
+      if (humanIds.has(i)) continue; // This player ID is controlled by a human client
       const ai = new AIPlayer(
         i,
         this.config.difficulty,
