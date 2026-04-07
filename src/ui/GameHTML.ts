@@ -489,6 +489,38 @@ export function getGameHTML(currentTheme: string): string {
       <button id="setup-multiplayer-btn" class="btn-outlined setup-start-btn" style="margin-top:8px;">
         Multiplayer (LAN)
       </button>
+
+      <!-- Multiplayer setup panel (hidden by default, toggled by button above) -->
+      <div id="setup-mp-section" class="setup-mp-section hidden">
+        <div class="setup-map-tabs" style="margin-bottom:12px;">
+          <button class="setup-map-tab active" id="setup-mp-tab-host">Host Game</button>
+          <button class="setup-map-tab" id="setup-mp-tab-join">Join Game</button>
+        </div>
+
+        <!-- Host tab -->
+        <div id="setup-mp-host">
+          <div class="setup-field">
+            <label class="setup-field-label" for="setup-mp-name-host">Your Name</label>
+            <input type="text" id="setup-mp-name-host" class="setup-input" value="Player" maxlength="20" placeholder="Enter your name">
+          </div>
+          <p style="font-size:0.75rem;opacity:0.5;margin:8px 0;">Map settings above will be used for the game.</p>
+          <button class="btn-filled" id="setup-mp-create-btn" style="width:100%;">Create Game</button>
+        </div>
+
+        <!-- Join tab -->
+        <div id="setup-mp-join" class="hidden">
+          <div class="setup-field">
+            <label class="setup-field-label" for="setup-mp-name-join">Your Name</label>
+            <input type="text" id="setup-mp-name-join" class="setup-input" value="Player" maxlength="20" placeholder="Enter your name">
+          </div>
+          <div class="setup-field">
+            <label class="setup-field-label" for="setup-mp-code">Join Link or Room Code</label>
+            <input type="text" id="setup-mp-code" class="setup-input" placeholder="ABCD or paste invite link" style="text-transform:uppercase;">
+          </div>
+          <button class="btn-filled" id="setup-mp-join-btn" style="width:100%;">Join Game</button>
+        </div>
+      </div>
+
       <button id="setup-continue-btn" class="btn-outlined setup-start-btn hidden" style="margin-top:8px;">
         Continue Saved Game
       </button>

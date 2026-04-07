@@ -301,14 +301,17 @@ async function startGame(config: Partial<GameConfig>, savedData?: SaveData): Pro
   await loadBalanceConfig();
 
   showLoadingScreen();
+  // Hide setup overlay now that loading screen covers the screen
+  document.getElementById('setup-overlay')?.classList.add('hidden');
 
   game = new Game(container, config);
   (window as unknown as Record<string, unknown>).__game = game;
 
   // Multiplayer: set adapter and player ID before start
-  if (config.isMultiplayer && pendingMultiplayerResult) {
-    game.setHumanPlayerId(pendingMultiplayerResult.playerId);
-    game.setNetworkAdapter(pendingMultiplayerResult.adapter);
+  const mpResult = pendingMultiplayerResult;
+  if (config.isMultiplayer && mpResult) {
+    game.setHumanPlayerId(mpResult.playerId);
+    game.setNetworkAdapter(mpResult.adapter);
     pendingMultiplayerResult = null;
   }
 
@@ -380,6 +383,35 @@ async function startGame(config: Partial<GameConfig>, savedData?: SaveData): Pro
       autoSaveToSlot(data);
     } catch { /* silent — don't disrupt gameplay */ }
   }, AUTO_SAVE_INTERVAL);
+
+  // Multiplayer: wire waiting + disconnect overlays
+  if (config.isMultiplayer && mpResult) {
+    const mpAdapter = mpResult.adapter;
+
+    game.onMultiplayerWaiting = () => {
+      import('./ui/MultiplayerOverlay').then(m => m.showWaitingOverlay());
+    };
+    game.onMultiplayerResumed = () => {
+      import('./ui/MultiplayerOverlay').then(m => m.hideWaitingOverlay());
+    };
+    mpAdapter.onDisconnected = () => {
+      import('./ui/MultiplayerOverlay').then(m => {
+        m.showDisconnectedOverlay(() => {
+          m.hideDisconnectedOverlay();
+          game?.dispose();
+          game = undefined;
+          import('./ui/SetupScreen').then(s => s.showSetupOverlay());
+        });
+      });
+    };
+    mpAdapter.onReconnected = () => {
+      import('./ui/MultiplayerOverlay').then(m => m.hideDisconnectedOverlay());
+      showSnackbar('Reconnected!');
+    };
+    mpAdapter.onReconnectFailed = () => {
+      // Overlay already showing — update would go here
+    };
+  }
 }
 
 /**
@@ -389,13 +421,23 @@ async function startGame(config: Partial<GameConfig>, savedData?: SaveData): Pro
 async function startMultiplayerGame(result: LobbyResult): Promise<void> {
   pendingMultiplayerResult = result;
   const numHumans = result.playerAssignments.filter(p => p.isHuman).length;
-  // Hide setup overlay before starting
-  document.getElementById('setup-overlay')?.classList.add('hidden');
-  await startGame({
-    seed: result.seed,
-    isMultiplayer: true,
-    numPlayers: numHumans, // Only human players — no AI in multiplayer for now
-  });
+  // Don't hide setup overlay here — startGame() calls showLoadingScreen() which
+  // covers the screen immediately, and the setup overlay is harmlessly behind it.
+  try {
+    await startGame({
+      seed: result.seed,
+      isMultiplayer: true,
+      numPlayers: numHumans, // Only human players — no AI in multiplayer for now
+    });
+  } catch (err) {
+    // Loading failed — restore setup screen so the player can try again
+    const { hideLoadingScreen: hideLs } = await import('./ui/LoadingScreen');
+    const { showSetupOverlay } = await import('./ui/SetupScreen');
+    hideLs();
+    showSetupOverlay();
+    showSnackbar('Failed to start multiplayer game', 'error');
+    console.error('[Multiplayer] startGame failed:', err);
+  }
 }
 
 // Expose for setup screen / lobby

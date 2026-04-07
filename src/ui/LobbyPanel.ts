@@ -10,6 +10,7 @@
 import { WebSocketAdapter } from '../game/WebSocketAdapter';
 import type { PlayerInfo } from '../../shared/types';
 import { showSnackbar } from './Snackbar';
+import { showSetupOverlay } from './SetupScreen';
 
 export interface LobbyConfig {
   serverAddress: string;
@@ -65,7 +66,7 @@ export function showLobby(config: LobbyConfig, onGameStart: OnGameStart): void {
       difficulty: config.difficulty,
     }, config.playerName);
   }).catch(err => {
-    lobbyOverlay!.innerHTML = renderError(`Failed to connect: ${err.message}`);
+    showError(`Failed to connect: ${err.message}`);
   });
 }
 
@@ -89,7 +90,7 @@ export function joinLobby(serverAddress: string, roomCode: string, playerName: s
   adapter.connect(serverAddress).then(() => {
     adapter!.joinRoom(roomCode, playerName);
   }).catch(err => {
-    lobbyOverlay!.innerHTML = renderError(`Failed to connect: ${err.message}`);
+    showError(`Failed to connect: ${err.message}`);
   });
 }
 
@@ -148,7 +149,7 @@ function setupCallbacks(config: LobbyConfig): void {
 
   adapter.onDisconnected = () => {
     if (lobbyOverlay?.style.display !== 'none') {
-      lobbyOverlay!.innerHTML = renderError('Disconnected from server');
+      showError('Disconnected from server');
     }
   };
 }
@@ -156,20 +157,28 @@ function setupCallbacks(config: LobbyConfig): void {
 function renderConnecting(): string {
   return `
     <div class="lobby-card">
-      <h2>Connecting...</h2>
-      <p>Establishing connection to relay server</p>
+      <div class="lobby-connecting">
+        <div class="mp-spinner"></div>
+        <h2>Connecting...</h2>
+        <p style="opacity:0.6;font-size:0.85rem;">Establishing connection to relay server</p>
+      </div>
     </div>
   `;
 }
 
-function renderError(message: string): string {
-  return `
+function showError(message: string): void {
+  if (!lobbyOverlay) return;
+  lobbyOverlay.innerHTML = `
     <div class="lobby-card">
       <h2>Connection Error</h2>
       <p>${message}</p>
-      <button class="btn-filled" onclick="document.getElementById('multiplayer-lobby').style.display='none'">Close</button>
+      <button class="btn-filled" id="lobby-error-close-btn">Close</button>
     </div>
   `;
+  document.getElementById('lobby-error-close-btn')?.addEventListener('click', () => {
+    hideLobby();
+    showSetupOverlay();
+  });
 }
 
 function renderLobby(roomCode: string, serverAddress: string): void {
@@ -180,7 +189,7 @@ function renderLobby(roomCode: string, serverAddress: string): void {
 
   lobbyOverlay.innerHTML = `
     <div class="lobby-card">
-      <h2>Multiplayer Lobby</h2>
+      <h2><span class="lobby-connected-dot"></span>Multiplayer Lobby</h2>
 
       <div class="lobby-room-info">
         <div class="lobby-label">Room Code</div>
@@ -228,6 +237,7 @@ function renderLobby(roomCode: string, serverAddress: string): void {
   document.getElementById('lobby-leave-btn')?.addEventListener('click', () => {
     adapter?.disconnect();
     hideLobby();
+    showSetupOverlay();
   });
 
   // Generate QR code if the library is available
@@ -242,8 +252,8 @@ function renderPlayerList(): string {
   return currentPlayers.map((p, i) => `
     <div class="lobby-player">
       <span class="lobby-player-dot" style="background:${COLORS[i % COLORS.length]}"></span>
-      <span class="lobby-player-name">${p.name}</span>
-      <span class="lobby-player-status">${p.ready ? '✓ Ready' : 'Waiting'}</span>
+      <span class="lobby-player-name">${p.name}${i === 0 ? ' <span class="lobby-host-badge">Host</span>' : ''}</span>
+      <span class="lobby-player-status ${p.ready ? 'lobby-status-ready' : ''}">${p.ready ? '✓ Ready' : 'Waiting...'}</span>
     </div>
   `).join('');
 }

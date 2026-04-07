@@ -175,6 +175,15 @@ export class Game {
   /** Callback fired when pause or speed changes */
   onSpeedChange: ((paused: boolean, speed: number) => void) | null = null;
 
+  /** Callback when multiplayer is waiting for opponent's turn */
+  onMultiplayerWaiting: (() => void) | null = null;
+
+  /** Callback when multiplayer waiting ends (turn packet received) */
+  onMultiplayerResumed: (() => void) | null = null;
+
+  /** Timestamp (ms) when we started waiting for a turn packet, 0 if not waiting */
+  private multiplayerWaitStart = 0;
+
   constructor(container: HTMLElement, config?: Partial<GameConfig>) {
     this.container = container;
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -771,7 +780,21 @@ export class Game {
     }
 
     // Check if a turn packet is available
-    if (!adapter.hasTurnPacket?.()) return; // Still waiting for server
+    if (!adapter.hasTurnPacket?.()) {
+      // Track waiting time — show overlay after 500ms to avoid flicker
+      if (this.multiplayerWaitStart === 0) {
+        this.multiplayerWaitStart = performance.now();
+      } else if (performance.now() - this.multiplayerWaitStart > 500) {
+        this.onMultiplayerWaiting?.();
+      }
+      return;
+    }
+
+    // Turn packet received — hide waiting overlay
+    if (this.multiplayerWaitStart > 0) {
+      this.multiplayerWaitStart = 0;
+      this.onMultiplayerResumed?.();
+    }
 
     const packet = adapter.getTurnPacket?.();
     if (!packet) return;
@@ -1289,6 +1312,8 @@ export class Game {
     this.mgrs.victoryManager.onDefeat = null;
     this.onNotification = null;
     this.onSpeedChange = null;
+    this.onMultiplayerWaiting = null;
+    this.onMultiplayerResumed = null;
   }
 
   getScene(): THREE.Scene {

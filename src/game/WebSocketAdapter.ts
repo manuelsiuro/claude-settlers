@@ -16,6 +16,11 @@ export class WebSocketAdapter implements NetworkAdapter {
   private turnPacketQueue: TurnPacket[] = [];
   private latency = 0;
   private pingInterval: ReturnType<typeof setInterval> | null = null;
+  private intentionalDisconnect = false;
+  private lastAddress = '';
+  private lastPlayerName = '';
+  private reconnectAttempts = 0;
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
   /** Our player ID assigned by the server */
   playerId = 0;
@@ -37,6 +42,8 @@ export class WebSocketAdapter implements NetworkAdapter {
   onWaitingForPlayer: ((playerId: number) => void) | null = null;
   onChat: ((playerId: number, name: string, message: string) => void) | null = null;
   onDisconnected: (() => void) | null = null;
+  onReconnected: (() => void) | null = null;
+  onReconnectFailed: (() => void) | null = null;
 
   // ── NetworkAdapter interface ────────────────────────────────────────
 
@@ -60,6 +67,10 @@ export class WebSocketAdapter implements NetworkAdapter {
   // ── Connection ──────────────────────────────────────────────────────
 
   connect(address: string): Promise<void> {
+    this.lastAddress = address;
+    this.intentionalDisconnect = false;
+    this.reconnectAttempts = 0;
+
     return new Promise((resolve, reject) => {
       try {
         this.ws = new WebSocket(address);
@@ -79,6 +90,9 @@ export class WebSocketAdapter implements NetworkAdapter {
 
       this.ws.onclose = () => {
         this.stopPing();
+        if (!this.intentionalDisconnect) {
+          this.attemptReconnect();
+        }
         this.onDisconnected?.();
       };
 
@@ -89,6 +103,11 @@ export class WebSocketAdapter implements NetworkAdapter {
   }
 
   disconnect(): void {
+    this.intentionalDisconnect = true;
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
     this.stopPing();
     if (this.ws) {
       this.ws.close();
@@ -107,10 +126,12 @@ export class WebSocketAdapter implements NetworkAdapter {
   // ── Room operations ─────────────────────────────────────────────────
 
   createRoom(config: { maxPlayers: number; mapSeed: number; mapSize: number; scenario: string; difficulty: string }, playerName: string): void {
+    this.lastPlayerName = playerName;
     this.send({ type: 'CREATE_ROOM', config, playerName });
   }
 
   joinRoom(roomCode: string, playerName: string): void {
+    this.lastPlayerName = playerName;
     this.send({ type: 'JOIN_ROOM', roomCode, playerName });
   }
 
@@ -240,5 +261,53 @@ export class WebSocketAdapter implements NetworkAdapter {
       clearInterval(this.pingInterval);
       this.pingInterval = null;
     }
+  }
+
+  /** Attempt to reconnect with exponential backoff (1s, 2s, 4s — max 3 tries). */
+  attemptReconnect(): void {
+    if (this.intentionalDisconnect) return;
+    if (this.reconnectAttempts >= 3) {
+      this.onReconnectFailed?.();
+      return;
+    }
+
+    const delay = 1000 * Math.pow(2, this.reconnectAttempts); // 1s, 2s, 4s
+    this.reconnectAttempts++;
+
+    this.reconnectTimer = setTimeout(() => {
+      if (this.intentionalDisconnect) return;
+
+      try {
+        this.ws = new WebSocket(this.lastAddress);
+      } catch {
+        this.attemptReconnect();
+        return;
+      }
+
+      this.ws.onopen = () => {
+        this.startPing();
+        this.reconnectAttempts = 0;
+        // Re-join the room if we had one
+        if (this.roomCode && this.lastPlayerName) {
+          this.send({ type: 'JOIN_ROOM', roomCode: this.roomCode, playerName: this.lastPlayerName });
+        }
+        this.onReconnected?.();
+      };
+
+      this.ws.onerror = () => {
+        this.attemptReconnect();
+      };
+
+      this.ws.onclose = () => {
+        this.stopPing();
+        if (!this.intentionalDisconnect) {
+          this.attemptReconnect();
+        }
+      };
+
+      this.ws.onmessage = (event) => {
+        this.handleMessage(event.data as string);
+      };
+    }, delay);
   }
 }

@@ -428,59 +428,134 @@ export function initSetupScreen(startGame: StartGameFn, onOpenEditor?: () => voi
     });
   });
 
-  // ── Multiplayer button ────────────────────────────────────────────
+  // ── Multiplayer panel ──────────────────────────────────────────────
+  const mpSection = document.getElementById('setup-mp-section');
+  const mpTabHost = document.getElementById('setup-mp-tab-host');
+  const mpTabJoin = document.getElementById('setup-mp-tab-join');
+  const mpHostDiv = document.getElementById('setup-mp-host');
+  const mpJoinDiv = document.getElementById('setup-mp-join');
+  const mpNameHost = document.getElementById('setup-mp-name-host') as HTMLInputElement;
+  const mpNameJoin = document.getElementById('setup-mp-name-join') as HTMLInputElement;
+  const mpCodeInput = document.getElementById('setup-mp-code') as HTMLInputElement;
+  const mpCreateBtn = document.getElementById('setup-mp-create-btn');
+  const mpJoinBtn = document.getElementById('setup-mp-join-btn');
+
+  // Restore saved player name
+  const savedMpName = localStorage.getItem('feudal-mp-name') ?? 'Player';
+  if (mpNameHost) mpNameHost.value = savedMpName;
+  if (mpNameJoin) mpNameJoin.value = savedMpName;
+
+  // Toggle multiplayer section
   const multiplayerBtn = document.getElementById('setup-multiplayer-btn');
   multiplayerBtn?.addEventListener('click', () => {
-    const rawSeed = Number(setupSeedInput.value);
-    const seed = rawSeed > 0 ? Math.floor(rawSeed) : 42;
-    const mapSize = Number(setupMapSizeSelect.value);
-    const scenario = setupLandscapeSelect.value;
-    const difficulty = setupDifficultySelect.value;
-
-    // Prompt for server address and player name
-    const serverAddress = prompt('Relay server address:', 'ws://localhost:9876');
-    if (!serverAddress) return;
-    const playerName = prompt('Your name:', 'Player') ?? 'Player';
-
-    const onGameStart = (result: LobbyResult) => {
-      setupOverlay.classList.add('hidden');
-      // Call startMultiplayerGame from main.ts via window
-      const fn = (window as unknown as Record<string, unknown>).__startMultiplayerGame as
-        ((r: LobbyResult) => Promise<void>) | undefined;
-      if (fn) {
-        fn(result).catch((err: unknown) => {
-          logger.error('Failed to start multiplayer game:', err);
-          showSnackbar('Failed to start multiplayer game', 'error');
-          setupOverlay.classList.remove('hidden');
-        });
-      }
-    };
-
-    showLobby({
-      serverAddress,
-      mapSeed: seed,
-      mapSize,
-      scenario,
-      difficulty,
-      maxPlayers: 2,
-      playerName,
-    }, onGameStart);
+    mpSection?.classList.toggle('hidden');
   });
 
-  // Handle ?join=CODE&server=ADDRESS URL params (for joining via shared link)
+  // Tab switching
+  mpTabHost?.addEventListener('click', () => {
+    mpTabHost.classList.add('active');
+    mpTabJoin?.classList.remove('active');
+    mpHostDiv?.classList.remove('hidden');
+    mpJoinDiv?.classList.add('hidden');
+  });
+  mpTabJoin?.addEventListener('click', () => {
+    mpTabJoin.classList.add('active');
+    mpTabHost?.classList.remove('active');
+    mpJoinDiv?.classList.remove('hidden');
+    mpHostDiv?.classList.add('hidden');
+  });
+
+  /** Shared callback for when multiplayer game starts */
+  function onMultiplayerGameStart(result: LobbyResult): void {
+    const fn = (window as unknown as Record<string, unknown>).__startMultiplayerGame as
+      ((r: LobbyResult) => Promise<void>) | undefined;
+    if (fn) {
+      fn(result).catch((err: unknown) => {
+        logger.error('Failed to start multiplayer game:', err);
+        showSnackbar('Failed to start multiplayer game', 'error');
+        setupOverlay.classList.remove('hidden');
+      });
+    }
+  }
+
+  /** Get the relay server address (auto-detected in dev, localhost fallback) */
+  function getRelayAddress(): string {
+    return (typeof __RELAY_WS_URL__ !== 'undefined' && __RELAY_WS_URL__)
+      ? __RELAY_WS_URL__
+      : 'ws://localhost:9876';
+  }
+
+  // Host: Create Game
+  mpCreateBtn?.addEventListener('click', () => {
+    const playerName = mpNameHost?.value.trim() || 'Player';
+    localStorage.setItem('feudal-mp-name', playerName);
+
+    const rawSeed = Number(setupSeedInput.value);
+    const seed = rawSeed > 0 ? Math.floor(rawSeed) : 42;
+
+    showLobby({
+      serverAddress: getRelayAddress(),
+      mapSeed: seed,
+      mapSize: Number(setupMapSizeSelect.value),
+      scenario: setupLandscapeSelect.value,
+      difficulty: setupDifficultySelect.value,
+      maxPlayers: 2,
+      playerName,
+    }, onMultiplayerGameStart);
+  });
+
+  // Join: parse input as URL or room code
+  mpJoinBtn?.addEventListener('click', () => {
+    const playerName = mpNameJoin?.value.trim() || 'Player';
+    localStorage.setItem('feudal-mp-name', playerName);
+
+    const input = mpCodeInput?.value.trim() ?? '';
+    if (!input) {
+      showSnackbar('Enter a room code or paste an invite link', 'warning');
+      return;
+    }
+
+    let serverAddress: string;
+    let roomCode: string;
+
+    // Try to parse as a URL with ?join= and ?server= params
+    if (input.includes('?') || input.includes('://')) {
+      try {
+        const url = new URL(input.startsWith('http') ? input : `http://${input}`);
+        roomCode = url.searchParams.get('join') ?? '';
+        serverAddress = url.searchParams.get('server') ?? getRelayAddress();
+      } catch {
+        showSnackbar('Invalid link format', 'warning');
+        return;
+      }
+    } else {
+      // Plain room code
+      roomCode = input.toUpperCase();
+      serverAddress = getRelayAddress();
+    }
+
+    if (!roomCode || roomCode.length < 4) {
+      showSnackbar('Room code must be 4 characters', 'warning');
+      return;
+    }
+
+    joinLobby(serverAddress, roomCode, playerName, onMultiplayerGameStart);
+  });
+
+  // Handle ?join=CODE&server=ADDRESS URL params (auto-join via shared link)
   const urlParams = new URLSearchParams(window.location.search);
   const joinCode = urlParams.get('join');
   const joinServer = urlParams.get('server');
   if (joinCode && joinServer) {
-    const playerName = prompt('Your name:', 'Player') ?? 'Player';
-    const onGameStart = (result: LobbyResult) => {
-      setupOverlay.classList.add('hidden');
-      const fn = (window as unknown as Record<string, unknown>).__startMultiplayerGame as
-        ((r: LobbyResult) => Promise<void>) | undefined;
-      fn?.(result);
-    };
-    joinLobby(joinServer, joinCode, playerName, onGameStart);
-    // Clean URL
+    // Auto-fill the Join tab and expand the section
+    mpSection?.classList.remove('hidden');
+    mpTabJoin?.click();
+    if (mpCodeInput) mpCodeInput.value = joinCode;
+    // Auto-join after a short delay to let UI render
+    setTimeout(() => {
+      const playerName = mpNameJoin?.value.trim() || 'Player';
+      joinLobby(joinServer, joinCode, playerName, onMultiplayerGameStart);
+    }, 500);
     window.history.replaceState({}, '', window.location.pathname);
   }
 }
