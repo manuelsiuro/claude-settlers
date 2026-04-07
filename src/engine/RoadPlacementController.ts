@@ -217,8 +217,8 @@ export class RoadPlacementController {
       coord: hex,
     });
     if (result.success) {
-      const flag = result.data as Flag;
-      this.onFlagPlaced?.(flag);
+      const flag = result.data as Flag | undefined;
+      if (flag) this.onFlagPlaced?.(flag);
     }
     // Stay in flag mode for quick multi-placement
     this.clearPreview();

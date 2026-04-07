@@ -303,9 +303,14 @@ export class PlacementController {
     });
 
     if (result.success) {
-      const building = result.data as Building;
-      const buildingRenderer = this.game.getBuildingRenderer();
-      buildingRenderer.addBuilding(building, this.game.getGrid());
+      // In single-player, result.data contains the building. In multiplayer,
+      // result.data is undefined (command is buffered). The renderer sync
+      // happens in processMultiplayerTurn() when the turn packet arrives.
+      const building = result.data as Building | undefined;
+      if (building) {
+        const buildingRenderer = this.game.getBuildingRenderer();
+        buildingRenderer.addBuilding(building, this.game.getGrid());
+      }
       this.onBuildingPlaced?.(this.selectedType, this.currentHex);
     } else if (!result.success) {
       this.onPlacementError?.(result.error, this.selectedType);

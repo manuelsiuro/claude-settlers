@@ -800,9 +800,17 @@ export class Game {
     if (!packet) return;
 
     // Execute all commands from the turn packet
+    const buildingsBefore = new Set(this.gameState.getAllBuildings().map(b => b.id));
     for (const [, cmds] of Object.entries(packet.commandsByPlayer)) {
       for (const cmd of cmds) {
         this.commandExecutor.execute(cmd as unknown as GameCommand);
+      }
+    }
+
+    // Sync renderers for any new buildings created by commands
+    for (const building of this.gameState.getAllBuildings()) {
+      if (!buildingsBefore.has(building.id)) {
+        this.rnds.buildingRenderer.addBuilding(building, this.grid);
       }
     }
 
