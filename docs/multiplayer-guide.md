@@ -129,16 +129,32 @@ In multiplayer, game speed is fixed at 1x. Speed controls are local-only (they d
 
 If your opponent's client is slow or their connection lags, you'll see a "Waiting for opponent..." overlay with a spinner. The game pauses until the turn packet arrives. Normal play resumes automatically.
 
-### Disconnection
+### Disconnection & Reconnection
 
 If the connection drops:
 - The game attempts to auto-reconnect (3 tries with exponential backoff: 1s, 2s, 4s).
-- If reconnection succeeds, play continues seamlessly.
+- On reconnect, the server restores your player slot and the host sends a full state snapshot to bring you up to date.
 - If all retries fail, a "Connection Lost" overlay appears with a "Return to Menu" button.
+
+### AI Takeover
+
+When a player disconnects mid-game, AI automatically takes control of their buildings and units. The AI plays their faction until they reconnect. When they do reconnect, the AI is removed and they resume control.
+
+### In-Game Chat
+
+Press **Enter** to open the chat panel. Type a message and press Enter or click Send. Player names are color-coded to match their player color. The chat icon shows an unread badge when new messages arrive. Press Escape to close the chat.
+
+### Post-Game Stats
+
+When a multiplayer game ends, the game over screen shows a **side-by-side comparison** of all players: buildings, units, territory percentage, stored resources, and gold bars. The winner's column is highlighted in gold, and the best stat in each row is shown in green.
+
+### Replay
+
+After a game ends, click **Save Replay** to download a `.replay.json` file containing the full command history. To watch a replay, click **Load Replay** on the setup screen and select the file. The replay plays back with a HUD showing play/pause and speed controls (1x, 2x, 4x, 8x).
 
 ### Leaving
 
-Click the **Leave** button in the lobby to return to the setup screen. During a game, closing the browser tab will disconnect you from the room.
+Click the **Leave** button in the lobby to return to the setup screen. During a game, closing the browser tab will disconnect you (AI takes over your faction for other players).
 
 ---
 
@@ -188,6 +204,10 @@ The game state (buildings, units, resources) should be identical. Visual differe
 | Seeded PRNG | `src/game/GameRng.ts` | Mulberry32 with serializable state |
 | Lobby UI | `src/ui/LobbyPanel.ts` | Room create/join, player list, QR |
 | Multiplayer overlay | `src/ui/MultiplayerOverlay.ts` | Waiting + disconnected overlays |
-| Setup panel | `src/ui/SetupScreen.ts` | Host/Join tabs, form inputs |
-| Game loop | `src/engine/Game.ts` | `processMultiplayerTurn()` lockstep loop |
+| In-game chat | `src/ui/ChatPanel.ts` | Message log, Enter toggle, player colors |
+| Replay data | `src/game/ReplayData.ts` | Save/load replay format (commands by turn) |
+| Replay adapter | `src/game/NetworkAdapter.ts` | `ReplayAdapter` feeds pre-recorded commands |
+| Setup panel | `src/ui/SetupScreen.ts` | Host/Join tabs, Load Replay, form inputs |
+| Game over stats | `src/ui/GameOverScreen.ts` | Multiplayer side-by-side comparison + Save Replay |
+| Game loop | `src/engine/Game.ts` | Lockstep, replay mode, AI takeover, desync recovery |
 | Design doc | `docs/multiplayer.md` | Full architecture design (4 phases) |

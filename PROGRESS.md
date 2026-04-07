@@ -1,6 +1,6 @@
 # Project Progress
 
-## Current Phase: Multiplayer Phase 2 (LAN) + Polish — Complete
+## Current Phase: Multiplayer Phase 3 (LAN Robustness) — Complete
 
 ## Task Board
 
@@ -32,17 +32,20 @@
 - [DONE] Disconnect handling + auto-reconnect — Detect connection drop, exponential backoff (1s/2s/4s, 3 attempts). "Connection Lost" overlay with "Return to Menu" on failure. — 2026-04-07
 - [DONE] Lobby polish — Host badge, green connection dot, connecting spinner, responsive mobile layout (480px breakpoint). — 2026-04-07
 
-### Multiplayer Phase 3: Internet Multiplayer [TODO]
-- [TODO] Deploy relay server to VPS
-- [TODO] Latency measurement, adaptive turn length
-- [TODO] Full state sync on desync (host sends snapshot)
-- [TODO] Reconnection after disconnect
-- [TODO] AI takeover when player disconnects
+### Multiplayer Phase 3: LAN Robustness + Features [COMPLETE]
+- [DONE] AI takeover on disconnect — When a human player leaves mid-game, AI automatically controls their faction. AI removed on reconnect. addAIForPlayer()/removeAIForPlayer() in Game.ts. — 2026-04-07
+- [DONE] Desync recovery — Host detects checksum mismatch, serializes full game state via serializeGame(), sends snapshot. Affected clients deserializeGame() and rebuild all renderers. — 2026-04-07
+- [DONE] Reconnection with state sync — REJOIN_ROOM protocol message. Server restores disconnected player slot. Host sends state snapshot to reconnected client. Full game state restored. — 2026-04-07
+- [DONE] In-game chat — ChatPanel.ts with scrollable 50-message log, Enter key toggle, player-colored names, unread badge. Transport via existing WebSocket protocol. — 2026-04-07
+- [DONE] 3-4 player support verified — getStartingPositions handles 2/3/4 layouts, Room.checkAllReady uses dynamic human slot count. — 2026-04-07
+- [DONE] Multiplayer post-game stats — Side-by-side player comparison on GameOverScreen: buildings, units, territory %, resources, gold. Winner highlighted with gold border. Best stats in green. — 2026-04-07
+- [DONE] Replay system — ReplayData format, Save Replay on game over, Load Replay on setup screen, ReplayAdapter feeds commands, replay HUD with play/pause/speed (1x/2x/4x/8x). — 2026-04-07
 
-### Multiplayer Phase 4: Polish [TODO]
-- [TODO] Spectator mode, replay system, in-game chat
-- [TODO] 3-4 player support, matchmaking
-- [TODO] Mobile multiplayer optimization
+### Multiplayer Future [TODO]
+- [TODO] Internet deployment — VPS relay server, adaptive turn length for latency
+- [TODO] Spectator mode — read-only client, full map visibility
+- [TODO] Matchmaking — public lobby with filters
+- [TODO] Mobile multiplayer optimization — connection quality indicator
 
 ### Gameplay Content [COMPLETE]
 - [DONE] AI diplomacy behavior — AI evaluates diplomacy every 30-60s based on personality and relative military strength. Economists propose trade agreements, Turtles propose non-aggression, Militarists only propose when weak (and break treaties when 2.5x stronger). Notifications when AI proposes or breaks treaties. — 2026-03-29
