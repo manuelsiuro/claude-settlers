@@ -113,6 +113,7 @@ import { initDiplomacyPanel } from './ui/DiplomacyPanel';
 import { recordGameStart, unlockAchievement } from './ui/Achievements';
 import { HexGrid } from './game/HexGrid';
 import { showWaitingOverlay, hideWaitingOverlay, showDisconnectedOverlay, hideDisconnectedOverlay } from './ui/MultiplayerOverlay';
+import { initChatPanel, addChatMessage, disposeChatPanel } from './ui/ChatPanel';
 
 // Extracted modules
 import { getGameHTML } from './ui/GameHTML';
@@ -296,6 +297,7 @@ async function startGame(config: Partial<GameConfig>, savedData?: SaveData): Pro
     disposeTutorial();
     disposeResourceBar();
     disposeEventLog();
+    disposeChatPanel();
     game.dispose();
   }
 
@@ -405,6 +407,48 @@ async function startGame(config: Partial<GameConfig>, savedData?: SaveData): Pro
     };
     mpAdapter.onReconnectFailed = () => {
       // Overlay already showing — update would go here
+    };
+
+    // AI takeover when another human player disconnects
+    mpAdapter.onPlayerLeft = (playerId: number) => {
+      if (playerId !== game?.getHumanPlayerId() && game) {
+        game.addAIForPlayer(playerId);
+        showSnackbar(`Player ${playerId} disconnected — AI taking over`);
+      }
+    };
+
+    // Desync recovery: host sends snapshot, affected clients restore
+    mpAdapter.onDesyncDetected = (turn: number, affected: number[]) => {
+      game?.handleDesync(turn, affected);
+    };
+    mpAdapter.onStateSnapshot = (_turn: number, data: unknown) => {
+      // Received state snapshot from host — restore game state
+      if (game) {
+        game.restoreFromSnapshot(data as SaveData);
+        showSnackbar('Game state synchronized');
+      }
+    };
+
+    // In-game chat
+    initChatPanel((msg) => mpAdapter.sendChat(msg));
+    mpAdapter.onChat = (playerId, name, message) => {
+      addChatMessage(name, message, playerId);
+    };
+
+    // Host: respond to snapshot requests (reconnection state sync)
+    mpAdapter.onSnapshotRequested = (turn: number) => {
+      if (game) {
+        const data = game.serialize();
+        mpAdapter.sendStateSnapshot(turn, data);
+      }
+    };
+
+    // When a player rejoins, remove the AI that was controlling their faction
+    mpAdapter.onPlayerJoined = (player) => {
+      if (game) {
+        game.removeAIForPlayer(player.playerId);
+        showSnackbar(`Player ${player.name} reconnected`);
+      }
     };
   }
 }

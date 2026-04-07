@@ -139,6 +139,25 @@ wss.on('connection', (ws: WebSocket) => {
         break;
       }
 
+      case 'REJOIN_ROOM': {
+        const code = msg.roomCode.toUpperCase();
+        const room = rooms.get(code);
+        if (!room) {
+          ws.send(JSON.stringify({ type: 'ERROR', message: 'Room not found' }));
+          return;
+        }
+
+        const success = room.rejoinPlayer(ws, msg.playerId, msg.playerName);
+        if (!success) {
+          ws.send(JSON.stringify({ type: 'ERROR', message: 'Cannot rejoin — player not found or not disconnected' }));
+          return;
+        }
+        playerRooms.set(ws, { room, playerId: msg.playerId });
+
+        console.log(`[Room ${code}] "${msg.playerName}" rejoined (player ${msg.playerId})`);
+        break;
+      }
+
       default: {
         // Route all other messages to the room
         const entry = playerRooms.get(ws);

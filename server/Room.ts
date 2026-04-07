@@ -82,6 +82,46 @@ export class Room {
     return playerId;
   }
 
+  /**
+   * Rejoin a disconnected player back into the game.
+   * Returns true if successfully rejoined, false if player not found or not disconnected.
+   */
+  rejoinPlayer(ws: WebSocket, playerId: number, name: string): boolean {
+    const player = this.players.get(playerId);
+    if (!player || !player.disconnected) return false;
+
+    // Restore their WebSocket and mark as connected
+    player.ws = ws;
+    player.disconnected = false;
+    player.pendingCommands = null; // Will submit commands on next turn
+    player.lagCount = 0;
+    player.info.name = name;
+
+    // Notify all players about the rejoin (reuse PLAYER_JOINED)
+    this.broadcast({
+      type: 'PLAYER_JOINED',
+      player: player.info,
+    });
+
+    // Send REJOIN_ACCEPTED to the rejoining player
+    this.send(player, {
+      type: 'REJOIN_ACCEPTED',
+      playerId,
+    });
+
+    // Request a state snapshot from the host (player 1) so the rejoining client can sync
+    const host = this.players.get(1);
+    if (host && !host.disconnected) {
+      this.send(host, {
+        type: 'REQUEST_SNAPSHOT',
+        turn: this.currentTurn,
+        targetPlayerId: playerId,
+      });
+    }
+
+    return true;
+  }
+
   removePlayer(playerId: number): void {
     const player = this.players.get(playerId);
     if (!player) return;

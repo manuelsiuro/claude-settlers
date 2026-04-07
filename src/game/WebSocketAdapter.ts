@@ -44,6 +44,7 @@ export class WebSocketAdapter implements NetworkAdapter {
   onDisconnected: (() => void) | null = null;
   onReconnected: (() => void) | null = null;
   onReconnectFailed: (() => void) | null = null;
+  onSnapshotRequested: ((turn: number) => void) | null = null;
 
   // ── NetworkAdapter interface ────────────────────────────────────────
 
@@ -206,6 +207,14 @@ export class WebSocketAdapter implements NetworkAdapter {
         this.onRoomJoined?.(msg.roomCode, msg.players);
         break;
 
+      case 'REJOIN_ACCEPTED':
+        this.onReconnected?.();
+        break;
+
+      case 'REQUEST_SNAPSHOT':
+        this.onSnapshotRequested?.(msg.turn);
+        break;
+
       case 'PLAYER_JOINED':
         this.onPlayerJoined?.(msg.player);
         break;
@@ -298,11 +307,15 @@ export class WebSocketAdapter implements NetworkAdapter {
       this.ws.onopen = () => {
         this.startPing();
         this.reconnectAttempts = 0;
-        // Re-join the room if we had one
-        if (this.roomCode && this.lastPlayerName) {
-          this.send({ type: 'JOIN_ROOM', roomCode: this.roomCode, playerName: this.lastPlayerName });
+        // Re-join the room with our existing player ID
+        if (this.roomCode && this.lastPlayerName && this.playerId) {
+          this.send({
+            type: 'REJOIN_ROOM',
+            roomCode: this.roomCode,
+            playerName: this.lastPlayerName,
+            playerId: this.playerId,
+          });
         }
-        this.onReconnected?.();
       };
 
       this.ws.onerror = () => {

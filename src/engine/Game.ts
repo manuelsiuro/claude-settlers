@@ -73,8 +73,9 @@ import type { GameManagers, GameRenderers } from './GameSystems';
 import { GameRng } from '../game/GameRng';
 import { CommandExecutor } from '../game/CommandExecutor';
 import type { GameCommand, CommandResult } from '../game/Command';
-import { LocalAdapter } from '../game/NetworkAdapter';
+import { LocalAdapter, ReplayAdapter } from '../game/NetworkAdapter';
 import type { NetworkAdapter } from '../game/NetworkAdapter';
+import type { ReplayData } from '../game/ReplayData';
 
 // Re-export notification types for backward compatibility
 export type { GameNotificationType, GameNotification } from './GameNotifications';
@@ -184,9 +185,22 @@ export class Game {
   /** Timestamp (ms) when we started waiting for a turn packet, 0 if not waiting */
   private multiplayerWaitStart = 0;
 
+  /** Whether the game is in replay playback mode (read-only) */
+  private replayMode = false;
+
+  /** Replay HUD element (created when in replay mode) */
+  private replayHud: HTMLElement | null = null;
+
   constructor(container: HTMLElement, config?: Partial<GameConfig>) {
     this.container = container;
     this.config = { ...DEFAULT_CONFIG, ...config };
+
+    // Replay mode: set up replay adapter from saved data
+    if (this.config.replayData) {
+      this.replayMode = true;
+      const allCommands = this.flattenReplayCommands(this.config.replayData);
+      this.networkAdapter = new ReplayAdapter(allCommands);
+    }
 
     // Renderer
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -607,17 +621,25 @@ export class Game {
     // CameraController computes the correct initial target)
     this.cameraController = new CameraController(this);
 
-    // Placement controller
-    this.placementController = new PlacementController(this);
+    // In replay mode, skip interactive controllers (game is read-only)
+    if (!this.replayMode) {
+      // Placement controller
+      this.placementController = new PlacementController(this);
 
-    // Selection controller (building click-to-select)
-    this.selectionController = new SelectionController(this);
+      // Selection controller (building click-to-select)
+      this.selectionController = new SelectionController(this);
 
-    // Road placement controller (flag & road building)
-    this.roadPlacementController = new RoadPlacementController(this);
+      // Road placement controller (flag & road building)
+      this.roadPlacementController = new RoadPlacementController(this);
+    }
 
     // Initialize spatial audio engine (async, non-blocking)
     this.rnds.spatialAudioEngine.initialize();
+
+    // Replay mode: create HUD overlay for playback controls
+    if (this.replayMode) {
+      this.createReplayHud();
+    }
 
     const clock = new THREE.Clock();
     const animate = (): void => {
@@ -654,11 +676,15 @@ export class Game {
 
       // Simulation: two modes based on adapter type
       if (this.networkAdapter.isLocal()) {
-        // Single-player: fixed-timestep accumulator (Phase 1 behavior)
+        // Single-player / replay: fixed-timestep accumulator
         if (!this._paused) {
           this.accumulator += rawDelta * this._gameSpeed;
           this.accumulator = Math.min(this.accumulator, Game.FIXED_STEP * 10);
           while (this.accumulator >= Game.FIXED_STEP) {
+            // Replay mode: feed commands from the replay adapter before each tick
+            if (this.replayMode) {
+              this.processReplayTick();
+            }
             this.simulationTick(Game.FIXED_STEP);
             this.accumulator -= Game.FIXED_STEP;
           }
@@ -759,6 +785,11 @@ export class Game {
         this.applyColorGradingWithWeather(this.baseColorGrading);
       }
 
+      // Update replay HUD progress
+      if (this.replayMode) {
+        this.updateReplayHud();
+      }
+
       this.rnds.postProcessing.render();
     };
     animate();
@@ -841,6 +872,56 @@ export class Game {
     hash = combine(hash, this.mgrs.roadNetwork.getAllRoads().length);
     hash = combine(hash, this.gameRng.getState());
     return hash;
+  }
+
+  /**
+   * Handle desync detection: host sends full state snapshot, clients restore.
+   */
+  handleDesync(turnNumber: number, affectedPlayers: number[]): void {
+    const adapter = this.networkAdapter;
+    if (this.humanPlayerId === 1) {
+      // Host: serialize and send state snapshot
+      const data = this.serialize();
+      adapter.sendStateSnapshot?.(turnNumber, data);
+      this.onNotification?.({ type: 'building_complete', message: 'Desync detected — sending state to other players' });
+    } else if (affectedPlayers.includes(this.humanPlayerId)) {
+      // Affected client: wait for snapshot (wired via onStateSnapshot)
+      this.onNotification?.({ type: 'building_complete', message: 'Desync detected — waiting for state sync...' });
+    }
+  }
+
+  /**
+   * Restore game state from a received snapshot (desync recovery or reconnection).
+   */
+  restoreFromSnapshot(data: SaveData): void {
+    // Remove old building meshes before state changes
+    for (const b of this.gameState.getAllBuildings()) {
+      this.rnds.buildingRenderer.removeBuilding(b.id);
+    }
+
+    // Restore state from snapshot
+    deserializeGame(
+      data,
+      this.gameState,
+      this.mgrs.roadNetwork,
+      this.mgrs,
+      this.aiPlayers,
+    );
+
+    // Restore RNG + accumulator
+    if (data.rngState !== undefined) this.gameRng.setState(data.rngState);
+    if (data.accumulator !== undefined) this.accumulator = data.accumulator;
+
+    // Rebuild renderers from restored state
+    for (const building of this.gameState.getAllBuildings()) {
+      this.rnds.buildingRenderer.addBuilding(building, this.grid);
+    }
+    this.rnds.treeRenderer.sync(this.mgrs.treeManager, this.grid);
+    this.rnds.roadRenderer.sync(this.mgrs.roadNetwork, (id) => this.gameState.getUnit(id));
+    this.rnds.territoryRenderer.sync(this.mgrs.territoryManager);
+    this.rnds.fogOfWarRenderer.sync(this.mgrs.fogOfWarManager);
+
+    this.onNotification?.({ type: 'building_complete', message: 'Game state synchronized' });
   }
 
   /**
@@ -949,6 +1030,41 @@ export class Game {
       const label = TREATY_LABELS[type] ?? type;
       this.onNotification?.({ type: 'building_complete', message: `Player ${aiId} has ${label}` });
     };
+  }
+
+  /**
+   * Create an AI controller for a specific player ID (e.g., when a human disconnects).
+   * Returns true if AI was created, false if already exists.
+   */
+  addAIForPlayer(playerId: number): boolean {
+    if (this.aiPlayers.some(ai => ai.getPlayerId() === playerId)) return false;
+    const ai = new AIPlayer(
+      playerId,
+      this.config.difficulty,
+      this.gameState,
+      this.mgrs.territoryManager,
+      this.mgrs.attackManager,
+      this.mgrs.knightManager,
+      this.mgrs.upgradeManager,
+      this.mgrs.roadNetwork,
+      this.mgrs.populationManager,
+      (building, grid) => {
+        this.rnds.buildingRenderer.addBuilding(building, grid);
+      },
+      this.gameRng,
+      this.commandExecutor,
+    );
+    ai.setMarketplaceManager(this.mgrs.marketplaceManager);
+    ai.setDiplomacyManager(this.mgrs.diplomacyManager);
+    this.aiPlayers.push(ai);
+    return true;
+  }
+
+  /**
+   * Remove AI controller for a specific player ID (e.g., when a human reconnects).
+   */
+  removeAIForPlayer(playerId: number): void {
+    this.aiPlayers = this.aiPlayers.filter(ai => ai.getPlayerId() !== playerId);
   }
 
   /** Place starting Castles for all players, spread across the map */
@@ -1264,6 +1380,11 @@ export class Game {
       cancelAnimationFrame(this.animationId);
     }
     window.removeEventListener('resize', this.onResize);
+    // Clean up replay HUD
+    if (this.replayHud) {
+      this.replayHud.remove();
+      this.replayHud = null;
+    }
     this.roadPlacementController?.dispose();
     this.selectionController?.dispose();
     this.placementController?.dispose();
@@ -1419,6 +1540,10 @@ export class Game {
    * In multiplayer: buffers the command to be sent with the next turn.
    */
   executeCommand(cmd: GameCommand): CommandResult {
+    // Replay mode: block all user commands
+    if (this.replayMode) {
+      return { success: false, error: 'Game is in replay mode (read-only)' };
+    }
     if (this.networkAdapter.isLocal()) {
       // Single-player: execute immediately
       const result = this.commandExecutor.execute(cmd);
@@ -1709,5 +1834,131 @@ export class Game {
 
   getFrustum(): number {
     return this.frustum;
+  }
+
+  /** Whether the game is running in replay mode. */
+  isReplayMode(): boolean {
+    return this.replayMode;
+  }
+
+  // ── Replay helpers ───────────────────────────────────────────────────
+
+  /**
+   * Process one replay tick: pull commands from the adapter and execute them.
+   * Called before each simulationTick in replay mode.
+   */
+  private processReplayTick(): void {
+    const cmds = this.networkAdapter.getCommandsForTick();
+    const buildingCountBefore = this.gameState.getAllBuildings().length;
+    for (const cmd of cmds) {
+      this.commandExecutor.execute(cmd);
+    }
+    // Sync renderers for any new buildings created by replay commands
+    const allBuildingsAfter = this.gameState.getAllBuildings();
+    for (let i = buildingCountBefore; i < allBuildingsAfter.length; i++) {
+      this.rnds.buildingRenderer.addBuilding(allBuildingsAfter[i], this.grid);
+    }
+  }
+
+  /** Flatten all commands from replay data into a single ordered array. */
+  private flattenReplayCommands(replay: ReplayData): GameCommand[] {
+    const commands: GameCommand[] = [];
+    const turnNumbers = Object.keys(replay.commandsByTurn)
+      .map(Number)
+      .sort((a, b) => a - b);
+    for (const turn of turnNumbers) {
+      commands.push(...replay.commandsByTurn[turn]);
+    }
+    return commands;
+  }
+
+  /** Create the replay HUD overlay with playback controls. */
+  private createReplayHud(): void {
+    const hud = document.createElement('div');
+    hud.id = 'replay-hud';
+    hud.style.cssText = `
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 20px;
+      background: rgba(0, 0, 0, 0.75);
+      color: #fff;
+      border-radius: 24px;
+      font-size: 13px;
+      font-family: inherit;
+      z-index: 9999;
+      backdrop-filter: blur(8px);
+      user-select: none;
+    `;
+
+    const label = document.createElement('span');
+    label.textContent = 'REPLAY';
+    label.style.cssText = 'font-weight: 700; letter-spacing: 1px; color: #ffd54f;';
+
+    const playPauseBtn = document.createElement('button');
+    playPauseBtn.textContent = this._paused ? 'Play' : 'Pause';
+    playPauseBtn.style.cssText = `
+      background: rgba(255,255,255,0.15);
+      border: none;
+      color: #fff;
+      padding: 4px 12px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 13px;
+    `;
+    playPauseBtn.addEventListener('click', () => {
+      this.togglePause();
+      playPauseBtn.textContent = this._paused ? 'Play' : 'Pause';
+    });
+
+    const speedBtn = document.createElement('button');
+    const speeds = [1, 2, 4, 8];
+    let speedIdx = 0;
+    speedBtn.textContent = `${speeds[speedIdx]}x`;
+    speedBtn.style.cssText = `
+      background: rgba(255,255,255,0.15);
+      border: none;
+      color: #fff;
+      padding: 4px 12px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 13px;
+      min-width: 36px;
+    `;
+    speedBtn.addEventListener('click', () => {
+      speedIdx = (speedIdx + 1) % speeds.length;
+      this.setGameSpeed(speeds[speedIdx]);
+      speedBtn.textContent = `${speeds[speedIdx]}x`;
+    });
+
+    const progress = document.createElement('span');
+    progress.id = 'replay-progress';
+    progress.textContent = '0%';
+    progress.style.cssText = 'opacity: 0.7; min-width: 40px; text-align: right;';
+
+    hud.appendChild(label);
+    hud.appendChild(playPauseBtn);
+    hud.appendChild(speedBtn);
+    hud.appendChild(progress);
+
+    this.container.parentElement?.appendChild(hud);
+    this.replayHud = hud;
+  }
+
+  /** Update the replay HUD progress indicator. Called from the animate loop. */
+  private updateReplayHud(): void {
+    if (!this.replayHud) return;
+    const adapter = this.networkAdapter;
+    if (adapter instanceof ReplayAdapter) {
+      const progress = this.replayHud.querySelector('#replay-progress');
+      if (progress) {
+        const pct = Math.round(adapter.getProgress() * 100);
+        progress.textContent = adapter.isFinished() ? 'Done' : `${pct}%`;
+      }
+    }
   }
 }

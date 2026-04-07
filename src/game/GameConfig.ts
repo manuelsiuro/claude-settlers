@@ -70,6 +70,8 @@ export interface GameConfig {
   roomCode?: string;
   /** Player name for multiplayer lobby */
   playerName?: string;
+  /** Replay data — if set, game runs in replay mode (read-only playback) */
+  replayData?: import('./ReplayData').ReplayData;
 }
 
 export const DEFAULT_CONFIG: GameConfig = {

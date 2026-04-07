@@ -311,6 +311,7 @@ export function getGameHTML(currentTheme: string): string {
       <p id="game-over-condition" class="game-over-condition"></p>
       <div id="game-over-stats" class="game-over-stats"></div>
       <div class="game-over-actions">
+        <button id="game-over-save-replay-btn" class="btn-outlined">Save Replay</button>
         <button id="game-over-new-game-btn" class="btn-outlined">New Game</button>
         <button id="game-over-continue-btn" class="btn-filled">Continue Watching</button>
       </div>
@@ -540,6 +541,9 @@ export function getGameHTML(currentTheme: string): string {
 
       <button id="setup-continue-btn" class="btn-outlined setup-start-btn hidden" style="margin-top:8px;">
         Continue Saved Game
+      </button>
+      <button id="setup-load-replay-btn" class="btn-outlined setup-start-btn" style="margin-top:8px;">
+        Load Replay
       </button>
       ${__NETWORK_URL__ ? `
       <div class="setup-qr-section">

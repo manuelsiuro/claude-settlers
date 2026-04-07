@@ -12,6 +12,7 @@ import { hideGameOverOverlay } from './GameOverScreen';
 import { listMaps, deleteMap, loadBundledMapsIndex, importMapFromFile } from '../editor/MapStorage';
 import { showLobby, joinLobby } from './LobbyPanel';
 import type { LobbyResult } from './LobbyPanel';
+import { deserializeReplay } from '../game/ReplayData';
 
 let setupOverlay: HTMLElement;
 
@@ -306,6 +307,46 @@ export function initSetupScreen(startGame: StartGameFn, onOpenEditor?: () => voi
     }
     // Fallback to legacy quick-save
     handleLoadFromStorage(startGame);
+  });
+
+  // Load Replay button
+  const loadReplayBtn = document.getElementById('setup-load-replay-btn');
+  loadReplayBtn?.addEventListener('click', () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.replay.json,.json';
+    input.addEventListener('change', () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const replayData = deserializeReplay(reader.result as string);
+          // Strip fields that shouldn't carry over (multiplayer adapter settings)
+          const replayConfig: Partial<GameConfig> = {
+            ...replayData.config,
+            isMultiplayer: false,
+            serverAddress: undefined,
+            roomCode: undefined,
+            playerName: undefined,
+            replayData,
+          };
+          setupOverlay.classList.add('hidden');
+          hideGameOverOverlay();
+          startGame(replayConfig).catch((err) => {
+            logger.error('Replay load failed:', err);
+            showSnackbar('Failed to load replay', 'error');
+            import('./LoadingScreen').then((m) => m.hideLoadingScreen());
+            setupOverlay.classList.remove('hidden');
+          });
+        } catch (err) {
+          logger.error('Invalid replay file:', err);
+          showSnackbar('Invalid replay file', 'error');
+        }
+      };
+      reader.readAsText(file);
+    });
+    input.click();
   });
 
   setupRandomSeedBtn.addEventListener('click', () => {

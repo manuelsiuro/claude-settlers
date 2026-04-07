@@ -12,6 +12,7 @@ import type { PlayerInfo, PlayerAssignment, RoomConfig, SerializedCommand } from
 export type ClientMessage =
   | { type: 'CREATE_ROOM'; config: RoomConfig; playerName: string }
   | { type: 'JOIN_ROOM'; roomCode: string; playerName: string }
+  | { type: 'REJOIN_ROOM'; roomCode: string; playerName: string; playerId: number }
   | { type: 'READY' }
   | { type: 'COMMANDS'; turn: number; cmds: SerializedCommand[] }
   | { type: 'CHECKSUM'; turn: number; hash: number }
@@ -24,6 +25,8 @@ export type ClientMessage =
 export type ServerMessage =
   | { type: 'ROOM_CREATED'; roomCode: string; playerId: number }
   | { type: 'ROOM_JOINED'; roomCode: string; players: PlayerInfo[]; yourPlayerId: number }
+  | { type: 'REJOIN_ACCEPTED'; playerId: number }
+  | { type: 'REQUEST_SNAPSHOT'; turn: number; targetPlayerId: number }
   | { type: 'PLAYER_JOINED'; player: PlayerInfo }
   | { type: 'PLAYER_LEFT'; playerId: number }
   | {

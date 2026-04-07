@@ -4,6 +4,8 @@ import { VictoryCondition } from '../game/VictoryManager';
 import { UnitType, UNIT_DEFINITIONS } from '../game/UnitType';
 import { BuildingState, getInventoryTotal } from '../game/Building';
 import { recordVictory, unlockAchievement } from './Achievements';
+import { getPlayerCssColor, getPlayerLabel } from '../engine/PlayerColors';
+import { buildReplayData, serializeReplay } from '../game/ReplayData';
 
 let gameOverOverlay: HTMLElement;
 let gameOverTitle: HTMLElement;
@@ -47,6 +49,40 @@ export function initGameOverScreen(
       overlay.style.animation = '';
     });
   });
+
+  // Save Replay button
+  const saveReplayBtn = document.getElementById('game-over-save-replay-btn');
+  saveReplayBtn?.addEventListener('click', () => {
+    const g = getGame();
+    const config = g.getConfig();
+    const commandLog = g.getNetworkAdapter().getCommandLog();
+    const totalTurns = g.getCurrentTurn();
+
+    // Build player assignments from config
+    const humanIds = new Set(config.humanPlayerIds ?? [g.getHumanPlayerId()]);
+    const assignments = [];
+    for (let i = 1; i <= config.numPlayers; i++) {
+      assignments.push({
+        playerId: i,
+        name: humanIds.has(i) ? `Player ${i}` : `AI ${i}`,
+        isHuman: humanIds.has(i),
+      });
+    }
+
+    const replayData = buildReplayData(config, config.seed, assignments, commandLog, totalTurns);
+    const json = serializeReplay(replayData);
+
+    // Trigger browser download
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `replay-${config.seed}-${new Date().toISOString().slice(0, 10)}.replay.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
 }
 
 /** Show the game over screen */
@@ -84,35 +120,85 @@ export function showGameOver(result: VictoryResult): void {
 
   // Gather end-game stats
   const g = getGame();
+  const config = g.getConfig();
   const pid = g.getHumanPlayerId();
   const gameState = g.getGameState();
-  const buildings = gameState.getBuildingsByPlayer(pid);
-  const units = gameState.getUnitsByPlayer(pid);
-  const militaryTypeList: UnitType[] = [UnitType.Knight, UnitType.Archer, UnitType.Cavalry, UnitType.SiegeOperator, UnitType.Scout];
-  const militaryUnits = units.filter(u => militaryTypeList.includes(u.type));
-  const civilians = units.length - militaryUnits.length;
   const victoryMgr = g.getVictoryManager();
-  const goldBars = victoryMgr.getPlayerGoldBars(pid);
-  const territoryPct = Math.round(victoryMgr.getPlayerTerritoryFraction(pid) * 100);
 
-  // Game duration
+  // Game duration (shared across views)
   const elapsed = victoryMgr.getElapsedTime();
   const mins = Math.floor(elapsed / 60);
   const secs = Math.floor(elapsed % 60);
   const durationStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
 
-  // Building breakdown
+  const isMultiplayer = config.numPlayers > 1;
+
+  if (isMultiplayer) {
+    // --- Multiplayer comparison view ---
+    renderMultiplayerStats(g, result, durationStr);
+  } else {
+    // --- Single-player view (unchanged) ---
+    renderSinglePlayerStats(g, pid, durationStr);
+  }
+
+  // Achievement tracking — recompute human player stats for achievements
+  const humanBuildings = gameState.getBuildingsByPlayer(pid);
+  const humanActiveBuildings = humanBuildings.filter(b => b.state === BuildingState.Active).length;
+  const humanUnits = gameState.getUnitsByPlayer(pid);
+  const militaryTypeListAch: UnitType[] = [UnitType.Knight, UnitType.Archer, UnitType.Cavalry, UnitType.SiegeOperator, UnitType.Scout];
+  const humanMilitaryUnits = humanUnits.filter(u => militaryTypeListAch.includes(u.type));
+  const humanTerritoryPct = Math.round(victoryMgr.getPlayerTerritoryFraction(pid) * 100);
+
+  if (isWin) {
+    const diff = config.difficulty ?? 'normal';
+    recordVictory(result.condition, diff);
+  }
+  if (humanActiveBuildings >= 10) unlockAchievement('build_10');
+  if (humanActiveBuildings >= 25) unlockAchievement('build_25');
+  if (humanActiveBuildings >= 50) unlockAchievement('build_50');
+  if (humanUnits.length >= 50) unlockAchievement('population_50');
+  if (humanUnits.length >= 100) unlockAchievement('population_100');
+  if (humanMilitaryUnits.length >= 10) unlockAchievement('army_10');
+  if (humanTerritoryPct >= 50) unlockAchievement('territory_50');
+
+  // Widen card for multiplayer comparison layout
+  const card2 = document.querySelector('.game-over-card') as HTMLElement;
+  if (isMultiplayer) {
+    card2.classList.add('game-over-card--multiplayer');
+  } else {
+    card2.classList.remove('game-over-card--multiplayer');
+  }
+
+  // Stop live updates — panels are hidden behind the overlay
+  stopInfoPanelUpdatesFn();
+  stopStatsPanelUpdatesFn();
+  stopBuildPanelUpdatesFn();
+
+  gameOverOverlay.classList.remove('hidden');
+}
+
+// ─── Single-player stats (unchanged layout) ────────────────────────────────
+
+function renderSinglePlayerStats(g: Game, pid: number, durationStr: string): void {
+  const gameState = g.getGameState();
+  const victoryMgr = g.getVictoryManager();
+  const buildings = gameState.getBuildingsByPlayer(pid);
+  const units = gameState.getUnitsByPlayer(pid);
+  const militaryTypeList: UnitType[] = [UnitType.Knight, UnitType.Archer, UnitType.Cavalry, UnitType.SiegeOperator, UnitType.Scout];
+  const militaryUnits = units.filter(u => militaryTypeList.includes(u.type));
+  const civilians = units.length - militaryUnits.length;
+  const goldBars = victoryMgr.getPlayerGoldBars(pid);
+  const territoryPct = Math.round(victoryMgr.getPlayerTerritoryFraction(pid) * 100);
+
   const activeBuildings = buildings.filter(b => b.state === BuildingState.Active).length;
   const constructing = buildings.filter(b => b.state === BuildingState.UnderConstruction || b.state === BuildingState.Planned).length;
 
-  // Military breakdown
   const militaryBreakdown = militaryTypeList
     .map(t => ({ type: t, count: units.filter(u => u.type === t).length }))
     .filter(e => e.count > 0)
     .map(e => `${UNIT_DEFINITIONS[e.type]?.label ?? e.type}: ${e.count}`)
     .join(', ');
 
-  // Total resources in all buildings
   let totalResources = 0;
   for (const b of buildings) {
     totalResources += getInventoryTotal(b.inputInventory) + getInventoryTotal(b.outputInventory);
@@ -137,31 +223,119 @@ export function showGameOver(result: VictoryResult): void {
       <div class="game-over-stat-row"><span>Military</span><span>${militaryUnits.length}${militaryBreakdown ? ` (${militaryBreakdown})` : ''}</span></div>
     </div>
   `;
+}
 
-  // Achievement tracking
-  if (isWin) {
-    const g2 = getGame();
-    const diff = g2.getConfig().difficulty ?? 'normal';
-    recordVictory(result.condition, diff);
+// ─── Multiplayer comparison view ────────────────────────────────────────────
+
+interface PlayerStats {
+  playerId: number;
+  label: string;
+  color: string;
+  buildings: number;
+  units: number;
+  military: number;
+  civilians: number;
+  territoryPct: number;
+  storedResources: number;
+  goldBars: number;
+}
+
+function gatherPlayerStats(g: Game): PlayerStats[] {
+  const gameState = g.getGameState();
+  const victoryMgr = g.getVictoryManager();
+  const humanPid = g.getHumanPlayerId();
+  const numPlayers = g.getConfig().numPlayers;
+  const militaryTypeList: UnitType[] = [UnitType.Knight, UnitType.Archer, UnitType.Cavalry, UnitType.SiegeOperator, UnitType.Scout];
+  const results: PlayerStats[] = [];
+
+  for (let pid = 1; pid <= numPlayers; pid++) {
+    const buildings = gameState.getBuildingsByPlayer(pid);
+    const activeBuildings = buildings.filter(b => b.state === BuildingState.Active).length;
+    const units = gameState.getUnitsByPlayer(pid);
+    const militaryUnits = units.filter(u => militaryTypeList.includes(u.type));
+    const territoryPct = Math.round(victoryMgr.getPlayerTerritoryFraction(pid) * 100);
+    const goldBars = victoryMgr.getPlayerGoldBars(pid);
+
+    let storedResources = 0;
+    for (const b of buildings) {
+      storedResources += getInventoryTotal(b.inputInventory) + getInventoryTotal(b.outputInventory);
+    }
+
+    results.push({
+      playerId: pid,
+      label: getPlayerLabel(pid, humanPid),
+      color: getPlayerCssColor(pid),
+      buildings: activeBuildings,
+      units: units.length,
+      military: militaryUnits.length,
+      civilians: units.length - militaryUnits.length,
+      territoryPct,
+      storedResources,
+      goldBars,
+    });
   }
-  // Building count achievements
-  if (activeBuildings >= 10) unlockAchievement('build_10');
-  if (activeBuildings >= 25) unlockAchievement('build_25');
-  if (activeBuildings >= 50) unlockAchievement('build_50');
-  // Population achievements
-  if (units.length >= 50) unlockAchievement('population_50');
-  if (units.length >= 100) unlockAchievement('population_100');
-  // Military achievements
-  if (militaryUnits.length >= 10) unlockAchievement('army_10');
-  // Territory achievement
-  if (territoryPct >= 50) unlockAchievement('territory_50');
 
-  // Stop live updates — panels are hidden behind the overlay
-  stopInfoPanelUpdatesFn();
-  stopStatsPanelUpdatesFn();
-  stopBuildPanelUpdatesFn();
+  return results;
+}
 
-  gameOverOverlay.classList.remove('hidden');
+function renderMultiplayerStats(g: Game, result: VictoryResult, durationStr: string): void {
+  const allStats = gatherPlayerStats(g);
+  const winnerId = result.winnerId;
+
+  // Stat row labels in order
+  const statRows: { label: string; key: keyof PlayerStats; suffix?: string }[] = [
+    { label: 'Buildings', key: 'buildings' },
+    { label: 'Total Units', key: 'units' },
+    { label: 'Civilians', key: 'civilians' },
+    { label: 'Military', key: 'military' },
+    { label: 'Territory', key: 'territoryPct', suffix: '%' },
+    { label: 'Resources', key: 'storedResources' },
+    { label: 'Gold Bars', key: 'goldBars' },
+  ];
+
+  // Find best value per stat for highlighting
+  const bestValues: Record<string, number> = {};
+  for (const row of statRows) {
+    bestValues[row.key] = Math.max(...allStats.map(s => s[row.key] as number));
+  }
+
+  // Build HTML
+  const playerCount = allStats.length;
+  const columnWidth = playerCount <= 2 ? '140px' : '110px';
+
+  let html = `
+    <div class="game-over-stat-section" style="margin-bottom: 8px;">
+      <div class="game-over-stat-row"><span>Duration</span><span>${durationStr}</span></div>
+    </div>
+    <div class="game-over-mp-grid" style="grid-template-columns: 120px repeat(${playerCount}, ${columnWidth});">
+  `;
+
+  // Header row: empty cell + player columns
+  html += `<div class="game-over-mp-header"></div>`;
+  for (const ps of allStats) {
+    const isWinner = ps.playerId === winnerId;
+    html += `
+      <div class="game-over-mp-header game-over-mp-player${isWinner ? ' game-over-mp-winner' : ''}">
+        <span class="game-over-mp-color-dot" style="background: ${ps.color};"></span>
+        <span class="game-over-mp-player-name">${ps.label}</span>
+        ${isWinner ? '<span class="game-over-mp-crown">&#9813;</span>' : ''}
+      </div>
+    `;
+  }
+
+  // Data rows
+  for (const row of statRows) {
+    html += `<div class="game-over-mp-label">${row.label}</div>`;
+    for (const ps of allStats) {
+      const val = ps[row.key] as number;
+      const isBest = val === bestValues[row.key] && val > 0;
+      const isWinner = ps.playerId === winnerId;
+      html += `<div class="game-over-mp-value${isBest ? ' game-over-mp-best' : ''}${isWinner ? ' game-over-mp-winner-col' : ''}">${val}${row.suffix ?? ''}</div>`;
+    }
+  }
+
+  html += `</div>`;
+  gameOverStats.innerHTML = html;
 }
 
 export function hideGameOverOverlay(): void {
