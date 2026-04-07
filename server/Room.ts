@@ -117,6 +117,11 @@ export class Room {
     switch (msg.type) {
       case 'READY':
         player.info.ready = true;
+        // Broadcast updated player info so all clients see the ready status
+        this.broadcast({
+          type: 'PLAYER_JOINED',
+          player: player.info,
+        });
         this.checkAllReady();
         break;
 

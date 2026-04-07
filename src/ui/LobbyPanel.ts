@@ -127,9 +127,15 @@ function setupCallbacks(config: LobbyConfig): void {
   };
 
   adapter.onPlayerJoined = (player) => {
-    currentPlayers.push(player);
+    // Update existing player (ready state change) or add new player
+    const existing = currentPlayers.findIndex(p => p.playerId === player.playerId);
+    if (existing >= 0) {
+      currentPlayers[existing] = player;
+    } else {
+      currentPlayers.push(player);
+      showSnackbar(`${player.name} joined`);
+    }
     updatePlayerList();
-    showSnackbar(`${player.name} joined`);
   };
 
   adapter.onPlayerLeft = (playerId) => {
