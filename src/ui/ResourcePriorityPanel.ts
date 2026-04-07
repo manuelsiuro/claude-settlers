@@ -215,7 +215,11 @@ export function attachPriorityListeners(contentEl: HTMLElement, game: Game): voi
 
         // Apply
         setResourceCategoryWeights(settings, resource, updated);
-        game.setDistributionSettings(settings);
+        game.executeCommand({
+          type: 'SetGoodsDistribution',
+          playerId: game.getHumanPlayerId(),
+          settings,
+        });
 
         // Update all slider and label values in this card
         for (const s of sliders) {
@@ -255,7 +259,11 @@ export function attachPriorityListeners(contentEl: HTMLElement, game: Game): voi
     const importance = Number(dot.dataset.importance);
 
     setBuildingImportance(settings, buildingId, importance);
-    game.setDistributionSettings(settings);
+    game.executeCommand({
+      type: 'SetGoodsDistribution',
+      playerId: game.getHumanPlayerId(),
+      settings,
+    });
 
     // Update all dot rows for this building across all resource cards
     const allDots = contentEl.querySelectorAll<HTMLElement>(`.priority-importance-dot[data-building-id="${buildingId}"]`);
@@ -271,7 +279,11 @@ export function attachPriorityListeners(contentEl: HTMLElement, game: Game): voi
     const defaults = createDefaultDistribution();
     settings.resourceCategoryWeights = defaults.resourceCategoryWeights;
     settings.buildingImportance = new Map();
-    game.setDistributionSettings(settings);
+    game.executeCommand({
+      type: 'SetGoodsDistribution',
+      playerId: game.getHumanPlayerId(),
+      settings,
+    });
     contentEl.innerHTML = renderPriorityHTML(game);
     attachPriorityListeners(contentEl, game);
   });

@@ -211,9 +211,13 @@ export class RoadPlacementController {
   }
 
   private handleFlagClick(hex: HexCoord): void {
-    const roadNet = this.game.getRoadNetwork();
-    const flag = roadNet.placeFlag(hex, this.game.getHumanPlayerId());
-    if (flag) {
+    const result = this.game.executeCommand({
+      type: 'PlaceFlag',
+      playerId: this.game.getHumanPlayerId(),
+      coord: hex,
+    });
+    if (result.success) {
+      const flag = result.data as Flag;
       this.onFlagPlaced?.(flag);
     }
     // Stay in flag mode for quick multi-placement
@@ -255,15 +259,25 @@ export class RoadPlacementController {
     // Auto-place flag at target if needed
     let targetFlag: Flag | undefined = roadNet.getFlagAt(hex.q, hex.r);
     if (!targetFlag) {
-      const newFlag = roadNet.placeFlag(hex, this.game.getHumanPlayerId());
-      if (!newFlag) return;
+      const flagResult = this.game.executeCommand({
+        type: 'PlaceFlag',
+        playerId: this.game.getHumanPlayerId(),
+        coord: hex,
+      });
+      if (!flagResult.success) return;
+      const newFlag = flagResult.data as Flag;
       this.onFlagPlaced?.(newFlag);
       targetFlag = newFlag;
     }
 
     // Connect the flags
-    const road = roadNet.connectFlags(this.selectedFlag.id, targetFlag.id);
-    if (road) {
+    const connectResult = this.game.executeCommand({
+      type: 'ConnectFlags',
+      playerId: this.game.getHumanPlayerId(),
+      flagAId: this.selectedFlag.id,
+      flagBId: targetFlag.id,
+    });
+    if (connectResult.success) {
       this.onRoadBuilt?.();
     }
 

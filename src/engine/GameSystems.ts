@@ -34,6 +34,7 @@ import { DashboardTracker } from '../game/DashboardTracker';
 import { createDefaultDistribution } from '../game/GoodsDistribution';
 import type { GoodsDistributionSettings } from '../game/GoodsDistribution';
 import type { GameConfig, GraphicsSettings } from '../game/GameConfig';
+import type { GameRng } from '../game/GameRng';
 import { DEFAULT_VICTORY_CONFIG } from '../game/GameConfig';
 import { BuildingRenderer } from './BuildingRenderer';
 import { UnitRenderer } from './UnitRenderer';
@@ -130,6 +131,10 @@ export interface CreateManagersParams {
   grid: HexGrid;
   config: GameConfig;
   humanPlayerId: number;
+  /** Seeded PRNG for deterministic game logic. If omitted, managers use Math.random. */
+  gameRng?: GameRng;
+  /** Elevation lookup for AttackManager. Defaults to MapRenderer.getTileY. */
+  getElevation?: (q: number, r: number) => number;
 }
 
 /**
@@ -137,7 +142,7 @@ export interface CreateManagersParams {
  * Some managers depend on others, so the instantiation order matters.
  */
 export function createManagers(params: CreateManagersParams): GameManagers {
-  const { gameState, grid, config, humanPlayerId } = params;
+  const { gameState, grid, config, humanPlayerId, gameRng, getElevation } = params;
 
   const populationManager = new PopulationManager(gameState);
   const feedingManager = new FeedingManager(gameState);
@@ -154,16 +159,18 @@ export function createManagers(params: CreateManagersParams): GameManagers {
   const territoryManager = new TerritoryManager(gameState);
   const knightManager = new KnightManager(gameState);
   const combatManager = new CombatManager(gameState, knightManager);
+  if (gameRng) combatManager.random = gameRng.next.bind(gameRng);
   const duelAnimationManager = new DuelAnimationManager();
+  const elevationFn = getElevation ?? ((q: number, r: number) => {
+    const tile = grid.getTile(q, r);
+    return tile ? MapRenderer.getTileY(tile) : 0;
+  });
   const attackManager = new AttackManager(
     gameState,
     combatManager,
     territoryManager,
     duelAnimationManager,
-    (q, r) => {
-      const tile = grid.getTile(q, r);
-      return tile ? MapRenderer.getTileY(tile) : 0;
-    },
+    elevationFn,
     roadNetwork,
   );
 
@@ -188,7 +195,9 @@ export function createManagers(params: CreateManagersParams): GameManagers {
   const dashboardTracker = new DashboardTracker(
     gameState, populationManager, moraleManager, humanPlayerId,
   );
-  const randomEventManager = new RandomEventManager(gameState, humanPlayerId);
+  const randomEventManager = new RandomEventManager(
+    gameState, humanPlayerId, gameRng ? gameRng.next.bind(gameRng) : undefined,
+  );
   const diplomacyManager = new DiplomacyManager();
 
   return {

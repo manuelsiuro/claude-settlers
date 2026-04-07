@@ -134,7 +134,11 @@ export function initInfoPanel(
       } else if (action === 'toggle-pause') {
         const bld = getGame().getGameState().getBuilding(bid);
         if (bld) {
-          bld.productionPaused = !bld.productionPaused;
+          getGame().executeCommand({
+            type: 'ToggleBuildingPause',
+            playerId: getGame().getHumanPlayerId(),
+            buildingId: bid,
+          });
           updater.reset();
           updateBuilding(bld);
         }
@@ -151,11 +155,13 @@ export function initInfoPanel(
 
     const upgradeBtn = (e.target as HTMLElement).closest('.info-upgrade-btn') as HTMLElement | null;
     if (upgradeBtn?.dataset.buildingId && upgradeBtn?.dataset.axis) {
-      const ok = getGame().getUpgradeManager().startUpgrade(
-        upgradeBtn.dataset.buildingId,
-        upgradeBtn.dataset.axis as UpgradeAxis,
-      );
-      if (ok) {
+      const result = getGame().executeCommand({
+        type: 'StartUpgrade',
+        playerId: getGame().getHumanPlayerId(),
+        buildingId: upgradeBtn.dataset.buildingId,
+        upgradeAxis: upgradeBtn.dataset.axis as UpgradeAxis,
+      });
+      if (result.success) {
         const building = getGame().getGameState().getBuilding(upgradeBtn.dataset.buildingId);
         if (building) {
           updater.reset();
@@ -179,8 +185,12 @@ export function initInfoPanel(
     // Building-type upgrade (house upgrades)
     const buildingUpgradeBtn = (e.target as HTMLElement).closest('.info-building-upgrade-btn') as HTMLElement | null;
     if (buildingUpgradeBtn?.dataset.buildingId) {
-      const ok = getGame().getUpgradeManager().startBuildingUpgrade(buildingUpgradeBtn.dataset.buildingId);
-      if (ok) {
+      const result = getGame().executeCommand({
+        type: 'StartBuildingUpgrade',
+        playerId: getGame().getHumanPlayerId(),
+        buildingId: buildingUpgradeBtn.dataset.buildingId,
+      });
+      if (result.success) {
         const building = getGame().getGameState().getBuilding(buildingUpgradeBtn.dataset.buildingId);
         if (building) {
           updater.reset();
@@ -213,7 +223,12 @@ export function initInfoPanel(
               const current = castle.outputInventory[c.resource] ?? 0;
               castle.outputInventory[c.resource] = current - c.amount;
             }
-            rn.upgradeRoad(roadId, targetQuality);
+            getGame().executeCommand({
+              type: 'UpgradeRoad',
+              playerId: getGame().getHumanPlayerId(),
+              roadId,
+              targetQuality,
+            });
             updater.reset(); // Force rebuild to show new quality
           }
         }
@@ -236,7 +251,13 @@ export function initInfoPanel(
       if (selectedBuilding) {
         const toolType = toolqBtn.dataset.tool as ResourceType;
         const delta = parseInt(toolqBtn.dataset.delta, 10);
-        getGame().getToolProductionManager().adjustQueue(selectedBuilding.id, toolType, delta);
+        getGame().executeCommand({
+          type: 'SetToolQueue',
+          playerId: getGame().getHumanPlayerId(),
+          buildingId: selectedBuilding.id,
+          toolType,
+          delta,
+        });
         // Force structure rebuild to update counts
         updater.reset();
       }

@@ -89,17 +89,22 @@ export function startAttackTargeting(sourceBuildingId: string): void {
 
 /** Execute attack */
 function executeAttack(sourceBuildingId: string, targetBuildingId: string): void {
-  const gameState = deps.getGame().getGameState();
+  const game = deps.getGame();
+  const gameState = game.getGameState();
   const source = gameState.getBuilding(sourceBuildingId);
   if (!source || source.knightIds.length === 0) {
     showSnackbar('No knights available');
     return;
   }
 
-  const knightId = source.knightIds[0];
-  const attackMgr = deps.getGame().getAttackManager();
-  const success = attackMgr.orderAttack(knightId, targetBuildingId);
-  if (success) {
+  const unitId = source.knightIds[0];
+  const result = game.executeCommand({
+    type: 'AttackBuilding',
+    playerId: game.getHumanPlayerId(),
+    unitId,
+    targetBuildingId,
+  });
+  if (result.success) {
     showSnackbar('Attack ordered!', 'warning');
   } else {
     showSnackbar('Cannot attack this building', 'error');

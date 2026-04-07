@@ -423,9 +423,19 @@ export function handleTradeClick(target: HTMLElement, building: Building): boole
   // Confirm trade
   const confirmBtn = target.closest('.trade-confirm-btn') as HTMLElement | null;
   if (confirmBtn?.dataset.tradeAction === 'confirm') {
-    const result = mp.executeTrade(building.playerId, selectedSellResource, sellAmount, selectedBuyResource, venue);
-    if (!result.success && result.error) {
-      showTradeError(result.error);
+    const game = getGameFn?.();
+    if (game) {
+      const result = game.executeCommand({
+        type: 'MarketplaceTrade',
+        playerId: building.playerId,
+        sellResource: selectedSellResource,
+        sellAmount,
+        buyResource: selectedBuyResource,
+        venue,
+      });
+      if (!result.success) {
+        showTradeError(result.error);
+      }
     }
     return true;
   }
@@ -433,9 +443,16 @@ export function handleTradeClick(target: HTMLElement, building: Building): boole
   // Accept merchant deal
   const dealBtn = target.closest('.trade-deal-btn') as HTMLElement | null;
   if (dealBtn?.dataset.tradeAction === 'accept-deal' && dealBtn?.dataset.dealId) {
-    const result = mp.acceptDeal(building.playerId, dealBtn.dataset.dealId);
-    if (!result.success && result.error) {
-      showTradeError(result.error);
+    const game = getGameFn?.();
+    if (game) {
+      const result = game.executeCommand({
+        type: 'AcceptDeal',
+        playerId: building.playerId,
+        dealId: dealBtn.dataset.dealId,
+      });
+      if (!result.success) {
+        showTradeError(result.error);
+      }
     }
     return true;
   }
@@ -446,7 +463,15 @@ export function handleTradeClick(target: HTMLElement, building: Building): boole
     const idx = parseInt(toggleBtn.dataset.ruleIndex, 10);
     const rules = mp.getAutoTradeRules(building.playerId);
     if (rules[idx]) {
-      mp.updateAutoTradeRule(building.playerId, idx, { enabled: !rules[idx].enabled });
+      const game = getGameFn?.();
+      if (game) {
+        game.executeCommand({
+          type: 'UpdateAutoTradeRule',
+          playerId: building.playerId,
+          ruleIndex: idx,
+          updates: { enabled: !rules[idx].enabled },
+        });
+      }
     }
     return true;
   }
@@ -454,7 +479,14 @@ export function handleTradeClick(target: HTMLElement, building: Building): boole
   // Auto-trade: delete rule
   const deleteBtn = target.closest('[data-autotrade-action="delete"]') as HTMLElement | null;
   if (deleteBtn?.dataset.ruleIndex !== undefined) {
-    mp.removeAutoTradeRule(building.playerId, parseInt(deleteBtn.dataset.ruleIndex, 10));
+    const game = getGameFn?.();
+    if (game) {
+      game.executeCommand({
+        type: 'RemoveAutoTradeRule',
+        playerId: building.playerId,
+        ruleIndex: parseInt(deleteBtn.dataset.ruleIndex, 10),
+      });
+    }
     return true;
   }
 
@@ -476,9 +508,16 @@ export function handleTradeClick(target: HTMLElement, building: Building): boole
         exchangeResource,
         enabled: true,
       };
-      const added = mp.addAutoTradeRule(building.playerId, rule);
-      if (!added) {
-        showSnackbar(`Max ${AUTOTRADE_MAX_RULES} auto-trade rules`, 'warning');
+      const game = getGameFn?.();
+      if (game) {
+        const result = game.executeCommand({
+          type: 'AddAutoTradeRule',
+          playerId: building.playerId,
+          rule,
+        });
+        if (!result.success) {
+          showSnackbar(`Max ${AUTOTRADE_MAX_RULES} auto-trade rules`, 'warning');
+        }
       }
     }
     return true;

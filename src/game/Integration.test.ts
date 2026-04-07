@@ -22,6 +22,7 @@ import { ResourceType } from './ResourceType';
 import { UnitType } from './UnitType';
 import { UnitState, resetUnitIdCounter } from './Unit';
 import { Difficulty } from './GameConfig';
+import { GameRng } from './GameRng';
 import { GeologistManager } from './GeologistManager';
 import { TreeManager } from './TreeManager';
 import { WoodcutterManager } from './WoodcutterManager';
@@ -37,6 +38,8 @@ import { TerrainGatheringManager } from './TerrainGatheringManager';
 import { DiplomacyManager } from './DiplomacyManager';
 import { serializeGame, deserializeGame } from './SaveLoad';
 import type { SaveData } from './SaveLoad';
+import { CommandExecutor } from './CommandExecutor';
+import { ToolProductionManager } from './ToolProductionManager';
 
 describe('Integration: Full Production Chain', () => {
   let grid: HexGrid;
@@ -1141,6 +1144,14 @@ describe('Integration: Full 2-Player Game Scenario', () => {
     territoryManager.update();
 
     // AI player for player 2 (Easy difficulty for faster decision intervals in test)
+    const upgradeManager = new UpgradeManager(gameState);
+    const commandExecutor = new CommandExecutor({
+      gameState, grid, roadNetwork, territoryManager, attackManager, upgradeManager,
+      toolProductionManager: new ToolProductionManager(gameState),
+      marketplaceManager: new MarketplaceManager(gameState),
+      diplomacyManager: new DiplomacyManager(),
+      logisticsManager,
+    });
     aiPlayer = new AIPlayer(
       2,
       Difficulty.Easy,
@@ -1148,10 +1159,12 @@ describe('Integration: Full 2-Player Game Scenario', () => {
       territoryManager,
       attackManager,
       knightManager,
-      new UpgradeManager(gameState),
+      upgradeManager,
       roadNetwork,
       new PopulationManager(gameState),
       (building: Building) => { placedByAI.push(building); },
+      new GameRng(42),
+      commandExecutor,
     );
   });
 
@@ -1370,6 +1383,11 @@ describe('Integration: Save/Load Round-Trip', () => {
 
     territoryManager.update();
 
+    const cmdExec = new CommandExecutor({
+      gameState, grid, roadNetwork, territoryManager, attackManager, upgradeManager,
+      toolProductionManager: new ToolProductionManager(gameState),
+      marketplaceManager, diplomacyManager, logisticsManager,
+    });
     aiPlayer = new AIPlayer(
       2,
       Difficulty.Normal,
@@ -1381,6 +1399,8 @@ describe('Integration: Save/Load Round-Trip', () => {
       roadNetwork,
       new PopulationManager(gameState),
       () => {},
+      new GameRng(42),
+      cmdExec,
     );
 
     // Simulate to create some game state
@@ -1451,7 +1471,14 @@ describe('Integration: Save/Load Round-Trip', () => {
     const vm2 = new VictoryManager(gs2, terr2, [1, 2]);
     const gm2 = new GeologistManager(gs2);
 
-    const ai2 = new AIPlayer(2, Difficulty.Normal, gs2, terr2, am2, km2, new UpgradeManager(gs2), rn2, pm2, () => {});
+    const um2_2 = new UpgradeManager(gs2);
+    const mp2 = new MarketplaceManager(gs2);
+    const dp2 = new DiplomacyManager();
+    const ce2 = new CommandExecutor({
+      gameState: gs2, grid: grid2, roadNetwork: rn2, territoryManager: terr2, attackManager: am2, upgradeManager: um2_2,
+      toolProductionManager: new ToolProductionManager(gs2), marketplaceManager: mp2, diplomacyManager: dp2, logisticsManager: lm2,
+    });
+    const ai2 = new AIPlayer(2, Difficulty.Normal, gs2, terr2, am2, km2, um2_2, rn2, pm2, () => {}, new GameRng(42), ce2);
 
     deserializeGame(
       parsed, gs2, rn2,
@@ -1469,15 +1496,15 @@ describe('Integration: Save/Load Round-Trip', () => {
         treeManager: new TreeManager(),
         woodcutterManager: new WoodcutterManager(gs2, new TreeManager()),
         foresterManager: new ForesterManager(gs2, new TreeManager()),
-        upgradeManager: new UpgradeManager(gs2),
+        upgradeManager: um2_2,
         fogOfWarManager: new FogOfWarManager(gs2),
         harborManager: new HarborManager(gs2, rn2, grid2),
         feedingManager: new FeedingManager(gs2),
         moraleManager: new MoraleManager(gs2),
-        marketplaceManager: new MarketplaceManager(gs2),
+        marketplaceManager: mp2,
         animalLifecycleManager: { _loadState: () => {} },
         terrainGatheringManager: new TerrainGatheringManager(gs2),
-        diplomacyManager: new DiplomacyManager(),
+        diplomacyManager: dp2,
       },
       [ai2],
     );
@@ -1551,7 +1578,14 @@ describe('Integration: Save/Load Round-Trip', () => {
     const lm2 = new LogisticsManager(gs2, rn2);
     const gm2 = new GeologistManager(gs2);
 
-    const ai2 = new AIPlayer(2, Difficulty.Normal, gs2, terr2, am2, km2, new UpgradeManager(gs2), rn2, pm2, () => {});
+    const um2_2 = new UpgradeManager(gs2);
+    const mp2_2 = new MarketplaceManager(gs2);
+    const dp2_2 = new DiplomacyManager();
+    const ce2_2 = new CommandExecutor({
+      gameState: gs2, grid: grid2, roadNetwork: rn2, territoryManager: terr2, attackManager: am2, upgradeManager: um2_2,
+      toolProductionManager: new ToolProductionManager(gs2), marketplaceManager: mp2_2, diplomacyManager: dp2_2, logisticsManager: lm2,
+    });
+    const ai2 = new AIPlayer(2, Difficulty.Normal, gs2, terr2, am2, km2, um2_2, rn2, pm2, () => {}, new GameRng(42), ce2_2);
 
     deserializeGame(
       parsed, gs2, rn2,
@@ -1569,15 +1603,15 @@ describe('Integration: Save/Load Round-Trip', () => {
         treeManager: new TreeManager(),
         woodcutterManager: new WoodcutterManager(gs2, new TreeManager()),
         foresterManager: new ForesterManager(gs2, new TreeManager()),
-        upgradeManager: new UpgradeManager(gs2),
+        upgradeManager: um2_2,
         fogOfWarManager: new FogOfWarManager(gs2),
         harborManager: new HarborManager(gs2, rn2, grid2),
         feedingManager: new FeedingManager(gs2),
         moraleManager: new MoraleManager(gs2),
-        marketplaceManager: new MarketplaceManager(gs2),
+        marketplaceManager: mp2_2,
         animalLifecycleManager: { _loadState: () => {} },
         terrainGatheringManager: new TerrainGatheringManager(gs2),
-        diplomacyManager: new DiplomacyManager(),
+        diplomacyManager: dp2_2,
       },
       [ai2],
     );
@@ -1635,7 +1669,14 @@ describe('Integration: Save/Load Round-Trip', () => {
     const lm2 = new LogisticsManager(gs2, rn2);
     const gm2 = new GeologistManager(gs2);
 
-    const ai2 = new AIPlayer(2, Difficulty.Normal, gs2, terr2, am2, km2, new UpgradeManager(gs2), rn2, pm2, () => {});
+    const um2_3 = new UpgradeManager(gs2);
+    const mp2_3 = new MarketplaceManager(gs2);
+    const dp2_3 = new DiplomacyManager();
+    const ce2_3 = new CommandExecutor({
+      gameState: gs2, grid: grid2, roadNetwork: rn2, territoryManager: terr2, attackManager: am2, upgradeManager: um2_3,
+      toolProductionManager: new ToolProductionManager(gs2), marketplaceManager: mp2_3, diplomacyManager: dp2_3, logisticsManager: lm2,
+    });
+    const ai2 = new AIPlayer(2, Difficulty.Normal, gs2, terr2, am2, km2, um2_3, rn2, pm2, () => {}, new GameRng(42), ce2_3);
 
     deserializeGame(
       parsed, gs2, rn2,
@@ -1653,15 +1694,15 @@ describe('Integration: Save/Load Round-Trip', () => {
         treeManager: new TreeManager(),
         woodcutterManager: new WoodcutterManager(gs2, new TreeManager()),
         foresterManager: new ForesterManager(gs2, new TreeManager()),
-        upgradeManager: new UpgradeManager(gs2),
+        upgradeManager: um2_3,
         fogOfWarManager: new FogOfWarManager(gs2),
         harborManager: new HarborManager(gs2, rn2, grid2),
         feedingManager: new FeedingManager(gs2),
         moraleManager: new MoraleManager(gs2),
-        marketplaceManager: new MarketplaceManager(gs2),
+        marketplaceManager: mp2_3,
         animalLifecycleManager: { _loadState: () => {} },
         terrainGatheringManager: new TerrainGatheringManager(gs2),
-        diplomacyManager: new DiplomacyManager(),
+        diplomacyManager: dp2_3,
       },
       [ai2],
     );
@@ -1754,9 +1795,19 @@ describe('Integration: Performance Benchmark', () => {
     }
 
     // Create AI player
+    const perfUpgradeManager = new UpgradeManager(gameState);
+    const perfCommandExecutor = new CommandExecutor({
+      gameState, grid, roadNetwork, territoryManager, attackManager, upgradeManager: perfUpgradeManager,
+      toolProductionManager: new ToolProductionManager(gameState),
+      marketplaceManager: new MarketplaceManager(gameState),
+      diplomacyManager: new DiplomacyManager(),
+      logisticsManager,
+    });
     const ai = new AIPlayer(
       2, Difficulty.Hard, gameState, territoryManager,
-      attackManager, knightManager, new UpgradeManager(gameState), roadNetwork, populationManager, () => {},
+      attackManager, knightManager, perfUpgradeManager, roadNetwork, populationManager, () => {},
+      new GameRng(42),
+      perfCommandExecutor,
     );
 
     // Warm up

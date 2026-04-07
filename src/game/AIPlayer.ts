@@ -19,11 +19,12 @@ import {
   getUpgradeCost,
   getEffectiveStorageCapacity,
 } from './BuildingUpgrade';
-import { autoConnectBuilding } from './AutoRoad';
 import type { RoadNetwork } from './RoadNetwork';
 import type { PopulationManager } from './PopulationManager';
 import type { MarketplaceManager } from './MarketplaceManager';
 import type { DiplomacyManager } from './DiplomacyManager';
+import type { GameRng } from './GameRng';
+import type { CommandExecutor } from './CommandExecutor';
 import {
   AI_TRADE_CHECK_INTERVAL,
   AI_TRADE_SURPLUS_THRESHOLD,
@@ -55,12 +56,10 @@ export class AIPlayer {
   private readonly difficulty: Difficulty;
   private readonly gameState: GameState;
   private readonly territoryManager: TerritoryManager;
-  private readonly attackManager: AttackManager;
   private readonly knightManager: KnightManager;
-  private readonly upgradeManager: UpgradeManager;
-  private readonly roadNetwork: RoadNetwork;
   private readonly populationManager: PopulationManager;
   private readonly onBuildingPlaced: BuildingPlacedCallback;
+  private readonly commandExecutor: CommandExecutor;
   private readonly config: DifficultyConfig;
 
   /** Strategy-specific build order (selected based on difficulty). */
@@ -99,30 +98,35 @@ export class AIPlayer {
   private tradeCooldown = AI_TRADE_CHECK_INTERVAL;
 
   /** Timer for diplomacy evaluations (every 30-60s) */
-  private diplomacyCooldown = 30 + Math.random() * 30;
+  private diplomacyCooldown: number;
+
+  /** Seeded PRNG for deterministic AI decisions */
+  private gameRng: GameRng;
 
   constructor(
     playerId: number,
     difficulty: Difficulty,
     gameState: GameState,
     territoryManager: TerritoryManager,
-    attackManager: AttackManager,
+    _attackManager: AttackManager, // routed through commandExecutor
     knightManager: KnightManager,
-    upgradeManager: UpgradeManager,
-    roadNetwork: RoadNetwork,
+    _upgradeManager: UpgradeManager, // routed through commandExecutor
+    _roadNetwork: RoadNetwork, // routed through commandExecutor
     populationManager: PopulationManager,
     onBuildingPlaced: BuildingPlacedCallback,
+    gameRng: GameRng,
+    commandExecutor: CommandExecutor,
   ) {
     this.playerId = playerId;
     this.difficulty = difficulty;
     this.gameState = gameState;
     this.territoryManager = territoryManager;
-    this.attackManager = attackManager;
     this.knightManager = knightManager;
-    this.upgradeManager = upgradeManager;
-    this.roadNetwork = roadNetwork;
     this.populationManager = populationManager;
     this.onBuildingPlaced = onBuildingPlaced;
+    this.commandExecutor = commandExecutor;
+    this.gameRng = gameRng;
+    this.diplomacyCooldown = 30 + gameRng.next() * 30;
 
     // Assign personality based on player index (0-based: player 2 = index 0, player 3 = index 1, etc.)
     this.personality = getPersonalityForPlayer(playerId - 2);
@@ -155,7 +159,7 @@ export class AIPlayer {
       this.decisionCooldown = this.decisionInterval;
 
       // Some difficulties skip a fraction of decision ticks
-      if (this.config.skipChance === 0 || Math.random() >= this.config.skipChance) {
+      if (this.config.skipChance === 0 || this.gameRng.next() >= this.config.skipChance) {
         this.checkHousingNeeds();
         this.checkMilitaryBalance();
         this.tryBuildNext();
@@ -181,7 +185,7 @@ export class AIPlayer {
     if (this.diplomacyManager) {
       this.diplomacyCooldown -= deltaTime;
       if (this.diplomacyCooldown <= 0) {
-        this.diplomacyCooldown = 30 + Math.random() * 30;
+        this.diplomacyCooldown = 30 + this.gameRng.next() * 30;
         this.evaluateDiplomacy();
       }
     }
@@ -224,11 +228,14 @@ export class AIPlayer {
       const coord = this.findValidHex(type);
       if (!coord) continue;
 
-      const result = this.gameState.placeBuilding(type, coord, this.playerId);
-      if (result.ok) {
-        this.onBuildingPlaced(result.building, this.gameState.getGrid());
-        this.territoryManager.markDirty();
-        autoConnectBuilding(coord, this.playerId, this.roadNetwork, this.gameState.getGrid());
+      const result = this.commandExecutor.execute({
+        type: 'PlaceBuilding', playerId: this.playerId, buildingType: type, coord,
+      });
+      if (result.success) {
+        this.onBuildingPlaced(result.data as Building, this.gameState.getGrid());
+        this.commandExecutor.execute({
+          type: 'AutoConnectBuilding', playerId: this.playerId, coord,
+        });
         return;
       }
     }
@@ -273,12 +280,14 @@ export class AIPlayer {
       return;
     }
 
-    const result = this.gameState.placeBuilding(type, coord, this.playerId);
-    if (result.ok) {
-      this.onBuildingPlaced(result.building, this.gameState.getGrid());
-      this.territoryManager.markDirty();
-      // Auto-connect the new building to the road network
-      autoConnectBuilding(coord, this.playerId, this.roadNetwork, this.gameState.getGrid());
+    const result = this.commandExecutor.execute({
+      type: 'PlaceBuilding', playerId: this.playerId, buildingType: type, coord,
+    });
+    if (result.success) {
+      this.onBuildingPlaced(result.data as Building, this.gameState.getGrid());
+      this.commandExecutor.execute({
+        type: 'AutoConnectBuilding', playerId: this.playerId, coord,
+      });
       this.buildOrderIndex++;
       this.hexRetryCount = 0;
     } else {
@@ -329,7 +338,10 @@ export class AIPlayer {
 
     const knightsToSend = this.config.knightsPerAttack;
     for (let i = 0; i < Math.min(knightsToSend, availableKnights.length); i++) {
-      this.attackManager.orderAttack(availableKnights[i].id, target.id);
+      this.commandExecutor.execute({
+        type: 'AttackBuilding', playerId: this.playerId,
+        unitId: availableKnights[i].id, targetBuildingId: target.id,
+      });
     }
   }
 
@@ -360,12 +372,18 @@ export class AIPlayer {
         const shouldPropose = this.shouldProposeTreaty(strengthRatio, myBuildings);
         if (shouldPropose) {
           const treatyType = this.getPreferredTreaty();
-          this.diplomacyManager.setTreaty(this.playerId, otherId, treatyType, 0);
+          this.commandExecutor.execute({
+            type: 'SetTreaty', playerId: this.playerId,
+            targetPlayerId: otherId, treatyType,
+          });
         }
       } else {
         // Consider breaking treaty if militarist and much stronger
         if (this.personality === 'militarist' && strengthRatio > 2.5 && currentTreaty !== 'alliance') {
-          this.diplomacyManager.setTreaty(this.playerId, otherId, 'none', 0);
+          this.commandExecutor.execute({
+            type: 'SetTreaty', playerId: this.playerId,
+            targetPlayerId: otherId, treatyType: 'none',
+          });
         }
       }
     }
@@ -422,7 +440,10 @@ export class AIPlayer {
       if (canUpgrade(building, UpgradeAxis.Production)) {
         const cost = getUpgradeCost(building.type, UpgradeAxis.Production, building.upgradeLevels?.[UpgradeAxis.Production] ?? 0);
         if (cost && this.canAffordCost(resources, cost)) {
-          this.upgradeManager.startUpgrade(building.id, UpgradeAxis.Production);
+          this.commandExecutor.execute({
+            type: 'StartUpgrade', playerId: this.playerId,
+            buildingId: building.id, upgradeAxis: UpgradeAxis.Production,
+          });
           return;
         }
       }
@@ -434,7 +455,10 @@ export class AIPlayer {
         if (outputTotal >= cap * 0.8) {
           const cost = getUpgradeCost(building.type, UpgradeAxis.Storage, building.upgradeLevels?.[UpgradeAxis.Storage] ?? 0);
           if (cost && this.canAffordCost(resources, cost)) {
-            this.upgradeManager.startUpgrade(building.id, UpgradeAxis.Storage);
+            this.commandExecutor.execute({
+              type: 'StartUpgrade', playerId: this.playerId,
+              buildingId: building.id, upgradeAxis: UpgradeAxis.Storage,
+            });
             return;
           }
         }
@@ -519,7 +543,10 @@ export class AIPlayer {
     const tradeAmount = Math.min(5, Math.floor(surplusAmount * 0.3));
     if (tradeAmount <= 0) return;
 
-    mp.executeTrade(this.playerId, surplusRes, tradeAmount, shortageRes, venue);
+    this.commandExecutor.execute({
+      type: 'MarketplaceTrade', playerId: this.playerId,
+      sellResource: surplusRes, sellAmount: tradeAmount, buyResource: shortageRes, venue,
+    });
   }
 
   /** Sum outputInventory across Castle and Warehouses for this player. */
@@ -584,11 +611,14 @@ export class AIPlayer {
       if (this.canAfford(BuildingType.GuardHut)) {
         const coord = this.findBorderHex(BuildingType.GuardHut);
         if (coord) {
-          const result = this.gameState.placeBuilding(BuildingType.GuardHut, coord, this.playerId);
-          if (result.ok) {
-            this.onBuildingPlaced(result.building, this.gameState.getGrid());
-            this.territoryManager.markDirty();
-            autoConnectBuilding(coord, this.playerId, this.roadNetwork, this.gameState.getGrid());
+          const result = this.commandExecutor.execute({
+            type: 'PlaceBuilding', playerId: this.playerId, buildingType: BuildingType.GuardHut, coord,
+          });
+          if (result.success) {
+            this.onBuildingPlaced(result.data as Building, this.gameState.getGrid());
+            this.commandExecutor.execute({
+              type: 'AutoConnectBuilding', playerId: this.playerId, coord,
+            });
           }
         }
       }
@@ -606,18 +636,19 @@ export class AIPlayer {
 
     const castle = this.gameState.findCastle(this.playerId);
     if (castle) {
-      // Sort by distance to Castle with random jitter for variety
-      territory.sort((a, b) => {
-        const distA = HexGrid.hexDistance(a, castle.coord) + Math.random() * AI_PLACEMENT_DISTANCE_JITTER;
-        const distB = HexGrid.hexDistance(b, castle.coord) + Math.random() * AI_PLACEMENT_DISTANCE_JITTER;
-        return distA - distB;
-      });
+      // Pre-compute jitter to avoid RNG calls inside sort comparator
+      // (sort call count is implementation-defined, so calling RNG in comparator
+      // would produce non-deterministic sequences across browsers)
+      const keyed = territory.map(coord => ({
+        coord,
+        key: HexGrid.hexDistance(coord, castle.coord) + this.gameRng.next() * AI_PLACEMENT_DISTANCE_JITTER,
+      }));
+      keyed.sort((a, b) => a.key - b.key);
+      territory.length = 0;
+      for (const entry of keyed) territory.push(entry.coord);
     } else {
-      // No castle — fall back to random shuffle
-      for (let i = territory.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [territory[i], territory[j]] = [territory[j], territory[i]];
-      }
+      // No castle — fall back to deterministic shuffle
+      this.gameRng.shuffle(territory);
     }
 
     for (const coord of territory) {
@@ -646,11 +677,8 @@ export class AIPlayer {
       return neighbors.some((n) => !ownedKeys.has(`${n.coord.q},${n.coord.r}`));
     });
 
-    // Shuffle border tiles for variety.
-    for (let i = border.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [border[i], border[j]] = [border[j], border[i]];
-    }
+    // Shuffle border tiles for variety (deterministic).
+    this.gameRng.shuffle(border);
 
     for (const coord of border) {
       if (this.gameState.canPlace(type, coord, this.playerId) === null) {

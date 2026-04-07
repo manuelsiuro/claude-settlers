@@ -37,7 +37,7 @@ import type { DiplomacyManager } from './DiplomacyManager';
 import type { HexCoord } from './HexGrid';
 
 /** Current save format version */
-const SAVE_VERSION = 14;
+const SAVE_VERSION = 15;
 
 /** localStorage key for manual quick-save (legacy) */
 const STORAGE_KEY = 'feudal_realm_save';
@@ -198,6 +198,10 @@ export interface SaveData {
     attackCooldown: number;
   }[];
 
+  // Determinism state (multiplayer + replays)
+  rngState?: number;
+  accumulator?: number;
+
   // Camera state
   frustum: number;
   cameraPosition: { x: number; y: number; z: number };
@@ -238,6 +242,7 @@ export function serializeGame(
   aiPlayers: AIPlayer[],
   camera: { frustum: number; position: { x: number; y: number; z: number }; target: { x: number; y: number; z: number } },
   distributionSettings?: GoodsDistributionSettings,
+  determinism?: { rngState: number; accumulator: number },
 ): SaveData {
   const gsState = gameState._getState();
   const rnState = roadNetwork._getState();
@@ -314,6 +319,9 @@ export function serializeGame(
     diplomacyManager: managers.diplomacyManager._getState(),
 
     goodsDistribution: distributionSettings ? serializeDistribution(distributionSettings) : undefined,
+
+    rngState: determinism?.rngState,
+    accumulator: determinism?.accumulator,
 
     aiPlayers: aiPlayers.map((ai) => ai._getState()),
 
@@ -616,6 +624,17 @@ const MIGRATIONS: Record<number, MigrationFn> = {
       for (const b of buildings) {
         if (b.rallyPoint === undefined) b.rallyPoint = null;
       }
+    }
+  },
+  // v14→v15: determinism state for multiplayer + replays
+  14: (data) => {
+    if (data.rngState === undefined) {
+      // Initialize from seed if available, otherwise use 0
+      const config = data.config as Record<string, unknown> | undefined;
+      data.rngState = (config?.seed as number) ?? 0;
+    }
+    if (data.accumulator === undefined) {
+      data.accumulator = 0;
     }
   },
 };

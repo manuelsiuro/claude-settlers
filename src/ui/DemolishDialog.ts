@@ -86,8 +86,13 @@ function handleConfirm(): void {
     game.getBuildingRenderer().forgetBuilding(building.id);
   }
 
-  // Demolish in game state — returns refund array
-  const refund = game.getGameState().demolishBuilding(building.id);
+  // Demolish via command system — returns refund array in result.data
+  const result = game.executeCommand({
+    type: 'DemolishBuilding',
+    playerId: game.getHumanPlayerId(),
+    buildingId: building.id,
+  });
+  const refund = (result.success ? result.data : []) as { resource: ResourceType; amount: number }[];
 
   // Add refunded resources to Castle
   const castle = game.getGameState().findCastle(building.playerId);

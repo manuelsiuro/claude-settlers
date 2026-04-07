@@ -70,6 +70,11 @@ import type { GameNotification } from './GameNotifications';
 import { wireGameCallbacks } from './GameNotifications';
 import { createManagers, createRenderers, applyGraphicsSettings as applyGraphicsSettingsFn } from './GameSystems';
 import type { GameManagers, GameRenderers } from './GameSystems';
+import { GameRng } from '../game/GameRng';
+import { CommandExecutor } from '../game/CommandExecutor';
+import type { GameCommand, CommandResult } from '../game/Command';
+import { LocalAdapter } from '../game/NetworkAdapter';
+import type { NetworkAdapter } from '../game/NetworkAdapter';
 
 // Re-export notification types for backward compatibility
 export type { GameNotificationType, GameNotification } from './GameNotifications';
@@ -94,6 +99,12 @@ export class Game {
 
   // Managers (created by factory)
   private mgrs: GameManagers;
+
+  // Command executor for all state mutations
+  private commandExecutor: CommandExecutor;
+
+  // Network adapter (LocalAdapter for single-player, WebSocketAdapter for multiplayer)
+  private networkAdapter: NetworkAdapter = new LocalAdapter();
 
   // Renderers (created by factory)
   private rnds: GameRenderers;
@@ -124,11 +135,20 @@ export class Game {
   /** The human player's ID (always 1 for now) */
   private humanPlayerId = 1;
 
+  /** Fixed simulation timestep for deterministic lockstep (50ms = 20 ticks/sec) */
+  static readonly FIXED_STEP = 0.05;
+
+  /** Accumulator for fixed-timestep simulation */
+  private accumulator = 0;
+
   /** Game speed multiplier (0.5 = slow, 1 = normal, 2 = fast, 3 = fastest) */
   private _gameSpeed = 1;
 
   /** Whether the game is paused */
   private _paused = false;
+
+  /** Seeded PRNG for deterministic game logic (multiplayer + replays) */
+  private gameRng: GameRng;
 
   /** Current nightness level 0.0–1.0 from atmosphere controller */
   private currentNightness = 0;
@@ -244,12 +264,30 @@ export class Game {
     }
     this.gameState = new GameState(this.grid);
 
+    // Create seeded PRNG for deterministic game logic
+    this.gameRng = new GameRng(this.config.seed);
+
     // Create all managers via factory
     this.mgrs = createManagers({
       gameState: this.gameState,
       grid: this.grid,
       config: this.config,
       humanPlayerId: this.humanPlayerId,
+      gameRng: this.gameRng,
+    });
+
+    // Create command executor for all state mutations
+    this.commandExecutor = new CommandExecutor({
+      gameState: this.gameState,
+      roadNetwork: this.mgrs.roadNetwork,
+      grid: this.grid,
+      territoryManager: this.mgrs.territoryManager,
+      attackManager: this.mgrs.attackManager,
+      upgradeManager: this.mgrs.upgradeManager,
+      toolProductionManager: this.mgrs.toolProductionManager,
+      marketplaceManager: this.mgrs.marketplaceManager,
+      diplomacyManager: this.mgrs.diplomacyManager,
+      logisticsManager: this.mgrs.logisticsManager,
     });
 
     // Propagate sandbox mode to managers
@@ -471,6 +509,14 @@ export class Game {
         this.aiPlayers,
       );
 
+      // Restore determinism state
+      if (savedData.rngState !== undefined) {
+        this.gameRng.setState(savedData.rngState);
+      }
+      if (savedData.accumulator !== undefined) {
+        this.accumulator = savedData.accumulator;
+      }
+
       // Restore goods distribution settings if present
       if (restoredDistribution) {
         this.mgrs.distributionSettings = restoredDistribution;
@@ -588,103 +634,60 @@ export class Game {
       // Pass nightness to weather controller for rain vs snow selection
       this.rnds.weatherController.setNightness(this.atmosphereController.getCycleState().nightness);
 
-      // Scale delta by game speed; zero when paused
-      const deltaTime = this._paused ? 0 : rawDelta * this._gameSpeed;
+      // Fixed-timestep simulation: accumulate game time, run discrete ticks
+      if (!this._paused) {
+        this.accumulator += rawDelta * this._gameSpeed;
+        // Cap accumulator to prevent spiral of death on slow frames
+        this.accumulator = Math.min(this.accumulator, Game.FIXED_STEP * 10);
+        while (this.accumulator >= Game.FIXED_STEP) {
+          this.simulationTick(Game.FIXED_STEP);
+          this.accumulator -= Game.FIXED_STEP;
+        }
+      }
 
-      // Transfer storage building inputs → outputs (Castle/Warehouse accept delivered goods)
+      // Sync renderers with latest simulation state (once per frame)
       const allBuildings = this.gameState.getAllBuildings();
-      for (const b of allBuildings) {
-        if (b.type !== BuildingType.Castle && b.type !== BuildingType.Warehouse) continue;
-        if (b.state !== BuildingState.Active) continue;
-        transferStorageInputs(b);
-      }
-
-      const prevTerritoryVersion = this.mgrs.territoryManager.getVersion();
-      this.mgrs.territoryManager.update();
-      // Check for territory transfers when territory changes (passive expansion)
-      if (this.mgrs.territoryManager.getVersion() !== prevTerritoryVersion) {
-        this.mgrs.attackManager.checkTerritoryTransfers();
-      }
-      // Pass nightness to managers for day/night gameplay effects
-      this.mgrs.unitManager.nightness = this.currentNightness;
-      this.mgrs.productionManager.nightness = this.currentNightness;
-      // Pass morale + random event multipliers per player
-      for (let pid = 1; pid <= this.config.numPlayers; pid++) {
-        const moraleProd = this.mgrs.moraleManager.getProductionMultiplier(pid);
-        const eventProd = this.mgrs.randomEventManager.getProductionMultiplier(pid);
-        this.mgrs.productionManager.moraleMultipliers.set(pid, moraleProd * eventProd);
-        this.mgrs.combatManager.moraleMultipliers.set(pid, this.mgrs.moraleManager.getCombatMultiplier(pid));
-      }
-      this.updateLightMitigation();
-      this.mgrs.unitManager.update(deltaTime);
-      this.mgrs.constructionManager.update(deltaTime);
-      this.mgrs.upgradeManager.update(deltaTime);
-      this.mgrs.productionManager.update(deltaTime);
-      this.mgrs.toolProductionManager.update(deltaTime);
-      this.mgrs.geologistManager.update(deltaTime);
-      this.mgrs.treeManager.update(deltaTime);
-      this.mgrs.woodcutterManager.update(deltaTime);
-      this.mgrs.terrainGatheringManager.update(deltaTime);
-      this.mgrs.foresterManager.update(deltaTime);
-      this.rnds.treeRenderer.sync(this.mgrs.treeManager, this.grid);
-      this.mgrs.logisticsManager.update(deltaTime);
-      this.mgrs.harborManager.update(deltaTime);
-      this.mgrs.transporterManager.update(deltaTime);
-      this.mgrs.knightManager.update(deltaTime);
-      this.mgrs.attackManager.update(deltaTime);
-      this.mgrs.combatManager.cleanupStaleData();
-      this.mgrs.victoryManager.update(deltaTime);
-      for (const ai of this.aiPlayers) {
-        ai.update(deltaTime);
-      }
-      this.mgrs.feedingManager.update(deltaTime);
-      this.mgrs.moraleManager.update(deltaTime);
-      this.mgrs.marketplaceManager.update(deltaTime);
-      this.mgrs.animalLifecycleManager.update(deltaTime);
-      this.mgrs.economyTracker.update(deltaTime);
-      this.mgrs.dashboardTracker.update(deltaTime);
-      this.mgrs.randomEventManager.update(deltaTime);
       this.rnds.roadRenderer.sync(this.mgrs.roadNetwork, (id) => this.gameState.getUnit(id));
       this.rnds.territoryRenderer.sync(this.mgrs.territoryManager);
-      this.mgrs.fogOfWarManager.markDirty(); // Units move every frame
-      this.mgrs.fogOfWarManager.update();
       this.rnds.fogOfWarRenderer.sync(this.mgrs.fogOfWarManager);
       this.rnds.buildingRenderer.updateFogVisibility(allBuildings);
       const allUnits = this.gameState.getAllUnits();
       this.rnds.unitRenderer.syncUnits(allUnits);
-      this.rnds.unitRenderer.updatePositions(allUnits, deltaTime);
+      // Use actual elapsed game time for smooth visual interpolation between ticks
+      const visualDelta = this._paused ? 0 : rawDelta * this._gameSpeed;
+      this.rnds.unitRenderer.updatePositions(allUnits, visualDelta);
 
       // Visual systems (shadows, particles, animations, overlays)
       // Each wrapped in safeRender to prevent one crash from killing the game
       this.safeRender('blobShadow', () => this.rnds.blobShadowRenderer.update(allBuildings, allUnits));
       this.safeRender('flagLight', () => this.rnds.flagLightSystem.update(
-        deltaTime,
+        visualDelta,
         this.mgrs.roadNetwork.getAllFlags(),
         allBuildings,
         this.grid,
         (id) => this.rnds.buildingRenderer.getMesh(id),
       ));
-      this.safeRender('particles', () => this.rnds.particleSystem.update(deltaTime, allBuildings, this.grid, this.frustum));
+      this.safeRender('particles', () => this.rnds.particleSystem.update(visualDelta, allBuildings, this.grid, this.frustum));
       this.safeRender('buildingAnim', () => {
         this.rnds.buildingAnimator.nightness = this.currentNightness;
         this.rnds.buildingAnimator.update(
-          deltaTime,
+          visualDelta,
           allBuildings,
           (id) => this.rnds.buildingRenderer.getMesh(id),
         );
       });
       this.safeRender('statusOverlay', () => this.rnds.buildingStatusOverlay.update(
-        deltaTime,
+        visualDelta,
         allBuildings,
         this.gameState,
         (id) => this.rnds.buildingRenderer.getMesh(id),
       ));
       this.safeRender('combat', () => this.rnds.combatRenderer.update(
-        deltaTime,
+        visualDelta,
         this.mgrs.duelAnimationManager.getActiveDuels(),
         (id) => this.rnds.unitRenderer.getMesh(id),
       ));
-      this.safeRender('chainOverlay', () => this.rnds.productionChainOverlay.update(deltaTime));
+      this.safeRender('chainOverlay', () => this.rnds.productionChainOverlay.update(visualDelta));
       this.safeRender('weather', () => this.rnds.weatherController.update(rawDelta, this.camera.position, this.frustum));
       // Pass dynamic wind direction from weather to ambient renderers
       const wind = this.rnds.weatherController.getWindDirection();
@@ -694,7 +697,7 @@ export class Game {
       });
       this.safeRender('birds', () => this.rnds.birdFlockRenderer.update(rawDelta, this.camera.position, this.frustum));
       this.safeRender('water', () => this.rnds.waterEffectRenderer.update(rawDelta, this.camera.position, this.frustum));
-      this.safeRender('animals', () => this.rnds.wildAnimalRenderer.update(deltaTime, this.camera.position));
+      this.safeRender('animals', () => this.rnds.wildAnimalRenderer.update(visualDelta, this.camera.position));
       this.safeRender('bees', () => {
         this.rnds.beeRenderer.setWindDirection(wind);
         this.rnds.beeRenderer.update(rawDelta, this.camera.position, this.frustum);
@@ -706,7 +709,7 @@ export class Game {
         const weatherType = this.rnds.weatherController.getWeatherType();
         this.rnds.spatialAudioEngine.update(
           rawDelta,
-          deltaTime,
+          visualDelta,
           this.camera.position,
           this.gameState,
           cycleState.phase,
@@ -738,6 +741,69 @@ export class Game {
     animate();
   }
 
+  /**
+   * Run one deterministic simulation tick at the fixed timestep.
+   * All game-logic managers update here. Visual-only systems update per-frame in animate().
+   * In multiplayer (Phase 2), each tick corresponds to one lockstep turn.
+   */
+  private simulationTick(dt: number): void {
+    // Transfer storage building inputs → outputs (Castle/Warehouse accept delivered goods)
+    const allBuildings = this.gameState.getAllBuildings();
+    for (const b of allBuildings) {
+      if (b.type !== BuildingType.Castle && b.type !== BuildingType.Warehouse) continue;
+      if (b.state !== BuildingState.Active) continue;
+      transferStorageInputs(b);
+    }
+
+    const prevTerritoryVersion = this.mgrs.territoryManager.getVersion();
+    this.mgrs.territoryManager.update();
+    // Check for territory transfers when territory changes (passive expansion)
+    if (this.mgrs.territoryManager.getVersion() !== prevTerritoryVersion) {
+      this.mgrs.attackManager.checkTerritoryTransfers();
+    }
+    // Pass nightness to managers for day/night gameplay effects
+    this.mgrs.unitManager.nightness = this.currentNightness;
+    this.mgrs.productionManager.nightness = this.currentNightness;
+    // Pass morale + random event multipliers per player
+    for (let pid = 1; pid <= this.config.numPlayers; pid++) {
+      const moraleProd = this.mgrs.moraleManager.getProductionMultiplier(pid);
+      const eventProd = this.mgrs.randomEventManager.getProductionMultiplier(pid);
+      this.mgrs.productionManager.moraleMultipliers.set(pid, moraleProd * eventProd);
+      this.mgrs.combatManager.moraleMultipliers.set(pid, this.mgrs.moraleManager.getCombatMultiplier(pid));
+    }
+    this.updateLightMitigation();
+    this.mgrs.unitManager.update(dt);
+    this.mgrs.constructionManager.update(dt);
+    this.mgrs.upgradeManager.update(dt);
+    this.mgrs.productionManager.update(dt);
+    this.mgrs.toolProductionManager.update(dt);
+    this.mgrs.geologistManager.update(dt);
+    this.mgrs.treeManager.update(dt);
+    this.mgrs.woodcutterManager.update(dt);
+    this.mgrs.terrainGatheringManager.update(dt);
+    this.mgrs.foresterManager.update(dt);
+    this.rnds.treeRenderer.sync(this.mgrs.treeManager, this.grid);
+    this.mgrs.logisticsManager.update(dt);
+    this.mgrs.harborManager.update(dt);
+    this.mgrs.transporterManager.update(dt);
+    this.mgrs.knightManager.update(dt);
+    this.mgrs.attackManager.update(dt);
+    this.mgrs.combatManager.cleanupStaleData();
+    this.mgrs.victoryManager.update(dt);
+    for (const ai of this.aiPlayers) {
+      ai.update(dt);
+    }
+    this.mgrs.feedingManager.update(dt);
+    this.mgrs.moraleManager.update(dt);
+    this.mgrs.marketplaceManager.update(dt);
+    this.mgrs.animalLifecycleManager.update(dt);
+    this.mgrs.economyTracker.update(dt);
+    this.mgrs.dashboardTracker.update(dt);
+    this.mgrs.randomEventManager.update(dt);
+    this.mgrs.fogOfWarManager.markDirty();
+    this.mgrs.fogOfWarManager.update();
+  }
+
   /** Create AI controllers for all non-human players (player IDs 2..N). */
   private initAIPlayers(): void {
     for (let i = 2; i <= this.config.numPlayers; i++) {
@@ -754,6 +820,8 @@ export class Game {
         (building, grid) => {
           this.rnds.buildingRenderer.addBuilding(building, grid);
         },
+        this.gameRng,
+        this.commandExecutor,
       );
       ai.setMarketplaceManager(this.mgrs.marketplaceManager);
       ai.setDiplomacyManager(this.mgrs.diplomacyManager);
@@ -1227,6 +1295,28 @@ export class Game {
     return this.humanPlayerId;
   }
 
+  /** Get the seeded PRNG for deterministic game logic */
+  getGameRng(): GameRng {
+    return this.gameRng;
+  }
+
+  /** Execute a game command through the command system. */
+  executeCommand(cmd: GameCommand): CommandResult {
+    const result = this.commandExecutor.execute(cmd);
+    if (result.success) this.networkAdapter.submitCommands([cmd]);
+    return result;
+  }
+
+  /** Get the command executor (for AI players and tests). */
+  getCommandExecutor(): CommandExecutor {
+    return this.commandExecutor;
+  }
+
+  /** Get the network adapter (for replay access). */
+  getNetworkAdapter(): NetworkAdapter {
+    return this.networkAdapter;
+  }
+
   /** Get current nightness level 0.0–1.0 */
   getNightness(): number {
     return this.currentNightness;
@@ -1467,6 +1557,7 @@ export class Game {
         },
       },
       this.mgrs.distributionSettings,
+      { rngState: this.gameRng.getState(), accumulator: this.accumulator },
     );
   }
 

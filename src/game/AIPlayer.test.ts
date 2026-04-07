@@ -21,6 +21,12 @@ import { Difficulty } from './GameConfig';
 import { UpgradeManager } from './UpgradeManager';
 import { RoadNetwork } from './RoadNetwork';
 import { PopulationManager } from './PopulationManager';
+import { GameRng } from './GameRng';
+import { CommandExecutor } from './CommandExecutor';
+import { LogisticsManager } from './LogisticsManager';
+import { ToolProductionManager } from './ToolProductionManager';
+import { MarketplaceManager } from './MarketplaceManager';
+import { DiplomacyManager } from './DiplomacyManager';
 import type { Building } from './Building';
 
 // ─── Test helpers ────────────────────────────────────────────────────────────
@@ -57,6 +63,28 @@ function makeManagers(gameState: GameState): {
   return { territoryManager, knightManager, attackManager };
 }
 
+function makeCommandExecutor(
+  gameState: GameState,
+  grid: HexGrid,
+  roadNetwork: RoadNetwork,
+  territoryManager: TerritoryManager,
+  attackManager: AttackManager,
+  upgradeManager: UpgradeManager,
+): CommandExecutor {
+  return new CommandExecutor({
+    gameState,
+    grid,
+    roadNetwork,
+    territoryManager,
+    attackManager,
+    upgradeManager,
+    toolProductionManager: new ToolProductionManager(gameState),
+    marketplaceManager: new MarketplaceManager(gameState),
+    diplomacyManager: new DiplomacyManager(),
+    logisticsManager: new LogisticsManager(gameState, roadNetwork),
+  });
+}
+
 /** Place a Castle for the AI, initialize resources, update territory. */
 function setupAI(
   gameState: GameState,
@@ -89,6 +117,10 @@ function setupAI(
   territoryManager.update();
 
   const placed: Building[] = [];
+  const grid = gameState.getGrid();
+  const roadNetwork = new RoadNetwork(grid);
+  const upgradeManager = new UpgradeManager(gameState);
+  const commandExecutor = makeCommandExecutor(gameState, grid, roadNetwork, territoryManager, attackManager, upgradeManager);
   const ai = new AIPlayer(
     playerId,
     difficulty,
@@ -96,10 +128,12 @@ function setupAI(
     territoryManager,
     attackManager,
     knightManager,
-    new UpgradeManager(gameState),
-    new RoadNetwork(gameState.getGrid()),
+    upgradeManager,
+    roadNetwork,
     new PopulationManager(gameState),
     (building: Building) => placed.push(building),
+    new GameRng(42),
+    commandExecutor,
   );
   return { ai, placed, gameState, territoryManager, attackManager, knightManager };
 }
@@ -178,6 +212,10 @@ describe('AIPlayer', () => {
     territoryManager.update();
 
     const placed: Building[] = [];
+    const grid = gameState.getGrid();
+    const roadNetwork = new RoadNetwork(grid);
+    const upgradeManager = new UpgradeManager(gameState);
+    const commandExecutor = makeCommandExecutor(gameState, grid, roadNetwork, territoryManager, attackManager, upgradeManager);
     const ai = new AIPlayer(
       2,
       Difficulty.Normal,
@@ -185,10 +223,12 @@ describe('AIPlayer', () => {
       territoryManager,
       attackManager,
       knightManager,
-      new UpgradeManager(gameState),
-      new RoadNetwork(gameState.getGrid()),
+      upgradeManager,
+      roadNetwork,
       new PopulationManager(gameState),
       (b: Building) => placed.push(b),
+      new GameRng(42),
+      commandExecutor,
     );
 
     ai.update(20);
@@ -219,6 +259,9 @@ describe('AIPlayer', () => {
     tinyManagers.territoryManager.update();
 
     const placed: Building[] = [];
+    const tinyRoadNetwork = new RoadNetwork(tinyGrid);
+    const tinyUpgradeManager = new UpgradeManager(tinyState);
+    const tinyCommandExecutor = makeCommandExecutor(tinyState, tinyGrid, tinyRoadNetwork, tinyManagers.territoryManager, tinyManagers.attackManager, tinyUpgradeManager);
     const ai = new AIPlayer(
       2,
       Difficulty.Normal,
@@ -226,10 +269,12 @@ describe('AIPlayer', () => {
       tinyManagers.territoryManager,
       tinyManagers.attackManager,
       tinyManagers.knightManager,
-      new UpgradeManager(tinyState),
-      new RoadNetwork(tinyGrid),
+      tinyUpgradeManager,
+      tinyRoadNetwork,
       new PopulationManager(tinyState),
       (b: Building) => placed.push(b),
+      new GameRng(42),
+      tinyCommandExecutor,
     );
 
     // Territory has only the Castle hex (all water neighbors are blocked from expansion).
@@ -430,6 +475,10 @@ describe('AIPlayer', () => {
     territoryManager.update();
 
     const placed: Building[] = [];
+    const grid = gameState.getGrid();
+    const roadNetwork = new RoadNetwork(grid);
+    const upgradeManager = new UpgradeManager(gameState);
+    const commandExecutor = makeCommandExecutor(gameState, grid, roadNetwork, territoryManager, attackManager, upgradeManager);
     const ai = new AIPlayer(
       2,
       Difficulty.Normal,
@@ -437,10 +486,12 @@ describe('AIPlayer', () => {
       territoryManager,
       attackManager,
       knightManager,
-      new UpgradeManager(gameState),
-      new RoadNetwork(gameState.getGrid()),
+      upgradeManager,
+      roadNetwork,
       new PopulationManager(gameState),
       (b: Building) => placed.push(b),
+      new GameRng(42),
+      commandExecutor,
     );
 
     // 3 ticks with no resources — should NOT advance the index via skip logic

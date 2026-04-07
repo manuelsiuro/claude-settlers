@@ -27,6 +27,7 @@ import { MarketplaceManager } from './MarketplaceManager';
 import { TerrainGatheringManager } from './TerrainGatheringManager';
 import { DiplomacyManager } from './DiplomacyManager';
 import { AIPlayer } from './AIPlayer';
+import { GameRng } from './GameRng';
 import { BuildingType } from './BuildingType';
 import {
   BuildingState,
@@ -41,6 +42,8 @@ import { Difficulty, DEFAULT_CONFIG } from './GameConfig';
 import type { GameConfig } from './GameConfig';
 import { serializeGame, deserializeGame } from './SaveLoad';
 import type { SaveData } from './SaveLoad';
+import { CommandExecutor } from './CommandExecutor';
+import { ToolProductionManager } from './ToolProductionManager';
 
 /** Create a small test grid with all grassland + some forest and a mountain */
 function makeTestGrid(): HexGrid {
@@ -136,7 +139,7 @@ describe('SaveLoad: round-trip serialization', () => {
       { frustum: 10, position: { x: 0, y: 20, z: 0 }, target: { x: 0, y: 0, z: 0 } },
     );
 
-    expect(data.version).toBe(14);
+    expect(data.version).toBe(15);
     expect(data.config).toEqual(testConfig);
     expect(data.buildings).toEqual([]);
     expect(data.units).toEqual([]);
@@ -460,9 +463,18 @@ describe('SaveLoad: round-trip serialization', () => {
     territoryManager.update();
 
     // Create an AI player
+    const ce1 = new CommandExecutor({
+      gameState, grid, roadNetwork, territoryManager,
+      attackManager: managers.attackManager, upgradeManager: managers.upgradeManager,
+      toolProductionManager: new ToolProductionManager(gameState),
+      marketplaceManager: managers.marketplaceManager, diplomacyManager: managers.diplomacyManager,
+      logisticsManager: managers.logisticsManager,
+    });
     const ai = new AIPlayer(
       2, Difficulty.Normal, gameState, territoryManager,
       managers.attackManager, managers.knightManager, managers.upgradeManager, roadNetwork, new PopulationManager(gameState), () => {},
+      new GameRng(42),
+      ce1,
     );
     // Simulate some decisions
     ai._setBuildOrderIndex(5);
@@ -483,9 +495,18 @@ describe('SaveLoad: round-trip serialization', () => {
     const rn2 = new RoadNetwork(grid2);
     const tm2 = new TerritoryManager(gs2);
     const managers2 = createManagers(gs2, rn2, tm2);
+    const ce2 = new CommandExecutor({
+      gameState: gs2, grid: grid2, roadNetwork: rn2, territoryManager: tm2,
+      attackManager: managers2.attackManager, upgradeManager: managers2.upgradeManager,
+      toolProductionManager: new ToolProductionManager(gs2),
+      marketplaceManager: managers2.marketplaceManager, diplomacyManager: managers2.diplomacyManager,
+      logisticsManager: managers2.logisticsManager,
+    });
     const ai2 = new AIPlayer(
       2, Difficulty.Normal, gs2, tm2,
       managers2.attackManager, managers2.knightManager, managers2.upgradeManager, rn2, new PopulationManager(gs2), () => {},
+      new GameRng(42),
+      ce2,
     );
 
     deserializeGame(data, gs2, rn2, managers2, [ai2]);
@@ -553,7 +574,7 @@ describe('SaveLoad: round-trip serialization', () => {
     const json = JSON.stringify(data);
     const parsed = JSON.parse(json) as SaveData;
 
-    expect(parsed.version).toBe(14);
+    expect(parsed.version).toBe(15);
     expect(parsed.config.seed).toBe(42);
     expect(parsed.buildings.length).toBe(2);
     expect(parsed.units.length).toBe(1);

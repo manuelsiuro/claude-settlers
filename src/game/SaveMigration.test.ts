@@ -61,7 +61,7 @@ describe('Save Migration', () => {
     localStorage.setItem('feudal_realm_save', JSON.stringify(oldSave));
     const loaded = loadFromLocalStorage();
     expect(loaded).not.toBeNull();
-    expect(loaded!.version).toBe(14); // migrated to current
+    expect(loaded!.version).toBe(15); // migrated to current
     // Check that migration added fields
     const building = loaded!.buildings[0] as Record<string, unknown>;
     expect(building.waitingForTool).toBe(null);
@@ -77,7 +77,7 @@ describe('Save Migration', () => {
 
   it('loads current version saves without modification', () => {
     const save = {
-      version: 14,
+      version: 15,
       timestamp: Date.now(),
       config: { seed: 1, mapSize: 24, numPlayers: 1, difficulty: 'normal', scenario: 'default' },
       nextBuildingId: 1,
@@ -110,7 +110,7 @@ describe('Save Migration', () => {
     localStorage.setItem('feudal_realm_save', JSON.stringify(save));
     const loaded = loadFromLocalStorage();
     expect(loaded).not.toBeNull();
-    expect(loaded!.version).toBe(14);
+    expect(loaded!.version).toBe(15);
     localStorage.removeItem('feudal_realm_save');
   });
 });

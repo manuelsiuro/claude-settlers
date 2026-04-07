@@ -11,6 +11,7 @@ import { assetLoader } from './AssetLoader';
 import { BUILDING_MODEL_MAP } from './BuildingModels';
 import { BUILDING_SCALE } from './BuildingRenderer';
 import { MapRenderer } from './MapRenderer';
+import type { Building } from '../game/Building';
 
 const VALID_COLOR = 0x00ff00;
 const INVALID_COLOR = 0xff0000;
@@ -294,14 +295,19 @@ export class PlacementController {
   private confirmPlacement(): void {
     if (!this.selectedType || !this.currentHex) return;
 
-    const gameState = this.game.getGameState();
-    const result = gameState.placeBuilding(this.selectedType, this.currentHex, this.game.getHumanPlayerId());
+    const result = this.game.executeCommand({
+      type: 'PlaceBuilding',
+      playerId: this.game.getHumanPlayerId(),
+      buildingType: this.selectedType,
+      coord: this.currentHex,
+    });
 
-    if (result.ok) {
+    if (result.success) {
+      const building = result.data as Building;
       const buildingRenderer = this.game.getBuildingRenderer();
-      buildingRenderer.addBuilding(result.building, this.game.getGrid());
+      buildingRenderer.addBuilding(building, this.game.getGrid());
       this.onBuildingPlaced?.(this.selectedType, this.currentHex);
-    } else {
+    } else if (!result.success) {
       this.onPlacementError?.(result.error, this.selectedType);
     }
 

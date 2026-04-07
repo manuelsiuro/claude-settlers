@@ -178,12 +178,13 @@ export class RandomEventManager {
   /** Callback for announcing events */
   onEvent: ((event: RandomEvent) => void) | null = null;
 
-  /** Injectable random for testing */
-  random: () => number = Math.random;
+  /** Injectable random for deterministic simulation and testing */
+  random: () => number;
 
-  constructor(gameState: GameState, humanPlayerId: number) {
+  constructor(gameState: GameState, humanPlayerId: number, random?: () => number) {
     this.gameState = gameState;
     this.humanPlayerId = humanPlayerId;
+    this.random = random ?? Math.random;
     this.timeUntilNextEvent = this.rollNextInterval();
   }
 
