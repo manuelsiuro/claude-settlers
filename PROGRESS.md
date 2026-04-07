@@ -1,6 +1,6 @@
 # Project Progress
 
-## Current Phase: Multiplayer Phase 2 (LAN) — Complete
+## Current Phase: Multiplayer Phase 2 (LAN) + Polish — Complete
 
 ## Task Board
 
@@ -22,6 +22,15 @@
 - [DONE] Lobby UI — LobbyPanel.ts: create/join room, QR code sharing, player list with ready states, copy join link, join-via-URL (?join=CODE&server=ADDRESS). — 2026-04-07
 - [DONE] Setup screen integration — "Multiplayer (LAN)" button, startMultiplayerGame() wiring, setHumanPlayerId() for per-player fog. — 2026-04-07
 - [DONE] 2-player LAN playtest — Verified via Chrome DevTools MCP: two browser tabs, same relay server, identical RNG state (-1214882701), per-player fog of war, zero console errors. — 2026-04-07
+
+### Multiplayer Phase 2 Polish: Smooth LAN UX [COMPLETE]
+- [DONE] Embed relay server in Vite — `npm run dev` auto-starts both game and relay server. `__RELAY_WS_URL__` injected for LAN discovery. — 2026-04-07
+- [DONE] Multiplayer setup panel — Replaced all prompt() dialogs with inline Host Game / Join Game tabs. Single "Join Link or Room Code" input. Player name saved to localStorage. — 2026-04-07
+- [DONE] Fix Leave + error cleanup — Leave button restores setup screen. Error overlays have Close button. onDisconnected shows error. — 2026-04-07
+- [DONE] "Waiting for Player" overlay — Semi-transparent overlay with spinner after 500ms of waiting for turn packet. Auto-hides on resume. — 2026-04-07
+- [DONE] Fix game start loading flow — Setup overlay hidden after loading screen appears (no black flash). Error handling restores setup screen. — 2026-04-07
+- [DONE] Disconnect handling + auto-reconnect — Detect connection drop, exponential backoff (1s/2s/4s, 3 attempts). "Connection Lost" overlay with "Return to Menu" on failure. — 2026-04-07
+- [DONE] Lobby polish — Host badge, green connection dot, connecting spinner, responsive mobile layout (480px breakpoint). — 2026-04-07
 
 ### Multiplayer Phase 3: Internet Multiplayer [TODO]
 - [TODO] Deploy relay server to VPS

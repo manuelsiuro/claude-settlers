@@ -19,6 +19,8 @@ All design specs live in `docs/`:
 - `docs/audio-generator.md` — Audio Generator tool: installation, usage, AI models (EzAudio/MusicGen), catalog management, export pipeline, in-game spatial audio system
 - `docs/tools.md` — Developer tools reference (Balance Tool, Thumbnail Generator, Audio Generator)
 - `docs/new-features.md` — Comprehensive guide to all 35 features added in the game review: loading screen, auto-save, event log, encyclopedia, achievements, campaign mode, diplomacy, sandbox, combat counters, AI personalities, keyboard shortcuts, visual polish, accessibility, and more
+- `docs/multiplayer.md` — Multiplayer architecture design: deterministic lockstep, relay server, command system, 4 implementation phases, impact analysis, testing strategy
+- `docs/multiplayer-guide.md` — LAN multiplayer user guide: hosting, joining (room code / invite link / QR), lobby features, troubleshooting, technical reference
 
 **Always read the relevant design doc before implementing a feature.** The docs specify exact shapes, colors, and behaviors.
 
@@ -83,7 +85,8 @@ Large files have been split into focused sub-modules with thin re-export facades
 - **`src/game/Command.ts`** — 20 game command types (PlaceBuilding, DemolishBuilding, AttackBuilding, etc.) as a discriminated union. `CommandExecutor.ts` — single execution entry point.
 - **`src/game/GameRng.ts`** — Seeded PRNG (mulberry32) with `getState()/setState()` for save/load.
 - **`src/game/NetworkAdapter.ts`** — Transport-agnostic adapter interface. `LocalAdapter` (single-player), `WebSocketAdapter.ts` (multiplayer lockstep).
-- **`src/ui/LobbyPanel.ts`** — Multiplayer lobby: create/join room, QR code, player list, ready states, join-via-URL.
+- **`src/ui/LobbyPanel.ts`** — Multiplayer lobby: create/join room, QR code, player list with host badge, ready states, join-via-URL.
+- **`src/ui/MultiplayerOverlay.ts`** — In-game overlays: "Waiting for opponent..." spinner, "Connection Lost" with return-to-menu.
 
 All original import paths continue to work via re-export facades. When adding new code, import from the sub-module directly for clarity.
 
