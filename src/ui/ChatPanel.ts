@@ -27,6 +27,7 @@ let unreadCount = 0;
 // ── Public API ──────────────────────────────────────────────────────
 
 export function initChatPanel(send: (message: string) => void): void {
+  disposeChatPanel();
   sendFn = send;
   messages = [];
   unreadCount = 0;
@@ -41,14 +42,8 @@ export function addChatMessage(playerName: string, message: string, playerId: nu
   }
   renderMessages();
 
-  // Show panel on first incoming message, or update unread badge
-  if (panelEl && panelEl.style.display === 'none') {
-    unreadCount++;
-    updateBadge();
-    showPanel();
-  } else if (panelEl && panelEl.style.display !== 'none') {
-    // Panel visible — no unread
-  } else {
+  // Update unread badge if panel is not visible
+  if (!panelEl || panelEl.style.display === 'none') {
     unreadCount++;
     updateBadge();
   }
@@ -215,7 +210,5 @@ function updateBadge(): void {
 }
 
 function escapeHtml(text: string): string {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }

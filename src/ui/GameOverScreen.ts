@@ -131,7 +131,7 @@ export function showGameOver(result: VictoryResult): void {
   const secs = Math.floor(elapsed % 60);
   const durationStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
 
-  const isMultiplayer = config.numPlayers > 1;
+  const isMultiplayer = config.isMultiplayer === true;
 
   if (isMultiplayer) {
     // --- Multiplayer comparison view ---

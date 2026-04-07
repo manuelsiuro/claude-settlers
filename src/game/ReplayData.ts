@@ -8,14 +8,11 @@
 
 import type { GameConfig } from './GameConfig';
 import type { GameCommand } from './Command';
+import type { PlayerAssignment } from '../../shared/types';
+
+export type { PlayerAssignment };
 
 export const REPLAY_VERSION = 1;
-
-export interface PlayerAssignment {
-  playerId: number;
-  name: string;
-  isHuman: boolean;
-}
 
 export interface ReplayData {
   version: number;

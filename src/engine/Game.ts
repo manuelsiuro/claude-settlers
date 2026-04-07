@@ -190,6 +190,8 @@ export class Game {
 
   /** Replay HUD element (created when in replay mode) */
   private replayHud: HTMLElement | null = null;
+  private replayProgressEl: HTMLElement | null = null;
+  private lastReplayPct = -1;
 
   constructor(container: HTMLElement, config?: Partial<GameConfig>) {
     this.container = container;
@@ -1057,6 +1059,7 @@ export class Game {
     ai.setMarketplaceManager(this.mgrs.marketplaceManager);
     ai.setDiplomacyManager(this.mgrs.diplomacyManager);
     this.aiPlayers.push(ai);
+    if (this.config.sandbox) ai.sandbox = true;
     return true;
   }
 
@@ -1384,6 +1387,7 @@ export class Game {
     if (this.replayHud) {
       this.replayHud.remove();
       this.replayHud = null;
+      this.replayProgressEl = null;
     }
     this.roadPlacementController?.dispose();
     this.selectionController?.dispose();
@@ -1849,14 +1853,17 @@ export class Game {
    */
   private processReplayTick(): void {
     const cmds = this.networkAdapter.getCommandsForTick();
-    const buildingCountBefore = this.gameState.getAllBuildings().length;
+    const allBuildings = this.gameState.getAllBuildings();
+    const buildingCountBefore = allBuildings.length;
     for (const cmd of cmds) {
       this.commandExecutor.execute(cmd);
     }
     // Sync renderers for any new buildings created by replay commands
     const allBuildingsAfter = this.gameState.getAllBuildings();
-    for (let i = buildingCountBefore; i < allBuildingsAfter.length; i++) {
-      this.rnds.buildingRenderer.addBuilding(allBuildingsAfter[i], this.grid);
+    if (allBuildingsAfter.length > buildingCountBefore) {
+      for (let i = buildingCountBefore; i < allBuildingsAfter.length; i++) {
+        this.rnds.buildingRenderer.addBuilding(allBuildingsAfter[i], this.grid);
+      }
     }
   }
 
@@ -1947,17 +1954,18 @@ export class Game {
 
     this.container.parentElement?.appendChild(hud);
     this.replayHud = hud;
+    this.replayProgressEl = progress;
   }
 
   /** Update the replay HUD progress indicator. Called from the animate loop. */
   private updateReplayHud(): void {
-    if (!this.replayHud) return;
+    if (!this.replayProgressEl) return;
     const adapter = this.networkAdapter;
     if (adapter instanceof ReplayAdapter) {
-      const progress = this.replayHud.querySelector('#replay-progress');
-      if (progress) {
-        const pct = Math.round(adapter.getProgress() * 100);
-        progress.textContent = adapter.isFinished() ? 'Done' : `${pct}%`;
+      const pct = adapter.isFinished() ? -2 : Math.round(adapter.getProgress() * 100);
+      if (pct !== this.lastReplayPct) {
+        this.lastReplayPct = pct;
+        this.replayProgressEl.textContent = pct === -2 ? 'Done' : `${pct}%`;
       }
     }
   }
