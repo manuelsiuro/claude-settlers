@@ -135,8 +135,6 @@ wss.on('connection', (ws: WebSocket) => {
           yourPlayerId: playerId,
         }));
 
-        // Notify other players
-        room.handleMessage(playerId, { type: 'READY' }); // Auto-notify (player list changed)
         console.log(`[Room ${code}] "${msg.playerName}" joined (player ${playerId})`);
         break;
       }

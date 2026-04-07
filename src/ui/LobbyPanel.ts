@@ -310,9 +310,11 @@ function updatePlayerList(): void {
 function checkStartEnabled(): void {
   const btn = document.getElementById('lobby-start-btn') as HTMLButtonElement;
   if (btn && isHost) {
-    // Host can start when all human slots are filled
+    // Host can start when all human slots are filled AND all other players are ready
     const requiredHumans = lobbyMaxPlayers - lobbyAiCount;
-    btn.disabled = currentPlayers.length < requiredHumans;
+    const allFilled = currentPlayers.length >= requiredHumans;
+    const othersReady = currentPlayers.filter(p => p.playerId !== adapter?.playerId).every(p => p.ready);
+    btn.disabled = !(allFilled && othersReady);
   }
 }
 
