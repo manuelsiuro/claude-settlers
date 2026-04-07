@@ -257,8 +257,9 @@ function updatePlayerList(): void {
 function checkStartEnabled(): void {
   const btn = document.getElementById('lobby-start-btn') as HTMLButtonElement;
   if (btn && isHost) {
-    const allReady = currentPlayers.length >= 2 && currentPlayers.every(p => p.ready);
-    btn.disabled = !allReady;
+    // Host can start when at least 2 players are present
+    // (clicking Start sends READY which triggers GAME_START on server when all ready)
+    btn.disabled = currentPlayers.length < 2;
   }
 }
 

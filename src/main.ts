@@ -8,6 +8,7 @@ import type { SaveData } from './game/SaveLoad';
 import { loadSettings } from './game/SettingsStorage';
 import { MapEditorUI } from './editor/MapEditorUI';
 import type { MapData } from './game/MapData';
+import type { LobbyResult } from './ui/LobbyPanel';
 import './ui/styles.css';
 
 // PWA service worker registration is handled by vite-plugin-pwa (Workbox auto-update)
@@ -150,6 +151,9 @@ let currentEditor: MapEditorUI | undefined;
 
 /** Auto-save interval in ms (2 minutes) */
 const AUTO_SAVE_INTERVAL = 2 * 60 * 1000;
+
+/** Pending multiplayer lobby result (set before startGame is called) */
+let pendingMultiplayerResult: LobbyResult | null = null;
 
 /** Get the active Game instance (only call from UI handlers after game starts) */
 function getGame(): Game {
@@ -301,6 +305,13 @@ async function startGame(config: Partial<GameConfig>, savedData?: SaveData): Pro
   game = new Game(container, config);
   (window as unknown as Record<string, unknown>).__game = game;
 
+  // Multiplayer: set adapter and player ID before start
+  if (config.isMultiplayer && pendingMultiplayerResult) {
+    game.setHumanPlayerId(pendingMultiplayerResult.playerId);
+    game.setNetworkAdapter(pendingMultiplayerResult.adapter);
+    pendingMultiplayerResult = null;
+  }
+
   wireNotifications(game, showGameOver, updatePauseSpeedUI);
   initEventLog((q, r) => {
     // Navigate camera to event location
@@ -370,6 +381,25 @@ async function startGame(config: Partial<GameConfig>, savedData?: SaveData): Pro
     } catch { /* silent — don't disrupt gameplay */ }
   }, AUTO_SAVE_INTERVAL);
 }
+
+/**
+ * Start a multiplayer game from the lobby result.
+ * Called when the relay server broadcasts GAME_START.
+ */
+async function startMultiplayerGame(result: LobbyResult): Promise<void> {
+  pendingMultiplayerResult = result;
+  const numHumans = result.playerAssignments.filter(p => p.isHuman).length;
+  // Hide setup overlay before starting
+  document.getElementById('setup-overlay')?.classList.add('hidden');
+  await startGame({
+    seed: result.seed,
+    isMultiplayer: true,
+    numPlayers: numHumans, // Only human players — no AI in multiplayer for now
+  });
+}
+
+// Expose for setup screen / lobby
+(window as unknown as Record<string, unknown>).__startMultiplayerGame = startMultiplayerGame;
 
 // Warn before leaving with an active game
 window.addEventListener('beforeunload', (e) => {

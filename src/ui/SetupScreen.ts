@@ -10,6 +10,8 @@ import { showSnackbar } from './Snackbar';
 import { logger } from '../util/Logger';
 import { hideGameOverOverlay } from './GameOverScreen';
 import { listMaps, deleteMap, loadBundledMapsIndex, importMapFromFile } from '../editor/MapStorage';
+import { showLobby, joinLobby } from './LobbyPanel';
+import type { LobbyResult } from './LobbyPanel';
 
 let setupOverlay: HTMLElement;
 
@@ -425,6 +427,62 @@ export function initSetupScreen(startGame: StartGameFn, onOpenEditor?: () => voi
       setupOverlay.classList.remove('hidden');
     });
   });
+
+  // ── Multiplayer button ────────────────────────────────────────────
+  const multiplayerBtn = document.getElementById('setup-multiplayer-btn');
+  multiplayerBtn?.addEventListener('click', () => {
+    const rawSeed = Number(setupSeedInput.value);
+    const seed = rawSeed > 0 ? Math.floor(rawSeed) : 42;
+    const mapSize = Number(setupMapSizeSelect.value);
+    const scenario = setupLandscapeSelect.value;
+    const difficulty = setupDifficultySelect.value;
+
+    // Prompt for server address and player name
+    const serverAddress = prompt('Relay server address:', 'ws://localhost:9876');
+    if (!serverAddress) return;
+    const playerName = prompt('Your name:', 'Player') ?? 'Player';
+
+    const onGameStart = (result: LobbyResult) => {
+      setupOverlay.classList.add('hidden');
+      // Call startMultiplayerGame from main.ts via window
+      const fn = (window as unknown as Record<string, unknown>).__startMultiplayerGame as
+        ((r: LobbyResult) => Promise<void>) | undefined;
+      if (fn) {
+        fn(result).catch((err: unknown) => {
+          logger.error('Failed to start multiplayer game:', err);
+          showSnackbar('Failed to start multiplayer game', 'error');
+          setupOverlay.classList.remove('hidden');
+        });
+      }
+    };
+
+    showLobby({
+      serverAddress,
+      mapSeed: seed,
+      mapSize,
+      scenario,
+      difficulty,
+      maxPlayers: 2,
+      playerName,
+    }, onGameStart);
+  });
+
+  // Handle ?join=CODE&server=ADDRESS URL params (for joining via shared link)
+  const urlParams = new URLSearchParams(window.location.search);
+  const joinCode = urlParams.get('join');
+  const joinServer = urlParams.get('server');
+  if (joinCode && joinServer) {
+    const playerName = prompt('Your name:', 'Player') ?? 'Player';
+    const onGameStart = (result: LobbyResult) => {
+      setupOverlay.classList.add('hidden');
+      const fn = (window as unknown as Record<string, unknown>).__startMultiplayerGame as
+        ((r: LobbyResult) => Promise<void>) | undefined;
+      fn?.(result);
+    };
+    joinLobby(joinServer, joinCode, playerName, onGameStart);
+    // Clean URL
+    window.history.replaceState({}, '', window.location.pathname);
+  }
 }
 
 export function hideSetupOverlay(): void {

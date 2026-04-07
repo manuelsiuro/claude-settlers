@@ -72,6 +72,13 @@ export class Room {
       disconnected: false,
     };
     this.players.set(playerId, player);
+
+    // Notify existing players about the new player
+    this.broadcastExcept(playerId, {
+      type: 'PLAYER_JOINED',
+      player: player.info,
+    });
+
     return playerId;
   }
 

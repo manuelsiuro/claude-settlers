@@ -486,6 +486,9 @@ export function getGameHTML(currentTheme: string): string {
       <button id="setup-start-btn" class="btn-filled setup-start-btn">
         Start Game
       </button>
+      <button id="setup-multiplayer-btn" class="btn-outlined setup-start-btn" style="margin-top:8px;">
+        Multiplayer (LAN)
+      </button>
       <button id="setup-continue-btn" class="btn-outlined setup-start-btn hidden" style="margin-top:8px;">
         Continue Saved Game
       </button>

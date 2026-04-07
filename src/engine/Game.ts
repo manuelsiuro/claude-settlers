@@ -1367,6 +1367,11 @@ export class Game {
     return this.humanPlayerId;
   }
 
+  /** Set the human player ID (for multiplayer — must be called before start()). */
+  setHumanPlayerId(id: number): void {
+    this.humanPlayerId = id;
+  }
+
   /** Get the seeded PRNG for deterministic game logic */
   getGameRng(): GameRng {
     return this.gameRng;
