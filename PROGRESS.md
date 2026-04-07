@@ -1,8 +1,39 @@
 # Project Progress
 
-## Current Phase: Gameplay Content — Complete
+## Current Phase: Multiplayer Phase 2 (LAN) — Complete
 
 ## Task Board
+
+### Multiplayer Phase 1: Determinism Foundation [COMPLETE]
+- [DONE] Seeded PRNG (GameRng) — mulberry32 with serializable state, replaces all Math.random() in game logic (AIPlayer, CombatManager, RandomEventManager). 9 unit tests. — 2026-04-07
+- [DONE] Fixed timestep — 50ms accumulator pattern in Game.ts animate loop, simulationTick() extracted. Decouples simulation from frame rate. — 2026-04-07
+- [DONE] Command system — 20 command types (Command.ts), CommandExecutor as single entry point for all state mutations. All UI (7 files) and AI routed through commands. — 2026-04-07
+- [DONE] NetworkAdapter + LocalAdapter — Passive command log for future replay support. — 2026-04-07
+- [DONE] Determinism tests — 5 tests: two parallel sims with same seed produce byte-identical serialized state. Including AI player determinism. — 2026-04-07
+- [DONE] Save migration v14→v15 — rngState + accumulator persisted in SaveData. — 2026-04-07
+
+### Multiplayer Phase 2: LAN Multiplayer [COMPLETE]
+- [DONE] Relay server — server/ directory, Node.js + ws, Room.ts (room lifecycle, turn collection, checksum comparison), ~300 lines. Health endpoint tested. — 2026-04-07
+- [DONE] Shared protocol types — shared/ directory with ClientMessage, ServerMessage, TurnPacket, PlayerInfo types. — 2026-04-07
+- [DONE] WebSocketAdapter — Connects to relay server, sends/receives turn packets, lobby events, ping/latency measurement. — 2026-04-07
+- [DONE] Lockstep game loop — In multiplayer mode, simulation advances one fixed tick per turn packet from server. processMultiplayerTurn() in Game.ts. Command buffering for multiplayer (optimistic UI). — 2026-04-07
+- [DONE] Checksum system — computeChecksum() hashes building/unit counts, territory version, road counts, RNG state every 10 turns. Server compares and broadcasts DESYNC_DETECTED. — 2026-04-07
+- [DONE] Multiplayer GameConfig — isMultiplayer, serverAddress, roomCode, playerName fields added. — 2026-04-07
+- [DONE] Lobby UI — LobbyPanel.ts: create/join room, QR code sharing, player list with ready states, copy join link, join-via-URL (?join=CODE&server=ADDRESS). — 2026-04-07
+- [DONE] Setup screen integration — "Multiplayer (LAN)" button, startMultiplayerGame() wiring, setHumanPlayerId() for per-player fog. — 2026-04-07
+- [DONE] 2-player LAN playtest — Verified via Chrome DevTools MCP: two browser tabs, same relay server, identical RNG state (-1214882701), per-player fog of war, zero console errors. — 2026-04-07
+
+### Multiplayer Phase 3: Internet Multiplayer [TODO]
+- [TODO] Deploy relay server to VPS
+- [TODO] Latency measurement, adaptive turn length
+- [TODO] Full state sync on desync (host sends snapshot)
+- [TODO] Reconnection after disconnect
+- [TODO] AI takeover when player disconnects
+
+### Multiplayer Phase 4: Polish [TODO]
+- [TODO] Spectator mode, replay system, in-game chat
+- [TODO] 3-4 player support, matchmaking
+- [TODO] Mobile multiplayer optimization
 
 ### Gameplay Content [COMPLETE]
 - [DONE] AI diplomacy behavior — AI evaluates diplomacy every 30-60s based on personality and relative military strength. Economists propose trade agreements, Turtles propose non-aggression, Militarists only propose when weak (and break treaties when 2.5x stronger). Notifications when AI proposes or breaks treaties. — 2026-03-29
