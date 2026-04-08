@@ -504,6 +504,10 @@ export function getGameHTML(currentTheme: string): string {
             <label class="setup-field-label" for="setup-mp-name-host">Your Name</label>
             <input type="text" id="setup-mp-name-host" class="setup-input" value="Player" maxlength="20" placeholder="Enter your name">
           </div>
+          <div class="setup-field">
+            <label class="setup-field-label" for="setup-mp-server">Server Address</label>
+            <input type="text" id="setup-mp-server" class="setup-input" placeholder="ws://192.168.1.100:9876">
+          </div>
           <div style="display:flex;gap:12px;">
             <div class="setup-field" style="flex:1;">
               <label class="setup-field-label" for="setup-mp-total">Total Players</label>
@@ -534,6 +538,10 @@ export function getGameHTML(currentTheme: string): string {
           <div class="setup-field">
             <label class="setup-field-label" for="setup-mp-code">Join Link or Room Code</label>
             <input type="text" id="setup-mp-code" class="setup-input" placeholder="ABCD or paste invite link" style="text-transform:uppercase;">
+          </div>
+          <div class="setup-field">
+            <label class="setup-field-label" for="setup-mp-server-join">Server Address</label>
+            <input type="text" id="setup-mp-server-join" class="setup-input" placeholder="ws://192.168.1.100:9876">
           </div>
           <button class="btn-filled" id="setup-mp-join-btn" style="width:100%;">Join Game</button>
         </div>

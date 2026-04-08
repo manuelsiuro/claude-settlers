@@ -480,11 +480,17 @@ export function initSetupScreen(startGame: StartGameFn, onOpenEditor?: () => voi
   const mpCodeInput = document.getElementById('setup-mp-code') as HTMLInputElement;
   const mpCreateBtn = document.getElementById('setup-mp-create-btn');
   const mpJoinBtn = document.getElementById('setup-mp-join-btn');
+  const mpServerHost = document.getElementById('setup-mp-server') as HTMLInputElement;
+  const mpServerJoin = document.getElementById('setup-mp-server-join') as HTMLInputElement;
 
-  // Restore saved player name
+  // Restore saved player name and server address
   const savedMpName = localStorage.getItem('feudal-mp-name') ?? 'Player';
   if (mpNameHost) mpNameHost.value = savedMpName;
   if (mpNameJoin) mpNameJoin.value = savedMpName;
+
+  const savedServer = localStorage.getItem('feudal-mp-server') || getRelayAddress();
+  if (mpServerHost) mpServerHost.value = savedServer;
+  if (mpServerJoin) mpServerJoin.value = savedServer;
 
   // Toggle multiplayer section
   const multiplayerBtn = document.getElementById('setup-multiplayer-btn');
@@ -565,13 +571,16 @@ export function initSetupScreen(startGame: StartGameFn, onOpenEditor?: () => voi
     const playerName = mpNameHost?.value.trim() || 'Player';
     localStorage.setItem('feudal-mp-name', playerName);
 
+    const serverAddress = mpServerHost?.value.trim() || getRelayAddress();
+    localStorage.setItem('feudal-mp-server', serverAddress);
+
     const rawSeed = Number(setupSeedInput.value);
     const seed = rawSeed > 0 ? Math.floor(rawSeed) : 42;
     const totalPlayers = Number(mpTotalSelect?.value ?? 2);
     const aiCount = Number(mpAiSelect?.value ?? 0);
 
     showLobby({
-      serverAddress: getRelayAddress(),
+      serverAddress,
       mapSeed: seed,
       mapSize: Number(setupMapSizeSelect.value),
       scenario: setupLandscapeSelect.value,
@@ -587,6 +596,9 @@ export function initSetupScreen(startGame: StartGameFn, onOpenEditor?: () => voi
     const playerName = mpNameJoin?.value.trim() || 'Player';
     localStorage.setItem('feudal-mp-name', playerName);
 
+    const joinServerAddr = mpServerJoin?.value.trim() || getRelayAddress();
+    localStorage.setItem('feudal-mp-server', joinServerAddr);
+
     const input = mpCodeInput?.value.trim() ?? '';
     if (!input) {
       showSnackbar('Enter a room code or paste an invite link', 'warning');
@@ -601,7 +613,7 @@ export function initSetupScreen(startGame: StartGameFn, onOpenEditor?: () => voi
       try {
         const url = new URL(input.startsWith('http') ? input : `http://${input}`);
         roomCode = url.searchParams.get('join') ?? '';
-        serverAddress = url.searchParams.get('server') ?? getRelayAddress();
+        serverAddress = url.searchParams.get('server') ?? joinServerAddr;
       } catch {
         showSnackbar('Invalid link format', 'warning');
         return;
@@ -609,7 +621,7 @@ export function initSetupScreen(startGame: StartGameFn, onOpenEditor?: () => voi
     } else {
       // Plain room code
       roomCode = input.toUpperCase();
-      serverAddress = getRelayAddress();
+      serverAddress = joinServerAddr;
     }
 
     if (!roomCode || roomCode.length < 4) {
